@@ -214,3 +214,6 @@ html[data-motion=reduce] .fl-sec summary::before { transition: none; }
   .compass { bottom: 64px; }
 }
 @media (max-width: 699px) { #stage:has(#ghostBar:not([hidden])) .compass { bottom: 146px; } }
+
+/* About headline (Pitch A, team Sat 23:15) */
+#help .about-pitch{margin-top:8px;font-size:.9375rem;line-height:1.45;color:var(--ink);max-width:44ch}
