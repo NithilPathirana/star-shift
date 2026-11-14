@@ -151,7 +151,7 @@ function render(d) {
         <td class="pf-meas">${measuredCell(t, target)}</td>
         <td class="pf-diff">${diffCell(t)}</td>
         <td class="pf-ver">${chip(t.verdict)}</td>
-        <td class="pf-lim">${esc(t.limit)}</td></tr>
+        <td class="pf-lim"><span class="pf-lim-t" id="${id}l">${esc(t.limit)}</span><button class="pf-more" type="button" aria-expanded="false" aria-controls="${id}l" hidden>more</button></td></tr>
         <tr class="drow pf-drow" id="${id}" hidden><td colspan="6">${evidence(t, target)}</td></tr>`;
     });
     rows += `</tbody>`;
@@ -163,6 +163,7 @@ function render(d) {
     btn.onclick = (e) => { e.stopPropagation(); toggle(); };
     r.onclick = (e) => { if (!e.target.closest('a,button')) toggle(); };
   });
+  initLimits();
   const when = new Date(d.generated);
   $('under').textContent = 'Images behind each result: ' + d.targets.map(t => `${t.label}: ` + t.tests.map(x => {
     const n = x.verdict === 'NOT MEASURABLE' ? null : x.measured?.frames;
@@ -182,6 +183,23 @@ function render(d) {
     rd ? `Very bright stars saturate. R Draconis has its centre masked in ${rd.images.saturatedCore} of ${rd.images.loaded} images, so neither its motion nor its brightness can be read.` : null,
     `These are ${d.settings.maxImages} images per object spread evenly in time, as the viewer loads them, not every image in the archive.`,
   ].filter(Boolean).map(x => `<li>${esc(x)}</li>`).join('');
+}
+
+// "Honest limits" show two lines; a "more" key opens the rest (Design review, DESIGN.md 32 as built).
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+function initLimits() {
+  const cells = [...document.querySelectorAll('.pf-lim')];
+  const check = () => cells.forEach(td => {
+    const t = td.querySelector('.pf-lim-t'), b = td.querySelector('.pf-more');
+    if (td.classList.contains('pf-lim-open')) return;
+    b.hidden = t.scrollHeight <= t.clientHeight + 1;
+  });
+  for (const td of cells) td.querySelector('.pf-more').onclick = (e) => {
+    e.stopPropagation();
+    const open = td.classList.toggle('pf-lim-open');
+    e.currentTarget.setAttribute('aria-expanded', String(open)); e.currentTarget.textContent = open ? 'less' : 'more';
+  };
+  check(); addEventListener('resize', check); document.fonts?.ready.then(check);
 }
 
 fetch('data/proof.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(render).catch(e => {

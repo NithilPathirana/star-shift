@@ -22,9 +22,9 @@
 .pg-lede{max-width:56ch;color:var(--ink-2);font-size:.875rem}
 
 /* tags (DESIGN.md 6/13) */
-.tag{display:inline-block;vertical-align:1px;padding:2px 6px;border-radius:5px;font:700 .6875rem/1.3 var(--font-ui);letter-spacing:.05em;text-transform:uppercase}
-.tag.obs{color:var(--sage);background:var(--sage-tint)}
-.tag.comp{color:var(--copper);background:rgba(168,95,42,.13)}
+.tag{display:inline-block;vertical-align:1px;padding:2px 6px;border-radius:5px;font:700 .75rem/1.3 var(--font-ui);letter-spacing:.05em;text-transform:uppercase}
+.tag.obs{color:var(--sage-ink);background:var(--sage-tint)}
+.tag.comp{color:var(--copper-ink);background:rgba(168,95,42,.13)}
 .tag.cat{color:var(--ink-2);background:rgba(84,62,42,.10)}
 .dim{color:var(--muted)}
 
@@ -190,7 +190,7 @@ html[data-motion=full] .skel i{animation:pg-shimmer 1.4s linear infinite}
 .pf-rule dd{text-align:left;font-family:var(--font-ui);color:var(--ink-2)}
 .pf-rule-note{grid-column:1 / -1;font-size:.75rem;color:var(--muted)}
 /* verdict chips: wording + outline style, never colour alone */
-.pf-chip{display:inline-block;padding:3px 8px;border-radius:6px;font:700 .6875rem/1.3 var(--font-ui);letter-spacing:.05em;white-space:nowrap;background:transparent}
+.pf-chip{display:inline-block;padding:3px 8px;border-radius:6px;font:700 .75rem/1.3 var(--font-ui);letter-spacing:.05em;white-space:nowrap;background:transparent}
 .pf-chip.v-agree{color:var(--sage);border:1.5px solid var(--sage)}
 .pf-chip.v-limit{color:var(--copper);border:1.5px solid var(--copper)}
 .pf-chip.v-differ{color:var(--ink);border:3px double var(--ink-2);padding:2px 7px}
@@ -198,7 +198,7 @@ html[data-motion=full] .skel i{animation:pg-shimmer 1.4s linear infinite}
 .pf-well{max-height:none}
 .pf-table td{white-space:normal;vertical-align:top;padding:10px 10px;height:auto}
 .pf-table th .tag{margin-left:4px}
-.pf-table small{display:block;margin-top:2px;font-size:.6875rem;line-height:1.35;color:var(--muted)}
+.pf-table small{display:block;margin-top:2px;font-size:.75rem;line-height:1.35;color:var(--muted)}
 .pf-group + .pf-group tr:first-child td{border-top:1px solid var(--edge-strong)}
 .pf-row{cursor:pointer;transition:background var(--t-press)}
 @media (hover:hover) and (pointer:fine){.pf-row:hover{background:rgba(255,255,255,.5)}}
@@ -231,7 +231,7 @@ html[data-motion=reduce] .pf-open svg{transition:none}
 .pf-mean-0{stroke:#FFF6E8}.pf-mean-1{stroke:#E3A86B;stroke-dasharray:5 4}
 .pf-err{stroke-width:1.6;stroke-dasharray:none}
 .pf-mean-pt{fill:#15110E;stroke-width:2;stroke-dasharray:none}
-.pf-key{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.6875rem;color:var(--stage-muted);margin-top:4px}
+.pf-key{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.75rem;color:var(--stage-muted);margin-top:4px}
 .pf-key span{display:inline-flex;align-items:center;gap:6px}
 .pf-key i{display:inline-block;flex:none}
 .pf-k-pt,.pf-k-c{width:8px;height:8px;border-radius:50%;border:1.4px solid #FFF6E8}
@@ -271,7 +271,7 @@ html[data-motion=reduce] .pf-open svg{transition:none}
   .pf-table .pf-lim{grid-column:1 / -1;grid-row:4}
   .pf-table .pf-diff small,.pf-table .pf-diff .pf-line{display:inline;margin-right:8px}
   .pf-table .pf-diff .pf-big{margin-right:6px}
-  .pf-table .pf-exp::before,.pf-table .pf-meas::before,.pf-table .pf-diff::before{display:block;font-size:.6875rem;font-weight:700;letter-spacing:.05em;color:var(--muted)}
+  .pf-table .pf-exp::before,.pf-table .pf-meas::before,.pf-table .pf-diff::before{display:block;font-size:.75rem;font-weight:700;letter-spacing:.05em;color:var(--muted)}
   .pf-table .pf-exp::before{content:"EXPECTED · CATALOGUE"}
   .pf-table .pf-meas::before{content:"MEASURED · OBSERVED"}
   .pf-table .pf-diff::before{content:"DIFFERENCE · COMPUTED";display:inline;margin-right:8px}
@@ -282,3 +282,52 @@ html[data-motion=reduce] .pf-open svg{transition:none}
   .pf-table tr.pf-drow[hidden]{display:none}
   .pf-table tr.pf-drow td{display:block;padding:4px 4px 14px}
 }
+
+/* ===== Design review fixes (Sat night). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. ===== */
+/* Help and About sit below "Tonight?" in the phone Pages sheet, quieter than the pages */
+.pg-pages .pg-util{color:var(--ink-2);font-weight:500}
+/* How we know (DESIGN.md 32 as built): table first; "Honest limits" is the widest column, two lines + "more" */
+.pf-table .pf-lim{position:relative;width:31%;min-width:300px;max-width:none;padding-right:52px}
+.pf-table .pf-meas{width:24%;min-width:250px}
+.pf-table .pf-exp{width:15%}
+.pf-table :is(.pf-diff,.pf-ver){width:1%}
+.pf-table .pf-diff small{white-space:nowrap}
+.pf-table .pf-row td{padding:6px 10px}
+.pf-table .pf-line + small{margin-bottom:3px}
+.pf-table .pf-row small{line-height:1.3}
+.pf-obj{min-width:125px}
+@media (min-width:1200px){.pf-lede{max-width:none}}
+.pf-exp,.pf-meas{min-width:150px}
+.pf-lim-t{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.pf-lim-open .pf-lim-t{display:block;-webkit-line-clamp:unset;line-clamp:none}
+.pf-more{position:absolute;right:8px;bottom:8px;display:inline-flex;align-items:center;min-height:24px;padding:0 2px;background:none;border:0;font:600 .75rem var(--font-ui);color:var(--copper);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.pf-more:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+.pf-rules{margin-top:calc(-1 * var(--s2))}
+.pf-method sub{font-size:.75rem}
+@media (max-width:700px){
+  .pf-table .pf-lim{width:auto;min-width:0;padding-right:0}
+  .pf-table :is(.pf-exp,.pf-meas,.pf-diff,.pf-ver){width:auto}
+  .pf-more{position:static;min-height:44px;min-width:44px;padding:0 4px}
+  .key.icon,.chip-k{min-width:44px}
+  .key.icon{width:44px}
+  .pf-method summary{display:inline-flex;align-items:center;min-height:44px;min-width:44px}
+}
+/* Archive on desktop: header on one line, filters in two rows (Season + Band; Detector + Flags + Release + search) */
+.pg-bar .pg-lede-bar{display:none}
+@media (min-width:701px){
+  .pg-head[data-fold]{flex-wrap:nowrap;align-items:baseline;justify-content:flex-start;gap:var(--s4)}
+  .pg-head[data-fold] > div{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px var(--s4);min-width:0}
+  .pg-head[data-fold] .pg-target{margin-top:0}
+  .pg-head[data-fold] > .pg-lede{display:none}
+  .pg-bar .pg-lede-bar{display:block;flex:1 1 0;min-width:0;max-width:none;font-size:.8125rem;line-height:1.35;margin:0 auto 0 var(--s3)}
+  .pg-filters[data-rows]{gap:var(--s2) var(--s4)}
+  .pg-filters[data-rows]::after{content:"";flex-basis:100%;order:2;height:0;margin-top:calc(-1 * var(--s2))}
+  .pg-filters[data-rows] > :is(#fSeasonG,#fBandG){order:1}
+  .pg-filters[data-rows] > .fgroup:not(#fSeasonG,#fBandG){order:3}
+  .pg-filters[data-rows] .chips{gap:5px}
+  .pg-filters[data-rows] .chip-k{padding:0 9px}
+  .pg-filters[data-rows] .fgroup.grow{flex:1 1 160px;max-width:300px}
+}
+/* tokens.css (loaded for the Lab notebook) sets a dark colour scheme; these pages are light, the notebook dialog stays dark */
+:root{color-scheme:light}
+.notebook-dialog{color-scheme:dark}
