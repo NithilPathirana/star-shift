@@ -138,7 +138,7 @@ export async function run(query, settings, { base, fetchFn = fetch, signal, tabl
   const grid = gridFor(target, chosen, settings.fov);
   emit({ type: 'PLANNED', plan: {
     total: all.length, inBand: settings.band === 'all' ? all.length : all.filter(im => String(im.detector) === String(settings.band)).length,
-    planned: chosen.length, grid,
+    planned: chosen.length, grid, mjds: chosen.map(im => im.mjdStart),
     firstDate: all.length ? mjdToDate(all[0].mjdStart) : null, lastDate: all.length ? mjdToDate(all[all.length - 1].mjdStart) : null,
   } });
   if (!chosen.length) return;

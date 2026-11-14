@@ -73,7 +73,7 @@ export async function coverageHTML(ra, dec, { base, signal } = {}) {
 }
 
 export async function neighboursHTML(ra, dec, { radiusArcmin = 3, signal } = {}) {
-  const rows = await simbadCone(ra, dec, radiusArcmin / 60, { limit: 40, signal });
+  const rows = await simbadCone(ra, dec, radiusArcmin / 60, { limit: 400, signal, timeoutMs: 12000 });
   if (!rows.length) return `<p class="muted">No catalogued objects within ${radiusArcmin}′ (SIMBAD).</p>`;
   const list = rows.map(o => ({ ...o, sep: separationArcsec(ra, dec, o.ra, o.dec) })).sort((a, b) => a.sep - b.sep).slice(0, 8);
   return `<ul class="neighbours">${list.map(o => `<li><span>${esc(o.name)}</span> <span class="muted">${esc(otypeName(o.otype))} · ${o.sep < 60 ? o.sep.toFixed(0) + '″' : (o.sep / 60).toFixed(1) + '′'}</span></li>`).join('')}</ul>`;

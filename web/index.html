@@ -1,246 +1,226 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-motion="full" data-glass="glass" data-contrast="normal" data-text="normal">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SPHEREx Time Viewer</title>
-  <meta name="description" content="Type a star name or sky coordinates and watch NASA SPHEREx infrared images of that spot change over time.">
-  <link rel="stylesheet" href="styles/tokens.css">
-  <link rel="stylesheet" href="styles/app.css">
-  <link rel="modulepreload" href="app/main.js">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SPHEREx Sky Viewer</title>
+<meta name="description" content="Type a star name or sky coordinates and watch NASA SPHEREx infrared images of that spot change over time.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/e.css">
+<link rel="stylesheet" href="styles/live.css">
 </head>
 <body>
-  <a class="skip" href="#viewer">Skip to the viewer</a>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="fx"></defs></svg>
 
-  <header class="topbar">
-    <a class="brand" href="./" aria-label="SPHEREx Time Viewer, start page">SPHEREx Time Viewer</a>
-    <form class="search" id="search" role="search" novalidate>
-      <label class="visually-hidden" for="q">Star name or coordinates (RA Dec)</label>
-      <input id="q" name="q" type="search" autocomplete="off" spellcheck="false"
-             placeholder="Star name or RA Dec, e.g. Barnard's Star or 269.45 +4.69"
-             aria-describedby="q-error q-help">
-      <button type="submit" class="btn btn-primary">Show</button>
-      <p id="q-help" class="visually-hidden">Coordinates can be in degrees (269.45 +4.69) or hours and degrees (17 57 48.5 +04 41 36).</p>
-      <p id="q-error" class="field-error" role="alert" hidden></p>
-    </form>
-  </header>
-
-  <nav class="targets" aria-label="NASA test targets">
-    <span class="targets-label">Try:</span>
-    <ul id="target-list" class="target-list"></ul>
+<div class="app" id="app" data-scene="map">
+  <nav class="rail" aria-label="Sections">
+    <span class="logo-slot" title="Logo slot (Kurucharan's logo)"></span>
+    <button class="nav-btn" aria-current="page"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><circle cx="10" cy="10" r="2.5"/></svg>Viewer</button>
+    <button class="nav-btn" id="aboutBtn"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7.5"/><path d="M10 9v5M10 6.2v.1" stroke-linecap="round"/></svg>About</button>
   </nav>
 
-  <main class="layout">
-    <section class="stage" aria-label="Image viewer">
-      <div class="modes segmented" role="radiogroup" aria-label="View">
-        <label><input type="radio" name="mode" value="map" checked> Sky map</label>
-        <label><input type="radio" name="mode" value="film"> Time-lapse</label>
-      </div>
-      <div class="viewer" id="viewer" tabindex="-1">
-        <div id="skymap" class="skymap" hidden></div>
-        <div id="hover-tip" class="hover-tip" role="tooltip" hidden></div>
-        <canvas id="sky" role="img" aria-label="No image yet"></canvas>
-        <div class="overlay-tl" aria-hidden="true">
-          <span class="compass"><span>N ↑</span><span>E ←</span></span>
-        </div>
-        <div class="overlay-br" aria-hidden="true"><span class="scalebar" id="scalebar"><span class="scalebar-line"></span><span class="scalebar-label">1′</span></span></div>
+  <header class="topbar glass hero" id="topbar">
+    <span class="logo-slot top-logo" aria-hidden="true"></span><span class="name">[Tool name]</span>
+    <form class="search" role="search" onsubmit="event.preventDefault();doSearch()">
+      <label class="field well"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="5.5"/><path d="M12 12l4 4"/></svg>
+        <input id="q" aria-label="Star name or sky coordinates" value="" placeholder="Star name, or RA Dec like 269.45 +4.69" autocomplete="off"></label>
+      <button class="key primary" type="submit">Show</button>
+    </form>
+    <div class="picks" role="group" aria-label="Example targets">
+      <button class="key pick" aria-pressed="false">Barnard's Star</button>
+      <button class="key pick">Epsilon Indi B</button>
+      <button class="key pick">WISE 0855</button>
+      <button class="key pick">RW Aurigae</button>
+      <button class="key pick">R Draconis</button>
+    </div>
+    <div class="coords num"><span id="coordTxt"></span>
+      <button class="key copy" id="copyTop" aria-label="Copy coordinates"><svg class="cp" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5"/><path d="M3 10.5V3.5A1 1 0 0 1 4 2.5h6.5"/></svg><svg class="ok" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3.2 3L13 4.5"/></svg></button>
+    </div>
+    <div class="top-actions">
+      <button class="key icon only-sheet" id="infoBtn" aria-label="Image information" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="14" height="14" rx="3"/><path d="M7 8h6M7 12h4"/></svg></button>
+      <button class="key" id="clarityBtn" aria-haspopup="dialog" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="7"/><path d="M10 3v14" /><path d="M10 3a7 7 0 0 1 0 14z" fill="currentColor" stroke="none"/></svg><span class="clar-l">Clarity</span></button>
+      <button class="key icon" id="helpBtn" aria-label="Keyboard shortcuts and help" aria-haspopup="dialog" aria-expanded="false"><span style="font-size:1rem">?</span></button>
+    </div>
+  </header>
 
-        <div class="state" id="state-idle">
-          <h1 class="state-title">See the infrared sky change over time</h1>
-          <p>Type a star name or sky coordinates. You'll see every SPHEREx image of that spot, lined up and played like a short film, so anything that moves or changes stands out.</p>
-          <ul class="target-list" id="idle-targets"></ul>
-        </div>
-        <div class="state" id="state-loading" hidden>
-          <p class="state-title" id="loading-title">Loading…</p>
-          <progress id="loading-progress" max="1" value="0"></progress>
-          <p class="muted" id="loading-detail"></p>
-        </div>
-        <div class="state" id="state-empty" hidden>
-          <p class="state-title">No SPHEREx images here yet</p>
-          <p id="empty-detail">SPHEREx hasn't imaged this spot in the data released so far.</p>
-          <button type="button" class="btn" id="empty-allbands" hidden>Show all wavelength bands</button>
-        </div>
-        <div class="state" id="state-error" hidden>
-          <p class="state-title">Something went wrong</p>
-          <p id="error-detail"></p>
-          <div class="state-actions">
-            <button type="button" class="btn btn-primary" id="error-retry">Try again</button>
-          </div>
+  <main class="stage-wrap">
+    <div class="stage mode-play" id="stage">
+      <div class="screens" id="screens">
+        <div class="pan" id="pan">
+          <div class="screen"><canvas id="cvA" role="img" aria-label="SPHEREx infrared image"></canvas><button class="hit" id="hitStar" aria-label="Star name"></button><button class="hit" id="hitOther" aria-label="Other source"></button><div class="cap num" id="capA"></div></div>
+          <div class="screen"><canvas id="cvB" role="img" aria-label="Second SPHEREx infrared image"></canvas><div class="cap num" id="capB"></div></div>
         </div>
       </div>
-
-      <div class="mapbar" id="mapbar" hidden>
-        <label class="field wl">
-          <span>Wavelength: <output id="wl-out">1.63 µm</output></span>
-          <input type="range" id="wl" min="0" max="101" step="1" value="33" aria-describedby="wl-help">
-        </label>
-        <p id="wl-help" class="muted small">SPHEREx all-sky map (DR1), one of its 102 colours at a time. Drag to pan, scroll or pinch to zoom, click a spot for details. Hover a marked object to see its name.</p>
-        <button type="button" class="btn btn-primary" id="map-film">Watch the centre over time</button>
+      <div class="map-layer" id="mapLayer">
+        <div id="mapWrap" tabindex="0" role="application" aria-label="Sky map. Drag or use arrow keys to pan, plus and minus to zoom, Enter to play the selected patch">
+          
+        </div>
+        <div id="pins"></div>
+        <div class="sel" id="sel"><span>Selected patch</span></div>
+        <div class="reticle" aria-hidden="true"></div>
+        <div class="map-read num" id="mapRead"></div>
+        <p class="map-ph" id="mapCredit">SPHEREx DR1 all-sky map (IRSA HiPS) at <span id="mapWl">1.63 µm</span>. Rings: named objects from SIMBAD.</p>
       </div>
-
-      <section class="details card" id="details" aria-labelledby="details-h" hidden>
-        <div class="details-head">
-          <h2 id="details-h" class="card-title">Coordinate details</h2>
-          <button type="button" class="btn icon" id="details-close" aria-label="Close details">×</button>
-        </div>
-        <div id="d-static"></div>
-        <h3 class="card-subtitle">SPHEREx coverage</h3>
-        <div id="d-cov" aria-live="polite"></div>
-        <h3 class="card-subtitle">Nearby catalogued objects</h3>
-        <div id="d-near" aria-live="polite"></div>
-        <h3 class="card-subtitle">From your location</h3>
-        <div id="d-obs"></div>
-        <div class="obs-controls" id="obs-controls">
-          <button type="button" class="btn" id="obs-geo">Use my location</button>
-          <form id="obs-form" class="obs-form">
-            <label class="visually-hidden" for="obs-input">Latitude, longitude</label>
-            <input id="obs-input" placeholder="Lat, long e.g. 6.93, 79.85" autocomplete="off">
-            <button type="submit" class="btn">Set</button>
-          </form>
-          <p class="muted small" id="obs-msg">Optional. Your location is only used for the maths on this page; it is never saved or sent anywhere.</p>
-        </div>
-        <button type="button" class="btn btn-primary" id="details-film">Watch this spot over time</button>
-      </section>
-
-      <div class="player" id="player" aria-label="Playback controls">
-        <div class="player-row">
-          <button type="button" class="btn icon" id="prev" aria-label="Previous frame" aria-keyshortcuts="ArrowLeft">◀︎</button>
-          <button type="button" class="btn icon btn-primary" id="play" aria-label="Play" aria-keyshortcuts="Space">▶︎</button>
-          <button type="button" class="btn icon" id="next" aria-label="Next frame" aria-keyshortcuts="ArrowRight">▶︎▏</button>
-          <div class="when" aria-live="off">
-            <span class="when-date" id="when-date">—</span>
-            <span class="when-count muted" id="when-count"></span>
-          </div>
-          <label class="speed">
-            <span class="visually-hidden">Speed</span>
-            <select id="speed">
-              <option value="1">1 fps</option>
-              <option value="2">2 fps</option>
-              <option value="4">4 fps</option>
-              <option value="8">8 fps</option>
-            </select>
-          </label>
-        </div>
-        <label class="scrub">
-          <span class="visually-hidden">Time</span>
-          <input type="range" id="scrub" min="0" max="0" step="1" value="0">
-        </label>
-        <div class="scrub-ends muted" aria-hidden="true"><span id="date-first"></span><span id="date-last"></span></div>
-        <div class="segmented" role="radiogroup" aria-label="View">
-          <label><input type="radio" name="view" value="frames" checked> Single frames</label>
-          <label><input type="radio" name="view" value="stacks"> Season stacks</label>
-        </div>
-        <p class="keys muted">Keys: <kbd>Space</kbd> play/pause · <kbd>←</kbd><kbd>→</kbd> step · <kbd>Home</kbd><kbd>End</kbd></p>
+      <div class="chip num" id="chip"></div>
+      <span class="flag" id="flag"></span>
+      <div class="tools glass" id="tools" role="toolbar" aria-label="Tools" aria-orientation="vertical">
+        <button class="glass-btn" id="mapBack" aria-label="Back to the sky map (M)" title="Back to the sky map (M)"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2.5 5l5-2 5 2 5-2v12l-5 2-5-2-5 2z"/><path d="M7.5 3v12M12.5 5v12"/></svg></button>
+        <button class="glass-btn" id="zin" aria-label="Zoom in"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="9" r="5.5"/><path d="M13 13l4 4M9 6.5v5M6.5 9h5"/></svg></button>
+        <button class="glass-btn" id="zout" aria-label="Zoom out"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="9" r="5.5"/><path d="M13 13l4 4M6.5 9h5"/></svg></button>
+        <button class="glass-btn" id="zfit" aria-label="Fit image"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/></svg></button>
+        <span class="zoomlvl num" id="zlvl">fit</span>
+        <hr>
+        <button class="glass-btn" id="bandTool" aria-label="IR band ranges" title="IR band ranges" aria-haspopup="dialog" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 14h16"/><rect x="3" y="7" width="5" height="4" rx="1.2"/><rect x="10" y="5" width="7" height="4" rx="1.2"/><path d="M5 14v2M10 14v2M15 14v2"/></svg></button>
+        <button class="glass-btn" id="ringTool" aria-label="Predicted position ring" aria-pressed="true"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="3 2.2"><circle cx="10" cy="10" r="6.5"/></svg></button>
       </div>
-      <p class="status" id="status" role="status" aria-live="polite"></p>
-    </section>
+      <svg class="compass" width="40" height="40" viewBox="0 0 44 44" aria-label="North up, east left"><path d="M34 34V10M34 34H10" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M34 6l-3 6h6zM6 34l6-3v6z" fill="currentColor"/><text x="38" y="12" fill="currentColor" font-size="11">N</text><text x="4" y="28" fill="currentColor" font-size="11">E</text></svg>
+      <div class="scalebar num"><i id="sbar"></i>30″</div>
+      <div class="loading-thin" id="thin" hidden><i id="thinBar"></i><div class="thin-rk" id="thinRk" aria-hidden="true"><svg viewBox="0 0 72 48" width="34" height="22"><g class="bob"><path d="M10 30 C 22 22, 46 20, 62 27 C 66 29, 66 31, 62 33 C 46 40, 22 38, 10 30 Z" fill="#E9E2D8" stroke="#6b5d50" stroke-width="2"/>
+<path d="M14 24 L 6 18 L 20 26 Z M14 36 L 6 42 L 20 34 Z" fill="#C27A43"/>
+<circle cx="34" cy="13" r="5" fill="#B5A898"/><path d="M29 25 C 29 18, 39 18, 39 25 Z" fill="#B5A898"/></g></svg></div></div>
 
-    <aside class="panel">
-      <section class="card" aria-labelledby="info-h">
-        <h2 id="info-h" class="card-title">This spot</h2>
-        <dl class="facts" id="facts">
-          <dt>Target</dt><dd id="f-name">—</dd>
-          <dt>Position</dt><dd id="f-pos">—</dd>
-          <dt>Motion</dt><dd id="f-motion">—</dd>
-          <dt>Measured here</dt><dd id="f-measured">—</dd>
-          <dt>Speed across sky</dt><dd id="f-vt">—</dd>
-          <dt>Radial velocity</dt><dd id="f-rv">—</dd>
-          <dt>SPHEREx images</dt><dd id="f-images">—</dd>
-        </dl>
-        <p class="hint" id="f-hint" hidden></p>
-        <h3 class="card-subtitle">This frame</h3>
-        <dl class="facts" id="frame-facts">
-          <dt>Taken</dt><dd id="g-date">—</dd>
-          <dt>Wavelength</dt><dd id="g-wave">—</dd>
-          <dt>Detector</dt><dd id="g-det">—</dd>
-        </dl>
-        <details class="more">
-          <summary>More detail</summary>
-          <dl class="facts" id="expert-facts">
-            <dt>Observation</dt><dd id="g-obs">—</dd>
-            <dt>Masked pixels</dt><dd id="g-mask">—</dd>
-            <dt>Pipeline</dt><dd id="g-ver">—</dd>
-            <dt>Grid</dt><dd id="g-grid">—</dd>
-          </dl>
-        </details>
-      </section>
-
-      <section class="card" id="bands-card" aria-labelledby="bands-h">
-        <h2 id="bands-h" class="card-title">Colour bands</h2>
-        <label class="switch"><input type="checkbox" id="bands-on"> Show the map in my colour bands</label>
-        <p class="muted small">SPHEREx sees 0.75–5.01 µm in 102 colours. Each band adds up the colours in its range and paints them in the colour you choose. Saved in this browser only.</p>
-        <ul class="band-list" id="band-list"></ul>
-        <form id="band-form" class="band-form" novalidate>
-          <p class="band-form-title" id="band-form-title">Add a band</p>
-          <label class="field"><span>Name</span><input name="name" maxlength="40" autocomplete="off" placeholder="e.g. Warm dust"></label>
-          <div class="band-range">
-            <label class="field"><span>From (µm)</span><input name="min" inputmode="decimal" autocomplete="off" placeholder="0.75"></label>
-            <label class="field"><span>To (µm)</span><input name="max" inputmode="decimal" autocomplete="off" placeholder="5.00"></label>
-            <label class="field"><span>Colour</span><input name="color" type="color" value="#ffb347"></label>
-          </div>
-          <p class="field-error" id="band-error" role="alert" hidden></p>
-          <div class="state-actions">
-            <button type="submit" class="btn btn-primary" id="band-save">Add band</button>
-            <button type="button" class="btn" id="band-cancel" hidden>Cancel</button>
-            <button type="button" class="btn" id="band-reset">Reset to defaults</button>
-          </div>
-        </form>
-      </section>
-
-      <section class="card" aria-labelledby="set-h">
-        <h2 id="set-h" class="card-title">Display</h2>
-        <form id="settings" class="settings">
-          <fieldset class="segmented" role="radiogroup">
-            <legend>Field of view</legend>
-            <label><input type="radio" name="fov" value="3"> 3′</label>
-            <label><input type="radio" name="fov" value="10" checked> 10′</label>
-            <label><input type="radio" name="fov" value="20"> 20′</label>
-          </fieldset>
-          <label class="field">
-            <span>Wavelength band</span>
-            <select name="band" id="band">
-              <option value="all">All bands (0.75–5 µm)</option>
-              <option value="1">Band 1 · 0.75–1.09 µm</option>
-              <option value="2">Band 2 · 1.10–1.62 µm</option>
-              <option value="3">Band 3 · 1.63–2.41 µm</option>
-              <option value="4">Band 4 · 2.42–3.82 µm</option>
-              <option value="5">Band 5 · 3.83–4.41 µm</option>
-              <option value="6">Band 6 · 4.42–5.00 µm</option>
-            </select>
-          </label>
-          <fieldset class="segmented" role="radiogroup">
-            <legend>Brightness scale</legend>
-            <label><input type="radio" name="stretch" value="linear"> Linear</label>
-            <label><input type="radio" name="stretch" value="asinh" checked> Asinh</label>
-            <label><input type="radio" name="stretch" value="log"> Log</label>
-          </fieldset>
-          <fieldset class="segmented" role="radiogroup">
-            <legend>Pixels</legend>
-            <label><input type="radio" name="pixels" value="smooth" checked> Smooth</label>
-            <label><input type="radio" name="pixels" value="true"> True pixels</label>
-          </fieldset>
-          <fieldset class="segmented" role="radiogroup">
-            <legend>Frames to load</legend>
-            <label><input type="radio" name="max" value="60"> 60</label>
-            <label><input type="radio" name="max" value="120" checked> 120</label>
-            <label><input type="radio" name="max" value="0"> All</label>
-          </fieldset>
-          <button type="button" class="btn" id="copy-link">Copy link to this view</button>
-        </form>
-      </section>
-    </aside>
+      <div class="state" id="stLoading" hidden aria-live="polite">
+        <div style="width:100%"><h2 id="lTitle">Finding images</h2>
+          <p>Asking the NASA archive (IRSA). It can be slow; you can play the images as soon as a few arrive.</p>
+          <div class="rk-track" aria-hidden="true"><div class="rk-rail"></div><div class="rk-fill" id="rkFill"></div>
+            <div class="rk" id="rk"><svg viewBox="0 0 72 48"><g class="bob"><path d="M10 30 C 22 22, 46 20, 62 27 C 66 29, 66 31, 62 33 C 46 40, 22 38, 10 30 Z" fill="#E9E2D8" stroke="#6b5d50" stroke-width="1.2"/>
+<path d="M14 24 L 6 18 L 20 26 Z M14 36 L 6 42 L 20 34 Z" fill="#C27A43" stroke="#6b5d50" stroke-width="1"/>
+<circle cx="50" cy="30" r="3.4" fill="#2A231E" stroke="#6b5d50" stroke-width="1"/>
+<path d="M10 27 L 2 30 L 10 33" fill="none" stroke="#E3A86B" stroke-width="2" stroke-linecap="round"/>
+<circle cx="33" cy="9.5" r="4.4" fill="#CFC3B3"/><path d="M29 25 C 28.5 18, 31 15, 34 15 C 37 15, 38.5 18, 38 24 Z" fill="#CFC3B3"/><path d="M37 17.5 L 46 11.5" stroke="#CFC3B3" stroke-width="2.6" stroke-linecap="round"/><path d="M30 23 L 26 28" stroke="#CFC3B3" stroke-width="2.6" stroke-linecap="round"/>
+<rect x="0.5" y="0.5" width="71" height="47" rx="6" fill="none" stroke="#B5A898" stroke-dasharray="3 3" stroke-width="1"/>
+<text x="69" y="45.5" text-anchor="end" font-size="5.2" font-family="IBM Plex Mono, monospace" fill="#EDE5DA">AI-generated</text></g></svg></div></div>
+          <div class="rk-count" id="lcount"><b>0</b> images loaded</div>
+          <div class="retry-bar" id="retryBar"><span id="retryTxt">IRSA is slow. Trying again in 5 s</span><button class="key" id="retryNow">Retry now</button></div>
+          <div class="arrive" id="arrive"></div>
+          <p class="rk-slot">Character art: Kurucharan / pending. Placeholder silhouette shown.</p></div>
+      </div>
+      <div class="state error" id="stError" hidden role="alert">
+        <div><h2>The NASA archive (IRSA) isn't answering</h2>
+          <p id="errTxt">Some images arrived and are kept. Retry fetches only the missing ones.</p>
+          <div class="row"><button class="key primary" id="retry">Retry</button><button class="key" id="useLoaded">View the images that arrived</button></div></div>
+      </div>
+      <div class="state" id="stEmpty" hidden>
+        <div><h2>No SPHEREx images cover this spot</h2>
+          <p id="emptyTxt">SPHEREx has no images of this exact spot in the data released so far. Check the numbers, or try one of the examples above.</p></div>
+      </div>
+    </div>
   </main>
 
-  <p class="offline" id="offline" role="status" hidden>You're offline. Targets you've opened before still work; new ones need the internet.</p>
+  <aside class="inspector glass hero" id="insp" aria-label="Image information">
+    <button class="key icon sheet-close" id="inspClose" aria-label="Close information">✕</button>
+    <div class="map-only" id="cdPanel" aria-label="Coordinate details">
+      <section class="insp-sec">
+        <div class="cd-head"><div><div class="cd-name" id="cdName"></div><div class="cd-sub" id="cdSub"></div></div></div>
+        <button class="key primary cd-play" id="cdPlay">Play this patch over time</button>
+      </section>
+      <section class="insp-sec"><div class="cd-group">Position</div><div id="cdPos"></div></section>
+      <section class="insp-sec"><div class="cd-group">SPHEREx coverage</div><div id="cdCov"></div></section>
+      <section class="insp-sec"><div class="cd-group">Motion</div><div id="cdMot"></div></section>
+      <section class="insp-sec"><div class="cd-group">Nearby objects</div><div id="cdNear"></div></section>
+      <section class="insp-sec">
+        <div class="cd-group">Observer</div>
+        <div class="obs-row"><span id="obsLbl">Use my location for alt/az and rise/set</span><button class="switch well" role="switch" aria-checked="false" id="obsSw" aria-labelledby="obsLbl"><i></i></button></div>
+        <p class="priv"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>Your location stays in your browser. It is never sent or saved anywhere.</p>
+        <div class="obs-body" id="obsBody" hidden></div>
+      </section>
+      <section class="insp-sec"><p class="credit">Tags: <b>observed</b> = from SPHEREx images · <b>computed</b> = worked out here · <b>catalogue</b> = from star catalogues (SIMBAD).</p></section>
+    </div>
+    <div class="viewer-only">
+    <section class="insp-sec">
+      <div class="target" id="tName">—</div>
+      <dl style="margin-top:8px"><dt>RA</dt><dd id="ra"></dd><dt>Dec</dt><dd id="dec"></dd></dl>
+      <button class="key copy" id="copyInsp" style="margin-top:10px"><svg class="cp" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5"/><path d="M3 10.5V3.5A1 1 0 0 1 4 2.5h6.5"/></svg><svg class="ok" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3.2 3L13 4.5"/></svg><span class="copy-l">Copy coordinates</span></button>
+    </section>
+    <section class="insp-sec">
+      <div class="ih"><h3 id="ihead">This image</h3><span class="tag tag-obs">Observed</span></div>
+      <dl><dt>Date</dt><dd id="d-date"></dd><dt>Time</dt><dd id="d-time"></dd><dt>Detector</dt><dd id="d-det"></dd><dt>Wavelength</dt><dd id="d-um"></dd><dt>No-data pixels</dt><dd id="d-mask"></dd></dl>
+    </section>
+    <section class="insp-sec">
+      <div class="ih"><h3>Where it should be</h3><span class="tag tag-calc">Computed</span></div>
+      <p class="note">The dashed ring is worked out from the star's catalogue motion for this date.</p>
+      <div class="ring-row"><span><i class="ring-key"></i>Show ring</span><button class="switch well" role="switch" aria-checked="true" id="ringSw" aria-label="Show predicted position ring"><i></i></button></div>
+    </section>
+    <section class="insp-sec">
+      <details><summary>More detail</summary>
+        <dl><dt>Images</dt><dd id="d-n">—</dd><dt>MJD</dt><dd id="d-mjd"></dd><dt>Pixel size</dt><dd>6.15″</dd><dt>Measured motion</dt><dd id="d-meas">—</dd><dt>Field</dt><dd id="d-field">150″ · north up</dd><dt>Stretch</dt><dd id="d-str">asinh 2–99.7%</dd></dl>
+      </details>
+      <p class="credit" style="margin-top:12px">Images: NASA SPHEREx via the NASA/IPAC Infrared Science Archive (IRSA), DOIs <a href="https://doi.org/10.26131/IRSA652">10.26131/IRSA652</a>, <a href="https://doi.org/10.26131/IRSA662">10.26131/IRSA662</a>. Names and motions: SIMBAD (CDS, Harvard mirror). All code, including the UI sounds, was written by an AI model (Claude, by Anthropic) under team Proper Motion's direction. Not an official NASA site.</p>
+    </section>
+    </div>
+  </aside>
 
-  <footer class="footer">
-    <p>Images: NASA SPHEREx, from the NASA/IPAC Infrared Science Archive (IRSA), Caltech/IPAC —
-      DOIs <a href="https://doi.org/10.26131/IRSA652">10.26131/IRSA652</a> (QR2),
-      <a href="https://doi.org/10.26131/IRSA662">10.26131/IRSA662</a> (QR3).
-      Star names and motions: SIMBAD (CDS; Harvard mirror). Gaia DR3 (ESA).</p>
-    <p>Built by team Proper Motion for the NASA Space Apps Challenge 2026. <strong>All code on this site was written by an AI model (Claude, by Anthropic)</strong> under the team's direction. Not an official NASA site.</p>
+  <footer class="dock glass hero" id="dock" aria-label="Controls">
+    <div class="map-dock map-only">
+      <div class="rd"><span>Cursor</span><b id="mdCursor">–</b></div>
+      <div class="rd"><span>Field of view</span><b id="mdFov">–</b></div>
+      <div class="rd"><span>Selected</span><b id="mdSel">–</b></div>
+      <label class="rd wl-rd"><span>Map colour · <b id="wlOut">1.63 µm</b></span><input type="range" id="wl" min="0" max="101" step="1" value="33" aria-label="Sky map wavelength"></label>
+      <span class="grow"></span>
+      <button class="key primary" id="mdPlay">Play this patch over time</button>
+    </div>
+    <div class="transport viewer-only">
+      <button class="key icon" id="prev" aria-label="Previous image"><svg width="16" height="16" viewBox="0 0 20 20"><path d="M6 4v12M16 4l-8 6 8 6z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+      <button class="knob" id="play" aria-label="Play"><svg width="20" height="20" viewBox="0 0 20 20" id="pi"><path d="M6 4l10 6-10 6z" fill="currentColor"/></svg></button>
+      <button class="key icon" id="next" aria-label="Next image"><svg width="16" height="16" viewBox="0 0 20 20"><path d="M14 4v12M4 4l8 6-8 6z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+      <span class="counter num" id="counter"></span>
+    </div>
+    <div class="viewer-only tl">
+      <div class="tl-head"><span id="seasonLbl"></span><span class="num" id="tlDate"></span></div>
+      <div class="track well" id="track" role="slider" tabindex="0" aria-label="Image date" aria-valuemin="1" aria-valuemax="60"></div>
+      <div class="tl-labels num" id="tlLabels"></div>
+    </div>
+    <div class="viewer-only group view"><span class="group-l">View</span>
+      <div class="seg well" role="group" aria-label="View" id="viewSeg"><span class="seg-thumb"></span><button class="seg-btn" data-mode="play" aria-pressed="true">Time</button><button class="seg-btn" data-mode="compare" aria-pressed="false">Compare</button><button class="seg-btn" data-mode="blink" aria-pressed="false">Blink</button></div></div>
+    <div class="viewer-only group speed"><span class="group-l">Speed</span>
+      <div class="seg well" role="group" aria-label="Speed" id="speedSeg"><span class="seg-thumb"></span><button class="seg-btn" data-fps="2" aria-pressed="false">Slow</button><button class="seg-btn" data-fps="4" aria-pressed="true">Normal</button><button class="seg-btn" data-fps="8" aria-pressed="false">Fast</button></div></div>
+    <div class="viewer-only group layer-group"><span class="group-l layers-l">Layers</span>
+      <div class="layers"><button class="key" aria-pressed="true" disabled title="The image is always shown">IMAGE</button><button class="key" id="flagsBtn" aria-pressed="true" title="Show pixels the archive flagged as unusable">FLAGS</button></div></div>
   </footer>
+</div>
 
-  <script type="module" src="app/main.js"></script>
+<div class="pop glass" id="clarity" role="dialog" aria-label="Clarity and accessibility" hidden>
+  <h2>Clarity</h2>
+  <h3>Comfort</h3>
+  <div class="opt"><span>Reduce motion<small>No springs, glare or number ticking</small></span><button class="switch well" role="switch" data-set="motion" aria-checked="false" aria-label="Reduce motion"><i></i></button></div>
+  <div class="opt"><span>Reduce transparency<small>Glass becomes solid</small></span><button class="switch well" role="switch" data-set="glass" aria-checked="false" aria-label="Reduce transparency"><i></i></button></div>
+  <div class="opt"><span>Increase contrast</span><button class="switch well" role="switch" data-set="contrast" aria-checked="false" aria-label="Increase contrast"><i></i></button></div>
+  <div class="opt"><span>Larger text</span><button class="switch well" role="switch" data-set="text" aria-checked="false" aria-label="Larger text"><i></i></button></div>
+  <div class="opt"><span>Sound<small>Quiet clicks and ticks</small></span><button class="switch well" role="switch" data-set="sound" aria-checked="true" aria-label="Sound"><i></i></button></div>
+  <h3>Image</h3>
+  <div class="opt" style="display:block"><span>Brightness stretch</span>
+    <div class="seg well" role="group" aria-label="Brightness stretch" id="strSeg" style="margin-top:6px"><span class="seg-thumb"></span><button class="seg-btn" data-str="auto" aria-pressed="true">Auto</button><button class="seg-btn" data-str="linear" aria-pressed="false">Linear</button><button class="seg-btn" data-str="strong" aria-pressed="false">Strong</button></div></div>
+  <div class="opt" style="display:block;margin-top:8px"><span>Colour scale</span>
+    <div class="seg well" role="group" aria-label="Colour scale" id="rampSeg" style="margin-top:6px"><span class="seg-thumb"></span><button class="seg-btn" data-ramp="copper" aria-pressed="true">Copper</button><button class="seg-btn" data-ramp="neutral" aria-pressed="false">Grey</button></div></div>
+  <div class="opt" style="margin-top:8px"><span>Show no-data hatching</span><button class="switch well" role="switch" data-set="hatch" aria-checked="true" aria-label="Show no-data hatching"><i></i></button></div>
+  <div class="opt"><span>Show predicted-position ring</span><button class="switch well" role="switch" data-set="ring" aria-checked="true" aria-label="Show predicted-position ring"><i></i></button></div>
+  <p class="foot">Starts from your system settings. Choices are remembered on this device.</p>
+</div>
+
+<div class="pop glass wide" id="bands" role="dialog" aria-label="IR band ranges" hidden>
+  <h2>IR band ranges</h2>
+  <p class="be-sub">Name and colour your own wavelength ranges. SPHEREx covers 0.744–5.002 µm with 6 detectors (102 channels, 17 each). Dashed boxes show each detector's span.</p>
+  <div class="ruler" id="ruler"><div class="det-row" id="detRow"></div><div class="scale-row" id="scaleRow"></div><div class="lanes" id="lanes"></div></div>
+  <div class="rows" id="rows"></div>
+  <div class="be-actions"><button class="key" id="addRange">+ Add range</button><button class="key" id="resetRanges">Reset to defaults</button></div>
+  <div class="opt be-map"><span>Paint the sky map in these ranges<small>Each range adds up the SPHEREx colours inside it</small></span><button class="switch well" role="switch" aria-checked="false" id="mapBandsSw" aria-label="Paint the sky map in these ranges"><i></i></button></div>
+  <p class="be-note">Defaults are placeholders (Default 1–6 follow the detector spans) until the team sends names and colours. Ranges colour the timeline ticks, the wavelength chip and (if switched on) the sky map. Saved in this browser only.</p>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+<div class="pop glass" id="help" role="dialog" aria-label="Help" hidden>
+  <h2>Shortcuts</h2>
+  <div class="keys" style="margin-top:10px"><kbd>Space</kbd><span>Play or pause</span><kbd>←</kbd><span>Previous image</span><kbd>→</kbd><span>Next image</span><kbd>T</kbd><span>Time view</span><kbd>C</kbd><span>Compare first and last season</span><kbd>B</kbd><span>Blink the two seasons</span><kbd>M</kbd><span>Back to the sky map</span><kbd>+ −</kbd><span>Zoom the sky map</span><kbd>Enter</kbd><span>Play the selected patch (map)</span><kbd>?</kbd><span>This help</span><kbd>Esc</kbd><span>Close panels</span></div>
+  <h3>About the data</h3>
+  <p class="note">Each image is a 150″ cutout of SPHEREx infrared data from IRSA, lined up north up, 6.15″ per pixel. Hatched squares are pixels the archive flagged as unusable. SPHEREx images each detector at a different wavelength, so brightness changes between images mix wavelength and time.</p>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="toast glass" id="toast" role="status"></div>
+<div class="sr-only" aria-live="polite" id="live"></div>
+
+<script src="app/erender.js"></script>
+<script type="module" src="app/ui.js"></script>
 </body>
 </html>

@@ -407,7 +407,7 @@ async function openDetails(ra, dec, fovDeg) {
   coverageHTML(ra, dec, { base: BASE, signal }).then(h => { if (!signal.aborted) $('d-cov').innerHTML = h; })
     .catch(() => { if (!signal.aborted) $('d-cov').innerHTML = '<p class="muted">IRSA did not answer. Try again in a moment.</p>'; });
   neighboursHTML(ra, dec, { signal }).then(h => { if (!signal.aborted) $('d-near').innerHTML = h; })
-    .catch(() => { if (!signal.aborted) $('d-near').innerHTML = '<p class="muted">SIMBAD did not answer.</p>'; });
+    .catch(() => { if (!signal.aborted) $('d-near').innerHTML = '<p class="muted">SIMBAD (the star catalogue) did not answer within 12 seconds. Close and click the spot again to retry.</p>'; });
 }
 $('details-close').addEventListener('click', () => { $('details').hidden = true; detailsCtl?.abort(); });
 $('details-film').addEventListener('click', () => detailsAt && filmAt(detailsAt.ra, detailsAt.dec));

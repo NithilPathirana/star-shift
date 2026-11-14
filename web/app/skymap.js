@@ -26,14 +26,20 @@ const OTYPE = {
 export function otypeName(code) { return OTYPE[code] || code || 'Object'; }
 
 // Named objects in a circle, most-studied first (SIMBAD Harvard mirror; CORS allowed).
-export async function simbadCone(ra, dec, radiusDeg, { limit = 200, fetchFn = fetch, signal } = {}) {
-  const adql = `SELECT TOP ${limit | 0} main_id, ra, dec, otype, nbref FROM basic
-    WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', ${+ra}, ${+dec}, ${+radiusDeg})) AND ra IS NOT NULL
-    ORDER BY nbref DESC`.replace(/\s+/g, ' ');
+// Sorting is done here: "ORDER BY nbref" inside a cone search takes ~18 s on the mirror
+// (0.9 s without it, checked 14 Nov 2026). Gives up after `timeoutMs`.
+export async function simbadCone(ra, dec, radiusDeg, { limit = 200, fetchFn = fetch, signal, timeoutMs = 12000 } = {}) {
+  const adql = `SELECT TOP 2000 main_id, ra, dec, otype, nbref FROM basic
+    WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', ${+ra}, ${+dec}, ${+radiusDeg}))`.replace(/\s+/g, ' ');
   const url = `${SIMBAD_TAP}?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=${encodeURIComponent(adql)}`;
-  const res = await fetchFn(url, { signal });
+  const timeout = AbortSignal.timeout(timeoutMs);
+  const res = await fetchFn(url, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
   if (!res.ok) throw new Error('SIMBAD HTTP ' + res.status);
-  return parseCSV(await res.text()).map(r => ({ name: r.main_id.replace(/^NAME /, ''), ra: +r.ra, dec: +r.dec, otype: r.otype, refs: +r.nbref || 0 }));
+  return parseCSV(await res.text())
+    .filter(r => r.ra !== '' && r.dec !== '')
+    .map(r => ({ name: r.main_id.replace(/^NAME /, ''), ra: +r.ra, dec: +r.dec, otype: r.otype, refs: +r.nbref || 0 }))
+    .sort((a, b) => b.refs - a.refs)
+    .slice(0, limit);
 }
 
 const HIDE = { showReticle: true, showZoomControl: false, showFullscreenControl: false, showLayersControl: false, showGotoControl: false,
@@ -41,8 +47,8 @@ const HIDE = { showReticle: true, showZoomControl: false, showFullscreenControl:
   showSimbadPointerControl: false, showSettingsControl: false, showCooLocation: false, showFov: false, showContextMenu: false, showStatusBar: false };
 
 export class SkyMap {
-  constructor(el, { onClick, onHover, onMove } = {}) {
-    this.el = el; this.onClick = onClick; this.onHover = onHover; this.onMove = onMove;
+  constructor(el, { onClick, onHover, onMove, onView } = {}) {
+    this.el = el; this.onClick = onClick; this.onHover = onHover; this.onMove = onMove; this.onView = onView;
     this.channel = 33; // 1.63 µm: stars bright, low noise
     this.ready = null; this.names = null; this.namesKey = ''; this.bandLayers = [];
   }
@@ -64,8 +70,8 @@ export class SkyMap {
       this.aladin.on('objectHoveredStop', () => this.onHover?.(null));
       let t = null;
       const moved = () => { clearTimeout(t); t = setTimeout(() => { this.refreshNames(); this.onMove?.(this.center(), this.fov()); }, 350); };
-      this.aladin.on('positionChanged', moved);
-      this.aladin.on('zoomChanged', moved);
+      this.aladin.on('positionChanged', () => { this.onView?.(); moved(); });
+      this.aladin.on('zoomChanged', () => { this.onView?.(); moved(); });
       moved();
       if (this.pendingBands) { const b = this.pendingBands; this.pendingBands = null; this.setBands(b); }
     })();
@@ -73,6 +79,13 @@ export class SkyMap {
   }
 
   center() { const [ra, dec] = this.aladin.getRaDec(); return { ra, dec }; }
+  toPix(ra, dec) { try { const p = this.aladin.world2pix(ra, dec); return p && Number.isFinite(p[0]) ? p : null; } catch { return null; } }
+  toWorld(x, y) { try { const w = this.aladin.pix2world(x, y); return w && Number.isFinite(w[0]) ? w : null; } catch { return null; } }
+  setFov(deg) { this.aladin.setFoV(Math.min(180, Math.max(0.01, deg))); }
+  panBy(fx, fy) { // fractions of the view; +x = towards east (left on screen), +y = north
+    const { ra, dec } = this.center(), f = this.fov();
+    this.aladin.gotoRaDec(((ra + fx * f / Math.max(0.2, Math.cos(dec * Math.PI / 180))) % 360 + 360) % 360, Math.max(-89.9, Math.min(89.9, dec + fy * f)));
+  }
   fov() { return this.aladin.getFov()[0]; }
 
   goTo(ra, dec, fovDeg) {

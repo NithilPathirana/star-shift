@@ -1,0 +1,14 @@
+/* Live-site additions on top of e.css: the Aladin sky map inside the flat stage, the map
+   wavelength slider, and the band-map switch. Same tokens as DESIGN.md.
+   AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+#mapWrap .aladin-container, #mapWrap > div { position: absolute !important; inset: 0; width: 100%; height: 100%; }
+#mapWrap { background: var(--stage); border-radius: var(--r-shell); overflow: hidden; }
+#mapWrap .aladin-logo-container, #mapWrap .aladin-status-bar, #mapWrap .aladin-location, #mapWrap .aladin-fov,
+#mapWrap .aladin-widgets-toolbar, #mapWrap .aladin-reticle { display: none !important; }
+.wl-rd { min-width: 180px; }
+.wl-rd input { width: 100%; accent-color: var(--copper); }
+.be-map { margin-top: 14px; }
+.cd-row .cd-v a { color: var(--copper); }
+.quiet.err { color: var(--coral); }
+@media (max-width: 1099px) { .wl-rd { min-width: 0; } }
+@media (max-width: 699px) { .map-dock { flex-wrap: wrap; } .wl-rd { flex: 1 1 100%; order: 5; } .map-dock .rd { min-width: 0; } }
