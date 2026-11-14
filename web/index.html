@@ -165,6 +165,28 @@
         </details>
       </section>
 
+      <section class="card" id="bands-card" aria-labelledby="bands-h">
+        <h2 id="bands-h" class="card-title">Colour bands</h2>
+        <label class="switch"><input type="checkbox" id="bands-on"> Show the map in my colour bands</label>
+        <p class="muted small">SPHEREx sees 0.75–5.01 µm in 102 colours. Each band adds up the colours in its range and paints them in the colour you choose. Saved in this browser only.</p>
+        <ul class="band-list" id="band-list"></ul>
+        <form id="band-form" class="band-form" novalidate>
+          <p class="band-form-title" id="band-form-title">Add a band</p>
+          <label class="field"><span>Name</span><input name="name" maxlength="40" autocomplete="off" placeholder="e.g. Warm dust"></label>
+          <div class="band-range">
+            <label class="field"><span>From (µm)</span><input name="min" inputmode="decimal" autocomplete="off" placeholder="0.75"></label>
+            <label class="field"><span>To (µm)</span><input name="max" inputmode="decimal" autocomplete="off" placeholder="5.00"></label>
+            <label class="field"><span>Colour</span><input name="color" type="color" value="#ffb347"></label>
+          </div>
+          <p class="field-error" id="band-error" role="alert" hidden></p>
+          <div class="state-actions">
+            <button type="submit" class="btn btn-primary" id="band-save">Add band</button>
+            <button type="button" class="btn" id="band-cancel" hidden>Cancel</button>
+            <button type="button" class="btn" id="band-reset">Reset to defaults</button>
+          </div>
+        </form>
+      </section>
+
       <section class="card" aria-labelledby="set-h">
         <h2 id="set-h" class="card-title">Display</h2>
         <form id="settings" class="settings">

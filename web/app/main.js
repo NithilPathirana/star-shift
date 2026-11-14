@@ -7,6 +7,7 @@ import { run, buildStacks, BANDS, resolveTarget, measureMotion, tangentialVeloci
 import { SkyMap, CHANNEL_UM } from './skymap.js';
 import { staticDetails, coverageHTML, neighboursHTML, observerHTML, setObserver, parseLatLon } from './details.js';
 import { propagate } from '../core/motion.js';
+import { loadBands, saveBands, resetBands, validateBand, BandError, layersFor, channelsFor, detectorsFor } from './bands.js';
 import { gridToWorld } from '../core/align.js';
 import { drawFrame } from './render.js';
 import { PRESETS, findPreset } from './presets.js';
@@ -152,6 +153,7 @@ function setSetting(key, raw) {
   if (key === 'speed' && store.get().playing) { stopTimer(); timer = setTimeout(tick, 1000 / value); }
   if (key === 'ch') { skymap.setChannel(value); $('wl-out').textContent = `${CHANNEL_UM[value].toFixed(2)} µm`; }
   if (key === 'mode') applyMode();
+  if (key === 'bands') { $('bands-on').checked = value === 'on'; applyBands(); }
 }
 $('settings').addEventListener('change', (e) => { if (e.target.name) setSetting(e.target.name, e.target.value); });
 document.querySelectorAll('input[name=view]').forEach(r => r.addEventListener('change', (e) => setSetting('view', e.target.value)));
@@ -354,6 +356,7 @@ function applyMode() {
   $('skymap').hidden = !map;
   canvas.hidden = map;
   $('mapbar').hidden = !map;
+  $('bands-card').hidden = !map;
   $('player').hidden = map;
   document.querySelector('.overlay-tl').hidden = map;
   document.querySelector('.overlay-br').hidden = map;
@@ -429,6 +432,76 @@ $('obs-form').addEventListener('submit', (e) => {
   observerSet('Location set for this tab only. It is never saved or sent anywhere.');
 });
 
+// ---------- custom colour bands ----------
+let bands = loadBands();
+let editingBand = null;
+function applyBands() {
+  saveBands(bands);
+  skymap.setBands(store.get().settings.bands === 'on' ? layersFor(bands) : []);
+}
+function renderBands() {
+  const ul = $('band-list');
+  ul.replaceChildren();
+  for (const b of bands) {
+    const li = document.createElement('li');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = b.on; cb.setAttribute('aria-label', `Show ${b.name}`);
+    cb.addEventListener('change', () => { b.on = cb.checked; applyBands(); });
+    const sw = document.createElement('span'); sw.className = 'band-swatch'; sw.style.background = b.color; sw.setAttribute('aria-hidden', 'true');
+    const nm = document.createElement('span'); nm.className = 'band-name';
+    const t1 = document.createElement('span'); t1.textContent = b.name;
+    const t2 = document.createElement('span'); t2.className = 'muted';
+    t2.textContent = `${b.min.toFixed(2)}–${b.max.toFixed(2)} µm · ${channelsFor(b.min, b.max).length} colours · detector ${detectorsFor(b.min, b.max).join(', ')}`;
+    nm.append(t1, t2);
+    const act = document.createElement('span'); act.className = 'band-actions';
+    const ed = document.createElement('button'); ed.type = 'button'; ed.className = 'btn'; ed.textContent = 'Edit'; ed.setAttribute('aria-label', `Edit ${b.name}`);
+    ed.addEventListener('click', () => startEdit(b));
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'btn'; del.textContent = 'Delete'; del.setAttribute('aria-label', `Delete ${b.name}`);
+    del.addEventListener('click', () => { bands = bands.filter(x => x !== b); if (editingBand === b) cancelEdit(); applyBands(); renderBands(); });
+    act.append(ed, del);
+    li.append(cb, sw, nm, act);
+    ul.append(li);
+  }
+  if (!bands.length) { const li = document.createElement('li'); li.className = 'muted'; li.textContent = 'No bands yet. Add one below, or reset to the defaults.'; ul.append(li); }
+}
+function bandError(msg) { $('band-error').textContent = msg || ''; $('band-error').hidden = !msg; }
+function startEdit(b) {
+  editingBand = b;
+  const f = $('band-form');
+  f.name.value = b.name; f.min.value = b.min; f.max.value = b.max; f.color.value = b.color;
+  $('band-form-title').textContent = `Edit "${b.name}"`;
+  $('band-save').textContent = 'Save changes';
+  $('band-cancel').hidden = false;
+  bandError('');
+  f.name.focus();
+}
+function cancelEdit() {
+  editingBand = null;
+  $('band-form').reset();
+  $('band-form-title').textContent = 'Add a band';
+  $('band-save').textContent = 'Add band';
+  $('band-cancel').hidden = true;
+  bandError('');
+}
+$('band-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    const clean = validateBand({ name: f.name.value, min: f.min.value, max: f.max.value, color: f.color.value }, bands, editingBand?.id);
+    if (editingBand) Object.assign(editingBand, clean);
+    else bands.push({ id: 'u' + Date.now().toString(36), ...clean, on: true });
+    cancelEdit();
+    renderBands();
+    if (store.get().settings.bands !== 'on') setSetting('bands', 'on'); else applyBands();
+  } catch (err) {
+    if (err instanceof BandError) bandError(err.message); else throw err;
+  }
+});
+$('band-cancel').addEventListener('click', cancelEdit);
+$('band-reset').addEventListener('click', () => { bands = resetBands(); cancelEdit(); applyBands(); renderBands(); });
+$('bands-on').addEventListener('change', (e) => setSetting('bands', e.target.checked ? 'on' : 'off'));
+renderBands();
+
 // ---------- offline + history ----------
 function onlineState() { $('offline').hidden = navigator.onLine; }
 addEventListener('online', onlineState);
@@ -440,7 +513,9 @@ function loadFromURL(push) {
   for (const [k, v] of Object.entries(settings)) store.dispatch({ type: 'SET_SETTING', key: k, value: v });
   syncSettingsForm(settings);
   $('wl').value = String(settings.ch); $('wl-out').textContent = `${CHANNEL_UM[settings.ch].toFixed(2)} µm`;
+  $('bands-on').checked = settings.bands === 'on';
   applyMode();
+  applyBands();
   if (query) {
     $('q').value = query.type === 'name' ? query.name : `${query.ra.toFixed(5)} ${query.dec >= 0 ? '+' : ''}${query.dec.toFixed(5)}`;
     search(query, { push });

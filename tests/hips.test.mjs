@@ -13,10 +13,11 @@ test('channel routes map to IRSA cube tile names', () => {
   assert.equal(hipsRoute(U('/hips/spherex/30/Norder5/Dir10000/Npix12000.png')).target.endsWith('/Norder5/Dir10000/Npix12000_30.png'), true);
   assert.equal(hipsRoute(U('/hips/spherex/50/Norder3/Allsky.png')).target.endsWith('/Norder3/Allsky_49.png'), true);
   assert.equal(hipsRoute(U('/hips/spherex/7/properties')).kind, 'hips-props');
-  assert.equal(hipsRoute(U('/hips/spherex/7/Norder2/Dir0/Npix1.png?tint=ff8800')).tint, 'ff8800');
+  assert.equal(hipsRoute(U('/hips/spherex/7/t/FF8800/Norder2/Dir0/Npix1.png')).tint, 'ff8800');
   for (const bad of ['/hips/spherex/102/properties', '/hips/spherex/1/Norder6/Dir0/Npix1.png', '/hips/spherex/1/Norder2/Dir0/Npix999.png',
-    '/hips/spherex/1/Norder5/Dir0/Npix12000.png', '/hips/spherex/1/Norder2/Dir0/Npix1.png?tint=red'])
+    '/hips/spherex/1/Norder5/Dir0/Npix12000.png'])
     assert.ok(hipsRoute(U(bad))?.error, bad);
+  assert.equal(hipsRoute(U('/hips/spherex/1/t/red/Norder2/Dir0/Npix1.png')), null);
   assert.equal(hipsRoute(U('/hips/other/1/properties')), null);
   assert.equal(CHANNEL_UM.length, 102);
   assert.equal(realChannel(51), 52);
@@ -45,10 +46,11 @@ function palettePng(entries) {
 
 test('palette tint recolours grey entries and keeps a valid CRC', () => {
   assert.equal(crc32(new TextEncoder().encode('123456789')), 0xcbf43926);
-  const png = palettePng([[0, 0, 0], [255, 255, 255], [128, 128, 128]]);
+  const png = palettePng([[0, 0, 0], [255, 255, 255], [30, 30, 30]]);
   const t = tintPalettePNG(png, 'ff8000');
   const i = 8 + 25 + 8; // after signature + IHDR chunk + PLTE header
-  assert.deepEqual(Array.from(t.subarray(i, i + 9)), [0, 0, 0, 255, 128, 0, 128, 64, 0]);
+  // black stays black, white becomes the tint, faint sky (30) is pushed to black
+  assert.deepEqual(Array.from(t.subarray(i, i + 9)), [0, 0, 0, 255, 128, 0, 0, 0, 0]);
   const plteLen = 9, crcAt = i + plteLen;
   assert.equal(new DataView(t.buffer).getUint32(crcAt), zcrc(t.subarray(i - 4, i + plteLen)));
   assert.deepEqual(tintPalettePNG(Uint8Array.of(1, 2, 3), 'ffffff'), Uint8Array.of(1, 2, 3));
@@ -59,7 +61,7 @@ test('relay serves tinted tiles and per-channel properties', async () => {
   const fetchFn = async (url) => (url.endsWith('properties') ? new Response('hips_order = 5\nhips_cube_depth = 102\n') : new Response(png));
   let r = await handle(new Request('https://r.example/hips/spherex/4/Norder3/Dir0/Npix5_bad.png'), { fetchFn, cache: null });
   assert.equal(r.status, 404);
-  r = await handle(new Request('https://r.example/hips/spherex/4/Norder3/Dir0/Npix5.png?tint=00ff00'), { fetchFn, cache: null });
+  r = await handle(new Request('https://r.example/hips/spherex/4/t/00ff00/Norder3/Dir0/Npix5.png'), { fetchFn, cache: null });
   assert.equal(r.headers.get('content-type'), 'image/png');
   const b = new Uint8Array(await r.arrayBuffer());
   assert.deepEqual(Array.from(b.subarray(41, 44)), [0, 255, 0]);

@@ -47,7 +47,7 @@ export class SkyMap {
     this.ready = null; this.names = null; this.namesKey = ''; this.bandLayers = [];
   }
 
-  surveyURL(ch, tint) { return `${location.origin}/hips/spherex/${ch}` + (tint ? `?tint=${tint}` : ''); }
+  surveyURL(ch, tint) { return `${location.origin}/hips/spherex/${ch}` + (tint ? `/t/${tint}` : ''); }
 
   init(ra, dec, fovDeg = 1) {
     if (this.ready) return this.ready;
@@ -67,6 +67,7 @@ export class SkyMap {
       this.aladin.on('positionChanged', moved);
       this.aladin.on('zoomChanged', moved);
       moved();
+      if (this.pendingBands) { const b = this.pendingBands; this.pendingBands = null; this.setBands(b); }
     })();
     return this.ready;
   }
@@ -81,21 +82,26 @@ export class SkyMap {
 
   setChannel(ch) {
     this.channel = ch;
-    this.aladin?.setBaseImageLayer(this.aladin.newImageSurvey(this.surveyURL(ch), { name: `SPHEREx ${CHANNEL_UM[ch]} µm` }));
+    if (!this.aladin) return;
+    const base = this.aladin.newImageSurvey(this.surveyURL(ch), { name: `SPHEREx ${CHANNEL_UM[ch]} µm`, opacity: this.bandLayers.length ? 0 : 1 });
+    this.aladin.setBaseImageLayer(base);
+    base.setOpacity?.(this.bandLayers.length ? 0 : 1);
   }
 
-  // bands: [{ channels: [..], color: 'rrggbb' }] drawn on top with additive blending.
+  // bands: [{ channels: [..], color: 'rrggbb' }]: tinted channels added together on black.
   setBands(bands) {
-    if (!this.aladin) return;
-    for (const name of this.bandLayers) this.aladin.removeImageLayer?.(name);
+    if (!this.aladin) { this.pendingBands = bands; return; }
+    for (const name of this.bandLayers) { try { this.aladin.removeImageLayer(name); } catch { /* already gone */ } }
     this.bandLayers = [];
+    this.aladin.getBaseImageLayer()?.setOpacity(bands.length ? 0 : 1);
     let k = 0;
     for (const b of bands) {
-      const chans = b.channels.slice(0, 4);
-      for (const ch of chans) {
+      for (const ch of b.channels) {
         const name = `band-${k++}`;
-        const layer = this.aladin.newImageSurvey(this.surveyURL(ch, b.color), { name, imgFormat: 'png', colormap: 'native', opacity: 1 / chans.length });
+        const layer = this.aladin.newImageSurvey(this.surveyURL(ch, b.color), { name });
         this.aladin.setOverlayImageLayer(layer, name);
+        layer.setColormap?.('native');
+        layer.setOpacity?.(1 / b.channels.length); // average of the channels in the band
         layer.setBlendingConfig?.(true);
         this.bandLayers.push(name);
       }
@@ -112,7 +118,7 @@ export class SkyMap {
     if (key === this.namesKey) return;
     this.namesKey = key;
     try {
-      const rows = await simbadCone(ra, dec, r, { limit: fov < 0.3 ? 120 : 200 });
+      const rows = await simbadCone(ra, dec, r, { limit: fov < 0.3 ? 60 : 80 });
       if (this.namesKey !== key) return;
       this.names.removeAll();
       this.names.addSources(rows.map(o => this.A.source(o.ra, o.dec, { name: o.name, type: otypeName(o.otype), otype: o.otype })));

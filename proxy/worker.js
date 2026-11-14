@@ -5,7 +5,7 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 
 import { readHDUsFromStream } from '../web/core/fits.js';
-import { hipsRoute, channelProperties, tintPalettePNG } from './hips.js';
+import { hipsRoute, channelProperties, tintPalettePNG, PALETTE_VERSION } from './hips.js';
 
 const IRSA = 'https://irsa.ipac.caltech.edu';
 const GAIA = 'https://gea.esac.esa.int/tap-server/tap/sync';
@@ -23,7 +23,7 @@ function reply(body, status, extra = {}) {
 function upstreamFor(url) {
   const p = url.pathname;
   const h = hipsRoute(url);
-  if (h) return h.error ? { error: h.error } : { ...h, cacheKey: `${h.target}?ch=${h.channel ?? ''}&tint=${h.tint ?? ''}` };
+  if (h) return h.error ? { error: h.error } : { ...h, cacheKey: `${h.target}?ch=${h.channel ?? ''}&tint=${h.tint ?? ''}&pal=${h.tint ? PALETTE_VERSION : 0}` };
   if (p === '/TAP/sync') {
     const q = url.searchParams.get('QUERY') || '';
     // Only read-only queries on the SPHEREx tables (stops use as a general IRSA relay).
@@ -88,7 +88,8 @@ export async function handle(request, { fetchFn = fetch, cache = globalThis.cach
   } else if (up.kind === 'hips-tile' || up.kind === 'hips-bin') {
     let bytes = new Uint8Array(await res.arrayBuffer());
     if (up.tint) bytes = tintPalettePNG(bytes, up.tint);
-    out = reply(bytes, 200, { 'Content-Type': up.kind === 'hips-tile' ? 'image/png' : 'application/fits', 'Cache-Control': `public, max-age=${up.ttl}` });
+    // tinted tiles: short browser cache so palette tweaks show up; the relay's own cache keeps them longer
+    out = reply(bytes, 200, { 'Content-Type': up.kind === 'hips-tile' ? 'image/png' : 'application/fits', 'Cache-Control': `public, max-age=${up.tint ? 3600 : up.ttl}` });
   } else if (up.kind === 'cutout') {
     const bytes = await readHDUsFromStream(res.body, 3);
     out = reply(bytes, 200, { 'Content-Type': 'application/fits', 'Cache-Control': `public, max-age=${up.ttl}` });

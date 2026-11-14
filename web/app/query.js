@@ -101,12 +101,13 @@ export const DEFAULT_SETTINGS = Object.freeze({
   speed: 4,         // frames per second
   mode: 'map',      // 'map' (pannable sky map) | 'film' (time-lapse)
   ch: 33,           // sky-map wavelength channel 0..101 (33 = 1.63 µm)
+  bands: 'off',     // sky map in the user's colour bands: 'on' | 'off'
 });
 
 const ALLOWED = {
   fov: [3, 10, 20], band: ['all', '1', '2', '3', '4', '5', '6'], stretch: ['linear', 'asinh', 'log'],
   pixels: ['smooth', 'true'], view: ['frames', 'stacks'], max: [60, 120, 0], speed: [1, 2, 4, 8],
-  mode: ['map', 'film'], ch: Array.from({ length: 102 }, (_, i) => i),
+  mode: ['map', 'film'], bands: ['on', 'off'], ch: Array.from({ length: 102 }, (_, i) => i),
 };
 
 export function validSetting(key, value) {
