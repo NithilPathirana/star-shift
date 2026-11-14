@@ -383,7 +383,7 @@ function evidence(id, d, s) {
         ? (r.rows.length ? `${r.rows.length} known object${r.rows.length === 1 ? '' : 's'} in the patch; nearest to your ring ${nearest(r.rows).map(({ o, d }) => `${esc(o.name)} <span class="num">${Number.isFinite(d) ? fmtArc(d) : '—'}</span>${o.vmag != null ? ` (V <span class="num">${o.vmag}</span>)` : ''}`).join(', ')}` : 'no known objects in the patch')
         + (r.observer ? ` <small>(observer given as ${r.observer === 'mpc-500' ? 'MPC code 500' : 'a geocentric state vector'})</small>` : '')
         : `no answer${r.status ? ` (HTTP <span class="num">${r.status}</span>)` : r.error ? ` (${esc(r.error)})` : ''}`}</li>`).join('')}</ul>
-      <p class="sm-evn">Observer: the Earth's centre (SPHEREx is 700 km up; that shifts a main-belt asteroid by under 2″). Asked once per patch and season; an object explains the ring when its predicted path (within an hour of the image) passes within 12″ (2 pixels).</p>`;
+      <p class="sm-evn">Observer: the Earth's centre (SPHEREx is 700 km up; that shifts a main-belt asteroid by under 2″). Asked once per patch and season; an object explains the ring only when its predicted path (within an hour of the image) passes within 12″ (2 pixels) AND it is bright enough for SPHEREx to see (V ≤ 18.5, an approximate limit). These are JPL's predictions, not detections.</p>`;
   }
   if (id === 'seasons') {
     return `<p class="sm-evh">${tagged('OBSERVED', 'obs')} Each season's stacked picture at the ring (9 × 9 pixels)</p>

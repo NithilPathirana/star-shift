@@ -292,18 +292,37 @@ export function passDistance(row, at) {
 // An object matches when its path, allowing for its own stated error (at most 30″), is within the radius.
 export const asteroidHit = (row, at, radius = ASTEROID_MATCH_ARCSEC) => passDistance(row, at) - Math.min(row.err ?? 0, 30) <= radius;
 
+// A known object near the ring only explains the dot if SPHEREx could see it. SPHEREx's single-image
+// point-source depth is roughly AB 18.5-19.5 (approximate; it varies with wavelength band and sky
+// background, and an asteroid's V magnitude is only a rough guide to its infrared brightness), so
+// we take the bright end: V ≤ 18.5. An object JPL gives no magnitude for cannot be ruled out.
+export const SPHEREX_VISIBLE_V = 18.5;
+const bodyWord = (name) => (isComet(name) ? 'comet' : 'asteroid');
+const plainName = (name) => String(name || 'an unnamed object').trim().replace(/^\((.*)\)$/, '$1');
+const vText = (row) => (Number.isFinite(row.vmag) ? ` (V ≈ ${row.vmag.toFixed(1)})` : '');
+
 // results: [{ label, mjd, ok, rows, error, status }] one per blinked season (field-level answers);
-// at: the ring. Matched locally, so one answer serves every click in the field.
+// at: the ring. Matched locally, so one answer serves every click in the field. Always "predicts":
+// these are JPL's orbit predictions, never something SPHEREx is known to have recorded.
 export function decideAsteroid(results, at) {
-  for (const r of results) {
-    const hit = r.ok ? r.rows.find(row => asteroidHit(row, at)) : null;
-    if (hit) return { status: 'explained', hit, season: r, text: `JPL predicts ${hit.name} ${fmtArc(passDistance(hit, at))} from your ring on ${fmtDay(r.mjd)}${r.utc ? `, ${r.utc.slice(11, 16)} UTC` : ''}.` };
+  const near = [];
+  for (const r of results) if (r.ok) for (const row of r.rows) if (asteroidHit(row, at)) near.push({ row, r });
+  const what = ({ row, r }) => `JPL predicts ${bodyWord(row.name)} ${plainName(row.name)}${vText(row)} ${fmtArc(passDistance(row, at))} from here on ${fmtDay(r.mjd)}.`;
+  const visible = near.find(n => !(Number.isFinite(n.row.vmag) && n.row.vmag > SPHEREX_VISIBLE_V));
+  if (visible) {
+    return { status: 'explained', hit: visible.row, season: visible.r,
+      text: `${what(visible)} ${Number.isFinite(visible.row.vmag) ? 'It could be visible to SPHEREx' : 'JPL gives no brightness for it, so it might be visible to SPHEREx'}, so it may explain this dot.` };
   }
   const bad = results.filter(r => !r.ok);
   if (bad.length) {
     const why = bad[0].status === 404 ? 'the JPL lookup is not switched on in this copy of the app yet (HTTP 404)'
       : bad[0].status ? `JPL answered HTTP ${bad[0].status}` : `JPL did not answer (${bad[0].error || 'no reply'})`;
     return { status: 'failed', text: `Could not ask JPL: ${why}.`, reason: why };
+  }
+  if (near.length) {
+    const f = near.slice().sort((a, b) => passDistance(a.row, at) - passDistance(b.row, at))[0];
+    return { status: 'clear', faint: f.row, season: f.r,
+      text: `${what(f)} It is ${f.row.vmag >= SPHEREX_VISIBLE_V + 2 ? 'far ' : ''}too faint for SPHEREx to see, so it doesn't explain this dot.` };
   }
   return { status: 'clear', text: 'No known Solar System object here on these dates.' };
 }

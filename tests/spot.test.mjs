@@ -160,6 +160,25 @@ test('sb_ident answers parse; objects match the ring locally within 12″, along
   assert.equal(nf.status, 'failed'); assert.match(nf.text, /HTTP 404/);
 });
 const res = (status, body) => ({ ok: status === 200, status, json: async () => body, text: async () => (typeof body === 'string' ? body : JSON.stringify(body)), body: null });
+test('a known object near the ring explains it only if SPHEREx could see it (V ≤ 18.5)', () => {
+  const at = { ra: 76.97375, dec: 30.40636 }; // RW Aurigae field, the asteroid's predicted place
+  const row = (vmag) => ({ name: '(2017 XW81)', ra: at.ra + 9.6 / 3600 / Math.cos(at.dec * Math.PI / 180), dec: at.dec, dist: 56, vmag, err: null, raRate: 0, decRate: 0 });
+  const season = { label: 'Latest season', mjd: 61294.877, utc: '2026-09-11T21:02:28', ok: true };
+  const faint = L.decideAsteroid([{ ...season, rows: [row(22.3)] }], at);
+  assert.equal(faint.status, 'clear');
+  assert.equal(faint.text, "JPL predicts asteroid 2017 XW81 (V ≈ 22.3) 9.6″ from here on 11 Sep 2026. It is far too faint for SPHEREx to see, so it doesn't explain this dot.");
+  const bright = L.decideAsteroid([{ ...season, rows: [row(17.2)] }], at);
+  assert.equal(bright.status, 'explained');
+  assert.equal(bright.text, 'JPL predicts asteroid 2017 XW81 (V ≈ 17.2) 9.6″ from here on 11 Sep 2026. It could be visible to SPHEREx, so it may explain this dot.');
+  assert.equal(L.decideAsteroid([{ ...season, rows: [row(19.6)] }], at).text.includes('It is too faint'), true, 'just past the limit: "too faint", not "far too faint"');
+  assert.equal(L.decideAsteroid([{ ...season, rows: [row(null)] }], at).status, 'explained', 'no magnitude from JPL: cannot be ruled out');
+  assert.equal(L.SPHEREX_VISIBLE_V, 18.5);
+  for (const t of [faint.text, bright.text]) assert.doesNotMatch(t, /\b(found|caught|detected|saw)\b/i);
+  // the verdict for a faint object near a known star stays Known star
+  let s = L.checklistStep(L.initChecklist(), { type: 'start' });
+  for (const [id, status, data] of [['flags', 'clear'], ['star', 'explained', { best: { name: 'RW Aur' }, mover: false }], ['asteroid', faint.status, faint], ['seasons', 'clear']]) s = L.checklistStep(s, { type: 'done', id, status, text: '', data });
+  assert.equal(L.decideVerdict(s).title, 'Known star');
+});
 test('field-level lookups: one JPL request per season for the whole patch serves every click', async () => {
   const { fetchFieldAsteroids, asteroidCheckAt } = await import('../web/app/spot/checks.js');
   const seen = [];
@@ -167,7 +186,7 @@ test('field-level lookups: one JPL request per season for the whole patch serves
     seasons: [{ label: 'First season', mjd: 1, utc: '2025-08-15T20:46:08' }, { label: 'Latest season', mjd: 2, utc: '2026-08-23T23:02:00' }] });
   assert.equal(seen.length, 2); assert.match(seen[0], /fov-ra-center=17-57-47\.04&fov-dec-center=04-46-12\.00&fov-ra-hwidth=0\.035/);
   const rows = results[0].rows, onIt = { ra: rows[1].ra, dec: rows[1].dec };
-  assert.equal(asteroidCheckAt(results, onIt).status, 'explained');
+  assert.equal(asteroidCheckAt(results, onIt).status, 'clear', 'V 19.4 is too faint for SPHEREx');
   assert.equal(asteroidCheckAt(results, { ra: 269.43, dec: 4.75 }).status, 'clear');
   assert.equal(seen.length, 2, 'no new requests per click');
   assert.deepEqual(L.fieldCentre({ ra0: 269.44612345678, dec0: 4.7701234567 }), { ra: 269.446123, dec: 4.770123 });
@@ -178,7 +197,7 @@ test('asteroid check: MPC 500 refused -> retried with the geocentric state; 404 
   const r = await runAsteroidCheck({ at: { ra: 269.44208, dec: 4.76506 }, base: 'http://x', fetchFn,
     seasons: [{ label: 'First season', mjd: 60902.86, utc: '2025-08-15T20:46:08.896' }] });
   assert.equal(seen.length, 2); assert.match(seen[0], /^http:\/\/x\/jpl\/sb_ident\?obs-time=2025-08-15_20%3A46%3A08&/); assert.match(seen[1], /xobs=0%2C0/);
-  assert.equal(r.status, 'explained');
+  assert.equal(r.status, 'clear'); assert.match(r.text, /^JPL predicts asteroid 541093 \(2018 RJ4\) \(V ≈ 19\.4\) /);
   const r404 = await runAsteroidCheck({ at: { ra: 1, dec: 1 }, base: '', fetchFn: async () => res(404, 'Not found'), seasons: [{ label: 'A', mjd: 1, utc: '2025-08-15T00:00:00' }] });
   assert.equal(r404.status, 'failed');
   const slow = await runAsteroidCheck({ at: { ra: 1, dec: 1 }, base: '', timeoutMs: 20, seasons: [{ label: 'A', mjd: 1, utc: '2025-08-15T00:00:00' }],
