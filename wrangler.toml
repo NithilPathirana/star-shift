@@ -1,0 +1,14 @@
+# AI-written (OpenAI Codex) for Star Shift, NASA Space Apps 2026.
+name = "star-shift"
+main = "deploy/worker-entry.js"
+compatibility_date = "2026-11-14"
+
+# Do not add an account ID unless Cloudflare explicitly requires it; if needed,
+# place the account_id setting here, below compatibility_date.
+
+[assets]
+directory = "./web"
+binding = "ASSETS"
+html_handling = "auto-trailing-slash"
+not_found_handling = "none"
+
