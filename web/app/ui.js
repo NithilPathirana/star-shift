@@ -15,6 +15,7 @@ import { listImages } from '../core/irsa.js';
 import { propagate, separationArcsec, mjdToDate } from '../core/motion.js';
 import { gridToWorld } from '../core/align.js';
 import { createContam } from './contam-ui.js';
+import { createGhost } from './ghost-ui.js';
 
 const R = window.MockRender;
 const $ = id => document.getElementById(id), root = document.documentElement;
@@ -176,10 +177,11 @@ function info(f, head) {
 }
 function draw() {
   const A = $('cvA'), B = $('cvB'), F = V.F;
+  $('ghostOff').hidden = true;
   if (!F.length) { const c = A.getContext('2d'); c.clearRect(0, 0, A.width, A.height); info(null); $('chip').innerHTML = ''; return; }
   const ex = firstS()?.exp || F[0].exp;
   if (mode === 'play' || V.stacks.length < 2) {
-    const f = F[Math.min(P.i, F.length - 1)]; CX.drawStage(A, f, V.n, opt(A), true); info(f);
+    const f = F[Math.min(P.i, F.length - 1)]; CX.drawStage(A, f, V.n, opt(A), true); GH.drawCanvas(A, f, +A.dataset.dev); info(f);
     const rg = rangeOf(f.um);
     $('chip').title = rg?.tip ? `${rg.name}: ${rg.tip}` : '';
     $('chip').innerHTML = CX.chipLead() + `${rg ? `<i class="sw" style="--rc:${rg.c}"></i><span>${esc(rg.name)}</span><span class="sep">·</span>` : ''}<span>λ ${f.um ? f.um.toFixed(2) : '?'} µm</span><span class="sep">·</span><span>D${f.det}</span><span class="sep">·</span><span>${R.fmtDate(f.date)}</span>`;
@@ -206,6 +208,7 @@ function setCounter(i, animate) {
 function onFrame(i, manual) {
   const F = V.F;
   if (mode === 'play') draw(); if (openPop?.pop.id === 'flagsPop' && !P.playing) CX.renderPop();
+  GH.syncKey(); GH.update();
   if (!F.length) { setCounter(0); return; }
   i = Math.min(i, F.length - 1);
   const f = F[i];
@@ -349,7 +352,7 @@ function load(query, label) {
   showState('stLoading'); $('thin').hidden = true; buildTimeline(); progress(); draw(); onFrame(0);
   const emit = (e) => {
     if (ctl.signal.aborted) return;
-    if (e.type === 'RESOLVED') { V.target = e.target; V.name = label || e.target.name || 'this patch'; V.scan?.set({ target: V.name }); }
+    if (e.type === 'RESOLVED') { V.target = e.target; GH.forTarget(e.target); V.name = label || e.target.name || 'this patch'; V.scan?.set({ target: V.name }); }
     else if (e.type === 'PLANNED') {
       V.grid = e.plan.grid; V.n = V.grid.n; V.planned = e.plan.planned; V.plannedMjds = e.plan.mjds || [];
       V.total = e.plan.total;
@@ -512,6 +515,8 @@ const skymap = new SkyMap($('mapWrap'), {
   onHover: (data) => (data ? showTipAtPointer(`<b>${esc(data.name)}</b><small>${esc(data.type)} · ${esc(data.source || 'catalogue')}</small>`) : hideTip()),
   onView: () => placeOverlays(),
 });
+// The Ghost (DESIGN.md 24): predicted past/future position on the time-lapse and the sky map.
+const GH = createGhost({ $, V, P, esc, set, Snd, NOW_MJD, skymap, scene: () => scene, mode: () => mode, redraw: () => { if (scene === 'viewer') draw(); } });
 let pinEls = [];
 function placeOverlays() {
   if (!skymap.aladin) return;
@@ -521,6 +526,7 @@ function placeOverlays() {
     if (xy) Object.assign($('sel').style, { left: (xy[0] - sz / 2) + 'px', top: (xy[1] - sz / 2) + 'px', width: sz + 'px', height: sz + 'px' });
     $('sel').hidden = !xy;
   }
+  GH.placeMap();
   $('mdFov').textContent = fovTxt();
   const c = skymap.center(); readout(c.ra, c.dec);
 }
@@ -544,7 +550,7 @@ function select(ra, dec, t, fromUser) {
     if (hit) t = hit;
   }
   if (t) { ra = t.ra; dec = t.dec; }
-  M.sel = { ra, dec, t }; placeOverlays(); renderCD(); setCoordText(ra, dec);
+  M.sel = { ra, dec, t }; GH.forSelection(M.sel); placeOverlays(); renderCD(); setCoordText(ra, dec);
   $('mdSel').textContent = t ? t.name : `${ra.toFixed(3)}°, ${dec >= 0 ? '+' : ''}${dec.toFixed(3)}°`;
   updateURL();
   if (fromUser) { Snd.play('tick'); if (innerWidth < 1100) { sheet(true); if (innerWidth < 700) skymap.panBy(0, -0.24); } }
@@ -861,11 +867,11 @@ bindTip($('hitOther'), () => otherName ? `<b>${esc(otherName.name)}</b><small>${
 
 /* ---------- scenes: map → (zoom) → flip-book ---------- */
 function toViewer(instant) {
-  const go = () => { scene = 'viewer'; app.dataset.scene = 'viewer'; hideTip(); layout(); onFrame(P.i); placeHits(); if (innerWidth < 1100) sheet(false); updateURL(); };
+  const go = () => { scene = 'viewer'; app.dataset.scene = 'viewer'; hideTip(); layout(); onFrame(P.i); placeHits(); GH.placeMap(); if (innerWidth < 1100) sheet(false); updateURL(); };
   if (!instant && document.startViewTransition && !set.motion) document.startViewTransition(go); else go();
 }
 function toMap(instant) {
-  const go = () => { scene = 'map'; app.dataset.scene = 'map'; P.pause(); clearInterval(bt); hideTip(); closePop(); requestAnimationFrame(placeOverlays); updateURL(); if (M.sel) setCoordText(M.sel.ra, M.sel.dec); };
+  const go = () => { scene = 'map'; app.dataset.scene = 'map'; P.pause(); clearInterval(bt); hideTip(); closePop(); GH.syncKey(); GH.renderCD(); requestAnimationFrame(GH.placeMap); requestAnimationFrame(placeOverlays); updateURL(); if (M.sel) setCoordText(M.sel.ra, M.sel.dec); };
   if (!instant) Snd.play('tick');
   if (!instant && document.startViewTransition && !set.motion) document.startViewTransition(go); else go();
 }
@@ -904,6 +910,7 @@ function init() {
   app.dataset.scene = 'map';
   applySettings(); buildTimeline(); layout();
   const qp = new URLSearchParams(location.search);
+  if (qp.get('ghost') !== null && Number.isFinite(+qp.get('ghost'))) GH.G.pending = { years: +qp.get('ghost'), viewer: qp.get('scene') === 'viewer' };
   const first = TARGETS[0];
   skymap.init(first.ra, first.dec, 10).catch(() => { mapFailed(); }).then(() => { if (!skymap.aladin) return;
     setWl(+$('wl').value); applyMapBands(); placeOverlays(); setTimeout(placeOverlays, 800);
