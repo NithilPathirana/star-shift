@@ -428,6 +428,7 @@ function placeFlagsPop() {
   p.style.right = Math.max(innerWidth - st.right + 8, innerWidth - r.right, 8) + 'px';
 }
 addEventListener('resize', () => { if (openPop?.pop.id === 'flagsPop') placeFlagsPop(); });
+$('pagesBtn').onclick = e => { e.stopPropagation(); openPop?.pop.id === 'pagesPop' ? closePop() : showPop($('pagesPop'), $('pagesBtn')); };
 $('aboutBtn').onclick = e => { e.stopPropagation(); showPop($('help'), $('helpBtn')); };
 document.addEventListener('pointerdown', e => { if (openPop && !openPop.pop.contains(e.target) && !openPop.btn.contains(e.target)) closePop(); });
 function sheet(on) { $('insp').classList.toggle('open', on); $('scrim').classList.toggle('on', on); $('infoBtn').setAttribute('aria-expanded', on); if (on) Snd.play('tick'); }
@@ -635,7 +636,7 @@ function motionHTML(sel, t, cat, gaia, same, looking) {
   const srcName = r => r === gaia ? 'Gaia DR3' : preset ? 'SIMBAD (built-in)' : 'SIMBAD';
   const k = pmFrom ? kinematics({ ra: sel.ra, dec: sel.dec, pmra: pmFrom.pmra, pmdec: pmFrom.pmdec, pmraErr: pmFrom.pmraErr, pmdecErr: pmFrom.pmdecErr,
     plx: plxFrom?.plx, plxErr: plxFrom?.plxErr, rv: rvFrom?.rv }) : null;
-  let h = '';
+  let more = '', h = '';
   if (!k || k.mu == null) {
     h += looking ? '<p class="quiet">Looking up the motion in Gaia DR3…</p>' : '<p class="quiet">No catalogued motion for this object.</p>';
   } else {
@@ -651,16 +652,16 @@ function motionHTML(sel, t, cat, gaia, same, looking) {
     if (k.vt != null) h += row('Speed across the sky', `${k.vt.toFixed(1)}${pm(k.vtErr, 1)} km/s`, 'calc');
     if (k.vr != null) h += row('Radial velocity', `${fsg(k.vr, 1)}${pm(rvFrom === gaia ? gaia.rvErr : null, 1)} km/s · ${k.vr < 0 ? 'towards us' : 'away from us'}`, 'cat');
     if (k.vtot != null) h += row('Speed through space', `${k.vtot.toFixed(1)} km/s`, 'calc');
-    if (k.uvw) {
+    if (k.uvw) { // Design §27 follow-up: these two rows live in the closed "More detail" disclosure
       const L = toLSR(k.uvw);
-      h += row('Galactic U, V, W (relative to the Sun)', `${fx(k.uvw.U, 1)}, ${fx(k.uvw.V, 1)}, ${fx(k.uvw.W, 1)} km/s`, 'calc') +
+      more += row('Galactic U, V, W (relative to the Sun)', `${fx(k.uvw.U, 1)}, ${fx(k.uvw.V, 1)}, ${fx(k.uvw.W, 1)} km/s`, 'calc') +
         row('Galactic U, V, W (local standard of rest)', `${fx(L.U, 1)}, ${fx(L.V, 1)}, ${fx(L.W, 1)} km/s`, 'calc');
     }
   }
   // measured in these images (OBSERVED), once the patch has been played and the fit is final
   if (same && V.motion?.ok && firstS() && lastS() && V.stacks.length > 1) {
     const m = V.motion.total / 1000, me = V.motion.totalErr / 1000;
-    h += row('Measured in these images (SPHEREx)', `${m.toFixed(2)} ± ${me.toFixed(2)}″/yr`, 'obs');
+    h += row('Measured in these images (SPHEREx)', `${m.toFixed(2)} ± ${me.toFixed(2)}″/yr · from ${V.motion.frames} images`, 'obs');
     if (k?.mu != null) h += `<p class="mot-cmp num">Catalogue ${k.arcsecYr.toFixed(2)}″/yr · measured here ${m.toFixed(1)} ± ${me.toFixed(1)}″/yr</p>`;
     const vtm = tangentialVelocity(V.motion.total, plxFrom?.plx);
     if (vtm) h += row('Speed across the sky, from the measured motion', `${vtm.toFixed(0)} km/s`, 'calc');
@@ -670,7 +671,7 @@ function motionHTML(sel, t, cat, gaia, same, looking) {
     if (plxFrom) parts.push(`parallax: ${srcName(plxFrom)}`);
     if (rvFrom) parts.push(`radial velocity: ${srcName(rvFrom)}`);
     h += `<p class="quiet mot-src">Catalogue values · ${parts.join(' · ')}${gaia && !cat ? ' (brightest Gaia star within 8″ of this point, epoch 2016)' : ''}.</p>` +
-      `<details class="mot-how"><summary>How these are worked out</summary><ul>
+      `<details class="mot-how"><summary>More detail</summary>${more}<p class="mot-how-h">How these are worked out</p><ul>
         <li>Total proper motion μ = √(μα*² + μδ²); direction = position angle east of north.</li>
         <li>Pixel time: one SPHEREx pixel is 6.2″.</li>
         <li>Distance = 1000 / parallax (pc); not trusted when parallax &lt; 5× its error.</li>
