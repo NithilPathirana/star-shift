@@ -36,7 +36,9 @@ export function observerHTML(ra, dec, now = new Date()) {
   const vis = visibleTonight(ra, dec, lat, lon, now);
   const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
   const compass = dirs[Math.round(aa.az / 45) % 8];
-  let up = rts.always === 'up' ? 'Never sets from here' : rts.always === 'down' ? 'Never rises from here' : `Rises ${fmtTime(rts.rise)} · highest ${fmtTime(rts.transit)} (${rts.transitAlt.toFixed(0)}°) · sets ${fmtTime(rts.set)}`;
+  let up = rts.always === 'up' ? 'Never sets from here' : rts.always === 'down' ? 'Never rises from here' : rts.up // up now: this pass (rise already past, transit maybe past too)
+    ? `Rose ${fmtTime(rts.rise)} · ${rts.transit < now ? 'was highest' : 'highest'} ${fmtTime(rts.transit)} (${rts.transitAlt.toFixed(0)}°) · sets ${fmtTime(rts.set)}`
+    : `Rises ${fmtTime(rts.rise)} · highest ${fmtTime(rts.transit)} (${rts.transitAlt.toFixed(0)}°) · sets ${fmtTime(rts.set)}`;
   const tonight = vis.hours > 0 ? `Yes: about ${vis.hours.toFixed(1)} h above 20° in the dark, best around ${fmtTime(vis.bestTime)} (${vis.bestAlt.toFixed(0)}°)` : 'Not well placed in the next 24 h (below 20° while it is dark)';
   return `<dl class="facts">
     ${row('Now', `${aa.alt >= 0 ? 'Above' : 'Below'} the horizon: altitude ${aa.alt.toFixed(1)}°, azimuth ${aa.az.toFixed(1)}° (${compass})`)}

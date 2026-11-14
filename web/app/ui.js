@@ -8,7 +8,7 @@ import { parseQuery, QueryError, DEFAULT_SETTINGS } from './query.js';
 import { run, buildStacks, measureMotion, resolveTarget } from './data.js';
 import { kinematics, tangentialVelocity, toLSR } from './kinematics.js';
 import { PRESETS, findPreset } from './presets.js';
-import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight } from './sky.js';
+import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight, altAz, riseTransitSet } from './sky.js';
 import { simbadCone, otypeName, CHANNEL_UM } from './skymap.js';
 import { Sky3D as SkyMap } from './sky3d/index.js'; // 3D celestial sphere (three.js); same interface as the Aladin SkyMap
 import { layersFor, DEFAULT_BANDS } from './bands.js';
@@ -25,7 +25,6 @@ const BASE = location.origin;
 const NOW_MJD = 61360; // mid-Nov 2026: where moving stars are "now" on the map
 const SETTINGS = { ...DEFAULT_SETTINGS, fov: 2.5, max: 120, band: 'all' }; // 150″ cutouts (DESIGN.md)
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const RAD = Math.PI / 180;
 
 let tables = null;
 // load() waits for the wavelength tables, so a deep link (?q=…&scene=viewer) never runs with tables = null
@@ -727,25 +726,7 @@ $('cdPanel').addEventListener('click', e => { const b = e.target.closest('.cd-c'
   try { navigator.clipboard?.writeText(v); } catch { /* ignore */ } b.classList.add('done'); Snd.play('confirm'); setTimeout(() => b.classList.remove('done'), 1500); });
 
 /* ---------- observer location (opt-in, kept in memory only) ---------- */
-const jdNow = () => Date.now() / 86400000 + 2440587.5;
-const lstDeg = (lon, jd) => (((280.46061837 + 360.98564736629 * (jd - 2451545) + lon) % 360) + 360) % 360;
-function altAzNow(ra, dec, lat, lon, jd) {
-  const H = (lstDeg(lon, jd) - ra) * RAD, d = dec * RAD, p = lat * RAD;
-  const alt = Math.asin(Math.sin(p) * Math.sin(d) + Math.cos(p) * Math.cos(d) * Math.cos(H));
-  const az = Math.atan2(-Math.sin(H) * Math.cos(d), Math.cos(p) * Math.sin(d) - Math.sin(p) * Math.cos(d) * Math.cos(H));
-  return [alt / RAD, ((az / RAD) % 360 + 360) % 360];
-}
-function riseSet(ra, dec, lat, lon, jd) {
-  const h0 = -0.5667 * RAD, p = lat * RAD, d = dec * RAD;
-  const cosH = (Math.sin(h0) - Math.sin(p) * Math.sin(d)) / (Math.cos(p) * Math.cos(d));
-  const toTransit = (((ra - lstDeg(lon, jd)) % 360) + 360) % 360 / 360.98564736629;
-  const tr = new Date(Date.now() + toTransit * 864e5);
-  if (cosH < -1) return { always: true, transit: tr };
-  if (cosH > 1) return { never: true, transit: tr };
-  const H0 = Math.acos(cosH) / RAD / 360.98564736629, sid = 0.99726958;
-  const prev = toTransit - sid, useT = Math.abs(prev) <= H0 ? prev : toTransit, t = new Date(Date.now() + useT * 864e5);
-  return { rise: new Date(+t - H0 * 864e5), transit: t, set: new Date(+t + H0 * 864e5) };
-}
+// alt/az and rise/transit/set come from sky.js (precessed to date, −0.5667° horizon, current pass when up)
 const hm = d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 const dayTag = d => { const a = new Date(); a.setHours(0, 0, 0, 0); const b = new Date(d); b.setHours(0, 0, 0, 0); const k = Math.round((b - a) / 864e5); return k === 0 ? 'today' : k === 1 ? 'tomorrow' : k === -1 ? 'yesterday' : b.toLocaleDateString(); };
 const PLACES = { london: [51.507, -0.128], paris: [48.857, 2.352], 'new york': [40.713, -74.006], 'los angeles': [34.052, -118.244], tokyo: [35.676, 139.650],
@@ -781,13 +762,14 @@ function renderObs() {
     $('placeForm').onsubmit = e => { e.preventDefault(); setPlace($('placeIn').value); };
     return;
   }
-  const { lat, lon, label } = obs.loc, jd = jdNow(), [alt, az] = altAzNow(s.ra, s.dec, lat, lon, jd), rs = riseSet(s.ra, s.dec, lat, lon, jd);
+  const now = new Date(), { lat, lon, label } = obs.loc, { alt, az } = altAz(s.ra, s.dec, lat, lon, now), rs = riseTransitSet(s.ra, s.dec, lat, lon, now);
   const vis = visibleTonight(s.ra, s.dec, lat, lon, new Date());
   const up = alt > 0, when = d => `${hm(d)} ${dayTag(d)}`;
   body.innerHTML = `<div class="obs-set"><span>${esc(label)} · <span class="num">${lat.toFixed(2)}°, ${lon.toFixed(2)}°</span></span><button class="key" id="clrLoc" style="min-height:32px">Clear</button></div>
     <span class="updown ${up ? '' : 'down'}"><i></i>${up ? 'Up now' : 'Below the horizon now'}</span>
     <div>${row('Altitude / azimuth now', `${alt.toFixed(1)}° / ${az.toFixed(1)}°`, 'calc')}
-    ${rs.always ? row('Rise / set', 'Never sets from here', 'calc') : rs.never ? row('Rise / set', 'Never rises from here', 'calc') : row('Rise', when(rs.rise), 'calc') + row('Highest (transit)', when(rs.transit), 'calc') + row('Set', when(rs.set), 'calc')}
+    ${rs.always === 'up' ? row('Rise / set', 'Never sets from here', 'calc') : rs.always === 'down' ? row('Rise / set', 'Never rises from here', 'calc')
+      : row(rs.up ? 'Rose' : 'Rise', when(rs.rise), 'calc') + row(rs.up && rs.transit < now ? 'Was highest (transit)' : 'Highest (transit)', when(rs.transit), 'calc') + row('Set', when(rs.set), 'calc')}
     ${row('Dark-sky viewing (next 24 h)', vis.hours > 0 ? `${vis.hours.toFixed(1)} h above 20°, best ${when(vis.bestTime)} (${vis.bestAlt.toFixed(0)}°)` : 'Not above 20° while it is dark', 'calc')}</div>
     <p class="obs-msg">Times in your browser's time zone. Worked out from your position and the clock; no internet needed.</p>`;
   $('clrLoc').onclick = () => { obs.loc = null; renderObs(); Snd.play('click'); };
