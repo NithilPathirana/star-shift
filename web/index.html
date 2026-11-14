@@ -1,8 +1,182 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>SPHEREx viewer (in progress)</title></head>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SPHEREx Time Viewer</title>
+  <meta name="description" content="Type a star name or sky coordinates and watch NASA SPHEREx infrared images of that spot change over time.">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/app.css">
+  <link rel="modulepreload" href="app/main.js">
+</head>
 <body>
-<p>Data core is running. The website is being built.</p>
-<p><small>AI-written code (Claude, Anthropic). SPHEREx data: NASA/IPAC Infrared Science Archive.</small></p>
+  <a class="skip" href="#viewer">Skip to the viewer</a>
+
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="SPHEREx Time Viewer, start page">SPHEREx Time Viewer</a>
+    <form class="search" id="search" role="search" novalidate>
+      <label class="visually-hidden" for="q">Star name or coordinates (RA Dec)</label>
+      <input id="q" name="q" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Star name or RA Dec, e.g. Barnard's Star or 269.45 +4.69"
+             aria-describedby="q-error q-help">
+      <button type="submit" class="btn btn-primary">Show</button>
+      <p id="q-help" class="visually-hidden">Coordinates can be in degrees (269.45 +4.69) or hours and degrees (17 57 48.5 +04 41 36).</p>
+      <p id="q-error" class="field-error" role="alert" hidden></p>
+    </form>
+  </header>
+
+  <nav class="targets" aria-label="NASA test targets">
+    <span class="targets-label">Try:</span>
+    <ul id="target-list" class="target-list"></ul>
+  </nav>
+
+  <main class="layout">
+    <section class="stage" aria-label="Image viewer">
+      <div class="viewer" id="viewer" tabindex="-1">
+        <canvas id="sky" role="img" aria-label="No image yet"></canvas>
+        <div class="overlay-tl" aria-hidden="true">
+          <span class="compass"><span>N ↑</span><span>E ←</span></span>
+        </div>
+        <div class="overlay-br" aria-hidden="true"><span class="scalebar" id="scalebar"><span class="scalebar-line"></span><span class="scalebar-label">1′</span></span></div>
+
+        <div class="state" id="state-idle">
+          <h1 class="state-title">See the infrared sky change over time</h1>
+          <p>Type a star name or sky coordinates. You'll see every SPHEREx image of that spot, lined up and played like a short film, so anything that moves or changes stands out.</p>
+          <ul class="target-list" id="idle-targets"></ul>
+        </div>
+        <div class="state" id="state-loading" hidden>
+          <p class="state-title" id="loading-title">Loading…</p>
+          <progress id="loading-progress" max="1" value="0"></progress>
+          <p class="muted" id="loading-detail"></p>
+        </div>
+        <div class="state" id="state-empty" hidden>
+          <p class="state-title">No SPHEREx images here yet</p>
+          <p id="empty-detail">SPHEREx hasn't imaged this spot in the data released so far.</p>
+          <button type="button" class="btn" id="empty-allbands" hidden>Show all wavelength bands</button>
+        </div>
+        <div class="state" id="state-error" hidden>
+          <p class="state-title">Something went wrong</p>
+          <p id="error-detail"></p>
+          <div class="state-actions">
+            <button type="button" class="btn btn-primary" id="error-retry">Try again</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="player" id="player" aria-label="Playback controls">
+        <div class="player-row">
+          <button type="button" class="btn icon" id="prev" aria-label="Previous frame" aria-keyshortcuts="ArrowLeft">◀︎</button>
+          <button type="button" class="btn icon btn-primary" id="play" aria-label="Play" aria-keyshortcuts="Space">▶︎</button>
+          <button type="button" class="btn icon" id="next" aria-label="Next frame" aria-keyshortcuts="ArrowRight">▶︎▏</button>
+          <div class="when" aria-live="off">
+            <span class="when-date" id="when-date">—</span>
+            <span class="when-count muted" id="when-count"></span>
+          </div>
+          <label class="speed">
+            <span class="visually-hidden">Speed</span>
+            <select id="speed">
+              <option value="1">1 fps</option>
+              <option value="2">2 fps</option>
+              <option value="4">4 fps</option>
+              <option value="8">8 fps</option>
+            </select>
+          </label>
+        </div>
+        <label class="scrub">
+          <span class="visually-hidden">Time</span>
+          <input type="range" id="scrub" min="0" max="0" step="1" value="0">
+        </label>
+        <div class="scrub-ends muted" aria-hidden="true"><span id="date-first"></span><span id="date-last"></span></div>
+        <div class="segmented" role="radiogroup" aria-label="View">
+          <label><input type="radio" name="view" value="frames" checked> Single frames</label>
+          <label><input type="radio" name="view" value="stacks"> Season stacks</label>
+        </div>
+        <p class="keys muted">Keys: <kbd>Space</kbd> play/pause · <kbd>←</kbd><kbd>→</kbd> step · <kbd>Home</kbd><kbd>End</kbd></p>
+      </div>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <aside class="panel">
+      <section class="card" aria-labelledby="info-h">
+        <h2 id="info-h" class="card-title">This spot</h2>
+        <dl class="facts" id="facts">
+          <dt>Target</dt><dd id="f-name">—</dd>
+          <dt>Position</dt><dd id="f-pos">—</dd>
+          <dt>Motion</dt><dd id="f-motion">—</dd>
+          <dt>SPHEREx images</dt><dd id="f-images">—</dd>
+        </dl>
+        <p class="hint" id="f-hint" hidden></p>
+        <h3 class="card-subtitle">This frame</h3>
+        <dl class="facts" id="frame-facts">
+          <dt>Taken</dt><dd id="g-date">—</dd>
+          <dt>Wavelength</dt><dd id="g-wave">—</dd>
+          <dt>Detector</dt><dd id="g-det">—</dd>
+        </dl>
+        <details class="more">
+          <summary>More detail</summary>
+          <dl class="facts" id="expert-facts">
+            <dt>Observation</dt><dd id="g-obs">—</dd>
+            <dt>Masked pixels</dt><dd id="g-mask">—</dd>
+            <dt>Pipeline</dt><dd id="g-ver">—</dd>
+            <dt>Grid</dt><dd id="g-grid">—</dd>
+          </dl>
+        </details>
+      </section>
+
+      <section class="card" aria-labelledby="set-h">
+        <h2 id="set-h" class="card-title">Display</h2>
+        <form id="settings" class="settings">
+          <fieldset class="segmented" role="radiogroup">
+            <legend>Field of view</legend>
+            <label><input type="radio" name="fov" value="3"> 3′</label>
+            <label><input type="radio" name="fov" value="10" checked> 10′</label>
+            <label><input type="radio" name="fov" value="20"> 20′</label>
+          </fieldset>
+          <label class="field">
+            <span>Wavelength band</span>
+            <select name="band" id="band">
+              <option value="all">All bands (0.75–5 µm)</option>
+              <option value="1">Band 1 · 0.75–1.09 µm</option>
+              <option value="2">Band 2 · 1.10–1.62 µm</option>
+              <option value="3">Band 3 · 1.63–2.41 µm</option>
+              <option value="4">Band 4 · 2.42–3.82 µm</option>
+              <option value="5">Band 5 · 3.83–4.41 µm</option>
+              <option value="6">Band 6 · 4.42–5.00 µm</option>
+            </select>
+          </label>
+          <fieldset class="segmented" role="radiogroup">
+            <legend>Brightness scale</legend>
+            <label><input type="radio" name="stretch" value="linear"> Linear</label>
+            <label><input type="radio" name="stretch" value="asinh" checked> Asinh</label>
+            <label><input type="radio" name="stretch" value="log"> Log</label>
+          </fieldset>
+          <fieldset class="segmented" role="radiogroup">
+            <legend>Pixels</legend>
+            <label><input type="radio" name="pixels" value="smooth" checked> Smooth</label>
+            <label><input type="radio" name="pixels" value="true"> True pixels</label>
+          </fieldset>
+          <fieldset class="segmented" role="radiogroup">
+            <legend>Frames to load</legend>
+            <label><input type="radio" name="max" value="60"> 60</label>
+            <label><input type="radio" name="max" value="120" checked> 120</label>
+            <label><input type="radio" name="max" value="0"> All</label>
+          </fieldset>
+          <button type="button" class="btn" id="copy-link">Copy link to this view</button>
+        </form>
+      </section>
+    </aside>
+  </main>
+
+  <p class="offline" id="offline" role="status" hidden>You're offline. Targets you've opened before still work; new ones need the internet.</p>
+
+  <footer class="footer">
+    <p>Images: NASA SPHEREx, from the NASA/IPAC Infrared Science Archive (IRSA), Caltech/IPAC —
+      DOIs <a href="https://doi.org/10.26131/IRSA652">10.26131/IRSA652</a> (QR2),
+      <a href="https://doi.org/10.26131/IRSA662">10.26131/IRSA662</a> (QR3).
+      Star names and motions: SIMBAD (CDS; Harvard mirror). Gaia DR3 (ESA).</p>
+    <p>Built by team Proper Motion for the NASA Space Apps Challenge 2026. <strong>All code on this site was written by an AI model (Claude, by Anthropic)</strong> under the team's direction. Not an official NASA site.</p>
+  </footer>
+
+  <script type="module" src="app/main.js"></script>
 </body>
 </html>

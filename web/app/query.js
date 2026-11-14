@@ -29,7 +29,7 @@ function sexagesimal(parts, what, max) {
   const d = Math.abs(num(a, what)), m = num(b, what), s = num(c, what);
   if (m >= 60 || s >= 60 || m < 0 || s < 0) throw new QueryError(`Minutes and seconds in the ${what} must be below 60.`);
   const v = d + m / 60 + s / 3600;
-  if (v > max) throw new QueryError(`The ${what} is out of range.`);
+  if (v > max) throw new QueryError(what === 'Dec' ? 'Dec must be between -90 and +90 degrees.' : 'RA must be between 0 and 360 degrees (or 0h to 24h).');
   return neg ? -v : v;
 }
 

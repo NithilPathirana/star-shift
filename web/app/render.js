@@ -74,7 +74,7 @@ export function drawFrame(canvas, frame, settings, { marker = true } = {}) {
     // two short ticks pointing at the predicted position (they never cover the star)
     const s = size / n;
     const x = (frame.expected[0] + 0.5) * s, y = (frame.expected[1] + 0.5) * s;
-    const gap = Math.max(10 * dpr, 2.2 * s), len = Math.max(12 * dpr, 2 * s);
+    const gap = Math.max(14 * dpr, 3 * s), len = Math.max(14 * dpr, 2.5 * s);
     ctx.strokeStyle = getComputedStyle(canvas).getPropertyValue('--color-marker').trim() || '#ff6b5e';
     ctx.lineWidth = 2 * dpr;
     ctx.lineCap = 'round';
