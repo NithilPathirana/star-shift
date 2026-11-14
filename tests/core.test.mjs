@@ -8,7 +8,7 @@ import { decodeCutout, parseCSV, cutoutUrl, mapLimit } from '../web/core/irsa.js
 import { TanSip, tanProject, tanDeproject } from '../web/core/wcs.js';
 import { propagate, separationArcsec, parseAngle, mjdToDate, epochYearToMjd } from '../web/core/motion.js';
 import { wavelengthAt } from '../web/core/wave.js';
-import { makeGrid, reproject, centroid, worldToGrid, gridToWorld, fitLine } from '../web/core/align.js';
+import { makeGrid, reproject, centroid, worldToGrid, gridToWorld, fitLine, stackFrames } from '../web/core/align.js';
 
 const fx = (p) => new URL('./fixtures/' + p, import.meta.url);
 const ref = JSON.parse(readFileSync(fx('astropy_ref.json'), 'utf8'));
@@ -179,4 +179,32 @@ test('fetchCutout retries on 503 then succeeds; gives up on 404', async () => {
   assert.equal(c.image.nx, 29);
   const gone = async () => new Response('no', { status: 404 });
   await assert.rejects(fetchCutout('ibe/data/spherex/dr1/a.fits', 1, 2, 0.05, { fetchFn: gone, backoffMs: 1 }), /404/);
+});
+
+test('flag bits are read from the FLAGS header and bad pixels masked', async () => {
+  const { flagDefinitions, maskBadPixels, badPixelMask } = await import('../web/core/irsa.js');
+  const c = decodeCutout(bytes);
+  assert.equal(c.flagNames[1024].name, 'HOT');
+  assert.equal(c.flagNames[2097152].name, 'SOURCE');
+  const m = badPixelMask(c.flagNames);
+  assert.ok(m & 1024 && !(m & 2097152));
+  const SRC = 2097152, OVF = 2, HOT = 1024, NONFUNC = 64;
+  const set = { 5: HOT, 6: SRC, 7: SRC | OVF, 8: OVF, 9: SRC | NONFUNC };
+  const fake = { ...c, flags: { ...c.flags, data: Int32Array.from(c.flags.data, (v, i) => set[i] ?? 0) } };
+  const out = maskBadPixels(fake);
+  assert.ok(Number.isNaN(out.image.data[5]), 'hot pixel masked');
+  assert.ok(Number.isFinite(out.image.data[6]), 'source kept');
+  assert.ok(Number.isFinite(out.image.data[7]), 'saturated star core kept');
+  assert.ok(Number.isNaN(out.image.data[8]), 'overflow on empty sky masked');
+  assert.ok(Number.isNaN(out.image.data[9]), 'dead pixel masked even on a source');
+  assert.equal(out.maskedPixels, 3);
+  assert.deepEqual(flagDefinitions({ MSKN0001: 'A', MSKM0001: 2, MSKD0001: 'x' }), { 2: { name: 'A', description: 'x' } });
+});
+
+test('median stack ignores NaN and outliers', () => {
+  const f = (vals) => ({ n: 2, data: Float32Array.from(vals) });
+  const st = stackFrames([f([1, 2, NaN, 4]), f([1, 2, 3, 4]), f([1, 1000, 3, NaN])]);
+  assert.deepEqual(Array.from(st.data), [1, 2, 3, 4]);
+  assert.deepEqual(Array.from(st.count), [3, 3, 2, 2]);
+  assert.deepEqual(Array.from(stackFrames([f([1, 2, 3, 4]), f([3, 2, 1, 0])], 'mean').data), [2, 2, 2, 2]);
 });

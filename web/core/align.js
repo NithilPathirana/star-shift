@@ -64,7 +64,8 @@ function median(arr) {
 }
 
 // Background-subtracted, flux-weighted centroid near (x0, y0) on an n×n frame.
-// Re-centres a few times. Returns { x, y, flux, peak, bg } or null.
+// Re-centres a few times. Returns { x, y, flux, peak, bg, sigma, snr } or null
+// (sigma = robust noise in the background ring, snr = peak / sigma).
 export function centroid(frame, x0, y0, radius = 2.5, iterations = 4) {
   const { n, data } = frame;
   let cx = x0, cy = y0, res = null;
@@ -75,6 +76,7 @@ export function centroid(frame, x0, y0, radius = 2.5, iterations = 4) {
       if (r > radius + 2 && r <= radius + 5) ann.push(data[j * n + i]);
     }
     const bg = median(ann);
+    const sigma = 1.4826 * median(ann.filter(Number.isFinite).map(v => Math.abs(v - bg)));
     let sw = 0, sx = 0, sy = 0, peak = -Infinity;
     for (let j = Math.floor(cy - radius); j <= Math.ceil(cy + radius); j++) {
       for (let i = Math.floor(cx - radius); i <= Math.ceil(cx + radius); i++) {
@@ -88,7 +90,7 @@ export function centroid(frame, x0, y0, radius = 2.5, iterations = 4) {
     }
     if (sw <= 0) return null;
     cx = sx / sw; cy = sy / sw;
-    res = { x: cx, y: cy, flux: sw, peak, bg };
+    res = { x: cx, y: cy, flux: sw, peak, bg, sigma, snr: sigma > 0 ? peak / sigma : Infinity };
   }
   return res;
 }
@@ -104,4 +106,22 @@ export function fitLine(ts, ys) {
   for (let k = 0; k < n; k++) ss += (ys[k] - a - b * ts[k]) ** 2;
   const rms = Math.sqrt(ss / Math.max(1, n - 2));
   return { a, b, sigmaB: rms / Math.sqrt(stt), rms, n };
+}
+
+// Combine aligned frames pixel by pixel (median: robust to cosmic rays and bad pixels).
+// Frames must share one grid. Returns { n, data, count } (count = frames used per pixel).
+export function stackFrames(frames, how = 'median') {
+  const n = frames[0].n, N = n * n;
+  const data = new Float32Array(N), count = new Int32Array(N);
+  const vals = new Float64Array(frames.length);
+  for (let k = 0; k < N; k++) {
+    let m = 0;
+    for (const f of frames) { const v = f.data[k]; if (Number.isFinite(v)) vals[m++] = v; }
+    count[k] = m;
+    if (!m) { data[k] = NaN; continue; }
+    const a = Array.from(vals.subarray(0, m));
+    if (how === 'mean') data[k] = a.reduce((x, y) => x + y, 0) / m;
+    else { a.sort((x, y) => x - y); data[k] = m % 2 ? a[m >> 1] : (a[m / 2 - 1] + a[m / 2]) / 2; }
+  }
+  return { n, data, count };
 }

@@ -27,12 +27,13 @@ def tile(fr, n, label):
     r = 2.2 * SCALE
     d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(255, 70, 70), width=2)
     wl = fr.get("wavelengthUm")
-    d.text((4, 3), f"{fr['date'][:10]}  D{fr['detector']}" + (f"  {wl:.2f}um" if wl else ""), fill=(255, 255, 120))
+    det = fr['detector']
+    d.text((4, 3), (fr['date'] if det == 'stack' else f"{fr['date'][:10]}  D{det}") + (f"  {wl:.2f}um" if wl else ""), fill=(255, 255, 120))
     if label:
         d.text((4, n * SCALE - 14), label, fill=(180, 220, 255))
     return im
 
-for f in sorted(ROOT.glob("frames_*.json")):
+for f in sorted(list(ROOT.glob("frames_*.json")) + list(ROOT.glob("stacks_*.json"))):
     j = json.loads(f.read_text())
     n, frames = j["grid"]["n"], j["frames"]
     if not frames:

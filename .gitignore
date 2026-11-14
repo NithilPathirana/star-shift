@@ -6,3 +6,6 @@ node_modules/
 *.env
 __pycache__/
 evidence/cache/
+evidence/frames_*.json
+evidence/wrangler-dev.log
+evidence/prove_run.log

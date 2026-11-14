@@ -1,0 +1,45 @@
+  Barnard's Star: 10/60
+  Barnard's Star: 20/60
+  Barnard's Star: 30/60
+  Barnard's Star: 40/60
+  Barnard's Star: 50/60
+  Barnard's Star: 60/60
+  stacked {"years":0.98,"measured_arcsec":10.11,"expected_arcsec":10.22,"measured_px":1.64,"expected_px":1.66,"direction_measured_deg":-11.31,"direction_expected_deg":-4.42}
+Barnard's Star: 358 images ({"D6":58,"D3":59,"D5":61,"D2":61,"D1":60,"D4":59}), fetched 60, failed 0, 18s
+  motion {"years":0.98,"measured_arcsec":9.98,"measured_err_arcsec":0.64,"expected_arcsec":10.22,"measured_px":1.62,"expected_px":1.66,"direction_measured_deg":-5.01,"direction_expected_deg":-4.42} {"pmra":-859,"pmra_err":628,"pmdec":10061,"pmdec_err":672,"catalogue":[-801.551,10362.394]}
+  Epsilon Indi B: 10/60
+  Epsilon Indi B: 20/60
+  Epsilon Indi B: 30/60
+  Epsilon Indi B: 40/60
+  Epsilon Indi B: 50/60
+  Epsilon Indi B: 60/60
+  stacked {"years":1.38,"measured_arcsec":6.22,"expected_arcsec":6.49,"measured_px":1.01,"expected_px":1.05,"direction_measured_deg":131,"direction_expected_deg":121.73}
+Epsilon Indi B: 458 images ({"D2":93,"D5":84,"D4":46,"D1":46,"D3":96,"D6":93}), fetched 60, failed 0, 10s
+  motion {"years":1.38,"measured_arcsec":5.95,"measured_err_arcsec":0.31,"expected_arcsec":6.49,"measured_px":0.97,"expected_px":1.05,"direction_measured_deg":129.14,"direction_expected_deg":121.73} {"pmra":3600,"pmra_err":204,"pmdec":-2591,"pmdec_err":175,"catalogue":[3981.977,-2466.832]}
+  WISE 0855: 10/93
+  WISE 0855: 20/93
+  WISE 0855: 30/93
+  WISE 0855: 40/93
+  WISE 0855: 50/93
+  WISE 0855: 60/93
+  WISE 0855: 70/93
+  WISE 0855: 80/93
+  WISE 0855: 90/93
+  stacked {"years":0.99,"measured_arcsec":6.15,"expected_arcsec":8.04,"measured_px":1,"expected_px":1.31,"direction_measured_deg":-89.04,"direction_expected_deg":-85.26}
+WISE 0855: 258 images ({"D3":45,"D6":45,"D2":48,"D5":48,"D1":36,"D4":36}), fetched 92, failed 1, 38s
+  motion {"years":0.99,"measured_arcsec":6.33,"measured_err_arcsec":0.76,"expected_arcsec":8.04,"measured_px":1.03,"expected_px":1.31,"direction_measured_deg":-79.94,"direction_expected_deg":-85.26} {"pmra":-5986,"pmra_err":1200,"pmdec":1662,"pmdec_err":738,"catalogue":[-8123.7,673.2]}
+  RW Aurigae: 10/60
+  RW Aurigae: 20/60
+  RW Aurigae: 30/60
+  RW Aurigae: 40/60
+  RW Aurigae: 50/60
+  RW Aurigae: 60/60
+RW Aurigae: 335 images ({"D1":56,"D4":56,"D2":55,"D5":56,"D3":56,"D6":56}), fetched 60, failed 0, 17s
+  R Draconis: 10/60
+  R Draconis: 20/60
+  R Draconis: 30/60
+  R Draconis: 40/60
+  R Draconis: 50/60
+  R Draconis: 60/60
+R Draconis: 2493 images ({"D6":573,"D3":574,"D4":584,"D1":584,"D5":89,"D2":89}), fetched 60, failed 0, 19s
+wrote evidence/summary.json

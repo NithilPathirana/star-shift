@@ -1,0 +1,3455 @@
+{
+ "generated": "2026-11-14T08:06:15.701Z",
+ "cutoutSizeDeg": 0.05,
+ "gridArcsec": 150,
+ "targets": [
+  {
+   "key": "barnard",
+   "label": "Barnard's Star",
+   "simbad": {
+    "name": "Barnard's star",
+    "ra": 269.4520769586187,
+    "dec": 4.693364966576667,
+    "pmra": -801.551,
+    "pmdec": 10362.394,
+    "plx": 546.9759,
+    "epoch": 2000,
+    "otype": "BY*",
+    "source": "SIMBAD"
+   },
+   "positionJ2026": {
+    "ra": 269.446267879734,
+    "dec": 4.768204411842282
+   },
+   "imagesFound": 358,
+   "imagesPerDetector": {
+    "D6": 58,
+    "D3": 59,
+    "D5": 61,
+    "D2": 61,
+    "D1": 60,
+    "D4": 59
+   },
+   "firstDate": "2025-08-15",
+   "lastDate": "2026-09-22",
+   "visits": [
+    {
+     "from": "2025-08-15",
+     "to": "2025-09-05",
+     "images": 108
+    },
+    {
+     "from": "2025-09-30",
+     "to": "2025-10-01",
+     "images": 10
+    },
+    {
+     "from": "2026-03-11",
+     "to": "2026-03-25",
+     "images": 111
+    },
+    {
+     "from": "2026-04-10",
+     "to": "2026-04-10",
+     "images": 2
+    },
+    {
+     "from": "2026-05-04",
+     "to": "2026-05-05",
+     "images": 8
+    },
+    {
+     "from": "2026-08-16",
+     "to": "2026-09-02",
+     "images": 117
+    },
+    {
+     "from": "2026-09-22",
+     "to": "2026-09-22",
+     "images": 2
+    }
+   ],
+   "framesFetched": 60,
+   "framesFailed": 0,
+   "seconds": 18,
+   "motion": {
+    "note": "Positions in arcsec east/north of the frame centre. 1 SPHEREx pixel = 6.15 arcsec.",
+    "centroidRadiusPx": 3.5,
+    "minWavelengthUm": null,
+    "framesWithClearDetection": 60,
+    "framesTotal": 60,
+    "detectorsUsed": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6
+    ],
+    "seasons": [
+     {
+      "from": "2025-08-15",
+      "to": "2025-10-01",
+      "frames": 20,
+      "t": 2025.66,
+      "east": -0.06,
+      "north": -2.88,
+      "east_err": 0.52,
+      "north_err": 0.5,
+      "exp_east": 0.27,
+      "exp_north": -3.54,
+      "offset_from_prediction": 0.74
+     },
+     {
+      "from": "2026-03-11",
+      "to": "2026-05-04",
+      "frames": 20,
+      "t": 2026.21,
+      "east": 0.26,
+      "north": 2.26,
+      "east_err": 0.33,
+      "north_err": 0.56,
+      "exp_east": -0.17,
+      "exp_north": 2.22,
+      "offset_from_prediction": 0.43
+     },
+     {
+      "from": "2026-08-17",
+      "to": "2026-09-22",
+      "frames": 20,
+      "t": 2026.64,
+      "east": -0.93,
+      "north": 7.06,
+      "east_err": 0.44,
+      "north_err": 0.34,
+      "exp_east": -0.51,
+      "exp_north": 6.65,
+      "offset_from_prediction": 0.58
+     }
+    ],
+    "firstToLastSeason": {
+     "years": 0.98,
+     "measured_arcsec": 9.98,
+     "measured_err_arcsec": 0.64,
+     "expected_arcsec": 10.22,
+     "measured_px": 1.62,
+     "expected_px": 1.66,
+     "direction_measured_deg": -5.01,
+     "direction_expected_deg": -4.42
+    },
+    "lineFit_mas_per_yr": {
+     "pmra": -859,
+     "pmra_err": 628,
+     "pmdec": 10061,
+     "pmdec_err": 672,
+     "catalogue": [
+      -801.551,
+      10362.394
+     ]
+    }
+   },
+   "stackedSeasons": [
+    {
+     "from": "2025-08-15",
+     "to": "2025-10-01",
+     "frames": 20,
+     "t": 2025.66,
+     "east": 0.77,
+     "north": -3.44,
+     "snr": 2592.92,
+     "exp_east": 0.27,
+     "exp_north": -3.54,
+     "offset_from_prediction_arcsec": 0.5
+    },
+    {
+     "from": "2026-03-11",
+     "to": "2026-05-04",
+     "frames": 20,
+     "t": 2026.21,
+     "east": 0.33,
+     "north": 2.66,
+     "snr": 3595.08,
+     "exp_east": -0.17,
+     "exp_north": 2.22,
+     "offset_from_prediction_arcsec": 0.66
+    },
+    {
+     "from": "2026-08-17",
+     "to": "2026-09-22",
+     "frames": 20,
+     "t": 2026.64,
+     "east": -1.22,
+     "north": 6.48,
+     "snr": 4879.5,
+     "exp_east": -0.51,
+     "exp_north": 6.65,
+     "offset_from_prediction_arcsec": 0.72
+    }
+   ],
+   "stackedFirstToLast": {
+    "years": 0.98,
+    "measured_arcsec": 10.11,
+    "expected_arcsec": 10.22,
+    "measured_px": 1.64,
+    "expected_px": 1.66,
+    "direction_measured_deg": -11.31,
+    "direction_expected_deg": -4.42
+   },
+   "lightCurve": [
+    {
+     "date": "2025-08-15T20:46",
+     "detector": 6,
+     "wavelengthUm": 4.929,
+     "flux": 3692,
+     "snr": 2310.2,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2025-08-16T03:20",
+     "detector": 6,
+     "wavelengthUm": 4.418,
+     "flux": 5410,
+     "snr": 1644.1,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2025-08-18T20:31",
+     "detector": 3,
+     "wavelengthUm": 1.748,
+     "flux": 3816,
+     "snr": 927.4,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2025-08-21T15:23",
+     "detector": 3,
+     "wavelengthUm": 1.873,
+     "flux": 3999,
+     "snr": 1131.8,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2025-08-21T23:34",
+     "detector": 2,
+     "wavelengthUm": 1.101,
+     "flux": 2192,
+     "snr": 589.4,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2025-08-24T11:51",
+     "detector": 5,
+     "wavelengthUm": 3.921,
+     "flux": 5986,
+     "snr": 2391.2,
+     "maskedPixels": 9
+    },
+    {
+     "date": "2025-08-25T00:52",
+     "detector": 6,
+     "wavelengthUm": 4.75,
+     "flux": 3991,
+     "snr": 1865.6,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2025-08-25T17:09",
+     "detector": 5,
+     "wavelengthUm": 4.296,
+     "flux": 5276,
+     "snr": 3068.7,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2025-08-25T17:15",
+     "detector": 5,
+     "wavelengthUm": 4.407,
+     "flux": 4927,
+     "snr": 1887.7,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2025-08-27T06:40",
+     "detector": 2,
+     "wavelengthUm": 1.268,
+     "flux": 495.6,
+     "snr": 381.2,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2025-08-27T11:38",
+     "detector": 6,
+     "wavelengthUm": 4.89,
+     "flux": 3950,
+     "snr": 1786.2,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2025-08-28T10:26",
+     "detector": 1,
+     "wavelengthUm": 0.804,
+     "flux": 1021,
+     "snr": 555,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2025-08-29T15:47",
+     "detector": 2,
+     "wavelengthUm": 1.393,
+     "flux": 3135,
+     "snr": 1272.6,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2025-08-29T17:20",
+     "detector": 4,
+     "wavelengthUm": 3.508,
+     "flux": 1644,
+     "snr": 607.1,
+     "maskedPixels": 6
+    },
+    {
+     "date": "2025-08-29T17:27",
+     "detector": 4,
+     "wavelengthUm": 3.8,
+     "flux": 601.4,
+     "snr": 214.2,
+     "maskedPixels": 9
+    },
+    {
+     "date": "2025-08-30T22:43",
+     "detector": 1,
+     "wavelengthUm": 0.862,
+     "flux": 1280,
+     "snr": 578.4,
+     "maskedPixels": 0
+    },
+    {
+     "date": "2025-08-31T14:58",
+     "detector": 4,
+     "wavelengthUm": 3.097,
+     "flux": 2058,
+     "snr": 535,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2025-08-31T15:05",
+     "detector": 1,
+     "wavelengthUm": 0.993,
+     "flux": 2876,
+     "snr": 519.5,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2025-09-30T14:03",
+     "detector": 4,
+     "wavelengthUm": 2.441,
+     "flux": 1880,
+     "snr": 476.6,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2025-10-01T03:08",
+     "detector": 1,
+     "wavelengthUm": 1.032,
+     "flux": 3184,
+     "snr": 850.7,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-03-11T02:14",
+     "detector": 1,
+     "wavelengthUm": 0.762,
+     "flux": 985.9,
+     "snr": 802.9,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-03-11T10:24",
+     "detector": 1,
+     "wavelengthUm": 0.804,
+     "flux": 2227,
+     "snr": 1611.4,
+     "maskedPixels": 0
+    },
+    {
+     "date": "2026-03-11T10:31",
+     "detector": 4,
+     "wavelengthUm": 2.858,
+     "flux": 876.9,
+     "snr": 281,
+     "maskedPixels": 7
+    },
+    {
+     "date": "2026-03-11T13:38",
+     "detector": 1,
+     "wavelengthUm": 0.948,
+     "flux": 3077,
+     "snr": 963.6,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-03-11T15:16",
+     "detector": 1,
+     "wavelengthUm": 1.017,
+     "flux": 278.9,
+     "snr": 125,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-03-11T16:50",
+     "detector": 1,
+     "wavelengthUm": 0.883,
+     "flux": 2914,
+     "snr": 739.6,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-03-15T00:49",
+     "detector": 2,
+     "wavelengthUm": 1.48,
+     "flux": 1435,
+     "snr": 894,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-03-15T02:24",
+     "detector": 5,
+     "wavelengthUm": 3.941,
+     "flux": 5807,
+     "snr": 2223.2,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-03-15T02:30",
+     "detector": 5,
+     "wavelengthUm": 4.045,
+     "flux": 5414,
+     "snr": 2229.5,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2026-03-17T16:20",
+     "detector": 2,
+     "wavelengthUm": 1.315,
+     "flux": 1121,
+     "snr": 422.7,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-03-19T07:26",
+     "detector": 6,
+     "wavelengthUm": 4.551,
+     "flux": 4299,
+     "snr": 2239.3,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-03-19T07:32",
+     "detector": 6,
+     "wavelengthUm": 4.652,
+     "flux": 3781,
+     "snr": 1635.4,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-03-19T09:08",
+     "detector": 3,
+     "wavelengthUm": 2.058,
+     "flux": 1631,
+     "snr": 525.8,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-03-21T06:44",
+     "detector": 6,
+     "wavelengthUm": 5.002,
+     "flux": 3853,
+     "snr": 2125,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-03-21T13:15",
+     "detector": 2,
+     "wavelengthUm": 1.144,
+     "flux": 1876,
+     "snr": 831.1,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-03-22T08:45",
+     "detector": 6,
+     "wavelengthUm": 4.824,
+     "flux": 3407,
+     "snr": 2443.5,
+     "maskedPixels": 6
+    },
+    {
+     "date": "2026-03-22T08:51",
+     "detector": 6,
+     "wavelengthUm": 4.93,
+     "flux": 3973,
+     "snr": 2236.8,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-03-23T15:47",
+     "detector": 6,
+     "wavelengthUm": 4.475,
+     "flux": 4663,
+     "snr": 1929.9,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-04-10T00:44",
+     "detector": 6,
+     "wavelengthUm": 4.551,
+     "flux": 4247,
+     "snr": 2149.4,
+     "maskedPixels": 0
+    },
+    {
+     "date": "2026-05-04T21:06",
+     "detector": 3,
+     "wavelengthUm": 2.205,
+     "flux": 2148,
+     "snr": 413,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-08-17T00:49",
+     "detector": 6,
+     "wavelengthUm": 4.465,
+     "flux": 4644,
+     "snr": 2731.5,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-08-17T00:55",
+     "detector": 3,
+     "wavelengthUm": 1.809,
+     "flux": 1372,
+     "snr": 515.3,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2026-08-18T04:32",
+     "detector": 3,
+     "wavelengthUm": 2.379,
+     "flux": 2263,
+     "snr": 1008.7,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-08-18T14:21",
+     "detector": 6,
+     "wavelengthUm": 4.664,
+     "flux": 4190,
+     "snr": 2367.6,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-08-18T20:51",
+     "detector": 2,
+     "wavelengthUm": 1.548,
+     "flux": 4034,
+     "snr": 1470.3,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-08-19T04:59",
+     "detector": 6,
+     "wavelengthUm": 4.767,
+     "flux": 4102,
+     "snr": 2830.2,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-08-19T08:13",
+     "detector": 5,
+     "wavelengthUm": 4.399,
+     "flux": 4717,
+     "snr": 2123.3,
+     "maskedPixels": 7
+    },
+    {
+     "date": "2026-08-21T09:10",
+     "detector": 2,
+     "wavelengthUm": 1.114,
+     "flux": 433.1,
+     "snr": 199,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-08-21T12:22",
+     "detector": 2,
+     "wavelengthUm": 1.195,
+     "flux": 1528,
+     "snr": 499.7,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-08-21T15:35",
+     "detector": 2,
+     "wavelengthUm": 1.282,
+     "flux": 1742,
+     "snr": 458.5,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-08-21T15:42",
+     "detector": 5,
+     "wavelengthUm": 4.149,
+     "flux": 5232,
+     "snr": 2078.6,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-08-21T17:21",
+     "detector": 2,
+     "wavelengthUm": 1.478,
+     "flux": 1696,
+     "snr": 609.1,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-08-23T23:02",
+     "detector": 1,
+     "wavelengthUm": 0.776,
+     "flux": 1553,
+     "snr": 1636.6,
+     "maskedPixels": 0
+    },
+    {
+     "date": "2026-08-24T04:00",
+     "detector": 5,
+     "wavelengthUm": 4.355,
+     "flux": 5219,
+     "snr": 2622.7,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2026-08-24T08:47",
+     "detector": 1,
+     "wavelengthUm": 0.873,
+     "flux": 2832,
+     "snr": 1956.9,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-08-24T10:31",
+     "detector": 5,
+     "wavelengthUm": 4.392,
+     "flux": 5689,
+     "snr": 2938.5,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2026-08-25T19:01",
+     "detector": 1,
+     "wavelengthUm": 1.047,
+     "flux": 2415,
+     "snr": 959.2,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-08-28T04:00",
+     "detector": 5,
+     "wavelengthUm": 4.43,
+     "flux": 5156,
+     "snr": 2221.6,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-08-29T15:54",
+     "detector": 1,
+     "wavelengthUm": 0.982,
+     "flux": 1071,
+     "snr": 1011.1,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2026-09-22T15:05",
+     "detector": 5,
+     "wavelengthUm": 4.291,
+     "flux": 5081,
+     "snr": 1968.1,
+     "maskedPixels": 3
+    }
+   ]
+  },
+  {
+   "key": "eps-indi-b",
+   "label": "Epsilon Indi B",
+   "simbad": {
+    "name": "* eps Ind B",
+    "ra": 331.04414658852124,
+    "dec": -56.782844195116105,
+    "pmra": 3981.977,
+    "pmdec": -2466.832,
+    "plx": 270.658,
+    "epoch": 2000,
+    "otype": "BD*",
+    "source": "SIMBAD"
+   },
+   "positionJ2026": {
+    "ra": 331.0966687786697,
+    "dec": -56.80064917366798
+   },
+   "imagesFound": 458,
+   "imagesPerDetector": {
+    "D2": 93,
+    "D5": 84,
+    "D4": 46,
+    "D1": 46,
+    "D3": 96,
+    "D6": 93
+   },
+   "firstDate": "2025-04-24",
+   "lastDate": "2026-10-02",
+   "visits": [
+    {
+     "from": "2025-04-24",
+     "to": "2025-05-07",
+     "images": 85
+    },
+    {
+     "from": "2025-05-20",
+     "to": "2025-05-20",
+     "images": 2
+    },
+    {
+     "from": "2025-06-06",
+     "to": "2025-06-10",
+     "images": 31
+    },
+    {
+     "from": "2025-09-28",
+     "to": "2025-10-23",
+     "images": 122
+    },
+    {
+     "from": "2025-11-01",
+     "to": "2025-11-12",
+     "images": 24
+    },
+    {
+     "from": "2026-04-18",
+     "to": "2026-05-04",
+     "images": 74
+    },
+    {
+     "from": "2026-09-22",
+     "to": "2026-10-02",
+     "images": 120
+    }
+   ],
+   "framesFetched": 60,
+   "framesFailed": 0,
+   "seconds": 10,
+   "motion": {
+    "note": "Positions in arcsec east/north of the frame centre. 1 SPHEREx pixel = 6.15 arcsec.",
+    "centroidRadiusPx": 3.5,
+    "minWavelengthUm": null,
+    "framesWithClearDetection": 60,
+    "framesTotal": 60,
+    "detectorsUsed": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6
+    ],
+    "seasons": [
+     {
+      "from": "2025-04-24",
+      "to": "2025-06-10",
+      "frames": 16,
+      "t": 2025.35,
+      "east": -1.94,
+      "north": 1.14,
+      "east_err": 0.19,
+      "north_err": 0.27,
+      "exp_east": -2.57,
+      "exp_north": 1.59,
+      "offset_from_prediction": 0.78
+     },
+     {
+      "from": "2025-09-29",
+      "to": "2025-11-12",
+      "frames": 19,
+      "t": 2025.78,
+      "east": -1.18,
+      "north": -0.23,
+      "east_err": 0.19,
+      "north_err": 0.1,
+      "exp_east": -0.88,
+      "exp_north": 0.54,
+      "offset_from_prediction": 0.83
+     },
+     {
+      "from": "2026-04-20",
+      "to": "2026-05-01",
+      "frames": 9,
+      "t": 2026.31,
+      "east": 1.8,
+      "north": -0.96,
+      "east_err": 0.17,
+      "north_err": 0.15,
+      "exp_east": 1.25,
+      "exp_north": -0.77,
+      "offset_from_prediction": 0.58
+     },
+     {
+      "from": "2026-09-22",
+      "to": "2026-10-02",
+      "frames": 16,
+      "t": 2026.74,
+      "east": 2.68,
+      "north": -2.62,
+      "east_err": 0.24,
+      "north_err": 0.16,
+      "exp_east": 2.94,
+      "exp_north": -1.82,
+      "offset_from_prediction": 0.84
+     }
+    ],
+    "firstToLastSeason": {
+     "years": 1.38,
+     "measured_arcsec": 5.95,
+     "measured_err_arcsec": 0.31,
+     "expected_arcsec": 6.49,
+     "measured_px": 0.97,
+     "expected_px": 1.05,
+     "direction_measured_deg": 129.14,
+     "direction_expected_deg": 121.73
+    },
+    "lineFit_mas_per_yr": {
+     "pmra": 3600,
+     "pmra_err": 204,
+     "pmdec": -2591,
+     "pmdec_err": 175,
+     "catalogue": [
+      3981.977,
+      -2466.832
+     ]
+    }
+   },
+   "stackedSeasons": [
+    {
+     "from": "2025-04-24",
+     "to": "2025-06-10",
+     "frames": 16,
+     "t": 2025.35,
+     "east": -1.92,
+     "north": 1.2,
+     "snr": 446.59,
+     "exp_east": -2.57,
+     "exp_north": 1.59,
+     "offset_from_prediction_arcsec": 0.76
+    },
+    {
+     "from": "2025-09-29",
+     "to": "2025-11-12",
+     "frames": 19,
+     "t": 2025.78,
+     "east": -1.17,
+     "north": -0.33,
+     "snr": 391.86,
+     "exp_east": -0.88,
+     "exp_north": 0.54,
+     "offset_from_prediction_arcsec": 0.92
+    },
+    {
+     "from": "2026-04-20",
+     "to": "2026-05-01",
+     "frames": 9,
+     "t": 2026.31,
+     "east": 1.72,
+     "north": -0.9,
+     "snr": 193.66,
+     "exp_east": 1.25,
+     "exp_north": -0.77,
+     "offset_from_prediction_arcsec": 0.49
+    },
+    {
+     "from": "2026-09-22",
+     "to": "2026-10-02",
+     "frames": 16,
+     "t": 2026.74,
+     "east": 2.77,
+     "north": -2.88,
+     "snr": 257.46,
+     "exp_east": 2.94,
+     "exp_north": -1.82,
+     "offset_from_prediction_arcsec": 1.08
+    }
+   ],
+   "stackedFirstToLast": {
+    "years": 1.38,
+    "measured_arcsec": 6.22,
+    "expected_arcsec": 6.49,
+    "measured_px": 1.01,
+    "expected_px": 1.05,
+    "direction_measured_deg": 131,
+    "direction_expected_deg": 121.73
+   },
+   "lightCurve": [
+    {
+     "date": "2025-04-24T20:32",
+     "detector": 2,
+     "wavelengthUm": 1.562,
+     "flux": 41.62,
+     "snr": 458.4,
+     "maskedPixels": 7
+    },
+    {
+     "date": "2025-04-25T06:16",
+     "detector": 4,
+     "wavelengthUm": 2.414,
+     "flux": 16.59,
+     "snr": 183.2,
+     "maskedPixels": 8
+    },
+    {
+     "date": "2025-04-26T05:06",
+     "detector": 5,
+     "wavelengthUm": 3.929,
+     "flux": 56.93,
+     "snr": 674.5,
+     "maskedPixels": 6
+    },
+    {
+     "date": "2025-04-26T19:46",
+     "detector": 2,
+     "wavelengthUm": 1.613,
+     "flux": 38.25,
+     "snr": 814,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2025-04-27T16:59",
+     "detector": 2,
+     "wavelengthUm": 1.336,
+     "flux": 15.77,
+     "snr": 347.8,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2025-04-29T01:34",
+     "detector": 6,
+     "wavelengthUm": 4.431,
+     "flux": 27.3,
+     "snr": 219,
+     "maskedPixels": 19
+    },
+    {
+     "date": "2025-04-29T03:12",
+     "detector": 6,
+     "wavelengthUm": 4.56,
+     "flux": 12.18,
+     "snr": 117.1,
+     "maskedPixels": 16
+    },
+    {
+     "date": "2025-04-29T16:20",
+     "detector": 6,
+     "wavelengthUm": 4.695,
+     "flux": 26,
+     "snr": 188.6,
+     "maskedPixels": 10
+    },
+    {
+     "date": "2025-04-30T02:06",
+     "detector": 6,
+     "wavelengthUm": 4.833,
+     "flux": 13.12,
+     "snr": 100.6,
+     "maskedPixels": 30
+    },
+    {
+     "date": "2025-05-01T14:00",
+     "detector": 3,
+     "wavelengthUm": 1.724,
+     "flux": 29.95,
+     "snr": 720.4,
+     "maskedPixels": 6
+    },
+    {
+     "date": "2025-05-04T16:57",
+     "detector": 2,
+     "wavelengthUm": 1.651,
+     "flux": 38,
+     "snr": 797.4,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2025-05-20T03:09",
+     "detector": 3,
+     "wavelengthUm": 1.764,
+     "flux": 19.72,
+     "snr": 359.4,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2025-06-06T17:19",
+     "detector": 5,
+     "wavelengthUm": 3.929,
+     "flux": 36.08,
+     "snr": 661.1,
+     "maskedPixels": 7
+    },
+    {
+     "date": "2025-06-06T20:31",
+     "detector": 2,
+     "wavelengthUm": 1.562,
+     "flux": 39.56,
+     "snr": 727,
+     "maskedPixels": 7
+    },
+    {
+     "date": "2025-06-07T12:54",
+     "detector": 2,
+     "wavelengthUm": 1.469,
+     "flux": 13.93,
+     "snr": 349.3,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2025-06-10T04:34",
+     "detector": 6,
+     "wavelengthUm": 4.661,
+     "flux": 26.37,
+     "snr": 192.8,
+     "maskedPixels": 25
+    },
+    {
+     "date": "2025-09-29T07:17",
+     "detector": 3,
+     "wavelengthUm": 1.822,
+     "flux": 12.27,
+     "snr": 364.3,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2025-09-29T13:47",
+     "detector": 6,
+     "wavelengthUm": 4.709,
+     "flux": 22.34,
+     "snr": 92.5,
+     "maskedPixels": 13
+    },
+    {
+     "date": "2025-09-30T23:59",
+     "detector": 6,
+     "wavelengthUm": 4.812,
+     "flux": 21.98,
+     "snr": 210.8,
+     "maskedPixels": 24
+    },
+    {
+     "date": "2025-10-01T04:54",
+     "detector": 6,
+     "wavelengthUm": 4.954,
+     "flux": 22.46,
+     "snr": 225.5,
+     "maskedPixels": 11
+    },
+    {
+     "date": "2025-10-02T00:27",
+     "detector": 2,
+     "wavelengthUm": 1.189,
+     "flux": 18.41,
+     "snr": 275.6,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2025-10-02T02:07",
+     "detector": 5,
+     "wavelengthUm": 4.141,
+     "flux": 23.41,
+     "snr": 259.5,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2025-10-02T21:43",
+     "detector": 2,
+     "wavelengthUm": 1.618,
+     "flux": 38.96,
+     "snr": 558.4,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2025-10-03T18:54",
+     "detector": 2,
+     "wavelengthUm": 1.161,
+     "flux": 15.04,
+     "snr": 176.4,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2025-10-06T05:30",
+     "detector": 6,
+     "wavelengthUm": 4.847,
+     "flux": 21.83,
+     "snr": 150.2,
+     "maskedPixels": 21
+    },
+    {
+     "date": "2025-10-06T12:01",
+     "detector": 2,
+     "wavelengthUm": 1.337,
+     "flux": 14.05,
+     "snr": 421.1,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2025-10-07T23:58",
+     "detector": 4,
+     "wavelengthUm": 2.976,
+     "flux": 19.08,
+     "snr": 519.5,
+     "maskedPixels": 16
+    },
+    {
+     "date": "2025-10-09T23:09",
+     "detector": 5,
+     "wavelengthUm": 3.897,
+     "flux": 56.33,
+     "snr": 1027.2,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2025-10-10T08:58",
+     "detector": 4,
+     "wavelengthUm": 3.497,
+     "flux": 14.4,
+     "snr": 504.5,
+     "maskedPixels": 13
+    },
+    {
+     "date": "2025-10-13T10:23",
+     "detector": 1,
+     "wavelengthUm": 0.852,
+     "flux": 1.494,
+     "snr": 13.4,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2025-10-16T18:06",
+     "detector": 4,
+     "wavelengthUm": 2.498,
+     "flux": 11.05,
+     "snr": 291.4,
+     "maskedPixels": 20
+    },
+    {
+     "date": "2025-11-01T10:41",
+     "detector": 3,
+     "wavelengthUm": 1.74,
+     "flux": 25.42,
+     "snr": 852.4,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2025-11-06T16:14",
+     "detector": 2,
+     "wavelengthUm": 1.161,
+     "flux": 14.67,
+     "snr": 210.1,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2025-11-11T03:49",
+     "detector": 4,
+     "wavelengthUm": 2.532,
+     "flux": 9.348,
+     "snr": 364.3,
+     "maskedPixels": 10
+    },
+    {
+     "date": "2025-11-12T20:35",
+     "detector": 4,
+     "wavelengthUm": 2.818,
+     "flux": 11.28,
+     "snr": 416.7,
+     "maskedPixels": 15
+    },
+    {
+     "date": "2026-04-20T19:40",
+     "detector": 4,
+     "wavelengthUm": 2.523,
+     "flux": 9.802,
+     "snr": 216.2,
+     "maskedPixels": 15
+    },
+    {
+     "date": "2026-04-20T22:55",
+     "detector": 4,
+     "wavelengthUm": 2.807,
+     "flux": 10.85,
+     "snr": 311.2,
+     "maskedPixels": 10
+    },
+    {
+     "date": "2026-04-21T19:56",
+     "detector": 1,
+     "wavelengthUm": 0.933,
+     "flux": 5.531,
+     "snr": 66.3,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-04-21T21:33",
+     "detector": 1,
+     "wavelengthUm": 1.025,
+     "flux": 15.56,
+     "snr": 242.8,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2026-04-25T02:14",
+     "detector": 5,
+     "wavelengthUm": 4.104,
+     "flux": 64.75,
+     "snr": 586.1,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-04-27T03:03",
+     "detector": 1,
+     "wavelengthUm": 0.87,
+     "flux": 2.15,
+     "snr": 30.3,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-04-29T07:13",
+     "detector": 3,
+     "wavelengthUm": 2.12,
+     "flux": 31.72,
+     "snr": 849.6,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-04-29T10:24",
+     "detector": 6,
+     "wavelengthUm": 4.904,
+     "flux": 23.93,
+     "snr": 155.7,
+     "maskedPixels": 19
+    },
+    {
+     "date": "2026-05-01T06:27",
+     "detector": 6,
+     "wavelengthUm": 4.428,
+     "flux": 28.17,
+     "snr": 164.8,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-09-22T05:29",
+     "detector": 6,
+     "wavelengthUm": 4.524,
+     "flux": 9.633,
+     "snr": 150.2,
+     "maskedPixels": 8
+    },
+    {
+     "date": "2026-09-22T21:51",
+     "detector": 3,
+     "wavelengthUm": 2.019,
+     "flux": 22.54,
+     "snr": 470.6,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-09-23T17:23",
+     "detector": 6,
+     "wavelengthUm": 4.861,
+     "flux": 22.64,
+     "snr": 107.4,
+     "maskedPixels": 9
+    },
+    {
+     "date": "2026-09-25T05:16",
+     "detector": 6,
+     "wavelengthUm": 5.005,
+     "flux": 24.59,
+     "snr": 117.8,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2026-09-25T23:09",
+     "detector": 3,
+     "wavelengthUm": 1.657,
+     "flux": 34.72,
+     "snr": 485,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2026-09-26T08:56",
+     "detector": 6,
+     "wavelengthUm": 4.798,
+     "flux": 12.46,
+     "snr": 119.4,
+     "maskedPixels": 24
+    },
+    {
+     "date": "2026-09-27T07:40",
+     "detector": 3,
+     "wavelengthUm": 2.219,
+     "flux": 21.54,
+     "snr": 496.8,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-09-27T15:47",
+     "detector": 6,
+     "wavelengthUm": 4.975,
+     "flux": 26.66,
+     "snr": 111.1,
+     "maskedPixels": 38
+    },
+    {
+     "date": "2026-09-27T19:06",
+     "detector": 6,
+     "wavelengthUm": 4.56,
+     "flux": 19.81,
+     "snr": 181.1,
+     "maskedPixels": 55
+    },
+    {
+     "date": "2026-09-28T08:05",
+     "detector": 6,
+     "wavelengthUm": 4.661,
+     "flux": 24.26,
+     "snr": 179.4,
+     "maskedPixels": 10
+    },
+    {
+     "date": "2026-09-29T23:15",
+     "detector": 2,
+     "wavelengthUm": 1.094,
+     "flux": 21.02,
+     "snr": 25.7,
+     "maskedPixels": 0
+    },
+    {
+     "date": "2026-09-30T12:13",
+     "detector": 5,
+     "wavelengthUm": 3.879,
+     "flux": 57.27,
+     "snr": 711.5,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-10-01T04:32",
+     "detector": 2,
+     "wavelengthUm": 1.524,
+     "flux": 20.98,
+     "snr": 457.3,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-10-01T06:11",
+     "detector": 2,
+     "wavelengthUm": 1.203,
+     "flux": 26.86,
+     "snr": 537.8,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-10-02T03:22",
+     "detector": 2,
+     "wavelengthUm": 1.291,
+     "flux": 44.48,
+     "snr": 728.4,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-10-02T11:29",
+     "detector": 2,
+     "wavelengthUm": 1.353,
+     "flux": 6.065,
+     "snr": 203.6,
+     "maskedPixels": 1
+    }
+   ]
+  },
+  {
+   "key": "wise-0855",
+   "label": "WISE 0855",
+   "simbad": {
+    "name": "WISEA J085510.74-071442.5",
+    "ra": 133.81890825,
+    "dec": -7.247048000000001,
+    "pmra": -8123.7,
+    "pmdec": 673.2,
+    "plx": 439,
+    "epoch": 2000,
+    "otype": "BD*",
+    "source": "SIMBAD"
+   },
+   "positionJ2026": {
+    "ra": 133.7597652706523,
+    "dec": -7.242182182634441
+   },
+   "imagesFound": 258,
+   "imagesPerDetector": {
+    "D3": 45,
+    "D6": 45,
+    "D2": 48,
+    "D5": 48,
+    "D1": 36,
+    "D4": 36
+   },
+   "firstDate": "2025-05-05",
+   "lastDate": "2026-05-14",
+   "visits": [
+    {
+     "from": "2025-05-05",
+     "to": "2025-05-06",
+     "images": 30
+    },
+    {
+     "from": "2025-10-31",
+     "to": "2025-11-14",
+     "images": 110
+    },
+    {
+     "from": "2025-12-11",
+     "to": "2025-12-13",
+     "images": 18
+    },
+    {
+     "from": "2026-04-21",
+     "to": "2026-05-14",
+     "images": 100
+    }
+   ],
+   "framesFetched": 92,
+   "framesFailed": 1,
+   "seconds": 38,
+   "nasaPositionOffsetArcsec": 121.38129407257425,
+   "nasaPositionOffsetPixels": 19.736795784158414,
+   "motion": {
+    "note": "Positions in arcsec east/north of the frame centre. 1 SPHEREx pixel = 6.15 arcsec.",
+    "centroidRadiusPx": 2.5,
+    "minWavelengthUm": 3.8,
+    "framesWithClearDetection": 45,
+    "framesTotal": 92,
+    "detectorsUsed": [
+     5,
+     6
+    ],
+    "seasons": [
+     {
+      "from": "2025-05-06",
+      "to": "2025-05-06",
+      "frames": 4,
+      "t": 2025.34,
+      "east": 2.15,
+      "north": 0.36,
+      "east_err": 0.8,
+      "north_err": 0.54,
+      "exp_east": 5.34,
+      "exp_north": -0.44,
+      "offset_from_prediction": 3.28
+     },
+     {
+      "from": "2025-11-07",
+      "to": "2025-12-13",
+      "frames": 23,
+      "t": 2025.88,
+      "east": -1.62,
+      "north": 0.35,
+      "east_err": 0.63,
+      "north_err": 0.36,
+      "exp_east": 0.99,
+      "exp_north": -0.08,
+      "offset_from_prediction": 2.64
+     },
+     {
+      "from": "2026-04-21",
+      "to": "2026-05-14",
+      "frames": 18,
+      "t": 2026.33,
+      "east": -4.09,
+      "north": 1.46,
+      "east_err": 0.36,
+      "north_err": 0.27,
+      "exp_east": -2.67,
+      "exp_north": 0.22,
+      "offset_from_prediction": 1.88
+     }
+    ],
+    "firstToLastSeason": {
+     "years": 0.99,
+     "measured_arcsec": 6.33,
+     "measured_err_arcsec": 0.76,
+     "expected_arcsec": 8.04,
+     "measured_px": 1.03,
+     "expected_px": 1.31,
+     "direction_measured_deg": -79.94,
+     "direction_expected_deg": -85.26
+    },
+    "lineFit_mas_per_yr": {
+     "pmra": -5986,
+     "pmra_err": 1200,
+     "pmdec": 1662,
+     "pmdec_err": 738,
+     "catalogue": [
+      -8123.7,
+      673.2
+     ]
+    }
+   },
+   "stackedSeasons": [
+    {
+     "from": "2025-05-05",
+     "to": "2025-05-06",
+     "frames": 11,
+     "t": 2025.34,
+     "east": 2.39,
+     "north": 0.06,
+     "snr": 8.26,
+     "exp_east": 5.33,
+     "exp_north": -0.44,
+     "offset_from_prediction_arcsec": 2.99
+    },
+    {
+     "from": "2025-11-07",
+     "to": "2025-12-13",
+     "frames": 46,
+     "t": 2025.88,
+     "east": -1.05,
+     "north": 0.24,
+     "snr": 11.65,
+     "exp_east": 1.01,
+     "exp_north": -0.08,
+     "offset_from_prediction_arcsec": 2.09
+    },
+    {
+     "from": "2026-04-21",
+     "to": "2026-05-14",
+     "frames": 35,
+     "t": 2026.33,
+     "east": -3.76,
+     "north": 0.17,
+     "snr": 11.42,
+     "exp_east": -2.68,
+     "exp_north": 0.22,
+     "offset_from_prediction_arcsec": 1.08
+    }
+   ],
+   "stackedFirstToLast": {
+    "years": 0.99,
+    "measured_arcsec": 6.15,
+    "expected_arcsec": 8.04,
+    "measured_px": 1,
+    "expected_px": 1.31,
+    "direction_measured_deg": -89.04,
+    "direction_expected_deg": -85.26
+   },
+   "lightCurve": [
+    {
+     "date": "2025-05-05T16:49",
+     "detector": 6,
+     "wavelengthUm": 4.967,
+     "flux": 0.2334,
+     "snr": 1.3,
+     "maskedPixels": 22
+    },
+    {
+     "date": "2025-05-05T16:51",
+     "detector": 6,
+     "wavelengthUm": 5.003,
+     "flux": 0.4909,
+     "snr": 2.4,
+     "maskedPixels": 12
+    },
+    {
+     "date": "2025-05-05T20:02",
+     "detector": 6,
+     "wavelengthUm": 4.86,
+     "flux": 0.5123,
+     "snr": 3.9,
+     "maskedPixels": 19
+    },
+    {
+     "date": "2025-05-06T02:34",
+     "detector": 5,
+     "wavelengthUm": 4.295,
+     "flux": 0.7404,
+     "snr": 5.6,
+     "maskedPixels": 23
+    },
+    {
+     "date": "2025-05-06T02:36",
+     "detector": 5,
+     "wavelengthUm": 4.332,
+     "flux": 0.6894,
+     "snr": 9.9,
+     "maskedPixels": 29
+    },
+    {
+     "date": "2025-05-06T02:38",
+     "detector": 5,
+     "wavelengthUm": 4.369,
+     "flux": 0.6659,
+     "snr": 6.2,
+     "maskedPixels": 15
+    },
+    {
+     "date": "2025-05-06T02:40",
+     "detector": 5,
+     "wavelengthUm": 4.406,
+     "flux": 0.7761,
+     "snr": 10.8,
+     "maskedPixels": 15
+    },
+    {
+     "date": "2025-05-06T10:42",
+     "detector": 5,
+     "wavelengthUm": 4.039,
+     "flux": 0.2214,
+     "snr": 2.9,
+     "maskedPixels": 10
+    },
+    {
+     "date": "2025-05-06T10:44",
+     "detector": 5,
+     "wavelengthUm": 4.074,
+     "flux": 0.2503,
+     "snr": 4,
+     "maskedPixels": 13
+    },
+    {
+     "date": "2025-05-06T10:46",
+     "detector": 5,
+     "wavelengthUm": 4.109,
+     "flux": 0.3825,
+     "snr": 4.4,
+     "maskedPixels": 20
+    },
+    {
+     "date": "2025-05-06T10:49",
+     "detector": 5,
+     "wavelengthUm": 4.145,
+     "flux": 0.671,
+     "snr": 4.9,
+     "maskedPixels": 21
+    },
+    {
+     "date": "2025-11-07T05:47",
+     "detector": 5,
+     "wavelengthUm": 3.822,
+     "flux": 0.4484,
+     "snr": 5.6,
+     "maskedPixels": 19
+    },
+    {
+     "date": "2025-11-07T05:50",
+     "detector": 5,
+     "wavelengthUm": 3.855,
+     "flux": 0.3613,
+     "snr": 4.9,
+     "maskedPixels": 19
+    },
+    {
+     "date": "2025-11-07T05:52",
+     "detector": 5,
+     "wavelengthUm": 3.888,
+     "flux": 0.3541,
+     "snr": 2.2,
+     "maskedPixels": 17
+    },
+    {
+     "date": "2025-11-07T05:54",
+     "detector": 5,
+     "wavelengthUm": 3.922,
+     "flux": 0.262,
+     "snr": 1.9,
+     "maskedPixels": 20
+    },
+    {
+     "date": "2025-11-07T09:03",
+     "detector": 5,
+     "wavelengthUm": 3.956,
+     "flux": 0.3617,
+     "snr": 4.6,
+     "maskedPixels": 46
+    },
+    {
+     "date": "2025-11-07T09:05",
+     "detector": 5,
+     "wavelengthUm": 3.99,
+     "flux": 0.2597,
+     "snr": 2.4,
+     "maskedPixels": 24
+    },
+    {
+     "date": "2025-11-07T18:48",
+     "detector": 5,
+     "wavelengthUm": 4.012,
+     "flux": 0.2547,
+     "snr": 3.3,
+     "maskedPixels": 14
+    },
+    {
+     "date": "2025-11-07T18:50",
+     "detector": 5,
+     "wavelengthUm": 4.047,
+     "flux": 0.4261,
+     "snr": 5.4,
+     "maskedPixels": 37
+    },
+    {
+     "date": "2025-11-07T18:52",
+     "detector": 5,
+     "wavelengthUm": 4.082,
+     "flux": 0.3679,
+     "snr": 3.5,
+     "maskedPixels": 21
+    },
+    {
+     "date": "2025-11-07T18:54",
+     "detector": 5,
+     "wavelengthUm": 4.118,
+     "flux": 0.6423,
+     "snr": 5.5,
+     "maskedPixels": 16
+    },
+    {
+     "date": "2025-11-07T20:30",
+     "detector": 5,
+     "wavelengthUm": 4.153,
+     "flux": 0.5928,
+     "snr": 3.9,
+     "maskedPixels": 10
+    },
+    {
+     "date": "2025-11-07T20:32",
+     "detector": 5,
+     "wavelengthUm": 4.189,
+     "flux": 0.7193,
+     "snr": 6.2,
+     "maskedPixels": 22
+    },
+    {
+     "date": "2025-11-07T20:34",
+     "detector": 5,
+     "wavelengthUm": 4.225,
+     "flux": 0.6403,
+     "snr": 5.6,
+     "maskedPixels": 17
+    },
+    {
+     "date": "2025-11-07T22:07",
+     "detector": 5,
+     "wavelengthUm": 4.297,
+     "flux": 0.6452,
+     "snr": 7.4,
+     "maskedPixels": 10
+    },
+    {
+     "date": "2025-11-07T22:09",
+     "detector": 5,
+     "wavelengthUm": 4.334,
+     "flux": 0.203,
+     "snr": 3.2,
+     "maskedPixels": 24
+    },
+    {
+     "date": "2025-11-07T22:11",
+     "detector": 5,
+     "wavelengthUm": 4.371,
+     "flux": 0.7113,
+     "snr": 5.2,
+     "maskedPixels": 14
+    },
+    {
+     "date": "2025-11-07T22:13",
+     "detector": 5,
+     "wavelengthUm": 4.408,
+     "flux": 0.7157,
+     "snr": 5.1,
+     "maskedPixels": 17
+    },
+    {
+     "date": "2025-11-08T04:32",
+     "detector": 5,
+     "wavelengthUm": 4.261,
+     "flux": 0.3696,
+     "snr": 9,
+     "maskedPixels": 22
+    },
+    {
+     "date": "2025-11-10T07:08",
+     "detector": 6,
+     "wavelengthUm": 4.418,
+     "flux": 0.7604,
+     "snr": 4.6,
+     "maskedPixels": 12
+    },
+    {
+     "date": "2025-11-10T07:10",
+     "detector": 6,
+     "wavelengthUm": 4.449,
+     "flux": 0.8288,
+     "snr": 5.6,
+     "maskedPixels": 10
+    },
+    {
+     "date": "2025-11-10T07:13",
+     "detector": 6,
+     "wavelengthUm": 4.481,
+     "flux": 0.8537,
+     "snr": 9.3,
+     "maskedPixels": 26
+    },
+    {
+     "date": "2025-11-10T07:15",
+     "detector": 6,
+     "wavelengthUm": 4.514,
+     "flux": 0.4431,
+     "snr": 2.2,
+     "maskedPixels": 15
+    },
+    {
+     "date": "2025-11-10T08:46",
+     "detector": 6,
+     "wavelengthUm": 4.546,
+     "flux": 1.008,
+     "snr": 6.4,
+     "maskedPixels": 42
+    },
+    {
+     "date": "2025-11-10T08:48",
+     "detector": 6,
+     "wavelengthUm": 4.58,
+     "flux": 0.8117,
+     "snr": 10.6,
+     "maskedPixels": 24
+    },
+    {
+     "date": "2025-11-10T08:50",
+     "detector": 6,
+     "wavelengthUm": 4.613,
+     "flux": 0.6141,
+     "snr": 6.2,
+     "maskedPixels": 25
+    },
+    {
+     "date": "2025-11-10T10:31",
+     "detector": 5,
+     "wavelengthUm": 4.012,
+     "flux": 0.2117,
+     "snr": 2.5,
+     "maskedPixels": 15
+    },
+    {
+     "date": "2025-11-10T23:27",
+     "detector": 6,
+     "wavelengthUm": 4.634,
+     "flux": 1.077,
+     "snr": 5.8,
+     "maskedPixels": 21
+    },
+    {
+     "date": "2025-11-10T23:29",
+     "detector": 6,
+     "wavelengthUm": 4.668,
+     "flux": 0.5036,
+     "snr": 2.7,
+     "maskedPixels": 23
+    },
+    {
+     "date": "2025-11-14T12:08",
+     "detector": 6,
+     "wavelengthUm": 4.702,
+     "flux": 0.1938,
+     "snr": 1.9,
+     "maskedPixels": 30
+    },
+    {
+     "date": "2025-11-14T12:10",
+     "detector": 6,
+     "wavelengthUm": 4.736,
+     "flux": 0.3593,
+     "snr": 4,
+     "maskedPixels": 22
+    },
+    {
+     "date": "2025-11-14T12:12",
+     "detector": 6,
+     "wavelengthUm": 4.77,
+     "flux": 0.4214,
+     "snr": 3.1,
+     "maskedPixels": 17
+    },
+    {
+     "date": "2025-11-14T12:14",
+     "detector": 6,
+     "wavelengthUm": 4.805,
+     "flux": 0.8286,
+     "snr": 3.8,
+     "maskedPixels": 20
+    },
+    {
+     "date": "2025-11-14T13:47",
+     "detector": 6,
+     "wavelengthUm": 4.839,
+     "flux": 0.5169,
+     "snr": 3.2,
+     "maskedPixels": 15
+    },
+    {
+     "date": "2025-11-14T13:50",
+     "detector": 6,
+     "wavelengthUm": 4.875,
+     "flux": 0.8577,
+     "snr": 3.8,
+     "maskedPixels": 27
+    },
+    {
+     "date": "2025-11-14T13:52",
+     "detector": 6,
+     "wavelengthUm": 4.911,
+     "flux": 0.2149,
+     "snr": 1.6,
+     "maskedPixels": 16
+    },
+    {
+     "date": "2025-11-14T13:54",
+     "detector": 6,
+     "wavelengthUm": 4.946,
+     "flux": 0.3967,
+     "snr": 2,
+     "maskedPixels": 22
+    },
+    {
+     "date": "2025-11-14T21:55",
+     "detector": 6,
+     "wavelengthUm": 4.982,
+     "flux": 0.8032,
+     "snr": 5.3,
+     "maskedPixels": 21
+    },
+    {
+     "date": "2025-12-11T19:18",
+     "detector": 5,
+     "wavelengthUm": 4.047,
+     "flux": 0.2785,
+     "snr": 5.3,
+     "maskedPixels": 23
+    },
+    {
+     "date": "2025-12-12T01:49",
+     "detector": 5,
+     "wavelengthUm": 4.082,
+     "flux": 0.3345,
+     "snr": 5.3,
+     "maskedPixels": 23
+    },
+    {
+     "date": "2025-12-12T06:48",
+     "detector": 6,
+     "wavelengthUm": 4.634,
+     "flux": 0.7789,
+     "snr": 5.9,
+     "maskedPixels": 22
+    },
+    {
+     "date": "2025-12-12T08:27",
+     "detector": 6,
+     "wavelengthUm": 4.702,
+     "flux": 0.631,
+     "snr": 3.7,
+     "maskedPixels": 17
+    },
+    {
+     "date": "2025-12-12T19:46",
+     "detector": 5,
+     "wavelengthUm": 4.117,
+     "flux": 0.4862,
+     "snr": 4.5,
+     "maskedPixels": 10
+    },
+    {
+     "date": "2025-12-12T21:25",
+     "detector": 5,
+     "wavelengthUm": 4.153,
+     "flux": 0.4617,
+     "snr": 6.4,
+     "maskedPixels": 19
+    },
+    {
+     "date": "2025-12-13T00:42",
+     "detector": 6,
+     "wavelengthUm": 4.736,
+     "flux": 0.3735,
+     "snr": 5.3,
+     "maskedPixels": 18
+    },
+    {
+     "date": "2025-12-13T05:33",
+     "detector": 5,
+     "wavelengthUm": 4.189,
+     "flux": 0.6343,
+     "snr": 6.6,
+     "maskedPixels": 18
+    },
+    {
+     "date": "2025-12-13T08:51",
+     "detector": 5,
+     "wavelengthUm": 4.225,
+     "flux": 0.63,
+     "snr": 13,
+     "maskedPixels": 38
+    },
+    {
+     "date": "2026-04-21T04:45",
+     "detector": 6,
+     "wavelengthUm": 4.424,
+     "flux": 0.6196,
+     "snr": 5.4,
+     "maskedPixels": 15
+    },
+    {
+     "date": "2026-04-21T04:48",
+     "detector": 6,
+     "wavelengthUm": 4.455,
+     "flux": 0.5383,
+     "snr": 7,
+     "maskedPixels": 13
+    },
+    {
+     "date": "2026-04-22T18:11",
+     "detector": 6,
+     "wavelengthUm": 4.519,
+     "flux": 0.7391,
+     "snr": 4.6,
+     "maskedPixels": 26
+    },
+    {
+     "date": "2026-04-22T18:13",
+     "detector": 6,
+     "wavelengthUm": 4.551,
+     "flux": 1.225,
+     "snr": 7,
+     "maskedPixels": 18
+    },
+    {
+     "date": "2026-04-22T18:15",
+     "detector": 6,
+     "wavelengthUm": 4.584,
+     "flux": 0.9022,
+     "snr": 6.1,
+     "maskedPixels": 10
+    },
+    {
+     "date": "2026-04-23T10:29",
+     "detector": 6,
+     "wavelengthUm": 4.617,
+     "flux": 0.71,
+     "snr": 8.1,
+     "maskedPixels": 18
+    },
+    {
+     "date": "2026-04-23T10:31",
+     "detector": 6,
+     "wavelengthUm": 4.651,
+     "flux": 0.7718,
+     "snr": 6.9,
+     "maskedPixels": 14
+    },
+    {
+     "date": "2026-04-23T10:33",
+     "detector": 6,
+     "wavelengthUm": 4.685,
+     "flux": 0.6674,
+     "snr": 5.6,
+     "maskedPixels": 19
+    },
+    {
+     "date": "2026-04-23T10:35",
+     "detector": 6,
+     "wavelengthUm": 4.719,
+     "flux": 0.8954,
+     "snr": 8.5,
+     "maskedPixels": 24
+    },
+    {
+     "date": "2026-04-26T02:04",
+     "detector": 6,
+     "wavelengthUm": 4.822,
+     "flux": 0.7138,
+     "snr": 5.6,
+     "maskedPixels": 26
+    },
+    {
+     "date": "2026-04-26T03:40",
+     "detector": 6,
+     "wavelengthUm": 4.753,
+     "flux": 0.7749,
+     "snr": 4.6,
+     "maskedPixels": 20
+    },
+    {
+     "date": "2026-04-26T03:43",
+     "detector": 6,
+     "wavelengthUm": 4.787,
+     "flux": 0.5631,
+     "snr": 3.9,
+     "maskedPixels": 18
+    },
+    {
+     "date": "2026-04-26T11:51",
+     "detector": 6,
+     "wavelengthUm": 4.895,
+     "flux": 0.3309,
+     "snr": 3.3,
+     "maskedPixels": 24
+    },
+    {
+     "date": "2026-04-26T11:53",
+     "detector": 6,
+     "wavelengthUm": 4.931,
+     "flux": 0.3456,
+     "snr": 2.6,
+     "maskedPixels": 24
+    },
+    {
+     "date": "2026-04-30T18:30",
+     "detector": 6,
+     "wavelengthUm": 4.825,
+     "flux": 0.8575,
+     "snr": 4.9,
+     "maskedPixels": 17
+    },
+    {
+     "date": "2026-05-01T14:06",
+     "detector": 5,
+     "wavelengthUm": 3.835,
+     "flux": 0.2762,
+     "snr": 4.3,
+     "maskedPixels": 24
+    },
+    {
+     "date": "2026-05-01T14:08",
+     "detector": 5,
+     "wavelengthUm": 3.867,
+     "flux": 0.266,
+     "snr": 5.6,
+     "maskedPixels": 20
+    },
+    {
+     "date": "2026-05-01T14:10",
+     "detector": 5,
+     "wavelengthUm": 3.901,
+     "flux": 0.3771,
+     "snr": 4.3,
+     "maskedPixels": 21
+    },
+    {
+     "date": "2026-05-01T14:12",
+     "detector": 5,
+     "wavelengthUm": 3.935,
+     "flux": 0.3505,
+     "snr": 4.6,
+     "maskedPixels": 17
+    },
+    {
+     "date": "2026-05-02T09:39",
+     "detector": 5,
+     "wavelengthUm": 3.969,
+     "flux": 0.5473,
+     "snr": 6.5,
+     "maskedPixels": 19
+    },
+    {
+     "date": "2026-05-02T09:41",
+     "detector": 5,
+     "wavelengthUm": 4.004,
+     "flux": 0.4264,
+     "snr": 5.5,
+     "maskedPixels": 23
+    },
+    {
+     "date": "2026-05-02T16:11",
+     "detector": 5,
+     "wavelengthUm": 4.222,
+     "flux": 0.5533,
+     "snr": 8.9,
+     "maskedPixels": 19
+    },
+    {
+     "date": "2026-05-02T16:13",
+     "detector": 5,
+     "wavelengthUm": 4.258,
+     "flux": 0.6732,
+     "snr": 6.3,
+     "maskedPixels": 26
+    },
+    {
+     "date": "2026-05-03T05:11",
+     "detector": 5,
+     "wavelengthUm": 4.18,
+     "flux": 0.616,
+     "snr": 9.4,
+     "maskedPixels": 9
+    },
+    {
+     "date": "2026-05-03T05:13",
+     "detector": 5,
+     "wavelengthUm": 4.216,
+     "flux": 0.627,
+     "snr": 6.8,
+     "maskedPixels": 25
+    },
+    {
+     "date": "2026-05-08T23:38",
+     "detector": 6,
+     "wavelengthUm": 4.825,
+     "flux": 0.4751,
+     "snr": 2.9,
+     "maskedPixels": 20
+    },
+    {
+     "date": "2026-05-09T04:40",
+     "detector": 6,
+     "wavelengthUm": 4.86,
+     "flux": 0.8981,
+     "snr": 4.5,
+     "maskedPixels": 23
+    },
+    {
+     "date": "2026-05-09T12:40",
+     "detector": 6,
+     "wavelengthUm": 4.895,
+     "flux": 0.2073,
+     "snr": 2.2,
+     "maskedPixels": 14
+    },
+    {
+     "date": "2026-05-09T22:24",
+     "detector": 6,
+     "wavelengthUm": 4.931,
+     "flux": 0.4995,
+     "snr": 3.2,
+     "maskedPixels": 21
+    },
+    {
+     "date": "2026-05-11T02:19",
+     "detector": 6,
+     "wavelengthUm": 4.967,
+     "flux": 0.5541,
+     "snr": 3.1,
+     "maskedPixels": 15
+    },
+    {
+     "date": "2026-05-11T13:37",
+     "detector": 5,
+     "wavelengthUm": 4.222,
+     "flux": 0.5058,
+     "snr": 4.4,
+     "maskedPixels": 29
+    },
+    {
+     "date": "2026-05-12T04:13",
+     "detector": 5,
+     "wavelengthUm": 4.258,
+     "flux": 0.9686,
+     "snr": 9.2,
+     "maskedPixels": 15
+    },
+    {
+     "date": "2026-05-13T01:33",
+     "detector": 5,
+     "wavelengthUm": 4.295,
+     "flux": 0.8843,
+     "snr": 13.2,
+     "maskedPixels": 11
+    },
+    {
+     "date": "2026-05-13T16:14",
+     "detector": 5,
+     "wavelengthUm": 4.332,
+     "flux": 1.04,
+     "snr": 8.2,
+     "maskedPixels": 28
+    },
+    {
+     "date": "2026-05-14T06:54",
+     "detector": 5,
+     "wavelengthUm": 4.369,
+     "flux": 1.014,
+     "snr": 7.7,
+     "maskedPixels": 32
+    }
+   ]
+  },
+  {
+   "key": "rw-aur",
+   "label": "RW Aurigae",
+   "simbad": {
+    "name": "V* RW Aur",
+    "ra": 76.95652603458333,
+    "dec": 30.401438173888888,
+    "pmra": 7.23,
+    "pmdec": -20.33,
+    "plx": 15.42,
+    "epoch": 2000,
+    "otype": "TT*",
+    "source": "SIMBAD"
+   },
+   "positionJ2026": {
+    "ra": 76.95658657548724,
+    "dec": 30.401291346097146
+   },
+   "imagesFound": 335,
+   "imagesPerDetector": {
+    "D1": 56,
+    "D4": 56,
+    "D2": 55,
+    "D5": 56,
+    "D3": 56,
+    "D6": 56
+   },
+   "firstDate": "2025-09-01",
+   "lastDate": "2026-09-16",
+   "visits": [
+    {
+     "from": "2025-09-01",
+     "to": "2025-09-11",
+     "images": 76
+    },
+    {
+     "from": "2025-09-17",
+     "to": "2025-09-20",
+     "images": 36
+    },
+    {
+     "from": "2026-02-20",
+     "to": "2026-02-21",
+     "images": 16
+    },
+    {
+     "from": "2026-02-27",
+     "to": "2026-03-12",
+     "images": 98
+    },
+    {
+     "from": "2026-09-02",
+     "to": "2026-09-02",
+     "images": 12
+    },
+    {
+     "from": "2026-09-08",
+     "to": "2026-09-16",
+     "images": 97
+    }
+   ],
+   "framesFetched": 60,
+   "framesFailed": 0,
+   "seconds": 17,
+   "lightCurve": [
+    {
+     "date": "2025-09-01T10:05",
+     "detector": 1,
+     "wavelengthUm": 1.068,
+     "flux": 167,
+     "snr": 241,
+     "maskedPixels": 6
+    },
+    {
+     "date": "2025-09-02T00:44",
+     "detector": 4,
+     "wavelengthUm": 2.435,
+     "flux": 901.3,
+     "snr": 3024.8,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2025-09-02T23:28",
+     "detector": 4,
+     "wavelengthUm": 2.556,
+     "flux": 769.7,
+     "snr": 3379.6,
+     "maskedPixels": 8
+    },
+    {
+     "date": "2025-09-02T23:34",
+     "detector": 4,
+     "wavelengthUm": 2.768,
+     "flux": 945.3,
+     "snr": 2644.7,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2025-09-03T17:27",
+     "detector": 4,
+     "wavelengthUm": 3,
+     "flux": 1272,
+     "snr": 2924.4,
+     "maskedPixels": 11
+    },
+    {
+     "date": "2025-09-03T23:56",
+     "detector": 4,
+     "wavelengthUm": 3.37,
+     "flux": 1512,
+     "snr": 3810.7,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2025-09-04T01:36",
+     "detector": 1,
+     "wavelengthUm": 0.943,
+     "flux": 174,
+     "snr": 1789,
+     "maskedPixels": 7
+    },
+    {
+     "date": "2025-09-08T06:39",
+     "detector": 2,
+     "wavelengthUm": 1.476,
+     "flux": 329.9,
+     "snr": 1774.5,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2025-09-08T06:43",
+     "detector": 5,
+     "wavelengthUm": 4.328,
+     "flux": 2655,
+     "snr": 2480.9,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2025-09-08T13:16",
+     "detector": 2,
+     "wavelengthUm": 1.158,
+     "flux": 222.1,
+     "snr": 1785.7,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2025-09-09T20:12",
+     "detector": 2,
+     "wavelengthUm": 1.243,
+     "flux": 286.7,
+     "snr": 1928.7,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2025-09-09T21:48",
+     "detector": 5,
+     "wavelengthUm": 4.1,
+     "flux": 2396,
+     "snr": 2840.7,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2025-09-10T12:27",
+     "detector": 2,
+     "wavelengthUm": 1.585,
+     "flux": 470,
+     "snr": 3584,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2025-09-11T16:16",
+     "detector": 3,
+     "wavelengthUm": 2.354,
+     "flux": 739,
+     "snr": 2843.3,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2025-09-17T02:36",
+     "detector": 3,
+     "wavelengthUm": 1.659,
+     "flux": 375.8,
+     "snr": 1851.5,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2025-09-17T22:10",
+     "detector": 3,
+     "wavelengthUm": 1.776,
+     "flux": 442.3,
+     "snr": 2274.6,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2025-09-18T04:40",
+     "detector": 3,
+     "wavelengthUm": 2.149,
+     "flux": 538.5,
+     "snr": 1780.6,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2025-09-18T04:46",
+     "detector": 6,
+     "wavelengthUm": 4.925,
+     "flux": 3190,
+     "snr": 1909.9,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2025-09-18T14:27",
+     "detector": 3,
+     "wavelengthUm": 1.992,
+     "flux": 541.5,
+     "snr": 3088.4,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2025-09-20T05:32",
+     "detector": 3,
+     "wavelengthUm": 2.085,
+     "flux": 594.4,
+     "snr": 5357.3,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-02-20T17:17",
+     "detector": 6,
+     "wavelengthUm": 4.663,
+     "flux": 2159,
+     "snr": 2481.3,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-02-20T17:23",
+     "detector": 6,
+     "wavelengthUm": 4.765,
+     "flux": 1962,
+     "snr": 2012.2,
+     "maskedPixels": 0
+    },
+    {
+     "date": "2026-02-21T09:38",
+     "detector": 6,
+     "wavelengthUm": 4.868,
+     "flux": 2076,
+     "snr": 2143.2,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-02-27T15:31",
+     "detector": 6,
+     "wavelengthUm": 4.456,
+     "flux": 1722,
+     "snr": 1542,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2026-02-27T23:41",
+     "detector": 3,
+     "wavelengthUm": 2.375,
+     "flux": 729,
+     "snr": 2999.9,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-03-01T04:58",
+     "detector": 5,
+     "wavelengthUm": 4.061,
+     "flux": 2103,
+     "snr": 3776.4,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-03-01T05:03",
+     "detector": 2,
+     "wavelengthUm": 1.361,
+     "flux": 378.3,
+     "snr": 3072.6,
+     "maskedPixels": 0
+    },
+    {
+     "date": "2026-03-01T11:32",
+     "detector": 3,
+     "wavelengthUm": 1.837,
+     "flux": 655,
+     "snr": 3497,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-03-02T10:18",
+     "detector": 5,
+     "wavelengthUm": 4.204,
+     "flux": 2382,
+     "snr": 3880.5,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-03-02T13:32",
+     "detector": 3,
+     "wavelengthUm": 1.923,
+     "flux": 654.9,
+     "snr": 2118.4,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-03-04T07:59",
+     "detector": 1,
+     "wavelengthUm": 0.9,
+     "flux": 172.3,
+     "snr": 1280,
+     "maskedPixels": 9
+    },
+    {
+     "date": "2026-03-05T05:06",
+     "detector": 2,
+     "wavelengthUm": 1.533,
+     "flux": 514.1,
+     "snr": 2451.4,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-03-05T05:12",
+     "detector": 5,
+     "wavelengthUm": 4.424,
+     "flux": 2364,
+     "snr": 2595.5,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-03-06T05:31",
+     "detector": 1,
+     "wavelengthUm": 0.943,
+     "flux": 208.4,
+     "snr": 2627,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-03-06T05:38",
+     "detector": 1,
+     "wavelengthUm": 1.012,
+     "flux": 247.6,
+     "snr": 2526.9,
+     "maskedPixels": 7
+    },
+    {
+     "date": "2026-03-07T07:40",
+     "detector": 5,
+     "wavelengthUm": 3.946,
+     "flux": 2160,
+     "snr": 4283,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2026-03-08T16:15",
+     "detector": 4,
+     "wavelengthUm": 2.465,
+     "flux": 944.8,
+     "snr": 2466.5,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-03-08T21:08",
+     "detector": 4,
+     "wavelengthUm": 3.621,
+     "flux": 1268,
+     "snr": 2853.2,
+     "maskedPixels": 9
+    },
+    {
+     "date": "2026-03-09T05:13",
+     "detector": 2,
+     "wavelengthUm": 1.26,
+     "flux": 288.4,
+     "snr": 1529.6,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-03-10T10:38",
+     "detector": 4,
+     "wavelengthUm": 2.67,
+     "flux": 933.5,
+     "snr": 1946.5,
+     "maskedPixels": 6
+    },
+    {
+     "date": "2026-09-02T02:20",
+     "detector": 1,
+     "wavelengthUm": 0.982,
+     "flux": 236.5,
+     "snr": 2257.7,
+     "maskedPixels": 10
+    },
+    {
+     "date": "2026-09-02T02:27",
+     "detector": 4,
+     "wavelengthUm": 3.592,
+     "flux": 1168,
+     "snr": 1978.8,
+     "maskedPixels": 7
+    },
+    {
+     "date": "2026-09-08T06:37",
+     "detector": 1,
+     "wavelengthUm": 0.754,
+     "flux": 199,
+     "snr": 1817.8,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-09-08T06:41",
+     "detector": 4,
+     "wavelengthUm": 2.583,
+     "flux": 1013,
+     "snr": 4396.1,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-09-08T19:42",
+     "detector": 4,
+     "wavelengthUm": 2.798,
+     "flux": 932.7,
+     "snr": 3460.4,
+     "maskedPixels": 10
+    },
+    {
+     "date": "2026-09-09T00:34",
+     "detector": 4,
+     "wavelengthUm": 3.033,
+     "flux": 1060,
+     "snr": 2670.4,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-09-09T21:43",
+     "detector": 4,
+     "wavelengthUm": 3.289,
+     "flux": 942.4,
+     "snr": 3294.5,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2026-09-10T09:10",
+     "detector": 2,
+     "wavelengthUm": 1.534,
+     "flux": 441.2,
+     "snr": 2795.8,
+     "maskedPixels": 0
+    },
+    {
+     "date": "2026-09-11T21:02",
+     "detector": 2,
+     "wavelengthUm": 1.122,
+     "flux": 280.5,
+     "snr": 1756.9,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-09-12T23:05",
+     "detector": 2,
+     "wavelengthUm": 1.203,
+     "flux": 355.6,
+     "snr": 3084.1,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-09-13T07:11",
+     "detector": 3,
+     "wavelengthUm": 2.229,
+     "flux": 665.1,
+     "snr": 2932.8,
+     "maskedPixels": 0
+    },
+    {
+     "date": "2026-09-13T13:41",
+     "detector": 5,
+     "wavelengthUm": 4.386,
+     "flux": 1457,
+     "snr": 2673.8,
+     "maskedPixels": 7
+    },
+    {
+     "date": "2026-09-14T07:36",
+     "detector": 5,
+     "wavelengthUm": 4.017,
+     "flux": 1199,
+     "snr": 2961,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-09-14T07:42",
+     "detector": 5,
+     "wavelengthUm": 4.122,
+     "flux": 1317,
+     "snr": 3480.8,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-09-14T20:37",
+     "detector": 6,
+     "wavelengthUm": 4.492,
+     "flux": 1210,
+     "snr": 1748.1,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-09-15T08:01",
+     "detector": 2,
+     "wavelengthUm": 1.384,
+     "flux": 389.8,
+     "snr": 1712.9,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-09-15T21:03",
+     "detector": 3,
+     "wavelengthUm": 1.8,
+     "flux": 581.2,
+     "snr": 2834.4,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-09-15T21:10",
+     "detector": 6,
+     "wavelengthUm": 4.657,
+     "flux": 1751,
+     "snr": 2079.3,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2026-09-16T06:51",
+     "detector": 6,
+     "wavelengthUm": 4.725,
+     "flux": 1444,
+     "snr": 3403.9,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-09-16T21:31",
+     "detector": 6,
+     "wavelengthUm": 4.828,
+     "flux": 1328,
+     "snr": 2773.4,
+     "maskedPixels": 4
+    }
+   ]
+  },
+  {
+   "key": "r-dra",
+   "label": "R Draconis",
+   "simbad": {
+    "name": "V* R Dra",
+    "ra": 248.16761083295,
+    "dec": 66.75497941722,
+    "pmra": -20.643,
+    "pmdec": 6.149,
+    "plx": 1.2509,
+    "epoch": 2000,
+    "otype": "Mi*",
+    "source": "SIMBAD"
+   },
+   "positionJ2026": {
+    "ra": 248.16723307211964,
+    "dec": 66.75502382621288
+   },
+   "imagesFound": 2493,
+   "imagesPerDetector": {
+    "D6": 573,
+    "D3": 574,
+    "D4": 584,
+    "D1": 584,
+    "D5": 89,
+    "D2": 89
+   },
+   "firstDate": "2025-04-24",
+   "lastDate": "2026-09-27",
+   "visits": [
+    {
+     "from": "2025-04-24",
+     "to": "2025-05-08",
+     "images": 87
+    },
+    {
+     "from": "2025-05-16",
+     "to": "2025-05-20",
+     "images": 12
+    },
+    {
+     "from": "2025-06-02",
+     "to": "2025-06-15",
+     "images": 73
+    },
+    {
+     "from": "2025-06-22",
+     "to": "2025-07-07",
+     "images": 42
+    },
+    {
+     "from": "2025-07-14",
+     "to": "2025-07-22",
+     "images": 26
+    },
+    {
+     "from": "2025-08-29",
+     "to": "2025-08-29",
+     "images": 14
+    },
+    {
+     "from": "2025-09-03",
+     "to": "2025-09-30",
+     "images": 188
+    },
+    {
+     "from": "2025-10-08",
+     "to": "2025-10-19",
+     "images": 70
+    },
+    {
+     "from": "2025-10-24",
+     "to": "2025-11-20",
+     "images": 85
+    },
+    {
+     "from": "2025-11-28",
+     "to": "2025-12-03",
+     "images": 29
+    },
+    {
+     "from": "2025-12-10",
+     "to": "2025-12-14",
+     "images": 38
+    },
+    {
+     "from": "2025-12-26",
+     "to": "2026-01-03",
+     "images": 40
+    },
+    {
+     "from": "2026-01-13",
+     "to": "2026-01-13",
+     "images": 8
+    },
+    {
+     "from": "2026-02-08",
+     "to": "2026-04-25",
+     "images": 865
+    },
+    {
+     "from": "2026-05-02",
+     "to": "2026-05-16",
+     "images": 67
+    },
+    {
+     "from": "2026-05-21",
+     "to": "2026-05-23",
+     "images": 17
+    },
+    {
+     "from": "2026-06-07",
+     "to": "2026-06-12",
+     "images": 18
+    },
+    {
+     "from": "2026-06-21",
+     "to": "2026-06-23",
+     "images": 38
+    },
+    {
+     "from": "2026-07-06",
+     "to": "2026-09-27",
+     "images": 776
+    }
+   ],
+   "framesFetched": 60,
+   "framesFailed": 0,
+   "seconds": 19,
+   "lightCurve": [
+    {
+     "date": "2025-04-24T21:07",
+     "detector": 6,
+     "wavelengthUm": 4.444,
+     "flux": 6549,
+     "snr": 193.7,
+     "maskedPixels": 0
+    },
+    {
+     "date": "2025-04-29T07:10",
+     "detector": 6,
+     "wavelengthUm": 4.587,
+     "flux": 3717,
+     "snr": 146.3,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2025-05-06T10:19",
+     "detector": 6,
+     "wavelengthUm": 4.457,
+     "flux": 8962,
+     "snr": 233.2,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2025-06-08T19:01",
+     "detector": 5,
+     "wavelengthUm": 4.289,
+     "flux": 3823,
+     "snr": 297.2,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2025-06-15T10:47",
+     "detector": 2,
+     "wavelengthUm": 1.34,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2025-07-05T23:08",
+     "detector": 4,
+     "wavelengthUm": 3.721,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2025-08-29T15:30",
+     "detector": 4,
+     "wavelengthUm": 3.754,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2025-09-06T01:11",
+     "detector": 4,
+     "wavelengthUm": 3.253,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 6
+    },
+    {
+     "date": "2025-09-10T22:35",
+     "detector": 4,
+     "wavelengthUm": 3.303,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 7
+    },
+    {
+     "date": "2025-09-15T01:57",
+     "detector": 1,
+     "wavelengthUm": 0.869,
+     "flux": 2427,
+     "snr": 1149,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2025-09-20T17:16",
+     "detector": 1,
+     "wavelengthUm": 1.073,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2025-10-12T07:39",
+     "detector": 1,
+     "wavelengthUm": 0.832,
+     "flux": 3330,
+     "snr": 1386.8,
+     "maskedPixels": 0
+    },
+    {
+     "date": "2025-10-19T10:47",
+     "detector": 1,
+     "wavelengthUm": 1.034,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2025-11-05T20:03",
+     "detector": 1,
+     "wavelengthUm": 0.913,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2025-11-18T17:40",
+     "detector": 5,
+     "wavelengthUm": 4.258,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2025-12-12T05:32",
+     "detector": 5,
+     "wavelengthUm": 3.827,
+     "flux": 4344,
+     "snr": 312.5,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2025-12-26T13:28",
+     "detector": 3,
+     "wavelengthUm": 1.884,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 6
+    },
+    {
+     "date": "2026-02-12T13:23",
+     "detector": 3,
+     "wavelengthUm": 2.334,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-02-20T18:35",
+     "detector": 3,
+     "wavelengthUm": 2.293,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-02-27T07:01",
+     "detector": 3,
+     "wavelengthUm": 1.978,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-03-01T14:28",
+     "detector": 6,
+     "wavelengthUm": 4.883,
+     "flux": 3373,
+     "snr": 92,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2026-03-05T08:04",
+     "detector": 3,
+     "wavelengthUm": 2.017,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-03-08T06:04",
+     "detector": 3,
+     "wavelengthUm": 2.063,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-03-11T22:09",
+     "detector": 3,
+     "wavelengthUm": 1.656,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-03-14T07:02",
+     "detector": 6,
+     "wavelengthUm": 4.578,
+     "flux": 2453,
+     "snr": 159.9,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-03-16T06:27",
+     "detector": 6,
+     "wavelengthUm": 4.781,
+     "flux": 5367,
+     "snr": 174.9,
+     "maskedPixels": 9
+    },
+    {
+     "date": "2026-03-18T02:26",
+     "detector": 3,
+     "wavelengthUm": 2.309,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-03-20T04:50",
+     "detector": 3,
+     "wavelengthUm": 2.412,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 0
+    },
+    {
+     "date": "2026-03-23T20:49",
+     "detector": 6,
+     "wavelengthUm": 4.595,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-03-25T23:18",
+     "detector": 6,
+     "wavelengthUm": 4.67,
+     "flux": 4879,
+     "snr": 124,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-03-27T22:37",
+     "detector": 3,
+     "wavelengthUm": 1.86,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-03-30T15:43",
+     "detector": 6,
+     "wavelengthUm": 4.713,
+     "flux": 10230,
+     "snr": 239.9,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2026-04-03T04:35",
+     "detector": 6,
+     "wavelengthUm": 4.62,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-04-05T21:44",
+     "detector": 6,
+     "wavelengthUm": 4.881,
+     "flux": 7015,
+     "snr": 266.8,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-04-09T20:15",
+     "detector": 3,
+     "wavelengthUm": 1.727,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-04-11T17:52",
+     "detector": 3,
+     "wavelengthUm": 1.78,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-04-15T22:59",
+     "detector": 6,
+     "wavelengthUm": 4.872,
+     "flux": 5214,
+     "snr": 236,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-04-22T19:32",
+     "detector": 6,
+     "wavelengthUm": 4.872,
+     "flux": 11620,
+     "snr": 214.2,
+     "maskedPixels": 0
+    },
+    {
+     "date": "2026-05-06T01:09",
+     "detector": 3,
+     "wavelengthUm": 1.686,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-05-22T03:11",
+     "detector": 6,
+     "wavelengthUm": 4.525,
+     "flux": 6080,
+     "snr": 301.4,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-06-21T14:53",
+     "detector": 2,
+     "wavelengthUm": 1.49,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-07-09T22:43",
+     "detector": 4,
+     "wavelengthUm": 3.153,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 5
+    },
+    {
+     "date": "2026-07-25T15:08",
+     "detector": 4,
+     "wavelengthUm": 2.439,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-07-30T14:03",
+     "detector": 4,
+     "wavelengthUm": 2.896,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-08-03T12:30",
+     "detector": 1,
+     "wavelengthUm": 0.845,
+     "flux": 595.2,
+     "snr": 277.9,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-08-07T23:57",
+     "detector": 4,
+     "wavelengthUm": 3.082,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-08-10T10:41",
+     "detector": 1,
+     "wavelengthUm": 0.873,
+     "flux": 2541,
+     "snr": 223.9,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-08-15T01:26",
+     "detector": 1,
+     "wavelengthUm": 0.868,
+     "flux": 2491,
+     "snr": 214.5,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-08-19T08:09",
+     "detector": 1,
+     "wavelengthUm": 0.993,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-08-21T13:49",
+     "detector": 1,
+     "wavelengthUm": 0.843,
+     "flux": 1152,
+     "snr": 199.1,
+     "maskedPixels": 3
+    },
+    {
+     "date": "2026-08-23T16:25",
+     "detector": 4,
+     "wavelengthUm": 3.078,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-08-25T15:35",
+     "detector": 4,
+     "wavelengthUm": 3.428,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 7
+    },
+    {
+     "date": "2026-08-27T18:06",
+     "detector": 4,
+     "wavelengthUm": 3.495,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 7
+    },
+    {
+     "date": "2026-08-30T20:58",
+     "detector": 4,
+     "wavelengthUm": 2.873,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 6
+    },
+    {
+     "date": "2026-09-01T10:29",
+     "detector": 4,
+     "wavelengthUm": 3.562,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 6
+    },
+    {
+     "date": "2026-09-04T08:29",
+     "detector": 4,
+     "wavelengthUm": 3.088,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 4
+    },
+    {
+     "date": "2026-09-08T08:42",
+     "detector": 1,
+     "wavelengthUm": 0.894,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 0
+    },
+    {
+     "date": "2026-09-12T03:51",
+     "detector": 1,
+     "wavelengthUm": 0.906,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 1
+    },
+    {
+     "date": "2026-09-17T10:49",
+     "detector": 1,
+     "wavelengthUm": 0.896,
+     "flux": 2616,
+     "snr": 292.6,
+     "maskedPixels": 2
+    },
+    {
+     "date": "2026-09-27T07:00",
+     "detector": 1,
+     "wavelengthUm": 1.113,
+     "flux": null,
+     "snr": null,
+     "maskedPixels": 0
+    }
+   ]
+  }
+ ]
+}

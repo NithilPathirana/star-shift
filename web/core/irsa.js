@@ -105,6 +105,7 @@ export function decodeCutout(bytes) {
     header,
     image,
     flags,
+    flagNames: flgHdu ? flagDefinitions(flgHdu.header) : {},
     wcs: new TanSip(header),
     mjd: header['MJD-AVG'] ?? header['MJD-OBS'],
     date: header['DATE-AVG'] ?? header['DATE-OBS'],
@@ -128,4 +129,45 @@ export async function mapLimit(items, limit, fn, onResult) {
   }
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
   return results;
+}
+
+// SPHEREx FLAGS headers describe each bit: MSKNnnnn = name, MSKMnnnn = bit value, MSKDnnnn = text.
+export function flagDefinitions(h) {
+  const out = {};
+  for (const k of Object.keys(h)) {
+    if (!k.startsWith('MSKN')) continue;
+    const i = k.slice(4);
+    out[h['MSKM' + i]] = { name: h[k], description: h['MSKD' + i] ?? '' };
+  }
+  return out;
+}
+
+// Flags that mean "don't trust this pixel's value" on empty sky (detector or processing
+// problems, cosmic-ray hits). Checked on Barnard's Star (124 cutouts, 14 Nov 2026): its
+// brightest pixel is flagged OVERFLOW in 109 and TRANSIENT/SUR_ERROR in 29 - values the
+// pipeline rebuilt from early reads - so on pixels marked SOURCE we only drop dead or
+// missing data (SOURCE_BAD_FLAGS). Shown as info, never masked: FULLSAMPLE, DICHROIC,
+// NONLINEAR, CROSSTALK, GHOST*, STREAK, BLOOM, SNOWBALL, HALO, PHANMISS.
+export const BAD_PIXEL_FLAGS = ['TRANSIENT', 'OVERFLOW', 'SUR_ERROR', 'NONFUNC', 'MISSING_DATA', 'HOT', 'COLD', 'PERSIST', 'OUTLIER'];
+export const SOURCE_BAD_FLAGS = ['NONFUNC', 'MISSING_DATA'];
+
+export function badPixelMask(flagNames, names = BAD_PIXEL_FLAGS) {
+  let m = 0;
+  for (const [bit, d] of Object.entries(flagNames)) if (names.includes(d.name)) m |= Number(bit);
+  return m;
+}
+
+// Copy of the cutout with untrustworthy pixels set to NaN.
+export function maskBadPixels(cutout, { names = BAD_PIXEL_FLAGS, sourceNames = SOURCE_BAD_FLAGS } = {}) {
+  if (!cutout.flags) return cutout;
+  const m = badPixelMask(cutout.flagNames, names);
+  const ms = badPixelMask(cutout.flagNames, sourceNames);
+  const src = badPixelMask(cutout.flagNames, ['SOURCE']);
+  const data = Float32Array.from(cutout.image.data);
+  let n = 0;
+  for (let i = 0; i < data.length; i++) {
+    const f = cutout.flags.data[i];
+    if (f & (f & src ? ms : m)) { data[i] = NaN; n++; }
+  }
+  return { ...cutout, image: { ...cutout.image, data }, maskedPixels: n };
 }

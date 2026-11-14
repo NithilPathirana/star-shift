@@ -29,3 +29,9 @@ If the routes above don't cover what you need, fetch the full OpenAPI schema (la
 [wrangler:info] GET /ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/1/level2_2025W35_1A_0658_1D1_spx_l2b-v27-2026-230.fits 502 Bad Gateway (884ms)
 ⎔ Reloading local server...
 ⎔ Local server updated and ready
+[wrangler:info] GET /health 200 OK (28ms)
+[wrangler:info] GET /TAP/sync 200 OK (21ms)
+[wrangler:info] GET /ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/1/level2_2025W35_1A_0432_4D1_spx_l2b-v27-2026-230.fits 200 OK (1513ms)
+[wrangler:info] GET /ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/1/level2_2025W35_1A_0658_1D1_spx_l2b-v27-2026-230.fits 503 Service Unavailable (800ms)
+[wrangler:info] GET /ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/1/level2_2025W35_1A_0658_1D1_spx_l2b-v27-2026-230.fits 200 OK (1675ms)
+[wrangler:info] GET /gaia/tap/sync 200 OK (1702ms)
