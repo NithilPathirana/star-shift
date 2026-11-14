@@ -32,7 +32,7 @@ export async function resolveName(name, { endpoint = SIMBAD_TAP, fetchFn = fetch
   if (!rows.length) return null;
   const r = rows[0];
   return {
-    name: r.main_id.replace(/^NAME /, ''),
+    name: r.main_id.replace(/^(NAME|\*|V\*)\s+/, ''), // '* alf Ori' -> 'alf Ori', 'V* R Dra' -> 'R Dra'
     ra: num(r.ra), dec: num(r.dec),
     pmra: num(r.pmra) ?? 0, pmdec: num(r.pmdec) ?? 0,
     plx: num(r.plx_value), rv: num(r.rvz_radvel), epoch: 2000.0, otype: r.otype, source: 'SIMBAD',

@@ -21,7 +21,7 @@ const OTYPE = {
   'SB*': 'Spectroscopic binary', 'EB*': 'Eclipsing binary', 'G': 'Galaxy', 'GiG': 'Galaxy in group', 'AGN': 'Active galaxy', 'QSO': 'Quasar',
   'ClG': 'Galaxy cluster', 'OpC': 'Open cluster', 'GlC': 'Globular cluster', 'PN': 'Planetary nebula', 'HII': 'HII region', 'RNe': 'Reflection nebula',
   'MoC': 'Molecular cloud', 'DNe': 'Dark nebula', 'IR': 'Infrared source', 'Em*': 'Emission-line star', 'BY*': 'BY Draconis variable', 'Ro*': 'Rotating variable',
-  'HB*': 'Horizontal-branch star', 'AB*': 'Asymptotic giant branch star', 'Ce*': 'Cepheid', 'RR*': 'RR Lyrae variable', 'X': 'X-ray source', 'Rad': 'Radio source',
+  's*r': 'Red supergiant', 's*b': 'Blue supergiant', 's*y': 'Yellow supergiant', 'gD*': 'Delta Scuti variable', 'Pu*': 'Pulsating variable', 'SN*': 'Supernova', 'HB*': 'Horizontal-branch star', 'AB*': 'Asymptotic giant branch star', 'Ce*': 'Cepheid', 'RR*': 'RR Lyrae variable', 'X': 'X-ray source', 'Rad': 'Radio source',
 };
 export function otypeName(code) { return OTYPE[code] || code || 'Object'; }
 

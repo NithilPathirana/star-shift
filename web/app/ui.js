@@ -8,7 +8,8 @@ import { parseQuery, QueryError, DEFAULT_SETTINGS } from './query.js';
 import { run, buildStacks, measureMotion, tangentialVelocity, resolveTarget } from './data.js';
 import { PRESETS, findPreset } from './presets.js';
 import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight } from './sky.js';
-import { SkyMap, simbadCone, otypeName, CHANNEL_UM } from './skymap.js';
+import { simbadCone, otypeName, CHANNEL_UM } from './skymap.js';
+import { Sky3D as SkyMap } from './sky3d/index.js'; // 3D celestial sphere (three.js); same interface as the Aladin SkyMap
 import { layersFor, DEFAULT_BANDS } from './bands.js';
 import { listImages } from '../core/irsa.js';
 import { propagate, separationArcsec, mjdToDate } from '../core/motion.js';
@@ -483,7 +484,7 @@ const M = { sel: null };
 const fovTxt = () => { if (!skymap.aladin) return '–'; const [a, b] = skymap.aladin.getFov(); const f = v => v >= 1 ? v.toFixed(1) + '°' : v * 60 >= 1 ? (v * 60).toFixed(1) + '′' : (v * 3600).toFixed(0) + '″'; return `${f(a)} × ${f(b)}`; };
 const skymap = new SkyMap($('mapWrap'), {
   onClick: (ra, dec) => select(ra, dec, null, true),
-  onHover: (data) => (data ? showTipAtPointer(`<b>${esc(data.name)}</b><small>${esc(data.type)} · SIMBAD</small>`) : hideTip()),
+  onHover: (data) => (data ? showTipAtPointer(`<b>${esc(data.name)}</b><small>${esc(data.type)} · ${esc(data.source || 'catalogue')}</small>`) : hideTip()),
   onView: () => placeOverlays(),
 });
 let pinEls = [];
