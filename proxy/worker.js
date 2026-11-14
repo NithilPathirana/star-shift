@@ -31,6 +31,11 @@ function upstreamFor(url) {
       return { error: 'Only SELECT queries on spherex.* tables' };
     return { target: `${IRSA}/TAP/sync${url.search}`, kind: 'tap', ttl: 3600 };
   }
+  if (p === '/SIA') {
+    const c = url.searchParams.get('COLLECTION') || '', pos = url.searchParams.get('POS') || '';
+    if (!['spherex_dr1', 'spherex_qr3', 'spherex_qr2'].includes(c) || !/^circle [-\d.]+ [-\d.]+ [\d.]+$/.test(pos)) return { error: 'Only SPHEREx SIA position searches' };
+    return { target: `${IRSA}/SIA?COLLECTION=${c}&POS=${encodeURIComponent(pos).replace(/%20/g, '+')}&RESPONSEFORMAT=VOTABLE`, kind: 'tap', ttl: 86400 };
+  }
   if (p === '/gaia/tap/sync') {
     const q = url.searchParams.get('QUERY') || '';
     // Small cone searches only: SELECT TOP <=2000 ... gaiadr3.* ... CONTAINS(...)

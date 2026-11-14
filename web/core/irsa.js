@@ -47,9 +47,60 @@ export async function tap(adql, { base = IRSA, fetchFn = fetch, signal } = {}) {
 const num = (v) => (v === '' || v == null ? null : Number(v));
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 
+// VOTable (TABLEDATA) -> array of row objects. Small, dependency-free, works in Node and browsers.
+export function parseVOTable(xml) {
+  const fields = [...xml.matchAll(/<FIELD\b[^>]*\bname="([^"]+)"/g)].map(m => m[1]);
+  const ent = (v) => v.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+  const rows = [];
+  for (const tr of xml.matchAll(/<TR>([\s\S]*?)<\/TR>/g)) {
+    const tds = [...tr[1].matchAll(/<TD>([\s\S]*?)<\/TD>|<TD\s*\/>/g)].map(m => ent(m[1] ?? ''));
+    rows.push(Object.fromEntries(fields.map((f, i) => [f, tds[i] ?? ''])));
+  }
+  return rows;
+}
+
+// SIA lists the same images as the TAP query (DR1 + QR3 collections are disjoint; checked on
+// Barnard's Star: 239 + 119 = 358 = TAP) but answers in ~2.5 s, while IRSA TAP took 18-48 s on
+// 14 Nov 2026. Both collections are asked in parallel.
+export const SIA_COLLECTIONS = ['spherex_dr1', 'spherex_qr3'];
+export async function listImagesSIA(ra, dec, { base = IRSA, fetchFn = fetch, signal } = {}) {
+  const lists = await Promise.all(SIA_COLLECTIONS.map(async (c) => {
+    const url = `${base}/SIA?COLLECTION=${c}&POS=circle+${(+ra).toFixed(6)}+${(+dec).toFixed(6)}+0.0005&RESPONSEFORMAT=VOTABLE`;
+    const res = await fetchFn(url, { signal });
+    if (!res.ok) throw new Error(`SIA HTTP ${res.status}`);
+    const xml = await res.text();
+    if (!xml.includes('<VOTABLE')) throw new Error('SIA: not a VOTable');
+    return parseVOTable(xml);
+  }));
+  const prefix = /^https?:\/\/irsa\.ipac\.caltech\.edu\//;
+  return lists.flat()
+    .filter(r => (!r.dataproduct_subtype || r.dataproduct_subtype === 'science') && prefix.test(r.access_url))
+    .map(r => ({
+      uri: r.access_url.replace(prefix, '').replace(/\?.*$/, ''),
+      mjdStart: num(r.t_min), mjdEnd: num(r.t_max),
+      detector: Number(String(r.energy_bandpassname).replace('SPHEREx-D', '')),
+      bandMinUm: num(r.em_min) * 1e6 || null, bandMaxUm: num(r.em_max) * 1e6 || null,
+      obsid: r.obs_id, quality: null,
+    }))
+    .sort((a, b) => a.mjdStart - b.mjdStart);
+}
+
 // All SPHEREx spectral images (QR + DR1, as served by IRSA) covering (ra, dec), oldest first.
-// detectors: optional list of 1..6.
+// detectors: optional list of 1..6. Uses SIA (fast) and falls back to TAP if SIA fails.
 export async function listImages(ra, dec, { detectors, ...opts } = {}) {
+  if (!isNum(ra) || !isNum(dec) || dec < -90 || dec > 90) throw new Error('Bad coordinates');
+  if (opts.useTap !== true) {
+    try {
+      const all = await listImagesSIA(ra, dec, opts);
+      return detectors?.length ? all.filter(im => detectors.map(Number).includes(im.detector)) : all;
+    } catch (e) {
+      if (e.name === 'AbortError') throw e; // otherwise fall through to TAP
+    }
+  }
+  return listImagesTAP(ra, dec, { detectors, ...opts });
+}
+
+export async function listImagesTAP(ra, dec, { detectors, ...opts } = {}) {
   if (!isNum(ra) || !isNum(dec) || dec < -90 || dec > 90) throw new Error('Bad coordinates');
   const bandFilter = detectors?.length
     ? `AND p.energy_bandpassname IN (${detectors.map(d => `'SPHEREx-D${Number(d)}'`).join(',')})`

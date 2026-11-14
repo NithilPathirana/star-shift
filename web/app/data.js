@@ -116,7 +116,7 @@ export async function loadFrame(im, target, grid, settings, { base, fetchFn = fe
 }
 
 // Whole pipeline with events: RESOLVED, PLANNED, FRAME, FRAME_FAILED, RETRY_WAIT, DONE, ERROR, NOT_FOUND.
-export async function run(query, settings, { base, fetchFn = fetch, signal, tables, emit, concurrency = 6 }) {
+export async function run(query, settings, { base, fetchFn = fetch, signal, tables, emit, concurrency = 10 }) {
   let target;
   try {
     target = await resolveTarget(query, { fetchFn, signal });
