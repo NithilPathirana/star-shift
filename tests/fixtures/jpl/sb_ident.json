@@ -1,0 +1,21 @@
+{
+  "signature": { "source": "NASA/JPL Small-Body Identification API", "version": "1.1" },
+  "summary": { "mpc-code": "500", "obs-time": "2026-03-15 12:00:00", "two-pass": "true" },
+  "n_second_pass": 2,
+  "observer": { "fov_center": "17:57:47.06, +04 46'14.52\" (ICRF)", "obs_date": "2026-Mar-15 12:00:00" },
+  "fields_second": [
+    "Object name",
+    "Astrometric RA (hh:mm:ss)",
+    "Astrometric Dec (dd mm'ss\")",
+    "Dist. from center RA (\")",
+    "Dist. from center Dec (\")",
+    "Dist. from center Norm (\")",
+    "Visual magnitude (V)",
+    "RA rate (deg/s)",
+    "Dec rate (deg/s)"
+  ],
+  "data_second_pass": [
+    ["99942 Apophis (2004 MN4)", "17:57:46.10", "+04 45'54.2\"", "-14.4", "-20.3", "24.9", "19.4", "0.000001", "-0.000002"],
+    ["2P/Encke", "17:57:48.02", "+04 46'31.8\"", "14.4", "17.3", "22.5", null, "-0.000003", "0.000004"]
+  ]
+}

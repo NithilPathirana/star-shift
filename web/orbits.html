@@ -1,0 +1,20 @@
+<!-- AI-written (OpenAI Codex) for Star Shift, NASA Space Apps 2026 -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="0; url=neo.html?tab=orbits">
+  <title>Compare orbits · Asteroid Spotter · Star Shift</title>
+</head>
+<body>
+  <p>Orbit comparison now lives in <a href="neo.html?tab=orbits">SPHEREx Asteroid Spotter</a>.</p>
+  <script>
+    // Preserve any existing query values while selecting the orbit tab.
+    const target = new URL('neo.html', location.href);
+    for (const [name, value] of new URLSearchParams(location.search)) target.searchParams.append(name, value);
+    target.searchParams.set('tab', 'orbits');
+    location.replace(target);
+  </script>
+</body>
+</html>
