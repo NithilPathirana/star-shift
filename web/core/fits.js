@@ -102,23 +102,37 @@ export function readImage(bytes, hdu) {
 
 // Read a stream until the first `maxHDUs` HDUs are complete, then cancel it.
 // Returns a Uint8Array holding exactly those HDUs.
-export async function readHDUsFromStream(stream, maxHDUs) {
+// Linear time: the buffer grows by doubling, and each HDU header is parsed once
+// (keeps CPU low on the Cloudflare free plan). maxBytes guards against huge inputs.
+export async function readHDUsFromStream(stream, maxHDUs, maxBytes = 8 * 1024 * 1024) {
   const reader = stream.getReader();
-  let buf = new Uint8Array(0);
+  let buf = new Uint8Array(64 * 1024);
+  let len = 0, pos = 0, count = 0, pendingEnd = -1;
   try {
     for (;;) {
       const { value, done } = await reader.read();
       if (value) {
-        const next = new Uint8Array(buf.length + value.length);
-        next.set(buf); next.set(value, buf.length);
-        buf = next;
-        const scan = scanHDUs(buf, maxHDUs);
-        if (scan.done) return buf.slice(0, scan.bytesUsed);
+        if (len + value.length > maxBytes) throw new Error('FITS stream too large');
+        if (len + value.length > buf.length) {
+          const next = new Uint8Array(Math.max(buf.length * 2, len + value.length));
+          next.set(buf.subarray(0, len));
+          buf = next;
+        }
+        buf.set(value, len);
+        len += value.length;
       }
-      if (done) {
-        const scan = scanHDUs(buf, maxHDUs);
-        return buf.slice(0, scan.bytesUsed);
+      // Advance over every HDU that is now complete.
+      for (;;) {
+        if (pendingEnd < 0) {
+          const parsed = parseHeader(buf.subarray(0, len), pos);
+          if (!parsed) break;
+          pendingEnd = pos + parsed.headerBytes + dataBytes(parsed.header);
+        }
+        if (pendingEnd > len) break;
+        pos = pendingEnd; pendingEnd = -1; count++;
+        if (count >= maxHDUs) return buf.slice(0, pos);
       }
+      if (done) return buf.slice(0, pos);
     }
   } finally {
     reader.cancel().catch(() => {});

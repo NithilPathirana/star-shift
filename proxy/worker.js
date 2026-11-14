@@ -23,18 +23,23 @@ function upstreamFor(url) {
   const p = url.pathname;
   if (p === '/TAP/sync') {
     const q = url.searchParams.get('QUERY') || '';
-    if (!/^\s*SELECT\b/i.test(q) || q.length > 4000) return { error: 'Only SELECT queries' };
+    // Only read-only queries on the SPHEREx tables (stops use as a general IRSA relay).
+    if (!/^\s*SELECT\b/i.test(q) || !/\bspherex\.\w+/i.test(q) || q.length > 4000)
+      return { error: 'Only SELECT queries on spherex.* tables' };
     return { target: `${IRSA}/TAP/sync${url.search}`, kind: 'tap', ttl: 3600 };
   }
   if (p === '/gaia/tap/sync') {
     const q = url.searchParams.get('QUERY') || '';
-    if (!/^\s*SELECT\b/i.test(q) || q.length > 4000) return { error: 'Only SELECT queries' };
+    // Small cone searches only: SELECT TOP <=2000 ... gaiadr3.* ... CONTAINS(...)
+    const top = /^\s*SELECT\s+TOP\s+(\d+)\b/i.exec(q);
+    if (!top || Number(top[1]) > 2000 || !/\bgaiadr3\.\w+/i.test(q) || !/\bCONTAINS\s*\(/i.test(q) || q.length > 4000)
+      return { error: 'Only small Gaia DR3 cone searches' };
     return { target: `${GAIA}${url.search}`, kind: 'tap', ttl: 86400 };
   }
   if (CUTOUT_PATH.test(p) && !p.includes('..')) {
     const center = url.searchParams.get('center') || '';
     const size = Number(url.searchParams.get('size'));
-    if (!/^-?[\d.]+,-?[\d.]+d?$/.test(center) || !(size > 0 && size <= 0.5)) return { error: 'Bad center/size' };
+    if (!/^-?[\d.]+,-?[\d.]+d?$/.test(center) || !(size >= 0.01 && size <= 0.25)) return { error: 'Bad center/size' };
     return { target: `${IRSA}${p}?center=${center}&size=${size}`, kind: 'cutout', ttl: 30 * 86400 };
   }
   return { error: 'Not found', status: 404 };

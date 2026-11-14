@@ -39,7 +39,8 @@ test('TAP and Gaia queries are relayed with CORS', async () => {
   assert.equal(res.status, 200);
   assert.equal(res.headers.get('Access-Control-Allow-Origin'), '*');
   assert.equal(await res.text(), 'a,b\n1,2\n');
-  res = await handle(new Request(`${R}/gaia/tap/sync?REQUEST=doQuery&QUERY=${q}`), { fetchFn: fakeFetch(log) });
+  const gq = encodeURIComponent("SELECT TOP 50 source_id FROM gaiadr3.gaia_source WHERE 1=CONTAINS(POINT('ICRS',ra,dec),CIRCLE('ICRS',1,2,0.01))");
+  res = await handle(new Request(`${R}/gaia/tap/sync?REQUEST=doQuery&QUERY=${gq}`), { fetchFn: fakeFetch(log) });
   assert.equal(res.status, 200);
   assert.ok(log[1].startsWith('https://gea.esac.esa.int/tap-server/tap/sync?'));
 });
@@ -52,6 +53,11 @@ test('relay refuses anything else', async () => {
     '/ibe/data/spherex/x.fits?center=1,2&size=5',
     '/ibe/data/spherex/x.fits?center=evil&size=0.1',
     `/TAP/sync?QUERY=${encodeURIComponent('DROP TABLE x')}`,
+    `/TAP/sync?QUERY=${encodeURIComponent('SELECT * FROM wise.allwise_p3as_psd')}`,
+    `/gaia/tap/sync?QUERY=${encodeURIComponent('SELECT * FROM gaiadr3.gaia_source')}`,
+    `/gaia/tap/sync?QUERY=${encodeURIComponent('SELECT TOP 99999 * FROM gaiadr3.gaia_source WHERE 1=CONTAINS(a,b)')}`,
+    '/ibe/data/spherex/x.fits?center=1,2&size=0.3',
+    '/ibe/data/spherex/x%2e%2e/y.fits?center=1,2&size=0.1',
     '/https://example.com/',
   ];
   for (const p of bad) {
@@ -63,4 +69,10 @@ test('relay refuses anything else', async () => {
   assert.equal(log.length, 0, 'nothing forwarded');
   const pre = await handle(new Request(`${R}/TAP/sync`, { method: 'OPTIONS' }), { fetchFn: fakeFetch(log) });
   assert.equal(pre.status, 204);
+});
+
+test('stream reader rejects oversized input', async () => {
+  const { readHDUsFromStream } = await import('../web/core/fits.js');
+  const big = new ReadableStream({ pull(c) { c.enqueue(new Uint8Array(1 << 20).fill(32)); } });
+  await assert.rejects(readHDUsFromStream(big, 3, 4 << 20), /too large/);
 });
