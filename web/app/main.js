@@ -3,7 +3,11 @@
 
 import { parseQuery, QueryError, fromURL, toURL, formatRA, formatDec, validSetting } from './query.js';
 import { createStore, reducer, initialState } from './state.js';
-import { run, buildStacks, BANDS } from './data.js';
+import { run, buildStacks, BANDS, resolveTarget } from './data.js';
+import { SkyMap, CHANNEL_UM } from './skymap.js';
+import { staticDetails, coverageHTML, neighboursHTML, observerHTML, setObserver, parseLatLon } from './details.js';
+import { propagate } from '../core/motion.js';
+import { gridToWorld } from '../core/align.js';
 import { drawFrame } from './render.js';
 import { PRESETS, findPreset } from './presets.js';
 
@@ -51,6 +55,7 @@ function updateURL(push) {
 
 // ---------- search ----------
 async function search(query, { push = true } = {}) {
+  if (store.get().settings.mode === 'map') return mapSearch(query, push);
   controller?.abort();
   controller = new AbortController();
   const signal = controller.signal;
@@ -92,7 +97,7 @@ function targetButtons(listEl) {
     b.textContent = p.label;
     b.title = p.note;
     b.dataset.key = p.key;
-    b.addEventListener('click', () => { $('q').value = p.label; showQueryError(''); search({ type: 'name', name: p.label }); });
+    b.addEventListener('click', () => { $('q').value = p.label; showQueryError(''); setSetting('mode', 'film'); search({ type: 'name', name: p.label }); });
     li.append(b);
     listEl.append(li);
   }
@@ -145,6 +150,8 @@ function setSetting(key, raw) {
   updateURL(false);
   if (RELOAD_KEYS.includes(key) && before.query) search(before.query, { push: false });
   if (key === 'speed' && store.get().playing) { stopTimer(); timer = setTimeout(tick, 1000 / value); }
+  if (key === 'ch') { skymap.setChannel(value); $('wl-out').textContent = `${CHANNEL_UM[value].toFixed(2)} µm`; }
+  if (key === 'mode') applyMode();
 }
 $('settings').addEventListener('change', (e) => { if (e.target.name) setSetting(e.target.name, e.target.value); });
 document.querySelectorAll('input[name=view]').forEach(r => r.addEventListener('change', (e) => setSetting('view', e.target.value)));
@@ -177,8 +184,9 @@ function render(state, prev) {
   const n = list.length;
   const busy = ['resolving', 'listing', 'loading'].includes(state.status);
 
-  // overlay states
-  if (state.status === 'idle') showState('idle');
+  // overlay states (time-lapse only)
+  if (state.settings.mode === 'map') showState(null);
+  else if (state.status === 'idle') showState('idle');
   else if (state.status === 'empty') {
     showState('empty');
     const banded = state.settings.band !== 'all';
@@ -282,6 +290,132 @@ function render(state, prev) {
 store.subscribe((s, prev) => render(s, prev));
 new ResizeObserver(() => drawFrame(canvas, current(store.get()), store.get().settings)).observe(canvas);
 
+// ---------- sky map ----------
+const skymap = new SkyMap($('skymap'), {
+  onClick: (ra, dec) => openDetails(ra, dec, skymap.fov()),
+  onHover: (data) => showTip(data),
+});
+let mapPos = { ra: 83.8221, dec: -5.3911, fov: 2.5 }; // Orion Nebula: bright in the infrared
+let pointer = { x: 0, y: 0 };
+$('viewer').addEventListener('pointermove', (e) => {
+  const r = $('viewer').getBoundingClientRect();
+  pointer = { x: e.clientX - r.left, y: e.clientY - r.top };
+  if (!$('hover-tip').hidden) placeTip();
+});
+function placeTip() {
+  const tip = $('hover-tip'), vw = $('viewer').clientWidth;
+  tip.style.left = Math.max(4, Math.min(pointer.x + 14, vw - tip.offsetWidth - 4)) + 'px';
+  tip.style.top = Math.max(4, pointer.y - tip.offsetHeight - 10) + 'px';
+}
+function showTip(data) {
+  const tip = $('hover-tip');
+  if (!data) { tip.hidden = true; return; }
+  tip.textContent = data.name;
+  const s = document.createElement('span');
+  s.className = 'muted';
+  s.textContent = data.type;
+  tip.append(s);
+  tip.hidden = false;
+  placeTip();
+}
+
+async function mapSearch(query, push) {
+  store.dispatch({ type: 'SEARCH', query });
+  updateURL(push);
+  try {
+    const t = await resolveTarget(query);
+    const p = (t.pmra || t.pmdec) ? propagate(t, 61360) : t; // where it is now (Nov 2026)
+    mapPos = { ra: p.ra, dec: p.dec, fov: 0.5 };
+    store.dispatch({ type: 'RESOLVED', requestId: store.get().requestId, target: t });
+    await skymap.init(mapPos.ra, mapPos.dec, mapPos.fov);
+    skymap.goTo(mapPos.ra, mapPos.dec, mapPos.fov);
+    openDetails(p.ra, p.dec, mapPos.fov);
+  } catch (e) {
+    showQueryError(e.message);
+  }
+}
+
+function applyMode() {
+  const mode = store.get().settings.mode, map = mode === 'map';
+  document.querySelectorAll('input[name=mode]').forEach(r => { r.checked = r.value === mode; });
+  $('skymap').hidden = !map;
+  canvas.hidden = map;
+  $('mapbar').hidden = !map;
+  $('player').hidden = map;
+  document.querySelector('.overlay-tl').hidden = map;
+  document.querySelector('.overlay-br').hidden = map;
+  if (map) {
+    pause();
+    skymap.init(mapPos.ra, mapPos.dec, mapPos.fov).then(() => skymap.setChannel(store.get().settings.ch));
+  } else {
+    $('hover-tip').hidden = true;
+    const s = store.get();
+    if (s.query && !s.plan && s.status !== 'loading') search(s.query, { push: false });
+    else drawFrame(canvas, current(s), s.settings);
+  }
+  render(store.get(), null);
+}
+document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', (e) => setSetting('mode', e.target.value)));
+$('wl').addEventListener('input', (e) => setSetting('ch', e.target.value));
+$('map-film').addEventListener('click', () => { const c = skymap.center(); filmAt(c.ra, c.dec); });
+
+function filmAt(ra, dec) {
+  setSetting('mode', 'film');
+  $('q').value = `${ra.toFixed(5)} ${dec >= 0 ? '+' : ''}${dec.toFixed(5)}`;
+  $('details').hidden = true;
+  search({ type: 'coords', ra, dec });
+}
+
+// time-lapse: click a spot on the image for its details
+canvas.addEventListener('click', (e) => {
+  const g = store.get().plan?.grid;
+  if (!g) return;
+  const r = canvas.getBoundingClientRect();
+  const i = ((e.clientX - r.left) / r.width) * g.n - 0.5, j = ((e.clientY - r.top) / r.height) * g.n - 0.5;
+  const [ra, dec] = gridToWorld(g, i, j);
+  openDetails(ra, dec, (g.n * g.scale) / 3600);
+});
+
+// ---------- coordinate details ----------
+let detailsCtl = null, detailsAt = null;
+async function openDetails(ra, dec, fovDeg) {
+  detailsCtl?.abort();
+  detailsCtl = new AbortController();
+  const signal = detailsCtl.signal;
+  detailsAt = { ra, dec };
+  $('details').hidden = false;
+  $('d-static').innerHTML = await staticDetails(ra, dec, fovDeg);
+  $('d-obs').innerHTML = observerHTML(ra, dec);
+  $('d-cov').innerHTML = '<p class="muted">Asking IRSA…</p>';
+  $('d-near').innerHTML = '<p class="muted">Asking SIMBAD…</p>';
+  coverageHTML(ra, dec, { base: BASE, signal }).then(h => { if (!signal.aborted) $('d-cov').innerHTML = h; })
+    .catch(() => { if (!signal.aborted) $('d-cov').innerHTML = '<p class="muted">IRSA did not answer. Try again in a moment.</p>'; });
+  neighboursHTML(ra, dec, { signal }).then(h => { if (!signal.aborted) $('d-near').innerHTML = h; })
+    .catch(() => { if (!signal.aborted) $('d-near').innerHTML = '<p class="muted">SIMBAD did not answer.</p>'; });
+}
+$('details-close').addEventListener('click', () => { $('details').hidden = true; detailsCtl?.abort(); });
+$('details-film').addEventListener('click', () => detailsAt && filmAt(detailsAt.ra, detailsAt.dec));
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('details').hidden) $('details').hidden = true; });
+function observerSet(msg) {
+  $('obs-msg').textContent = msg;
+  if (detailsAt) $('d-obs').innerHTML = observerHTML(detailsAt.ra, detailsAt.dec);
+}
+$('obs-geo').addEventListener('click', () => {
+  if (!navigator.geolocation) { $('obs-msg').textContent = 'This browser cannot share a location. Type latitude, longitude instead.'; return; }
+  $('obs-msg').textContent = 'Asking the browser…';
+  navigator.geolocation.getCurrentPosition((p) => {
+    setObserver({ lat: p.coords.latitude, lon: p.coords.longitude, label: 'your device location' });
+    observerSet('Location set for this tab only. It is never saved or sent anywhere.');
+  }, () => { $('obs-msg').textContent = 'Location not shared. You can type latitude, longitude instead.'; }, { maximumAge: 600000, timeout: 15000 });
+});
+$('obs-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const ll = parseLatLon($('obs-input').value);
+  if (!ll) { $('obs-msg').textContent = 'Type latitude, longitude in degrees, e.g. 6.93, 79.85 (north and east are positive).'; return; }
+  setObserver({ ...ll, label: 'the place you typed' });
+  observerSet('Location set for this tab only. It is never saved or sent anywhere.');
+});
+
 // ---------- offline + history ----------
 function onlineState() { $('offline').hidden = navigator.onLine; }
 addEventListener('online', onlineState);
@@ -292,6 +426,8 @@ function loadFromURL(push) {
   const { query, settings } = fromURL(location.search);
   for (const [k, v] of Object.entries(settings)) store.dispatch({ type: 'SET_SETTING', key: k, value: v });
   syncSettingsForm(settings);
+  $('wl').value = String(settings.ch); $('wl-out').textContent = `${CHANNEL_UM[settings.ch].toFixed(2)} µm`;
+  applyMode();
   if (query) {
     $('q').value = query.type === 'name' ? query.name : `${query.ra.toFixed(5)} ${query.dec >= 0 ? '+' : ''}${query.dec.toFixed(5)}`;
     search(query, { push });

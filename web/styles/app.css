@@ -121,3 +121,29 @@ kbd { font: var(--text-xs) var(--font-mono); padding: 0 var(--space-1); border: 
   .when-date { font-size: var(--text-sm); white-space: normal; }
 }
 @media (pointer: coarse) { .keys { display: none; } }
+
+/* sky map, hover names, details box */
+.stage { position: relative; }
+.modes { margin: 0 auto var(--space-3); max-width: var(--viewer-max); }
+.skymap { position: absolute !important; inset: 0; width: 100%; height: 100%; }
+.skymap[hidden] { display: none; }
+.hover-tip { position: absolute; z-index: 5; pointer-events: none; padding: var(--space-1) var(--space-2); background: var(--color-surface-2); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-1); font-size: var(--text-sm); max-width: 18rem; }
+.hover-tip .muted { display: block; font-size: var(--text-xs); }
+.mapbar { max-width: var(--viewer-max); margin: var(--space-3) auto 0; display: grid; gap: var(--space-2); }
+.mapbar[hidden] { display: none; }
+.wl input { width: 100%; accent-color: var(--color-accent); min-height: var(--tap-size); }
+.small { font-size: var(--text-xs); margin: 0; }
+.mono { font-family: var(--font-mono); }
+.details { position: absolute; top: calc(var(--tap-size) + var(--space-3)); right: 0; z-index: 6; width: min(24rem, 100%); max-height: calc(100% - var(--space-6)); overflow: auto; box-shadow: 0 8px 32px rgb(0 0 0 / 0.45); }
+.details[hidden] { display: none; }
+.details-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.details-head .card-title { margin: 0; }
+.neighbours { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); font-size: var(--text-sm); }
+.neighbours .muted { font-size: var(--text-xs); }
+.obs-controls { display: grid; gap: var(--space-2); margin: var(--space-2) 0 var(--space-4); }
+.obs-form { display: flex; gap: var(--space-2); }
+.obs-form input { flex: 1; min-width: 0; min-height: var(--tap-size); padding: 0 var(--space-3); font: inherit; color: var(--color-text); background: var(--color-bg); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-2); }
+.details .btn-primary { width: 100%; }
+@media (max-width: 52rem) {
+  .details { position: fixed; top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-height: 70vh; border-radius: var(--radius-3) var(--radius-3) 0 0; }
+}

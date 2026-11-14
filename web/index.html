@@ -32,7 +32,13 @@
 
   <main class="layout">
     <section class="stage" aria-label="Image viewer">
+      <div class="modes segmented" role="radiogroup" aria-label="View">
+        <label><input type="radio" name="mode" value="map" checked> Sky map</label>
+        <label><input type="radio" name="mode" value="film"> Time-lapse</label>
+      </div>
       <div class="viewer" id="viewer" tabindex="-1">
+        <div id="skymap" class="skymap" hidden></div>
+        <div id="hover-tip" class="hover-tip" role="tooltip" hidden></div>
         <canvas id="sky" role="img" aria-label="No image yet"></canvas>
         <div class="overlay-tl" aria-hidden="true">
           <span class="compass"><span>N ↑</span><span>E ←</span></span>
@@ -62,6 +68,39 @@
           </div>
         </div>
       </div>
+
+      <div class="mapbar" id="mapbar" hidden>
+        <label class="field wl">
+          <span>Wavelength: <output id="wl-out">1.63 µm</output></span>
+          <input type="range" id="wl" min="0" max="101" step="1" value="33" aria-describedby="wl-help">
+        </label>
+        <p id="wl-help" class="muted small">SPHEREx all-sky map (DR1), one of its 102 colours at a time. Drag to pan, scroll or pinch to zoom, click a spot for details. Hover a marked object to see its name.</p>
+        <button type="button" class="btn btn-primary" id="map-film">Watch the centre over time</button>
+      </div>
+
+      <section class="details card" id="details" aria-labelledby="details-h" hidden>
+        <div class="details-head">
+          <h2 id="details-h" class="card-title">Coordinate details</h2>
+          <button type="button" class="btn icon" id="details-close" aria-label="Close details">×</button>
+        </div>
+        <div id="d-static"></div>
+        <h3 class="card-subtitle">SPHEREx coverage</h3>
+        <div id="d-cov" aria-live="polite"></div>
+        <h3 class="card-subtitle">Nearby catalogued objects</h3>
+        <div id="d-near" aria-live="polite"></div>
+        <h3 class="card-subtitle">From your location</h3>
+        <div id="d-obs"></div>
+        <div class="obs-controls" id="obs-controls">
+          <button type="button" class="btn" id="obs-geo">Use my location</button>
+          <form id="obs-form" class="obs-form">
+            <label class="visually-hidden" for="obs-input">Latitude, longitude</label>
+            <input id="obs-input" placeholder="Lat, long e.g. 6.93, 79.85" autocomplete="off">
+            <button type="submit" class="btn">Set</button>
+          </form>
+          <p class="muted small" id="obs-msg">Optional. Your location is only used for the maths on this page; it is never saved or sent anywhere.</p>
+        </div>
+        <button type="button" class="btn btn-primary" id="details-film">Watch this spot over time</button>
+      </section>
 
       <div class="player" id="player" aria-label="Playback controls">
         <div class="player-row">
