@@ -23,7 +23,7 @@ const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png',
   '.jpg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif', '.ico': 'image/x-icon', '.woff2': 'font/woff2',
-  '.fits': 'application/fits', '.txt': 'text/plain; charset=utf-8', '.webm': 'video/webm',
+  '.fits': 'application/fits', '.txt': 'text/plain; charset=utf-8', '.webm': 'video/webm', '.mp4': 'video/mp4',
 };
 
 // Disk cache with the Cache API shape the relay expects (match/put). SPHEREx cutouts never
@@ -57,7 +57,7 @@ async function serveStatic(path, res) {
   let rel = decodeURIComponent(path);
   let base = WEB;
   if (rel.startsWith('/loader/')) { // only the loader media, nothing else from design/
-    if (!/^\/loader\/[\w.-]+\.(webm|webp|png)$/.test(rel)) { res.writeHead(404).end('Not found'); return; }
+    if (!/^\/loader\/(v2\/)?[\w.-]+\.(webm|mp4|webp|png)$/.test(rel)) { res.writeHead(404).end('Not found'); return; }
     base = LOADER; rel = rel.slice('/loader'.length);
   }
   if (rel.endsWith('/')) rel += 'index.html';
