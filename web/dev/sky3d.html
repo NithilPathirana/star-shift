@@ -1,0 +1,101 @@
+<!doctype html>
+<!-- Dev page: the 3D sky (Sky3D) on its own, with an fps meter.
+     URL options: ?ra=&dec=&fov=&ch=&grid=1&bench=1 (bench = 10 s slow pan, fps logged to console and #fps).
+     AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sky3D dev</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #0E0B09; color: #EDE5DA; font: 13px/1.4 ui-monospace, Consolas, monospace; overflow: hidden; }
+  #sky { position: absolute; inset: 0; }
+  .bar { position: absolute; left: 12px; top: 12px; display: flex; flex-wrap: wrap; gap: 6px; max-width: calc(100% - 24px); z-index: 2; }
+  .bar button, .bar label, .pill { background: rgba(21,17,14,.82); color: #EDE5DA; border: 1px solid rgba(255,235,210,.14); border-radius: 999px; padding: 5px 11px; font: inherit; cursor: pointer; }
+  .pill { position: absolute; z-index: 2; pointer-events: none; }
+  #fps { right: 12px; top: 12px; }
+  #read { left: 12px; bottom: 12px; }
+  #tip { display: none; }
+  #credit { right: 12px; bottom: 12px; max-width: 60%; font-size: 11px; color: #B5A898; }
+</style>
+</head>
+<body>
+<div id="sky"></div>
+<div class="bar">
+  <button data-go="88.793,7.407,30">Orion</button>
+  <button data-go="88.793,7.407,3">Betelgeuse 3°</button>
+  <button data-go="88.793,7.407,0.5">Betelgeuse 0.5°</button>
+  <button data-go="269.452,4.693,0.2">Barnard's Star</button>
+  <button data-go="266.4,-29,60">Galactic centre</button>
+  <button data-go="10.68,41.27,5">M31</button>
+  <label>λ <input id="ch" type="range" min="0" max="101" value="33" style="vertical-align:middle;width:110px"></label>
+  <button id="bands">Bands</button>
+  <button id="grid">Grid</button>
+</div>
+<div id="fps" class="pill">–</div>
+<div id="read" class="pill">–</div>
+<div id="tip" class="pill"></div>
+<div id="credit" class="pill"></div>
+<script type="module">
+  import { Sky3D } from '../app/sky3d/index.js';
+  const q = new URLSearchParams(location.search), $ = (id) => document.getElementById(id);
+  let mouse = [0, 0];
+  addEventListener('pointermove', (e) => { mouse = [e.clientX, e.clientY]; });
+  const sky = new Sky3D($('sky'), {
+    onClick: (ra, dec) => console.log('click', ra.toFixed(4), dec.toFixed(4)),
+    onHover: (d) => { const t = $('tip'); t.style.display = d ? 'block' : 'none'; if (d) { t.textContent = `${d.name} · ${d.type}`; t.style.left = mouse[0] + 14 + 'px'; t.style.top = mouse[1] + 14 + 'px'; } },
+    onView: () => { const c = sky.center(), [w, h] = sky.aladin.getFov(); $('read').textContent = `RA ${c.ra.toFixed(3)}  Dec ${c.dec.toFixed(3)}  FOV ${w.toFixed(3)}° × ${h.toFixed(3)}°`; },
+    onMove: (c, f) => console.log('move', c.ra.toFixed(3), c.dec.toFixed(3), f.toFixed(3)),
+  });
+  window.sky = sky;
+  $('credit').textContent = sky.credit;
+  const num = (k, d) => (q.has(k) ? +q.get(k) : d);
+  if (q.has('ch')) { sky.setChannel(+q.get('ch')); $('ch').value = q.get('ch'); }
+  sky.init(num('ra', 88.793), num('dec', 7.407), num('fov', 60)).then(() => {
+    if (q.get('grid') === '1') sky.setGrid(true);
+    if (q.get('bands') === '1') sky.setBands([{ channels: [10, 14], color: '6fa8ff' }, { channels: [33], color: 'ffe7c2' }, { channels: [90, 95], color: 'ff7a4d' }]);
+    if (q.get('bench') === '1') bench();
+  }).catch((err) => { $('read').textContent = String(err.message || err); });
+  document.querySelectorAll('[data-go]').forEach((b) => { b.onclick = () => { const [ra, dec, fov] = b.dataset.go.split(',').map(Number); sky.goTo(ra, dec, fov); }; });
+  $('ch').oninput = (e) => sky.setChannel(+e.target.value);
+  let bandsOn = false, gridOn = false;
+  $('bands').onclick = () => { bandsOn = !bandsOn; sky.setBands(bandsOn ? [{ channels: [10, 14], color: '6fa8ff' }, { channels: [33], color: 'ffe7c2' }, { channels: [90, 95], color: 'ff7a4d' }] : []); };
+  $('grid').onclick = () => { gridOn = !gridOn; sky.setGrid(gridOn); };
+
+  // fps meter: rAF intervals while the sky renders (it renders on demand, so idle shows "idle").
+  let last = 0, frames = [], lastRenders = 0;
+  (function tick(t) {
+    if (last) frames.push(t - last); last = t;
+    if (frames.length > 120) frames.shift();
+    if (sky.stats.renders !== lastRenders) {
+      lastRenders = sky.stats.renders;
+      const avg = frames.reduce((a, b) => a + b, 0) / Math.max(1, frames.length);
+      $('fps').textContent = `${(1000 / avg).toFixed(0)} fps · ${sky.stats.lastMs.toFixed(2)} ms CPU/frame`;
+    } else $('fps').textContent = 'idle (renders on demand)';
+    requestAnimationFrame(tick);
+  })(0);
+
+  // Benchmark: 10 s of continuous panning + zooming, logs frame-time stats.
+  async function bench() {
+    await new Promise(r => setTimeout(r, 3000)); // let the first textures upload and shaders compile
+    const slow = []; const f0 = sky._frame.bind(sky); sky._frame = (t) => { const a = performance.now(); f0(t); const ms = performance.now() - a; if (ms > 20) slow.push(+ms.toFixed(0)); };
+    const times = []; let prev = performance.now(); const t0 = prev;
+    await new Promise((done) => {
+      (function step(t) {
+        times.push(t - prev); prev = t;
+        const k = (t - t0) / 10000;
+        Object.assign(sky.v, { ra: (88.793 + 40 * Math.sin(k * 6.283) + 360) % 360, dec: 7.407 + 10 * Math.sin(k * 12.566), fov: (q.get("wide") === "1" ? 40 : 3) + 57 * (0.5 + 0.5 * Math.cos(k * 6.283)) }); sky._changed();
+        if (t - t0 < 10000) requestAnimationFrame(step); else done();
+      })(prev);
+    });
+    times.shift(); times.sort((a, b) => a - b);
+    const avg = times.reduce((a, b) => a + b, 0) / times.length;
+    const res = { frames: times.length, fps: +(1000 / avg).toFixed(1), p95ms: +times[Math.floor(times.length * 0.95)].toFixed(1), worstMs: +times[times.length - 1].toFixed(1), over33ms: times.filter(x => x > 33.4).length, slowFramesInSky3D: slow, tiles: sky.tiles.size };
+    console.log('BENCH', JSON.stringify(res));
+    document.title = 'BENCH ' + JSON.stringify(res);
+    $('fps').textContent = 'bench ' + JSON.stringify(res);
+  }
+</script>
+</body>
+</html>
