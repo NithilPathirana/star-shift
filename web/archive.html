@@ -1,0 +1,104 @@
+<!doctype html>
+<!-- AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. -->
+<html lang="en" data-motion="full" data-glass="glass" data-contrast="normal" data-text="normal">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Star Shift · Observation Archive</title>
+<link rel="icon" type="image/svg+xml" href="brand/favicon.svg">
+<meta name="description" content="Every NASA SPHEREx image of one patch of sky, from the IRSA archive: dates, detectors, wavelengths and flagged pixels.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/e.css">
+<link rel="stylesheet" href="styles/pages.css">
+</head>
+<body>
+<div class="page" data-page="archive">
+  <nav class="rail" aria-label="Pages">
+    <img class="logo-slot" src="brand/star-shift-symbol-small.svg" alt="" width="40" height="40">
+    <a class="nav-btn" data-page="index.html" href="index.html"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><circle cx="10" cy="10" r="2.5"/></svg>Viewer</a>
+    <a class="nav-btn" data-page="archive.html" href="archive.html" aria-current="page"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M3 7.5h14M3 12h14M8 3v14"/></svg>Archive</a>
+    <a class="nav-btn" data-page="spectral.html" href="spectral.html"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 16.5h15M3.5 13l3-5 3 3 3-6 4 7" stroke-linejoin="round"/></svg>Spectrum</a>
+  </nav>
+
+  <header class="topbar glass">
+    <img class="logo-slot top-logo" src="brand/star-shift-symbol-small.svg" alt="" width="28" height="28"><span class="name">Star Shift</span>
+    <form class="search" role="search" id="searchForm">
+      <label class="field well"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="5.5"/><path d="M12 12l4 4"/></svg>
+        <input id="q" aria-label="Star name or sky coordinates" placeholder="Star name, or RA Dec like 269.45 +4.69" autocomplete="off"></label>
+      <button class="key primary" type="submit">Show</button>
+      <div class="serr" id="serr" role="alert" hidden></div>
+    </form>
+    <div class="picks" role="group" aria-label="Example targets">
+      <button class="key pick" type="button">Barnard's Star</button>
+      <button class="key pick" type="button">R Draconis</button>
+      <button class="key pick" type="button">Epsilon Indi B</button>
+      <button class="key pick" type="button">WISE 0855</button>
+    </div>
+  </header>
+
+  <main class="pg-main" id="main">
+    <section class="pg-head">
+      <div>
+        <h1>Observation Archive</h1>
+        <p class="pg-target"><b id="tName">…</b> <span class="num" id="tCoords"></span><span id="tPm"></span></p>
+      </div>
+      <p class="pg-lede">Every SPHEREx image that covers this spot, straight from the archive's own list. <span class="tag obs">OBSERVED</span></p>
+    </section>
+
+    <section class="pg-filters" aria-label="Filters">
+      <div class="fgroup" role="group" aria-label="Season"><span class="flabel">Season</span><div class="chips" id="fSeason"></div></div>
+      <div class="fgroup" role="group" aria-label="Band"><span class="flabel">Band</span><div class="chips" id="fBand"></div></div>
+      <div class="fgroup" role="group" aria-label="Detector"><span class="flabel">Detector</span><div class="chips" id="fDet"></div></div>
+      <div class="fgroup" role="group" aria-label="Flags"><span class="flabel">Flags</span><div class="chips" id="fFlags"></div></div>
+      <div class="fgroup" role="group" aria-label="Data release"><span class="flabel">Release</span><div class="chips" id="fRel"></div></div>
+      <div class="fgroup grow"><label class="field well small"><svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="5.5"/><path d="M12 12l4 4"/></svg>
+        <input id="fText" aria-label="Filter by observation ID or date" placeholder="Obs ID or date"></label></div>
+    </section>
+
+    <div class="pg-bar">
+      <p class="count num" id="count" aria-live="polite">Loading the image list…</p>
+      <div class="pager">
+        <span class="flabel">Rows</span>
+        <div class="seg well small" id="pageSize" role="group" aria-label="Rows per page"><button class="seg-btn" type="button" data-v="50" aria-pressed="true">50</button><button class="seg-btn" type="button" data-v="100" aria-pressed="false">100</button><button class="seg-btn" type="button" data-v="250" aria-pressed="false">250</button></div>
+        <button class="key icon" id="prev" aria-label="Previous page">‹</button>
+        <span class="num" id="pageTxt">1 / 1</span>
+        <button class="key icon" id="next" aria-label="Next page">›</button>
+        <button class="key" id="csv" type="button">Download list (CSV)</button>
+      </div>
+    </div>
+
+    <section class="well table-well">
+      <table class="atable" id="table">
+        <thead><tr>
+          <th scope="col" class="c-x"><span class="sr-only">Details</span></th>
+          <th scope="col" class="c-th">Image</th>
+          <th scope="col" data-sort="n" class="r">#</th>
+          <th scope="col" data-sort="date">Date (UTC)</th>
+          <th scope="col" data-sort="time">Time</th>
+          <th scope="col" data-sort="season">Season</th>
+          <th scope="col" data-sort="detector" class="r">Det.</th>
+          <th scope="col" data-sort="wl">Wavelength</th>
+          <th scope="col" data-sort="mjd" class="r">MJD</th>
+          <th scope="col" data-sort="obsid">Observation ID</th>
+          <th scope="col" data-sort="release">Release</th>
+          <th scope="col" data-sort="flags" class="r" title="Flagged pixels in the 25×25 patch around the target">Flagged px</th>
+          <th scope="col" data-sort="status">Status</th>
+          <th scope="col">Links</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p class="empty" id="empty" hidden></p>
+    </section>
+
+    <footer class="pg-foot">
+      <p class="num" id="foot"></p>
+      <p>Images: NASA SPHEREx via IRSA (DOIs 10.26131/IRSA652, 10.26131/IRSA662). Thumbnails and flag counts: the 25×25-pixel patch (2.6′) around the target, north up, viewer stretch. Flags come from the archive's own quality mask for each image.</p>
+    </footer>
+  </main>
+</div>
+<script src="app/erender.js"></script>
+<script type="module" src="app/archive/main.js"></script>
+</body>
+</html>
