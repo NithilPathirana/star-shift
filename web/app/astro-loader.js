@@ -78,7 +78,7 @@
         if (dead || leaving) return 0;
         leaving = true; root.classList.add('al-leaving');                       // text, pill and hairline fade out (150 ms)
         if (o.reducedMotion) { fade(); return 0; }
-        if (!exit || !exitReady || Date.now() - born < 1200) { fade(); return 400; }   // clip not ready, or the data was cached and arrived at once: plain fade
+        if (!exit || !exitReady || Date.now() - born < 4000) { fade(); return 400; }   // clip not ready, or a short (cached) load: never add 1.5 s of decoration to a wait under 4 s
         var ended = false, finish = function () { if (ended) return; ended = true; fade(); };
         exit.classList.add('al-on'); exit.currentTime = 0; play(exit);
         exit.addEventListener('ended', finish); exit.addEventListener('error', finish);

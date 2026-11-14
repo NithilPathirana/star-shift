@@ -296,9 +296,11 @@ function rocketAt(frac) {
 // 'astronaut' (Design Studio's video loop, v1.1; falls back to ScanLoader if the video can't play), 'scan' or 'sheet'
 const LOADER = 'astronaut';
 function leaveLoader() {
-  const L = $('stLoading'); if (L.hidden || !V.scan) return;
+  const L = $('stLoading'); if (L.hidden || !V.scan) return 0;
   const scan = V.scan; V.scan = null; const ms = scan.done(); // AstroLoader returns its exit time; ScanLoader returns nothing
-  setTimeout(() => { L.hidden = true; scan.destroy(); }, set.motion ? 0 : (ms ?? 400));
+  const wait = set.motion ? 0 : (ms ?? 400);
+  setTimeout(() => { L.hidden = true; scan.destroy(); }, wait);
+  return wait; // callers start playback after this, so the first images aren't hidden behind the exit clip
 }
 // showState(null) leaves #stLoading alone so leaveLoader() can fade it out
 function showState(id) { ['stLoading', 'stError', 'stEmpty'].forEach(x => { if (id === null && x === 'stLoading') return; $(x).hidden = x !== id; }); if (id && id !== 'stLoading') { V.scan?.destroy(); V.scan = null; } }
@@ -319,7 +321,7 @@ function load(query, label) {
   V.scan?.destroy();
   V.scan = (LOADER === 'astronaut' && window.AstroLoader ? window.AstroLoader : window.ScanLoader)($('scanLoader'), {
     mode: LOADER, base: '/loader/v1.1/', target: V.name, bands: ranges, reducedMotion: set.motion,
-    onStart: () => { Snd.play('click'); $('thin').hidden = false; leaveLoader(); if (!set.motion) P.play(); },
+    onStart: () => { Snd.play('click'); $('thin').hidden = false; const w = leaveLoader(); if (!set.motion) setTimeout(() => P.play(), w); },
     onRetry: () => { Snd.play('click'); if (V.query) load(V.query, V.name); },
   });
   showState('stLoading'); $('thin').hidden = true; buildTimeline(); progress(); draw(); onFrame(0);
@@ -343,7 +345,7 @@ function load(query, label) {
     } else if (e.type === 'FRAME_FAILED') { V.failed++; progress(); }
     else if (e.type === 'RETRY_WAIT') { V.retries++; progress(); }
     else if (e.type === 'DONE') {
-      V.status = 'ready'; $('thin').hidden = true; leaveLoader();
+      V.status = 'ready'; $('thin').hidden = true; const leaveWait = leaveLoader();
       if (!V.F.length) { V.status = 'error'; $('errTxt').textContent = 'No images arrived. The archive is often busy; Retry asks again.'; $('useLoaded').hidden = true; showState('stError'); Snd.play('error'); return; }
       showState(null);
       V.stacks = buildStacks(V.raws.slice().sort((a, b) => a.mjd - b.mjd)).map(stackToF);
@@ -354,7 +356,7 @@ function load(query, label) {
       $('d-meas').textContent = V.motion?.ok ? `${(V.motion.total / 1000).toFixed(2)} ± ${(V.motion.totalErr / 1000).toFixed(2)}″/yr (${V.motion.frames} images)` : V.motion ? (V.motion.reason === 'one season only' ? 'needs two seasons to measure' : 'too faint to measure') : '—';
       buildTimeline(); findOther(); onFrame(P.i); Snd.play('confirm');
       toast(V.failed ? `${V.F.length} images are in. ${V.failed} couldn't be fetched (IRSA busy); Retry later fills them.` : `All ${V.F.length} images are in.`);
-      if (!set.motion && !P.playing) P.play();
+      setTimeout(() => { if (!set.motion && !P.playing) P.play(); }, leaveWait);
     } else if (e.type === 'ERROR' || e.type === 'NOT_FOUND') {
       V.status = 'error'; $('thin').hidden = true;
       $('errTxt').textContent = e.message + (V.F.length ? ` ${V.F.length} images arrived and are kept.` : '');
