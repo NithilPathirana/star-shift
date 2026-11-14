@@ -354,11 +354,18 @@ function rocketAt(frac) {
 // Loader: Design Studio's code-based ScanLoader (design/loader/scan/), drawn from the real frames.
 // 'astronaut' (Design Studio's video loop, v1.1; falls back to ScanLoader if the video can't play), 'scan' or 'sheet'
 const LOADER = 'astronaut';
+// Clean map -> time-lapse hand-over: the loader stays invisible for a short grace (LOADER_GRACE) after a
+// load starts. A quick (cached) load finishes inside it and goes straight to the flip-book with no
+// loader at all, instead of map -> loader (whose picture is the all-sky map) -> 400 ms fade over the flip-book.
+const LOADER_GRACE = 450;
+let ldReveal = 0, ldLeaving = null;
 function leaveLoader() {
   const L = $('stLoading'); if (L.hidden || !V.scan) return 0;
-  const scan = V.scan; V.scan = null; const ms = scan.done(); // AstroLoader returns its exit time; ScanLoader returns nothing
+  const scan = V.scan; V.scan = null; clearTimeout(ldReveal);
+  if (L.classList.contains('ld-wait')) { L.hidden = true; L.classList.remove('ld-wait'); scan.destroy(); return 0; } // never seen: no exit
+  const ms = scan.done(); // AstroLoader returns its exit time; ScanLoader returns nothing
   const wait = set.motion ? 0 : (ms ?? 400);
-  setTimeout(() => { L.hidden = true; scan.destroy(); }, wait);
+  ldLeaving = { scan, t: setTimeout(() => { ldLeaving = null; L.hidden = true; scan.destroy(); }, wait) };
   return wait; // callers start playback after this, so the first images aren't hidden behind the exit clip
 }
 // showState(null) leaves #stLoading alone so leaveLoader() can fade it out
@@ -380,7 +387,11 @@ function load(query, label) {
   Object.assign(V, { query, target: null, grid: null, raws: [], F: [], FA: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, status: 'loading', motion: null, seasons: [], name: label || 'this patch' });
   P.i = 0; shown = -1; arriveCount = 0;
   $('stLoading').classList.remove('leaving');
+  // a loader still fading out from the last load shares #scanLoader: finish it now, or its late
+  // destroy() would wipe (and hide) the new one
+  if (ldLeaving) { clearTimeout(ldLeaving.t); ldLeaving.scan.destroy(); ldLeaving = null; }
   V.scan?.destroy();
+  { const L = $('stLoading'); L.classList.add('ld-wait'); clearTimeout(ldReveal); ldReveal = setTimeout(() => L.classList.remove('ld-wait'), LOADER_GRACE); }
   // Reduce motion -> the scan loader (DESIGN.md 17b); otherwise the astronaut video (it falls back to ScanLoader itself)
   V.scan = (LOADER === 'astronaut' && !set.motion && window.AstroLoader ? window.AstroLoader : window.ScanLoader)($('scanLoader'), {
     mode: LOADER, base: '/loader/v1.1/', target: V.name, bands: ranges.map(r => ({ ...r, name: bandName(r) })), // caption says "CO₂-ice band", a range
@@ -1033,8 +1044,12 @@ bindTip($('hitOther'), () => otherName ? `<b>${esc(otherName.name)}</b><small>${
   : otherName === false ? '<b>Unidentified source</b><small>No SIMBAD object within 15″ of this bright spot.</small>' : '<b>Looking it up…</b><small>Asking SIMBAD</small>');
 
 /* ---------- scenes: map → (zoom) → flip-book ---------- */
-function toViewer(instant) {
-  const go = () => { scene = 'viewer'; app.dataset.scene = 'viewer'; hideTip(); layout(); onFrame(P.i); placeHits(); GH.placeMap(); if (innerWidth < 1100) sheet(false); updateURL(); };
+// then(): runs inside the transition's update, after the map's "old" picture is taken. load() used to
+// run straight after startViewTransition(), so the loader was already over the map in the old picture.
+function toViewer(instant, then) {
+  let ran = false; // a page that is not drawing (e.g. a hidden pane) never runs the transition's update: run it anyway after 600 ms
+  if (!instant) setTimeout(() => go(), 600);
+  const go = () => { if (ran) return; ran = true; scene = 'viewer'; app.dataset.scene = 'viewer'; then?.(); hideTip(); layout(); onFrame(P.i); placeHits(); GH.placeMap(); if (innerWidth < 1100) sheet(false); updateURL(); };
   if (!instant && document.startViewTransition && !set.motion) document.startViewTransition(go); else go();
 }
 function toMap(instant) {
@@ -1049,7 +1064,7 @@ function playPatch() {
   const query = preset ? { type: 'name', name: preset.label } : t?.simbad ? { type: 'name', name: t.simbad.name } : { type: 'coords', ra: s.ra, dec: s.dec };
   const same = V.query && JSON.stringify(V.query) === JSON.stringify(query) && V.status === 'ready';
   if (skymap.aladin && !set.motion) skymap.setFov(Math.max(0.05, (150 / 3600) / 0.42));
-  setTimeout(() => { toViewer(false); if (!same) load(query, t ? t.name : 'this patch'); }, set.motion ? 0 : 250);
+  setTimeout(() => toViewer(false, same ? null : () => load(query, t ? t.name : 'this patch')), set.motion ? 0 : 250);
 }
 $('cdPlay').onclick = playPatch; $('mdPlay').onclick = playPatch; $('mapBack').onclick = () => toMap(false);
 
