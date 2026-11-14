@@ -20,12 +20,12 @@ Type any sky position (or a star name) and see every SPHEREx image of that spot,
   Gaia (they don't send CORS headers) on http://127.0.0.1:8787. Cutouts are cached on disk in `.cache/`.
 - `proxy/worker.js` – the relay logic itself; the local server uses it, and the same file can run
   as a Cloudflare Worker if the site is ever published. No secrets, no storage.
+- `tests/` – `npm test` (offline, checked against Astropy reference values).
+- `tools/prove_targets.mjs` – live run on NASA's five test targets; results in `evidence/`.
 
 ## Run it (Windows)
 Double-click `start.vbs` (no console window; opens the browser). `stop.vbs` stops it.
 Needs Node.js 20+. Or run `node server/server.mjs` in a terminal.
-- `tests/` – `npm test` (offline, checked against Astropy reference values).
-- `tools/prove_targets.mjs` – live run on NASA's five test targets; results in `evidence/`.
 
 ## Data and credits
 - SPHEREx data from the NASA/IPAC Infrared Science Archive (IRSA), Caltech/IPAC.
