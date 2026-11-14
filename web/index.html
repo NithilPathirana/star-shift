@@ -19,7 +19,7 @@
 
 <div class="app" id="app" data-scene="map">
   <nav class="rail" aria-label="Sections">
-    <img class="logo-slot" src="brand/star-shift-symbol-small.svg" alt="" width="40" height="40">
+    <img class="logo-slot" src="brand/star-shift-symbol-small.svg" alt="" width="40" height="40"><span class="ai-mark rail-ai" title="Logo: AI-generated" aria-label="Logo: AI-generated" role="note">AI</span>
     <button class="nav-btn" aria-current="page"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><circle cx="10" cy="10" r="2.5"/></svg>Viewer</button>
     <a class="nav-btn" href="archive.html" data-carry="archive.html"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M3 7.5h14M3 12h14M8 3v14"/></svg>Archive</a>
     <a class="nav-btn" href="spectral.html" data-carry="spectral.html"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 16.5h15M3.5 13l3-5 3 3 3-6 4 7" stroke-linejoin="round"/></svg>Spectrum</a>
@@ -29,7 +29,7 @@
   </nav>
 
   <header class="topbar glass hero" id="topbar">
-    <img class="logo-slot top-logo" src="brand/star-shift-symbol-small.svg" alt="" width="28" height="28"><span class="name">Star Shift</span>
+    <img class="logo-slot top-logo" src="brand/star-shift-symbol-small.svg" alt="" width="28" height="28"><span class="ai-mark top-ai" title="Logo: AI-generated" aria-label="Logo: AI-generated" role="note">AI</span><span class="name">Star Shift</span>
     <form class="search" role="search" onsubmit="event.preventDefault();doSearch()">
       <label class="field well"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="5.5"/><path d="M12 12l4 4"/></svg>
         <input id="q" aria-label="Star name or sky coordinates" value="" placeholder="Star name, or RA Dec like 269.45 +4.69" autocomplete="off"></label>
@@ -149,7 +149,7 @@
       <details><summary>More detail</summary>
         <dl><dt>Images</dt><dd id="d-n">—</dd><dt>MJD</dt><dd id="d-mjd"></dd><dt>Pixel size</dt><dd>6.15″</dd><dt>Measured motion</dt><dd id="d-meas">—</dd><dt>Field</dt><dd id="d-field">150″ · north up</dd><dt>Stretch</dt><dd id="d-str">asinh 2–99.7%</dd></dl>
       </details>
-      <p class="credit" style="margin-top:12px">Images: NASA SPHEREx via the NASA/IPAC Infrared Science Archive (IRSA), DOIs <a href="https://doi.org/10.26131/IRSA652">10.26131/IRSA652</a>, <a href="https://doi.org/10.26131/IRSA662">10.26131/IRSA662</a>. Names and motions: SIMBAD (CDS, Harvard mirror). Stars on the sky: Hipparcos (ESA), new reduction (van Leeuwen 2007), via the ESA Gaia archive. 3D rendering: three.js (MIT). All code, including the UI sounds, was written by an AI model (Claude, by Anthropic) under team Proper Motion's direction. Not an official NASA site.</p>
+      <p class="credit" style="margin-top:12px">Images: NASA SPHEREx via the NASA/IPAC Infrared Science Archive (IRSA), DOIs <a href="https://doi.org/10.26131/IRSA652">10.26131/IRSA652</a>, <a href="https://doi.org/10.26131/IRSA662">10.26131/IRSA662</a>. Names and motions: SIMBAD (CDS, Harvard mirror). Stars on the sky: Hipparcos (ESA), new reduction (van Leeuwen 2007), via the ESA Gaia archive. 3D rendering: three.js (MIT). All code, including the UI sounds, was written by an AI model (Claude, by Anthropic) under team Proper Motion's direction. Not an official NASA site. Logo: AI-generated (original image made with an AI image tool; tool name to be confirmed); the small-size version and the favicon were redrawn as SVG by Claude (Anthropic).</p>
     </section>
     </div>
   </aside>
@@ -227,6 +227,7 @@
 <div class="pop glass" id="help" role="dialog" aria-label="About and help" hidden>
   <h2>About Star Shift</h2>
   <p class="about-pitch">Every six months, NASA's SPHEREx photographs the whole sky. Star Shift lets anyone flip through those photos, catch what moved, and prove it's real.</p>
+  <p class="note ai-credit">Logo: AI-generated (original image made with an AI image tool; tool name to be confirmed); the small-size version and the favicon were redrawn as SVG by Claude (Anthropic).</p>
   <h3 style="margin-top:14px">Shortcuts</h3>
   <div class="keys" style="margin-top:10px"><kbd>Space</kbd><span>Play or pause</span><kbd>←</kbd><span>Previous image</span><kbd>→</kbd><span>Next image</span><kbd>T</kbd><span>Time view</span><kbd>C</kbd><span>Compare first and last season</span><kbd>B</kbd><span>Blink the two seasons</span><kbd>M</kbd><span>Back to the sky map</span><kbd>+ −</kbd><span>Zoom the sky map</span><kbd>Enter</kbd><span>Play the selected patch (map)</span><kbd>?</kbd><span>This help</span><kbd>Esc</kbd><span>Close panels</span></div>
   <h3>About the data</h3>

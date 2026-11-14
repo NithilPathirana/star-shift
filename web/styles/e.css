@@ -470,3 +470,11 @@ html[data-motion=full] .rk .bob{animation:bob 1.6s ease-in-out infinite alternat
   .app[data-scene=map] .inspector{max-height:46dvh}
   .app[data-scene=map] .scrim{background:rgba(40,30,22,.08)}
 }
+
+/* Visible AI watermark beside the AI-generated logo (team rule, Sat night) */
+.ai-mark{display:inline-block;font:600 .5625rem/1.35 var(--font-num);letter-spacing:.04em;color:var(--muted);border:1px solid currentColor;border-radius:4px;padding:0 3px;opacity:.9;cursor:help;vertical-align:middle}
+.rail .logo-slot{margin-bottom:2px}
+.rail .rail-ai{margin-bottom:var(--s3)}
+.ai-mark.top-ai{display:none;margin:0 4px 0 -2px}
+@media (max-width:699px){.ai-mark.top-ai{display:inline-block}}
+.ai-credit{font-size:.75rem;color:var(--muted)}
