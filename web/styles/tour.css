@@ -1,0 +1,47 @@
+/* First-visit guided tour (DESIGN.md section 33).
+   AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+
+/* dim layer: one hole with a 2 px copper outline; its huge spread shadow dims the rest to 55% (no blur) */
+.tour-layer{position:fixed;inset:0;z-index:28;pointer-events:none;opacity:0;transition:opacity 180ms var(--ease-out)}
+.tour-layer.on{opacity:1}
+.tour-hole{position:fixed;left:0;top:0;width:0;height:0;border-radius:12px;pointer-events:none;
+  box-shadow:0 0 0 2px var(--copper-deco),0 0 0 200vmax rgba(15,11,8,.45)}
+.tour-hole.none{box-shadow:0 0 0 200vmax rgba(15,11,8,.45)}
+.tour-hole.moving{transition:transform 220ms var(--ease-out),width 220ms var(--ease-out),height 220ms var(--ease-out)}
+.tour-block{position:fixed;pointer-events:auto}
+
+/* step card: near-opaque glass like the popovers, max 320 px */
+.tour-card{--glass-tint:rgba(248,244,238,.96);--glass-tint-2:rgba(244,239,232,.95);
+  position:fixed;z-index:44;left:0;top:0;width:min(320px,calc(100vw - 24px));padding:var(--s4);
+  opacity:0;transform:translateY(8px);transition:opacity 180ms var(--ease-out),transform 180ms var(--ease-out)}
+.tour-card.in{opacity:1;transform:none}
+.tour-card>*:not(.sr-only),.tour-offer>*{position:relative;z-index:3}
+.tour-count{font-size:.75rem;font-weight:500;color:var(--muted);margin-bottom:4px}
+.tour-card h2{font-size:1rem;font-weight:700;line-height:1.3;color:var(--ink)}
+.tour-card p{margin-top:6px;font-size:.875rem;line-height:1.5;color:var(--ink-2)}
+.tour-actions{display:flex;align-items:center;gap:8px;margin-top:14px}
+.tour-grow{flex:1}
+.tour-skip{min-height:40px;padding:0 6px;font-size:.875rem;font-weight:600;color:var(--muted);border-radius:8px}
+@media (hover:hover) and (pointer:fine){.tour-skip:hover{color:var(--ink)}}
+
+/* phone: the card is a bottom sheet, and the page gets room to scroll the part above it */
+.tour-card.sheet{left:8px!important;right:8px;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:auto}
+@media (max-width:699px){
+  html[data-tour=on] body{padding-bottom:var(--tour-sheet-h,0px)}
+  .tour-actions .key,.tour-skip{min-height:44px}
+}
+
+/* first-visit offer: small glass card at the bottom-right of the stage */
+.tour-offer{--glass-tint:rgba(248,244,238,.95);--glass-tint-2:rgba(244,239,232,.94);
+  position:fixed;z-index:35;right:24px;bottom:120px;width:min(320px,calc(100vw - 24px));padding:14px var(--s4);
+  opacity:0;transform:translateY(8px);transition:opacity 180ms var(--ease-out),transform 180ms var(--ease-out)}
+.tour-offer.in{opacity:1;transform:none}
+.tour-offer-t{font-size:.9375rem;font-weight:600;color:var(--ink)}
+.tour-offer .tour-actions{justify-content:flex-end;margin-top:12px}
+.tour-offer.sheet{left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:auto}
+
+/* Help popover: "Take the tour" at the top */
+#help .tour-start{width:100%;margin:0 0 14px}
+
+/* Reduce motion: instant (the app's global rule does this too; kept explicit here) */
+html[data-motion=reduce] .tour-layer,html[data-motion=reduce] .tour-hole,html[data-motion=reduce] .tour-card,html[data-motion=reduce] .tour-offer{transition:none!important}

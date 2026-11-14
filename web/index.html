@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="styles/live.css">
 <link rel="stylesheet" href="styles/scan-loader.css?v=2">
 <link rel="stylesheet" href="styles/astro-loader.css?v=1">
+<link rel="stylesheet" href="styles/tour.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="fx"></defs></svg>
@@ -225,6 +226,7 @@
   <nav class="pages-list"><a class="key" href="index.html" aria-current="page">Viewer</a><a class="key" href="archive.html" data-carry="archive.html">Archive</a><a class="key" href="spectral.html" data-carry="spectral.html">Spectrum</a><a class="key" href="proof.html">Proof</a><a class="key" href="planetarium.html">Can I see it tonight?</a></nav>
 </div>
 <div class="pop glass" id="help" role="dialog" aria-label="About and help" hidden>
+  <button class="key tour-start" id="tourStart" type="button">Take the tour</button>
   <h2>About Star Shift</h2>
   <p class="about-pitch">Every six months, NASA's SPHEREx photographs the whole sky. Star Shift lets anyone flip through those photos, catch what moved, and prove it's real.</p>
   <p class="note ai-credit">Logo: AI-generated with ChatGPT; small-size version and favicon redrawn as SVG by Claude.</p>
@@ -242,6 +244,7 @@
 <script src="app/scan-loader.js?v=3"></script>
 <script src="app/astro-loader.js?v=2"></script>
 <script type="module" src="app/ui.js"></script>
+<script type="module" src="app/tour/tour.js"></script>
 <script>/* rail links to Archive / Spectrum keep the object you are looking at (the viewer keeps ?q= or ?ra=&dec= in the address) */
 document.querySelectorAll('a[data-carry]').forEach(a => a.addEventListener('click', () => {
   const p = new URLSearchParams(location.search), o = new URLSearchParams();
