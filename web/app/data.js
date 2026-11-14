@@ -3,7 +3,8 @@
 // which means pre-baked targets hit exactly the same cached URLs as the app.
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 
-import { listImages, fetchCutout, maskBadPixels, mapLimit } from '../core/irsa.js';
+import { listImages, fetchCutout, fetchCutoutLayers, maskBadPixels, mapLimit } from '../core/irsa.js';
+import { airglowOf, kindMasks, countKinds } from '../core/contam.js';
 import { resolveName } from '../core/resolve.js';
 import { propagate, mjdToDate } from '../core/motion.js';
 import { makeGrid, reproject, worldToGrid, gridToWorld, stackFrames, centroid, fitLine } from '../core/align.js';
@@ -108,11 +109,39 @@ export async function loadFrame(im, target, grid, settings, { base, fetchFn = fe
   const [px, py] = c.wcs.worldToPix(pos.ra, pos.dec);
   const tab = tables?.[String(c.detector)];
   const wl = tab ? wavelengthAt(c.header, tab, px, py) : null;
+  const masks = kindMasks(c.flagNames);
+  const W = {}; for (const k of ['CRVAL1W', 'CRVAL2W', 'CDELT1W', 'CDELT2W', 'CRPIX1W', 'CRPIX2W']) W[k] = c.header[k];
   return {
     kind: 'frame', n: f.n, data: f.data, mjd: c.mjd, date: c.date, detector: c.detector, obsid: c.obsid,
     wavelengthUm: wl?.wavelength ?? null, bandwidthUm: wl?.bandwidth ?? null, maskedPixels: c.maskedPixels ?? 0,
     expected: moving ? worldToGrid(grid, pos.ra, pos.dec) : null, uri: im.uri, version: c.version,
+    // contamination (DESIGN.md 23): the FLAGS plane on the display grid, its bit names, kind masks/counts, airglow
+    flags: f.flags, flagNames: c.flagNames, masks, counts: countKinds(f.flags, masks, f.data),
+    glow: airglowOf({ ...c.header, DETECTOR: c.detector }, wl?.wavelength, wl?.bandwidth),
+    // what the lazy layer fetch and the WAVE map need: same cutout centre/size, WCS, -TAB keywords
+    cut: { ra: c0.ra, dec: c0.dec, size: cutoutSizeDeg(settings.fov), wcs: c.wcs, W, unit: c.header.BUNIT ?? null },
   };
+}
+
+// VARIANCE + ZODI for one frame, fetched only when the user asks for those layers
+// (5-HDU cutout variant, cached separately by the relay). Returns grid arrays or null.
+export async function loadLayers(frame, grid, { base, fetchFn = fetch, signal } = {}) {
+  const c = await fetchCutoutLayers(frame.uri, frame.cut.ra, frame.cut.dec, frame.cut.size, { base, fetchFn, signal });
+  const on = (img) => (img ? reproject({ wcs: c.wcs, image: img, flags: null }, grid).data : null);
+  return { variance: on(c.variance), zodi: on(c.zodi), units: c.units };
+}
+
+// Per-pixel wavelength (µm) on the display grid, from the -TAB lookup (wave.js).
+export function waveMap(frame, grid, tables) {
+  const tab = tables?.[String(frame.detector)];
+  if (!tab || !frame.cut?.W?.CRPIX1W) return null;
+  const n = grid.n, out = new Float32Array(n * n);
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    const [ra, dec] = gridToWorld(grid, i, j);
+    const [x, y] = frame.cut.wcs.worldToPix(ra, dec);
+    out[j * n + i] = wavelengthAt(frame.cut.W, tab, x, y).wavelength;
+  }
+  return out;
 }
 
 // Whole pipeline with events: RESOLVED, PLANNED, FRAME, FRAME_FAILED, RETRY_WAIT, DONE, ERROR, NOT_FOUND.

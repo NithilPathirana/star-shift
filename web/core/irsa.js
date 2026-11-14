@@ -143,8 +143,23 @@ export async function fetchCutout(uri, ra, dec, sizeDeg,
   }
 }
 
-export function decodeCutout(bytes) {
-  const { hdus, done } = scanHDUs(bytes, 3);
+// Same cutout with VARIANCE and ZODI too (5 HDUs; still stops before the huge EPSF table).
+// Asked for only when the user opens the VARIANCE or ZODI layer; the relay caches it separately.
+export async function fetchCutoutLayers(uri, ra, dec, sizeDeg,
+  { base = IRSA, fetchFn = fetch, signal, retries = 3, backoffMs = 1500 } = {}) {
+  const url = cutoutUrl(uri, ra, dec, sizeDeg, base) + (base === IRSA ? '' : '&hdus=5');
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetchFn(url, { signal });
+    if (res.ok) return decodeCutout(await readHDUsFromStream(res.body, 5), 5);
+    res.body?.cancel?.().catch(() => {});
+    const retryable = res.status === 503 || res.status === 502 || res.status === 429;
+    if (!retryable || attempt >= retries) throw new Error(`HTTP ${res.status} for cutout layers`);
+    await new Promise(r => setTimeout(r, backoffMs * (attempt + 1)));
+  }
+}
+
+export function decodeCutout(bytes, nHdus = 3) {
+  const { hdus, done } = scanHDUs(bytes, nHdus);
   if (!done) throw new Error('Cutout file incomplete');
   const imgHdu = hdus.find(h => h.header.EXTNAME === 'IMAGE');
   const flgHdu = hdus.find(h => h.header.EXTNAME === 'FLAGS');
@@ -152,11 +167,15 @@ export function decodeCutout(bytes) {
   const header = imgHdu.header;
   const image = readImage(bytes, imgHdu);
   const flags = flgHdu ? readImage(bytes, flgHdu) : null;
+  const varHdu = hdus.find(h => h.header.EXTNAME === 'VARIANCE'), zodiHdu = hdus.find(h => h.header.EXTNAME === 'ZODI');
   return {
     header,
     image,
     flags,
     flagNames: flgHdu ? flagDefinitions(flgHdu.header) : {},
+    variance: varHdu ? readImage(bytes, varHdu) : null,
+    zodi: zodiHdu ? readImage(bytes, zodiHdu) : null,
+    units: { image: header.BUNIT ?? null, variance: varHdu?.header.BUNIT ?? null, zodi: zodiHdu?.header.BUNIT ?? null },
     wcs: new TanSip(header),
     mjd: header['MJD-AVG'] ?? header['MJD-OBS'],
     date: header['DATE-AVG'] ?? header['DATE-OBS'],

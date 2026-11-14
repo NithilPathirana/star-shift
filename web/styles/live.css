@@ -99,3 +99,41 @@ html[data-motion=reduce] .rk, html[data-motion=reduce] .thin-rk { transition: no
 
 /* keep the whole rocket visible beside the inspector panel (UI/UX review) */
 .al-media video, .al-media img { object-position: 40% 50%; }
+
+/* Layers bar + flag legend (DESIGN.md 23, team feature B). Flag marks themselves are drawn on the canvas. */
+.lseg { width: 300px; }
+.lseg .seg-btn { font-size: .6875rem; letter-spacing: .04em; padding: 0 6px; }
+.lseg .seg-btn:disabled { opacity: .38; cursor: not-allowed; }
+.lsep { width: 1px; align-self: stretch; margin: 4px 2px; background: rgba(84,62,42,.18); }
+.flags-split { display: inline-flex; }
+.flags-split #flagsBtn { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.flags-split .flags-more { min-width: 28px; padding: 0 6px; border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px; }
+@container dock (max-width:1480px) { .lseg { width: 268px; } }
+@container dock (max-width:520px) { .layers { overflow-x: auto; max-width: 100%; } .lseg { width: auto; min-width: 268px; } .lseg .seg-btn, .layers .key { min-height: 44px; } }
+.screens.lfade canvas { animation: lfade 120ms ease-out; }
+@keyframes lfade { from { opacity: .35; } to { opacity: 1; } }
+html[data-motion=reduce] .screens.lfade canvas { animation: none; }
+.lgd { position: absolute; left: 76px; bottom: 60px; display: flex; align-items: center; gap: 8px; max-width: calc(100% - 160px); flex-wrap: wrap;
+  padding: 5px 10px; border-radius: 999px; font-size: 11px; color: var(--stage-text); background: rgba(21,17,14,.82); z-index: 4; }
+.lgd .lg-ramp { display: block; width: 120px; height: 8px; border-radius: 4px; }
+.lgd .lg-sw { display: inline-flex; align-items: center; gap: 5px; }
+.lgd .lg-sw i { width: 10px; height: 10px; border-radius: 3px; }
+.app[data-scene=map] .lgd { display: none !important; }
+.d-layer { margin-top: 8px; }
+.fl-pop { width: min(300px, calc(100vw - 24px)); }
+.fl-row { display: grid; grid-template-columns: 26px minmax(0,1fr) auto auto; align-items: center; gap: 8px; padding: 7px 0; }
+.fl-row + .fl-row { border-top: 1px solid rgba(84,62,42,.09); }
+.fl-mk { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; background: var(--stage); color: #FFF6E8; }
+.fl-txt b { display: block; font-size: .8125rem; }
+.fl-txt small { display: block; font-size: .6875rem; color: var(--muted); line-height: 1.3; }
+.fl-n { font-size: .75rem; color: var(--ink-2); white-space: nowrap; }
+.fl-empty { font-size: .8125rem; color: var(--muted); margin: 6px 0; }
+.fl-dust { font-size: .75rem; color: var(--muted); margin-top: 10px; }
+.fl-link { color: var(--copper); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; min-height: 24px; }
+.fl-hide { display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: .8125rem; }
+.fl-hide input { accent-color: var(--copper); width: 16px; height: 16px; }
+.fl-hide .num { margin-left: auto; font-size: .75rem; color: var(--muted); }
+.fl-hidden { font-size: .75rem; color: var(--copper); margin-top: 4px; }
+.tick.hid { opacity: .25; background: transparent; border-left: 1px dashed var(--muted); width: 0; }
+@media (max-width: 699px) { .lgd { left: 12px; bottom: 56px; } }
+.mode-compare .lgd, .mode-blink .lgd { bottom: auto; top: 52px; }

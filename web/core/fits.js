@@ -48,6 +48,10 @@ export function parseHeader(bytes, offset) {
       return { header, headerBytes: size };
     }
     if (card.slice(8, 10) === '= ' && key) header[key] = parseValue(card.slice(10));
+    else if (key === 'HIERARCH') { // long keywords, e.g. HIERARCH HE_AIRGLOW_CONT = 0.12
+      const m = /^HIERARCH\s+(.+?)\s*=(.*)$/.exec(card);
+      if (m) header[m[1]] = parseValue(m[2]);
+    }
   }
   return null;
 }

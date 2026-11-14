@@ -83,6 +83,7 @@
       </div>
       <svg class="compass" width="40" height="40" viewBox="0 0 44 44" aria-label="North up, east left"><path d="M34 34V10M34 34H10" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M34 6l-3 6h6zM6 34l6-3v6z" fill="currentColor"/><text x="38" y="12" fill="currentColor" font-size="11">N</text><text x="4" y="28" fill="currentColor" font-size="11">E</text></svg>
       <div class="scalebar num"><i id="sbar"></i>30″</div>
+      <div class="lgd num" id="layerLgd" hidden></div>
       <div class="loading-thin" id="thin" hidden><i id="thinBar"></i></div>
 
       <div class="state loader2" id="stLoading" hidden><div id="scanLoader"></div></div>
@@ -125,7 +126,8 @@
     </section>
     <section class="insp-sec">
       <div class="ih"><h3 id="ihead">This image</h3><span class="tag tag-obs">Observed</span></div>
-      <dl><dt>Date</dt><dd id="d-date"></dd><dt>Time</dt><dd id="d-time"></dd><dt>Detector</dt><dd id="d-det"></dd><dt>Wavelength</dt><dd id="d-um"></dd><dt>No-data pixels</dt><dd id="d-mask"></dd></dl>
+      <dl><dt>Date</dt><dd id="d-date"></dd><dt>Time</dt><dd id="d-time"></dd><dt>Detector</dt><dd id="d-det"></dd><dt>Wavelength</dt><dd id="d-um"></dd><dt>Flagged pixels</dt><dd id="d-mask"></dd></dl>
+      <p class="note d-layer" id="d-layer" hidden></p>
     </section>
     <section class="insp-sec">
       <div class="ih"><h3>Where it should be</h3><span class="tag tag-calc">Computed</span></div>
@@ -166,7 +168,7 @@
     <div class="viewer-only group speed"><span class="group-l">Speed</span>
       <div class="seg well" role="group" aria-label="Speed" id="speedSeg"><span class="seg-thumb"></span><button class="seg-btn" data-fps="2" aria-pressed="false">Slow</button><button class="seg-btn" data-fps="4" aria-pressed="true">Normal</button><button class="seg-btn" data-fps="8" aria-pressed="false">Fast</button></div></div>
     <div class="viewer-only group layer-group"><span class="group-l layers-l">Layers</span>
-      <div class="layers"><button class="key" aria-pressed="true" disabled title="The image is always shown">IMAGE</button><button class="key" id="flagsBtn" aria-pressed="true" title="Show pixels the archive flagged as unusable">FLAGS</button></div></div>
+      <div class="layers"><div class="seg well lseg" role="group" aria-label="What the stage shows" id="layerSeg"><span class="seg-thumb"></span><button class="seg-btn" data-layer="image" aria-pressed="true" title="The picture itself">IMAGE</button><button class="seg-btn" data-layer="variance" aria-pressed="false" title="How uncertain each pixel is">VARIANCE</button><button class="seg-btn" data-layer="zodi" aria-pressed="false" title="Glow from dust in our Solar System (the archive's model)">ZODI</button><button class="seg-btn" data-layer="wave" aria-pressed="false" title="The wavelength each pixel was measured at">WAVE</button></div><i class="lsep" aria-hidden="true"></i><span class="flags-split"><button class="key" id="flagsBtn" aria-pressed="true" title="Pixels the archive marked as contaminated">FLAGS</button><button class="key flags-more" id="flagsMore" aria-haspopup="dialog" aria-expanded="false" aria-label="Flag legend and filter" title="Flag legend and filter">▾</button></span></div></div>
   </footer>
 </div>
 
@@ -186,6 +188,15 @@
   <div class="opt" style="margin-top:8px"><span>Show no-data hatching</span><button class="switch well" role="switch" data-set="hatch" aria-checked="true" aria-label="Show no-data hatching"><i></i></button></div>
   <div class="opt"><span>Show predicted-position ring</span><button class="switch well" role="switch" data-set="ring" aria-checked="true" aria-label="Show predicted-position ring"><i></i></button></div>
   <p class="foot">Starts from your system settings. Choices are remembered on this device.</p>
+</div>
+
+<div class="pop glass fl-pop" id="flagsPop" role="dialog" aria-label="Flag legend and filter" hidden>
+  <h2>Flags in this image</h2>
+  <div id="flRows"></div>
+  <p class="fl-dust">Dust glow is the ZODI layer, not a pixel flag. <button class="fl-link" id="flZodi">Show ZODI</button></p>
+  <h3>Hide images where these touch the star</h3>
+  <div id="flHide"></div>
+  <p class="foot">Flags come from the archive's own quality mask for each image. "Touch the star" = within 3 pixels (18″) of where it should be.</p>
 </div>
 
 <div class="pop glass wide" id="bands" role="dialog" aria-label="IR band ranges" hidden>

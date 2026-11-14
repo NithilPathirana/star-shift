@@ -14,6 +14,7 @@ import { layersFor, DEFAULT_BANDS } from './bands.js';
 import { listImages } from '../core/irsa.js';
 import { propagate, separationArcsec, mjdToDate } from '../core/motion.js';
 import { gridToWorld } from '../core/align.js';
+import { createContam } from './contam-ui.js';
 
 const R = window.MockRender;
 const $ = id => document.getElementById(id), root = document.documentElement;
@@ -95,7 +96,7 @@ function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add
 /* ======================= FLIP-BOOK (viewer scene) ======================= */
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const V = { // current time-lapse
-  query: null, target: null, grid: null, n: 25, raws: [], F: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0,
+  query: null, target: null, grid: null, n: 25, raws: [], F: [], FA: [], /* FA = every frame, F = the ones the flag filter keeps */ stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0,
   status: 'idle', ctl: null, motion: null, seasons: [], name: '',
 };
 const iso = d => d.toISOString().slice(0, 19);
@@ -120,12 +121,14 @@ function buildTimeline() {
   if (!all.length) { track.innerHTML = ''; $('tlLabels').innerHTML = ''; ticks = []; return; }
   t0 = Math.min(...all) - 5; t1 = Math.max(...all) + 5;
   V.seasons = F.length ? visits(F) : [];
-  const pending = V.plannedMjds.filter(m => !F.some(f => Math.abs(f.mjd - m) < 0.01));
+  const pending = V.plannedMjds.filter(m => !V.FA.some(f => Math.abs(f.mjd - m) < 0.01));
+  const hidden = V.FA.filter(f => !F.includes(f));
   track.innerHTML = V.seasons.map(v => `<div class="season" style="left:calc(${pos(F[v.from].mjd)}% - 8px);width:calc(${pos(F[v.to].mjd) - pos(F[v.from].mjd)}% + 16px)"></div>`).join('') +
     F.map(f => `<i class="tick" style="left:${pos(f.mjd)}%"></i>`).join('') +
-    pending.map(m => `<i class="tick pending" style="left:${pos(m)}%"></i>`).join('') + '<span class="key thumb" id="thumb"></span>';
+    pending.map(m => `<i class="tick pending" style="left:${pos(m)}%"></i>`).join('') +
+    hidden.map(f => `<i class="tick hid" style="left:${pos(f.mjd)}%" title="Hidden by the flag filter"></i>`).join('') + '<span class="key thumb" id="thumb"></span>';
   $('tlLabels').innerHTML = V.seasons.map(v => `<span style="left:${(pos(F[v.from].mjd) + pos(F[v.to].mjd)) / 2}%">${seasonName(v)}</span>`).join('');
-  ticks = [...track.querySelectorAll('.tick:not(.pending)')];
+  ticks = [...track.querySelectorAll('.tick:not(.pending):not(.hid)')];
   const g = document.createElement('span'); g.className = 'ghost'; g.innerHTML = '<b></b>'; track.appendChild(g);
   track.setAttribute('aria-valuemax', String(Math.max(1, F.length)));
   applyRanges();
@@ -160,13 +163,15 @@ const firstS = () => V.stacks[0], lastS = () => V.stacks[V.stacks.length - 1];
 const sRange = s => `${R.fmtDate(iso(s.start))} – ${R.fmtDate(iso(s.end))}`;
 function info(f, head) {
   $('ihead').textContent = head || 'This image';
+  CX.info(f);
   if (!f) { ['d-date', 'd-time', 'd-det', 'd-um', 'd-mask', 'd-mjd'].forEach(id => { $(id).textContent = '—'; }); return; }
   const st = f.det === 'stack';
   $('d-date').textContent = st ? sRange(f) : R.fmtDate(f.date);
   $('d-time').textContent = st ? `season stack of ${f.count}` : f.date.slice(11, 16) + ' UTC';
   $('d-det').textContent = st ? 'mixed' : 'D' + f.det;
   $('d-um').textContent = f.um ? f.um.toFixed(2) + ' µm' : 'mixed, combined';
-  $('d-mask').textContent = `${f.d.filter(v => v == null).length} of ${V.n * V.n}`;
+  const fl = CX.flaggedText(f);
+  $('d-mask').textContent = fl ? fl.text : `${f.d.filter(v => v == null).length} of ${V.n * V.n}`; $('d-mask').title = fl ? fl.title : 'no-data pixels (stacked)';
   $('d-mjd').textContent = f.mjd ? f.mjd.toFixed(4) : '—';
 }
 function draw() {
@@ -174,19 +179,19 @@ function draw() {
   if (!F.length) { const c = A.getContext('2d'); c.clearRect(0, 0, A.width, A.height); info(null); $('chip').innerHTML = ''; return; }
   const ex = firstS()?.exp || F[0].exp;
   if (mode === 'play' || V.stacks.length < 2) {
-    const f = F[Math.min(P.i, F.length - 1)]; R.draw(A, f, V.n, opt(A)); info(f);
+    const f = F[Math.min(P.i, F.length - 1)]; CX.drawStage(A, f, V.n, opt(A), true); info(f);
     const rg = rangeOf(f.um);
     $('chip').title = rg?.tip ? `${rg.name}: ${rg.tip}` : '';
-    $('chip').innerHTML = `${rg ? `<i class="sw" style="--rc:${rg.c}"></i><span>${esc(rg.name)}</span><span class="sep">·</span>` : ''}<span>λ ${f.um ? f.um.toFixed(2) : '?'} µm</span><span class="sep">·</span><span>D${f.det}</span><span class="sep">·</span><span>${R.fmtDate(f.date)}</span>`;
+    $('chip').innerHTML = CX.chipLead() + `${rg ? `<i class="sw" style="--rc:${rg.c}"></i><span>${esc(rg.name)}</span><span class="sep">·</span>` : ''}<span>λ ${f.um ? f.um.toFixed(2) : '?'} µm</span><span class="sep">·</span><span>D${f.det}</span><span class="sep">·</span><span>${R.fmtDate(f.date)}</span>`;
     A.setAttribute('aria-label', `SPHEREx infrared image of ${V.name}, ${R.fmtDate(f.date)}, ${f.um ? f.um.toFixed(2) + ' micrometres' : ''}`);
   } else if (mode === 'compare') {
-    R.draw(A, firstS(), V.n, opt(A)); cross(A, ex[0], ex[1]); $('capA').innerHTML = `<b>First season</b> · stacked · ${sRange(firstS())}`;
-    R.draw(B, lastS(), V.n, opt(B)); cross(B, ex[0], ex[1]); $('capB').innerHTML = `<b>Last season</b> · stacked · ${sRange(lastS())}`;
-    $('chip').innerHTML = '<span>Green cross = position in the first season</span>'; info(lastS(), 'Right: last season');
+    CX.drawStage(A, firstS(), V.n, opt(A)); cross(A, ex[0], ex[1]); $('capA').innerHTML = `<b>First season</b> · stacked · ${sRange(firstS())}`;
+    CX.drawStage(B, lastS(), V.n, opt(B)); cross(B, ex[0], ex[1]); $('capB').innerHTML = `<b>Last season</b> · stacked · ${sRange(lastS())}`;
+    $('chip').innerHTML = CX.chipLead() + '<span>Green cross = position in the first season</span>'; info(lastS(), 'Right: last season');
   } else {
-    const f = side ? lastS() : firstS(); R.draw(A, f, V.n, opt(A)); cross(A, ex[0], ex[1]);
+    const f = side ? lastS() : firstS(); CX.drawStage(A, f, V.n, opt(A)); cross(A, ex[0], ex[1]);
     $('flag').textContent = (side ? 'Last season · ' : 'First season · ') + sRange(f);
-    $('chip').innerHTML = '<span>Blink · stacked seasons</span>'; info(f, side ? 'Last season (stacked)' : 'First season (stacked)');
+    $('chip').innerHTML = CX.chipLead() + '<span>Blink · stacked seasons</span>'; info(f, side ? 'Last season (stacked)' : 'First season (stacked)');
   }
 }
 let tickAnim = null;
@@ -200,7 +205,7 @@ function setCounter(i, animate) {
 }
 function onFrame(i, manual) {
   const F = V.F;
-  if (mode === 'play') draw();
+  if (mode === 'play') draw(); if (openPop?.pop.id === 'flagsPop' && !P.playing) CX.renderPop();
   if (!F.length) { setCounter(0); return; }
   i = Math.min(i, F.length - 1);
   const f = F[i];
@@ -222,6 +227,21 @@ const P = { i: 0, fps: 4, playing: false, timer: null,
   play() { if (P.playing || V.F.length < 2) return; P.playing = true; const tick = () => { if (!P.playing) return; P.timer = setTimeout(() => { P.set(P.i + 1); tick(); }, 1000 / P.fps); }; tick(); onFrame(P.i); },
   pause() { P.playing = false; clearTimeout(P.timer); onFrame(P.i); },
   toggle() { P.playing ? P.pause() : P.play(); } };
+// Contamination flags + Layers bar (DESIGN.md 23): contam-ui.js draws on the stage canvas.
+const CX = createContam({ $, R, V, P, esc, set, Snd, base: BASE, tables: () => tables, rangeOf: um => rangeOf(um), segSelect,
+  mode: () => mode, redraw: () => { draw(); }, refilter: () => refilter(), stackRaws: () => V.F.map(f => f.raw).sort((a, b) => a.mjd - b.mjd),
+  closePop: () => closePop(), hideTip: () => hideTip(),
+  tipAt: (html, x, y) => { clearTimeout(tipT); $('tip').innerHTML = html; placeTip({ left: x - 10, right: x + 10, top: y - 10, height: 20 }); } });
+function restack() { V.stacks = V.F.length ? buildStacks(V.F.map(f => f.raw).sort((a, b) => a.mjd - b.mjd)).map(stackToF) : []; }
+// Re-apply the "hide images with…" filter, keeping the current image (or the nearest one in time).
+function refilter() {
+  const cur = V.F[P.i]; V.F = CX.filter(V.FA);
+  if (cur && V.F.length) { let b = 0; V.F.forEach((f, k) => { if (Math.abs(f.mjd - cur.mjd) < Math.abs(V.F[b].mjd - cur.mjd)) b = k; }); P.i = b; } else P.i = 0;
+  if (V.status === 'ready') { restack(); if (mode !== 'play' && V.stacks.length < 2) setMode('play'); }
+  if (!V.F.length && V.FA.length) toast('Every image is hidden by the flag filter. Untick a box under FLAGS to bring them back.');
+  $('d-n').textContent = `${V.F.length} shown of ${V.total}${V.FA.length > V.F.length ? ` · ${V.FA.length - V.F.length} hidden by flags` : ''} · ${V.seasons.length} season${V.seasons.length === 1 ? '' : 's'}`;
+  buildTimeline(); onFrame(P.i);
+}
 function step(d) { if (mode !== 'play') setMode('play'); P.pause(); const before = seasonOf(P.i); P.set(P.i + d, true); Snd.play(seasonOf(P.i) !== before ? 'season' : 'scrub'); }
 
 function setMode(m, withSound) {
@@ -315,7 +335,8 @@ function progress() {
 function load(query, label) {
   V.ctl?.abort(); const ctl = V.ctl = new AbortController();
   P.pause(); clearInterval(bt); if (mode !== 'play') { mode = 'play'; $('stage').className = 'stage mode-play'; segSelect($('viewSeg'), b => b.dataset.mode === 'play'); }
-  Object.assign(V, { query, target: null, grid: null, raws: [], F: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, status: 'loading', motion: null, seasons: [], name: label || 'this patch' });
+  CX.reset();
+  Object.assign(V, { query, target: null, grid: null, raws: [], F: [], FA: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, status: 'loading', motion: null, seasons: [], name: label || 'this patch' });
   P.i = 0; shown = -1; arriveCount = 0;
   $('stLoading').classList.remove('leaving');
   V.scan?.destroy();
@@ -339,21 +360,22 @@ function load(query, label) {
       layout(); buildTimeline(); progress();
     } else if (e.type === 'FRAME') {
       const f = toF(e.frame); V.raws.push(e.frame);
-      let k = V.F.findIndex(x => x.mjd > f.mjd); if (k < 0) k = V.F.length; V.F.splice(k, 0, f);
+      let k = V.FA.findIndex(x => x.mjd > f.mjd); if (k < 0) k = V.FA.length; V.FA.splice(k, 0, f);
       V.scan?.add(f);
-      if (k <= P.i && V.F.length > 1) P.i++;
+      const keep = V.F[P.i]; V.F = CX.filter(V.FA); if (keep) P.i = Math.max(0, V.F.indexOf(keep));
+      CX.ensureLayers();
       progress(); rebuildSoon();
     } else if (e.type === 'FRAME_FAILED') { V.failed++; progress(); }
     else if (e.type === 'RETRY_WAIT') { V.retries++; progress(); }
     else if (e.type === 'DONE') {
       V.status = 'ready'; $('thin').hidden = true; const leaveWait = leaveLoader();
-      if (!V.F.length) { V.status = 'error'; $('errTxt').textContent = 'No images arrived. The archive is often busy; Retry asks again.'; $('useLoaded').hidden = true; showState('stError'); Snd.play('error'); return; }
+      if (!V.FA.length) { V.status = 'error'; $('errTxt').textContent = 'No images arrived. The archive is often busy; Retry asks again.'; $('useLoaded').hidden = true; showState('stError'); Snd.play('error'); return; }
       showState(null);
-      V.stacks = buildStacks(V.raws.slice().sort((a, b) => a.mjd - b.mjd)).map(stackToF);
+      restack(); // seasons stacked from the images the flag filter keeps
       V.motion = (V.target?.pmra || V.target?.pmdec) ? measureMotion(V.raws.slice().sort((a, b) => a.mjd - b.mjd), V.grid) : null;
       // only a final fit counts: all planned images tried and at least two observing seasons
       if (V.motion?.ok && visits(V.F).length < 2) V.motion = { ok: false, frames: V.motion.frames, reason: 'one season only' };
-      $('d-n').textContent = `${V.F.length} shown of ${V.total} · ${V.seasons.length} season${V.seasons.length === 1 ? '' : 's'}`;
+      $('d-n').textContent = `${V.F.length} shown of ${V.total}${V.FA.length > V.F.length ? ` · ${V.FA.length - V.F.length} hidden by flags` : ''} · ${V.seasons.length} season${V.seasons.length === 1 ? '' : 's'}`;
       $('d-meas').textContent = V.motion?.ok ? `${(V.motion.total / 1000).toFixed(2)} ± ${(V.motion.totalErr / 1000).toFixed(2)}″/yr (${V.motion.frames} images)` : V.motion ? (V.motion.reason === 'one season only' ? 'needs two seasons to measure' : 'too faint to measure') : '—';
       buildTimeline(); findOther(); onFrame(P.i); Snd.play('confirm');
       toast(V.failed ? `${V.F.length} images are in. ${V.failed} couldn't be fetched (IRSA busy); Retry later fills them.` : `All ${V.F.length} images are in.`);
@@ -383,6 +405,8 @@ function closePop() { if (!openPop) return; const { pop, btn } = openPop; pop.cl
   setTimeout(() => { if (!pop.classList.contains('open')) pop.hidden = true; }, 220); openPop = null; }
 $('clarityBtn').onclick = e => { e.stopPropagation(); openPop?.pop.id === 'clarity' ? closePop() : showPop($('clarity'), $('clarityBtn')); };
 $('helpBtn').onclick = e => { e.stopPropagation(); openPop?.pop.id === 'help' ? closePop() : showPop($('help'), $('helpBtn')); };
+$('flagsMore').onclick = e => { e.stopPropagation(); if (openPop?.pop.id === 'flagsPop') return closePop(); CX.renderPop(); showPop($('flagsPop'), $('flagsMore'));
+  const r = $('flagsMore').getBoundingClientRect(), p = $('flagsPop'); p.style.top = Math.max(12, r.top - p.offsetHeight - 10) + 'px'; };
 $('aboutBtn').onclick = e => { e.stopPropagation(); showPop($('help'), $('helpBtn')); };
 document.addEventListener('pointerdown', e => { if (openPop && !openPop.pop.contains(e.target) && !openPop.btn.contains(e.target)) closePop(); });
 function sheet(on) { $('insp').classList.toggle('open', on); $('scrim').classList.toggle('on', on); $('infoBtn').setAttribute('aria-expanded', on); if (on) Snd.play('tick'); }
@@ -888,7 +912,7 @@ function init() {
       goTo(text).then(() => { if (qp.get('scene') === 'viewer') setTimeout(playPatch, 400); });
     } else select(first.ra, first.dec, first, false);
   });
-  const ro = new ResizeObserver(() => { layout(); ['viewSeg', 'speedSeg'].forEach(id => segSelect($(id), b => b.getAttribute('aria-pressed') === 'true')); refraction(); placeOverlays(); setTimeout(placeOverlays, 120); setTimeout(placeOverlays, 600); });
+  const ro = new ResizeObserver(() => { layout(); ['viewSeg', 'speedSeg', 'layerSeg'].forEach(id => segSelect($(id), b => b.getAttribute('aria-pressed') === 'true')); refraction(); placeOverlays(); setTimeout(placeOverlays, 120); setTimeout(placeOverlays, 600); });
   ro.observe($('screens')); ro.observe($('dock')); ro.observe($('insp')); ro.observe($('topbar')); ro.observe($('mapWrap'));
 }
 init();

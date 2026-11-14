@@ -1,7 +1,7 @@
 // Cloudflare Worker: a small read-only relay so the browser can reach IRSA and Gaia,
 // which send no CORS headers. It only forwards GET requests to fixed public endpoints,
-// and trims SPHEREx cutouts to the parts we use (PRIMARY + IMAGE + FLAGS), cutting a
-// ~4 MB download to ~55 kB. No secrets, no storage, no user data.
+// and trims SPHEREx cutouts to the parts we use (PRIMARY + IMAGE + FLAGS, or + VARIANCE +
+// ZODI with hdus=5), cutting a ~4 MB download to ~55 kB. No secrets, no storage, no user data.
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 
 import { readHDUsFromStream } from '../web/core/fits.js';
@@ -48,7 +48,13 @@ function upstreamFor(url) {
     const center = url.searchParams.get('center') || '';
     const size = Number(url.searchParams.get('size'));
     if (!/^-?[\d.]+,-?[\d.]+d?$/.test(center) || !(size >= 0.01 && size <= 0.5)) return { error: 'Bad center/size' };
-    return { target: `${IRSA}${p}?center=${center}&size=${size}`, kind: 'cutout', ttl: 30 * 86400 };
+    // Default: PRIMARY + IMAGE + FLAGS (cache key = the IRSA URL, unchanged). `hdus=5` adds
+    // VARIANCE + ZODI for the Layers bar, fetched only when asked, under its own cache key.
+    const hdus = url.searchParams.get('hdus');
+    if (hdus !== null && hdus !== '5') return { error: 'hdus must be 5' };
+    const target = `${IRSA}${p}?center=${center}&size=${size}`;
+    if (hdus === '5') return { target, kind: 'cutout', hdus: 5, cacheKey: `${target}&hdus=5`, ttl: 30 * 86400 };
+    return { target, kind: 'cutout', ttl: 30 * 86400 };
   }
   return { error: 'Not found', status: 404 };
 }
@@ -96,7 +102,7 @@ export async function handle(request, { fetchFn = fetch, cache = globalThis.cach
     // tinted tiles: short browser cache so palette tweaks show up; the relay's own cache keeps them longer
     out = reply(bytes, 200, { 'Content-Type': up.kind === 'hips-tile' ? 'image/png' : 'application/fits', 'Cache-Control': `public, max-age=${up.tint ? 3600 : up.ttl}` });
   } else if (up.kind === 'cutout') {
-    const bytes = await readHDUsFromStream(res.body, 3);
+    const bytes = await readHDUsFromStream(res.body, up.hdus || 3);
     out = reply(bytes, 200, { 'Content-Type': 'application/fits', 'Cache-Control': `public, max-age=${up.ttl}` });
   } else {
     out = reply(await res.text(), 200, {
