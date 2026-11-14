@@ -295,3 +295,37 @@ html[data-motion=full] .tele-wait { animation: tele-pulse 1.4s ease-in-out infin
 .mode-telescopes .compass { display: none; }
 .tele { bottom: 14px; }
 .tele-panels { flex: none; }
+
+/* bands + notebook */
+/* AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+   Blink: one label (the season, in the chip) replaced on every flip; no empty flag pill, and the
+   Compare captions never linger under the Blink image. */
+.flag:empty { display: none; }
+.mode-blink .cap { display: none; }
+.chip b { font-weight: 600; }
+/* Lab notebook "+" keys in the info panel: small circle on desktop, 44 px tap target on phone */
+.nb-plus { position: relative; isolation: isolate; flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px; margin: 0 0 0 6px; padding: 0;
+  vertical-align: middle; border: 1px solid rgba(138,71,25,.38); border-radius: 50%; background: rgba(255,250,242,.72); color: var(--copper);
+  font: 600 .875rem/1 var(--font-ui); cursor: pointer; transition: background 140ms var(--ease-out), color 140ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) { .nb-plus:hover { background: rgba(194,122,67,.16); border-color: var(--copper-key); } }
+.nb-plus:focus-visible { outline: 2.5px solid var(--ring); outline-offset: 2px; }
+.nb-plus.done { background: var(--copper-key); border-color: transparent; color: var(--on-copper); }
+.nb-dl dd:has(.nb-plus) { display: flex; align-items: center; justify-content: flex-end; min-width: 0; }
+.cd-row.has-nb { grid-template-columns: minmax(0,1fr) auto auto auto; }
+.cd-row.has-nb .nb-plus { grid-column: 3; grid-row: 1 / 3; margin: 0; }
+.cd-row.has-nb .cd-c { grid-column: 4; } /* copy keys stay in one column at the right edge */
+.nb-head { display: flex; align-items: center; justify-content: space-between; }
+.nb-head .nb-plus { margin: 0; }
+.nb-pos { margin-top: 10px; margin-left: 8px; }
+@media (max-width: 699px) {
+  .nb-plus { width: 44px; height: 44px; border: 0; background: none; }
+  .nb-plus::before { content: ""; position: absolute; left: 50%; top: 50%; z-index: -1; width: 24px; height: 24px; margin: -12px 0 0 -12px;
+    border: 1px solid rgba(138,71,25,.38); border-radius: 50%; background: rgba(255,250,242,.72); }
+  .nb-plus.done { background: none; }
+  .nb-plus.done::before { background: var(--copper-key); border-color: transparent; }
+  .nb-dl dd:has(.nb-plus) { margin-right: -11px; }
+  .nb-dl dt { align-self: center; }
+  /* phone chip: band name, λ and date fit; the band's range is in the info sheet and the tooltip */
+  .chip .bl-r, .chip .bl-d, .chip .bl-st { display: none; }
+  .mode-blink .chip { max-width: calc(100% - 24px); }
+}

@@ -32,6 +32,38 @@ export const DEFAULT_BANDS = [
     tip: 'Longest SPHEREx light: very cold objects such as the brown dwarf WISE 0855 show up here.' },
 ];
 
+// Labels for a band when it names the CURRENT image (stage chip, timeline tooltip, details panel,
+// loader caption). A band is a wavelength RANGE, never a finding: "CO₂-ice band · 3.82–4.42 µm"
+// with the tooltip "The wavelength range where CO₂ ice absorbs light. Not a detection."
+// The band editor keeps the short names. Matches a default only while its name is unchanged.
+const DEFAULT_LABELS = {
+  'd-starlight': ['Starlight band', 'The wavelength range closest to what our eyes see, where ordinary stars shine brightest.'],
+  'd-coolstars': ['Cool-star band', 'The wavelength range where cool red dwarfs give off most of their light.'],
+  'd-dust': ['Through-the-dust band', 'The wavelength range that slips through dusty clouds, so hidden stars can show.'],
+  'd-waterice': ['Water-ice band', 'The wavelength range where water ice absorbs light.'],
+  'd-co2ice': ['CO₂-ice band', 'The wavelength range where CO₂ ice absorbs light.'],
+  'd-browndwarfs': ['Brown-dwarf band', 'The wavelength range where very cold brown dwarfs are brightest.'],
+};
+const fmtUm = v => (Number.isFinite(+v) ? (+v).toFixed(2) : '?');
+export function bandRangeText(b) { return `${fmtUm(b?.min)}–${fmtUm(b?.max)} µm`; }
+// Short "<name> band" form (no numbers): for places that already print the wavelength.
+export function bandName(b) {
+  if (!b) return '';
+  const def = DEFAULT_BANDS.find(d => d.id === b.id && d.name === b.name);
+  if (def) return DEFAULT_LABELS[def.id][0];
+  const n = String(b.name ?? '').trim() || 'Unnamed';
+  return /\bband$/i.test(n) ? n : `${n} band`;
+}
+// { name, range, text, tip } for a band { id, name, min, max }.
+export function bandLabel(b) {
+  if (!b) return null;
+  const name = bandName(b), range = bandRangeText(b);
+  const def = DEFAULT_BANDS.find(d => d.id === b.id && d.name === b.name);
+  const tip = def ? `${DEFAULT_LABELS[def.id][1]} Not a detection.`
+    : `The ${range} range you named “${String(b.name ?? '').trim() || 'Unnamed'}”. A wavelength range, not a detection.`;
+  return { name, range, text: `${name} · ${range}`, tip };
+}
+
 export class BandError extends Error {}
 
 // Validate a user's band. Accepts numbers or strings; returns a clean band or throws BandError.

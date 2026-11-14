@@ -129,7 +129,7 @@
         <div class="cd-head"><div><div class="cd-name" id="cdName"></div><div class="cd-sub" id="cdSub"></div></div></div>
         <button class="key primary cd-play" id="cdPlay">Play this patch over time</button>
       </section>
-      <section class="insp-sec"><div class="cd-group">Position</div><div id="cdPos"></div></section>
+      <section class="insp-sec"><div class="cd-group nb-head">Position<button type="button" class="nb-plus" data-nb="pos" aria-label="Add this position to the lab notebook" title="Add to the lab notebook">+</button></div><div id="cdPos"></div></section>
       <section class="insp-sec"><div class="cd-group">SPHEREx coverage</div><div id="cdCov"></div></section>
       <section class="insp-sec"><div class="cd-group">Motion</div><div id="cdMot"></div></section>
       <section class="insp-sec"><div class="cd-group">Ghost · predicted position</div><div id="cdGhost"></div></section>
@@ -146,11 +146,11 @@
     <section class="insp-sec">
       <div class="target" id="tName">—</div>
       <dl style="margin-top:8px"><dt>RA</dt><dd id="ra"></dd><dt>Dec</dt><dd id="dec"></dd></dl>
-      <button class="key copy" id="copyInsp" style="margin-top:10px"><svg class="cp" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5"/><path d="M3 10.5V3.5A1 1 0 0 1 4 2.5h6.5"/></svg><svg class="ok" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3.2 3L13 4.5"/></svg><span class="copy-l">Copy coordinates</span></button>
+      <button class="key copy" id="copyInsp" style="margin-top:10px"><svg class="cp" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5"/><path d="M3 10.5V3.5A1 1 0 0 1 4 2.5h6.5"/></svg><svg class="ok" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3.2 3L13 4.5"/></svg><span class="copy-l">Copy coordinates</span></button><button type="button" class="nb-plus nb-pos" data-nb="pos" aria-label="Add the target position to the lab notebook" title="Add to the lab notebook">+</button>
     </section>
     <section class="insp-sec">
       <div class="ih"><h3 id="ihead">This image</h3><span class="tag tag-obs">Observed</span></div>
-      <dl><dt>Date</dt><dd id="d-date"></dd><dt>Time</dt><dd id="d-time"></dd><dt>Detector</dt><dd id="d-det"></dd><dt>Wavelength</dt><dd id="d-um"></dd><dt>Flagged pixels</dt><dd id="d-mask"></dd></dl>
+      <dl class="nb-dl"><dt>Date</dt><dd><span id="d-date"></span><button type="button" class="nb-plus" id="nbAdd" data-nb="date" aria-label="Add the image date to the lab notebook" title="Add to the lab notebook">+</button></dd><dt>Time</dt><dd id="d-time"></dd><dt>Detector</dt><dd id="d-det"></dd><dt>Wavelength</dt><dd><span id="d-um"></span><button type="button" class="nb-plus" data-nb="um" aria-label="Add the wavelength to the lab notebook" title="Add to the lab notebook">+</button></dd><dt>Band</dt><dd><span id="d-band"></span><button type="button" class="nb-plus" data-nb="band" aria-label="Add the wavelength band to the lab notebook" title="Add to the lab notebook">+</button></dd><dt>Flagged pixels</dt><dd><span id="d-mask"></span><button type="button" class="nb-plus" data-nb="mask" aria-label="Add the flagged-pixel count to the lab notebook" title="Add to the lab notebook">+</button></dd></dl>
       <p class="note d-layer" id="d-layer" hidden></p>
     </section>
     <section class="insp-sec">
@@ -161,7 +161,7 @@
     </section>
     <section class="insp-sec">
       <details><summary>More detail</summary>
-        <dl><dt>Images</dt><dd id="d-n">—</dd><dt>MJD</dt><dd id="d-mjd"></dd><dt>Pixel size</dt><dd>6.15″</dd><dt>Measured motion</dt><dd id="d-meas">—</dd><dt>Field</dt><dd id="d-field">150″ · north up</dd><dt>Stretch</dt><dd id="d-str">asinh 2–99.7%</dd></dl>
+        <dl><dt>Images</dt><dd id="d-n">—</dd><dt>MJD</dt><dd id="d-mjd"></dd><dt>Pixel size</dt><dd>6.15″</dd><dt>Measured motion</dt><dd><span id="d-meas">—</span><button type="button" class="nb-plus" data-nb="meas" aria-label="Add the measured motion to the lab notebook" title="Add to the lab notebook">+</button></dd><dt>Field</dt><dd id="d-field">150″ · north up</dd><dt>Stretch</dt><dd id="d-str">asinh 2–99.7%</dd></dl>
       </details>
       <p class="credit" style="margin-top:12px">Images: NASA SPHEREx via the NASA/IPAC Infrared Science Archive (IRSA), DOIs <a href="https://doi.org/10.26131/IRSA652">10.26131/IRSA652</a>, <a href="https://doi.org/10.26131/IRSA662">10.26131/IRSA662</a>. Names and motions: SIMBAD (CDS, Harvard mirror). Stars on the sky: Hipparcos (ESA), new reduction (van Leeuwen 2007), via the ESA Gaia archive. 3D rendering: three.js (MIT). All code, including the UI sounds, was written by an AI model (Claude, by Anthropic) under team Proper Motion's direction. Not an official NASA site. Logo: AI-generated with ChatGPT; small-size version and favicon redrawn as SVG by Claude.</p>
     </section>
@@ -231,7 +231,7 @@
   <div class="rows" id="rows"></div>
   <div class="be-actions"><button class="key" id="addRange">+ Add range</button><button class="key" id="resetRanges">Reset to defaults</button></div>
   <div class="opt be-map"><span>Paint the sky map in these ranges<small>Each range adds up the SPHEREx colours inside it</small></span><button class="switch well" role="switch" aria-checked="false" id="mapBandsSw" aria-label="Paint the sky map in these ranges"><i></i></button></div>
-  <p class="be-note">Defaults are placeholders (Default 1–6 follow the detector spans) until the team sends names and colours. Ranges colour the timeline ticks, the wavelength chip and (if switched on) the sky map. Saved in this browser only.</p>
+  <p class="be-note">Each band is a wavelength range, not a detection: the viewer labels images "CO₂-ice band · 3.82–4.42 µm", meaning the light was measured in that range. Ranges colour the timeline ticks, the wavelength chip and (if switched on) the sky map. Saved in this browser only.</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="pop glass" id="pagesPop" role="dialog" aria-label="Pages" hidden>
