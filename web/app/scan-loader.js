@@ -128,12 +128,12 @@
       if (got.length >= o.startAfter && o.onStart) start.hidden = false;
     }
     function plateCell() { var r = plateWrap.getBoundingClientRect(), n = 25; return Math.max(2, Math.floor(Math.min(r.width, r.height) / n)); }
-    function showPlate(f) {
+    function showPlate(f, quiet) {
       var cell = plateCell(), dpr = Math.min(window.devicePixelRatio || 1, 2), n = Math.round(Math.sqrt(f.d.length));
       paint(plate, f, Math.max(1, Math.round(cell * dpr)), rampFor(f.um)); plate.style.width = plate.style.height = (n * cell) + 'px';
       var b = bandOf(f.um);
       capt.innerHTML = (b ? '<i style="background:' + b.c + '"></i>' + esc(b.name) + ' <span>·</span> ' : '') + 'λ ' + f.um.toFixed(2) + ' µm <span>·</span> D' + f.det + ' <span>·</span> ' + fmtDate(f.date);
-      if (!o.reducedMotion) { plate.classList.remove('sl-in'); void plate.offsetWidth; plate.classList.add('sl-in'); }
+      if (!o.reducedMotion && !quiet) { plate.classList.remove('sl-in'); void plate.offsetWidth; plate.classList.add('sl-in'); }
     }
     function addTile(f) {
       if (sheet.children.length >= 120) { sheet.dataset.more = '+' + (got.length - 120) + ' more'; return; }
@@ -146,7 +146,7 @@
       done: function () { root.classList.add('sl-done'); },
       destroy: function () { dead = true; if (ro) ro.disconnect(); root.innerHTML = ''; root.classList.remove('sl', 'sl-done', 'sl-reduce'); }
     };
-    if (window.ResizeObserver) { ro = new ResizeObserver(function () { rails_(); if (o.mode === 'scan' && got.length) showPlate(got[got.length - 1]); }); ro.observe(root); }
+    if (window.ResizeObserver) { ro = new ResizeObserver(function () { rails_(); if (o.mode === 'scan' && got.length) showPlate(got[got.length - 1], true); }); ro.observe(root); ro.observe(main); }
     rails_(); text();
     return api;
   };
