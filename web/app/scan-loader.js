@@ -34,7 +34,7 @@
   }
   function paint(cv, frame, cell, ramp) {    // crisp integer cells; masked pixels hatched
     var n = Math.round(Math.sqrt(frame.d.length)), s = frame._s || (frame._s = stretch(frame.d)), c = cv.getContext('2d');
-    if (cv.width !== n * cell) { cv.width = n * cell; cv.height = n * cell; }
+    if (cv.width !== n * cell || cv.height !== n * cell) { cv.width = n * cell; cv.height = n * cell; }
     for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) {
       var t = s[y * n + x];
       if (t == null) {
@@ -49,7 +49,7 @@
 
   window.ScanLoader = function (root, o) {
     o = Object.assign({ mode: 'scan', target: 'this spot', total: 0, plan: null, bands: [], domain: [0.74, 5.01], reducedMotion: false, startAfter: 8 }, o || {});
-    var got = [], dead = false, ro = null;
+    var got = [], dead = false, ro = null, revealAt = 0;
     var bandOf = function (um) { for (var i = 0; i < o.bands.length; i++) if (um >= o.bands[i].min && um <= o.bands[i].max) return o.bands[i]; return null; };
     var rampFor = function (um) {             // black -> band colour -> ivory: the image keeps its real brightness structure
       var b = o.mode === 'scan' && bandOf(um); if (!b) return COPPER;
@@ -125,15 +125,17 @@
     function text() {
       var tot = o.total || (o.plan ? o.plan.length : 0);
       line.innerHTML = 'Finding images of ' + esc(o.target) + ' · <b>' + got.length + '</b>' + (tot ? ' of ' + tot : '') + ' loaded';
-      if (got.length >= o.startAfter && o.onStart) start.hidden = false;
+      if (got.length >= o.startAfter && o.onStart && start.hidden) { start.hidden = false; refit(); }
     }
+    function refit() { if (!dead && o.mode === 'scan' && got.length) showPlate(got[got.length - 1], true); }
     function plateCell() { var r = plateWrap.getBoundingClientRect(), n = 25; return Math.max(2, Math.floor(Math.min(r.width, r.height) / n)); }
     function showPlate(f, quiet) {
       var cell = plateCell(), dpr = Math.min(window.devicePixelRatio || 1, 2), n = Math.round(Math.sqrt(f.d.length));
       paint(plate, f, Math.max(1, Math.round(cell * dpr)), rampFor(f.um)); plate.style.width = plate.style.height = (n * cell) + 'px';
       var b = bandOf(f.um);
       capt.innerHTML = (b ? '<i style="background:' + b.c + '"></i>' + esc(b.name) + ' <span>·</span> ' : '') + 'λ ' + f.um.toFixed(2) + ' µm <span>·</span> D' + f.det + ' <span>·</span> ' + fmtDate(f.date);
-      if (!o.reducedMotion && !quiet) { plate.classList.remove('sl-in'); void plate.offsetWidth; plate.classList.add('sl-in'); }
+      var now = Date.now();
+      if (!o.reducedMotion && !quiet && now - revealAt >= 400) { revealAt = now; plate.classList.remove('sl-in'); void plate.offsetWidth; plate.classList.add('sl-in'); }
     }
     function addTile(f) {
       if (sheet.children.length >= 120) { sheet.dataset.more = '+' + (got.length - 120) + ' more'; return; }
@@ -142,11 +144,11 @@
     var api = {
       add: function (f) { if (dead) return; got.push(f); if (o.mode === 'scan') showPlate(f); else addTile(f); rails_(); text(); },
       set: function (p) { Object.assign(o, p || {}); rails_(); text(); },      // update target, total or plan once the archive answers
-      slow: function (msg) { pill.hidden = !msg; if (msg) pillTxt.textContent = msg; },
+      slow: function (msg) { pill.hidden = !msg; if (msg) pillTxt.textContent = msg; refit(); },
       done: function () { root.classList.add('sl-done'); },
       destroy: function () { dead = true; if (ro) ro.disconnect(); root.innerHTML = ''; root.classList.remove('sl', 'sl-done', 'sl-reduce'); }
     };
-    if (window.ResizeObserver) { ro = new ResizeObserver(function () { rails_(); if (o.mode === 'scan' && got.length) showPlate(got[got.length - 1], true); }); ro.observe(root); ro.observe(main); }
+    if (window.ResizeObserver) { ro = new ResizeObserver(function () { rails_(); refit(); }); ro.observe(root); ro.observe(main); }
     rails_(); text();
     return api;
   };
