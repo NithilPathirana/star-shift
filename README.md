@@ -1,4 +1,4 @@
-# SpaceApps2026 – SPHEREx time-series viewer (working title)
+# Star Shift – the infrared sky over time
 
 Team **Proper Motion** (Colombo, Sri Lanka) – NASA Space Apps Challenge 2026, challenge *Planet X and SPHEREx*.
 Type any sky position (or a star name) and see every SPHEREx image of that spot, lined up, as a little movie.

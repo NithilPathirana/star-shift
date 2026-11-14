@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>[Tool name] · the infrared sky over time</title>
+<title>Star Shift · the infrared sky over time</title>
+<link rel="icon" type="image/svg+xml" href="brand/favicon.svg">
 <meta name="description" content="Type a star name or sky coordinates and watch infrared images of that spot (NASA SPHEREx data via IRSA) change over time.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,13 +19,13 @@
 
 <div class="app" id="app" data-scene="map">
   <nav class="rail" aria-label="Sections">
-    <span class="logo-slot" title="Logo slot (Kurucharan's logo)"></span>
+    <img class="logo-slot" src="brand/star-shift-symbol-small.svg" alt="" width="40" height="40">
     <button class="nav-btn" aria-current="page"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><circle cx="10" cy="10" r="2.5"/></svg>Viewer</button>
     <button class="nav-btn" id="aboutBtn"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7.5"/><path d="M10 9v5M10 6.2v.1" stroke-linecap="round"/></svg>About</button>
   </nav>
 
   <header class="topbar glass hero" id="topbar">
-    <span class="logo-slot top-logo" aria-hidden="true"></span><span class="name">[Tool name]</span>
+    <img class="logo-slot top-logo" src="brand/star-shift-symbol-small.svg" alt="" width="28" height="28"><span class="name">Star Shift</span>
     <form class="search" role="search" onsubmit="event.preventDefault();doSearch()">
       <label class="field well"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="5.5"/><path d="M12 12l4 4"/></svg>
         <input id="q" aria-label="Star name or sky coordinates" value="" placeholder="Star name, or RA Dec like 269.45 +4.69" autocomplete="off"></label>

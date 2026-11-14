@@ -96,3 +96,6 @@ html[data-motion=reduce] .rk, html[data-motion=reduce] .thin-rk { transition: no
 .state.loader2[hidden]{display:none}
 
 
+
+/* keep the whole rocket visible beside the inspector panel (UI/UX review) */
+.al-media video, .al-media img { object-position: 40% 50%; }

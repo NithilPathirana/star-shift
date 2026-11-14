@@ -319,7 +319,8 @@ function load(query, label) {
   P.i = 0; shown = -1; arriveCount = 0;
   $('stLoading').classList.remove('leaving');
   V.scan?.destroy();
-  V.scan = (LOADER === 'astronaut' && window.AstroLoader ? window.AstroLoader : window.ScanLoader)($('scanLoader'), {
+  // Reduce motion -> the scan loader (DESIGN.md 17b); otherwise the astronaut video (it falls back to ScanLoader itself)
+  V.scan = (LOADER === 'astronaut' && !set.motion && window.AstroLoader ? window.AstroLoader : window.ScanLoader)($('scanLoader'), {
     mode: LOADER, base: '/loader/v1.1/', target: V.name, bands: ranges, reducedMotion: set.motion,
     onStart: () => { Snd.play('click'); $('thin').hidden = false; const w = leaveLoader(); if (!set.motion) setTimeout(() => P.play(), w); },
     onRetry: () => { Snd.play('click'); if (V.query) load(V.query, V.name); },

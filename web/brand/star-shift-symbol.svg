@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="1000" viewBox="0 0 1000 1000" role="img" aria-label="Orange four-point compass star inside black and orange sight rings with a small orange orbit dot">
+  <defs>
+    <linearGradient id="starCore" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff8f15"/>
+      <stop offset="0.53" stop-color="#ff7600"/>
+      <stop offset="1" stop-color="#ec4b00"/>
+    </linearGradient>
+    <linearGradient id="starTop" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff9526"/>
+      <stop offset="1" stop-color="#e95702"/>
+    </linearGradient>
+    <linearGradient id="starRight" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#dc4b00"/>
+      <stop offset="1" stop-color="#f97003"/>
+    </linearGradient>
+    <linearGradient id="starLower" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fc7100"/>
+      <stop offset="1" stop-color="#d74a00"/>
+    </linearGradient>
+  </defs>
+  <!-- Outer segmented astrometric aperture -->
+  <g fill="none" stroke="#080808" stroke-width="17" stroke-linecap="butt">
+    <path d="M 463 190 A 312 312 0 0 0 190 463"/>
+    <path d="M 537 190 A 312 312 0 0 1 810 463"/>
+    <path d="M 810 537 A 312 312 0 0 1 537 810"/>
+    <path d="M 463 810 A 312 312 0 0 1 190 537"/>
+  </g>
+  <!-- Thin orange inner ring, segmented at the axes -->
+  <g fill="none" stroke="#ff7509" stroke-width="6" stroke-linecap="butt">
+    <path d="M 465 262 A 240 240 0 0 0 262 465"/>
+    <path d="M 535 262 A 240 240 0 0 1 738 465"/>
+    <path d="M 738 535 A 240 240 0 0 1 535 738"/>
+    <path d="M 465 738 A 240 240 0 0 1 262 535"/>
+  </g>
+  <!-- Crosshair guide extensions -->
+  <g stroke="#080808" stroke-width="13" stroke-linecap="square">
+    <path d="M 500 124 V 333"/>
+    <path d="M 500 667 V 876"/>
+    <path d="M 124 500 H 335"/>
+    <path d="M 665 500 H 876"/>
+  </g>
+  <!-- Four-point stellar compass, faceted like the original -->
+  <path d="M 500 250 L 564 433 L 750 500 L 564 568 L 500 750 L 433 568 L 250 500 L 433 433 Z" fill="url(#starCore)"/>
+  <path d="M 500 250 L 500 500 L 433 433 Z" fill="#ff8f13"/>
+  <path d="M 500 250 L 564 433 L 750 500 L 500 500 Z" fill="url(#starRight)"/>
+  <path d="M 250 500 L 500 500 L 433 568 Z" fill="#fa7d08"/>
+  <path d="M 250 500 L 433 433 L 500 500 Z" fill="url(#starTop)"/>
+  <path d="M 500 500 L 750 500 L 564 568 L 500 750 Z" fill="url(#starLower)"/>
+  <path d="M 250 500 L 500 500 L 500 750 L 433 568 Z" fill="#fc7905"/>
+  <!-- Orbiting celestial dot -->
+  <circle cx="214" cy="215" r="24" fill="#ff7906"/>
+</svg>
