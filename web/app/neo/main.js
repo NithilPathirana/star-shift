@@ -3,7 +3,6 @@ import {
   AU_KM, LD_KM, parseCad, parseSentry, parseSbdb, palermoMeaning,
   summarizeThreat, torinoLabel,
 } from './model.js';
-import { renderDistanceTimeline } from './charts.js';
 
 const $ = id => document.getElementById(id);
 const state = {
@@ -72,7 +71,8 @@ function diameterText(item) {
 }
 
 function renderApproaches() {
-  const rows = [...state.approaches].sort(compare(state.approachSort.key, state.approachSort.direction));
+  const allRows = [...state.approaches].sort(compare(state.approachSort.key, state.approachSort.direction));
+  const rows = allRows.slice(0, 10);
   const body = $('approach-table').tBodies[0];
   body.replaceChildren();
   for (const item of rows) {
@@ -96,7 +96,7 @@ function renderApproaches() {
     row.append(td('Diameter', size || missing('Neither diameter nor H is available'), 'num', item.diameterSource));
     body.append(row);
   }
-  $('approach-count').textContent = `${rows.length} approaches`;
+  $('approach-count').textContent = `Top ${rows.length} of ${allRows.length}`;
   updateSortHeaders('approach-table', 'data-sort', state.approachSort);
 }
 
@@ -106,7 +106,8 @@ function probability(value) {
 }
 
 function renderRisks() {
-  const rows = [...state.risks].sort(compare(state.riskSort.key, state.riskSort.direction));
+  const allRows = [...state.risks].sort(compare(state.riskSort.key, state.riskSort.direction));
+  const rows = allRows.slice(0, 10);
   const body = $('risk-table').tBodies[0];
   body.replaceChildren();
   for (const item of rows) {
@@ -130,7 +131,7 @@ function renderRisks() {
     row.append(td('Potential impacts', item.potentialImpacts === null ? missing('No count was reported') : item.potentialImpacts.toLocaleString('en-US'), 'num'));
     body.append(row);
   }
-  $('risk-count').textContent = `${rows.length.toLocaleString('en-US')} monitored objects`;
+  $('risk-count').textContent = `Top ${rows.length} of ${allRows.length.toLocaleString('en-US')}`;
   updateSortHeaders('risk-table', 'data-risk-sort', state.riskSort);
 }
 
@@ -230,7 +231,6 @@ async function openObject(designation, selectedId = null) {
   if (!designation) return;
   state.selectedId = selectedId;
   renderApproaches();
-  renderDistanceTimeline($('distance-chart'), state.approaches, selectedId);
   const drawer = $('object-drawer');
   $('drawer-title').textContent = designation;
   $('drawer-body').replaceChildren(element('p', '', 'Loading JPL object details…'));
@@ -277,7 +277,6 @@ async function load() {
     renderApproaches();
     renderRisks();
     renderSummary();
-    renderDistanceTimeline($('distance-chart'), state.approaches);
     const fetched = new Date();
     const cacheAge = Math.max(...[upcomingResponse, recentResponse, sentryResponse].map(response => Number(response.headers.get('Age')) || 0));
     const freshnessText = `Data: NASA/JPL (CNEOS) · fetched ${fetched.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}${cacheAge > 86_400 ? ' · cached data is more than a day old' : ''}`;
@@ -285,7 +284,6 @@ async function load() {
     setStatus(`Loaded ${state.approaches.length} close approaches and ${state.risks.length.toLocaleString('en-US')} Sentry objects.`);
   } catch (error) {
     setStatus(`NASA/JPL data could not be loaded: ${error.message}. Check that the local relay includes the JPL route.`, true);
-    $('distance-chart').textContent = 'The chart will appear when the relay can reach JPL.';
   }
 }
 
@@ -312,16 +310,6 @@ $('risk-table').tBodies[0].addEventListener('keydown', event => {
   event.preventDefault();
   const row = event.target.closest('tr[data-designation]');
   if (row) openObject(row.dataset.designation);
-});
-$('distance-chart').addEventListener('click', event => {
-  const point = event.target.closest('[data-id]');
-  const item = state.approaches.find(candidate => candidate.id === point?.dataset.id);
-  if (item) openObject(item.designation, item.id);
-});
-$('distance-chart').addEventListener('keydown', event => {
-  if (!['Enter', ' '].includes(event.key)) return;
-  event.preventDefault();
-  event.target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 });
 $('drawer-close').addEventListener('click', () => $('object-drawer').close());
 $('object-drawer').addEventListener('click', event => {

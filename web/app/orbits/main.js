@@ -209,6 +209,11 @@ function showLookupError(error) {
   setStatus(`The object could not be loaded: ${error.message}.`, true);
 }
 
+window.addEventListener('starshift:add-orbit-object', event => {
+  const query = String(event.detail?.query || '').trim();
+  if (query) loadJpl(query).catch(showLookupError);
+});
+
 function populateControls() {
   const order = $('object-order');
   METRICS.forEach(metric => order.append(new Option(metric.label, metric.key, false, metric.key === state.orderKey)));
@@ -243,4 +248,3 @@ $('y-scale').addEventListener('click', event => { state.yLog = !state.yLog; even
 
 populateControls();
 renderAll();
-

@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Near-Earth objects · Star Shift</title>
-  <meta name="description" content="Calm, factual NASA/JPL close-approach and impact-monitoring data for near-Earth objects.">
+  <title>SPHEREx Asteroid Spotter · Star Shift</title>
+  <meta name="description" content="Find known asteroids and comets predicted in a SPHEREx field, then compare their orbits and review calm NASA/JPL threat context.">
   <link rel="icon" type="image/svg+xml" href="brand/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,92 +14,103 @@
   <link rel="stylesheet" href="styles/e.css">
   <link rel="stylesheet" href="styles/neo.css">
 </head>
-<body class="data-page neo-page">
+<body class="data-page neo-page spotter-page">
   <div class="data-app">
     <nav class="rail data-rail" aria-label="Pages">
       <a class="logo-link" href="index.html" aria-label="Star Shift viewer"><img class="logo-slot" src="brand/star-shift-symbol-small.svg" alt="" width="40" height="40"></a>
       <a class="nav-btn" href="index.html"><span class="nav-icon" aria-hidden="true">◉</span>Viewer</a>
-      <a class="nav-btn" href="neo.html" aria-current="page"><span class="nav-icon" aria-hidden="true">◇</span>Near-Earth</a>
-      <a class="nav-btn" href="orbits.html"><span class="nav-icon" aria-hidden="true">◎</span>Orbits</a>
+      <a class="nav-btn" href="neo.html" aria-current="page"><span class="nav-icon" aria-hidden="true">◇</span>Spotter</a>
       <a class="nav-btn rail-bottom" href="index.html#about"><span class="nav-icon" aria-hidden="true">i</span>About</a>
     </nav>
 
     <header class="topbar glass data-topbar">
       <a class="mobile-logo" href="index.html"><img src="brand/star-shift-symbol-small.svg" alt="" width="30" height="30"><span>Star Shift</span></a>
-      <div class="top-title"><span class="eyebrow">ASTRONOMICAL THREAT INTELLIGENCE</span><strong>Near-Earth objects</strong></div>
+      <div class="top-title"><strong>SPHEREx Asteroid Spotter</strong></div>
       <details class="page-menu">
         <summary class="key">Pages</summary>
-        <nav class="glass" aria-label="Pages on mobile"><a href="index.html">Viewer</a><a href="neo.html" aria-current="page">Near-Earth</a><a href="orbits.html">Orbits</a><a href="index.html#about">About</a></nav>
+        <nav class="glass" aria-label="Pages on mobile"><a href="index.html">Viewer</a><a href="neo.html" aria-current="page">Spotter</a><a href="index.html#about">About</a></nav>
       </details>
-      <a class="key" href="orbits.html">Compare orbits</a>
+      <a class="key" href="index.html#clarity">Clarity</a>
     </header>
 
     <main class="data-content">
       <section class="page-intro" aria-labelledby="page-heading">
-        <div><h1 id="page-heading">Near-Earth objects</h1><p>Close approaches and long-term CNEOS impact monitoring, presented without alarm.</p></div>
-        <div class="freshness" id="freshness"><span class="tag tag-jpl">JPL</span><span>Waiting for data</span></div>
+        <div><h1 id="page-heading">SPHEREx Asteroid Spotter</h1><p>Check which catalogued asteroids and comets crossed a SPHEREx field on selected observation dates.</p></div>
+        <div class="freshness" id="freshness"><span class="tag tag-jpl">JPL</span><span>Threat context waiting for data</span></div>
       </section>
 
-      <div class="state-banner well" id="neo-status" role="status">Loading current NASA/JPL data…</div>
+      <div class="spotter-tabs well" role="tablist" aria-label="Asteroid Spotter views">
+        <button class="key" id="spotter-tab" role="tab" aria-controls="spotter-panel" aria-selected="true" data-spotter-tab="spotter">Caught by SPHEREx</button>
+        <button class="key" id="orbits-tab" role="tab" aria-controls="orbits-panel" aria-selected="false" data-spotter-tab="orbits">Compare orbits</button>
+      </div>
 
-      <section class="summary-grid" aria-label="Current summary">
-        <article class="summary-card well"><span>Highest Torino rating</span><strong class="num" id="summary-torino">—</strong><p id="summary-torino-note">Loading impact-monitoring results.</p></article>
-        <article class="summary-card well"><span>Closest upcoming</span><strong class="num" id="summary-closest">—</strong><p id="summary-closest-note">Loading close approaches.</p></article>
-        <article class="summary-card well"><span>Within the Moon's orbit</span><strong class="num" id="summary-moon">—</strong><p>Upcoming 60 days, nominal distance.</p></article>
-      </section>
+      <div id="spotter-panel" role="tabpanel" aria-labelledby="spotter-tab" class="tab-panel">
+        <section class="data-panel well caught-panel" aria-labelledby="caught-title">
+          <div class="section-heading"><div><h2 id="caught-title">Caught by SPHEREx</h2></div><span class="result-count num" id="spotter-count">—</span></div>
+          <form id="spotter-controls" class="spotter-controls">
+            <label>RA <input class="key num" id="spotter-ra" name="ra" type="number" min="0" max="360" step="any" required><span>deg</span></label>
+            <label>Dec <input class="key num" id="spotter-dec" name="dec" type="number" min="-90" max="90" step="any" required><span>deg</span></label>
+            <label>Field <input class="key num" id="spotter-fov" name="fov" type="number" min="0.001" max="20" step="any" required><span>deg wide</span></label>
+            <label>From <input class="key num" id="spotter-from" name="from" type="date"></label>
+            <label>To <input class="key num" id="spotter-to" name="to" type="date"></label>
+            <button class="key primary" type="submit">Check field</button>
+          </form>
+          <p class="observation-dates">SPHEREx observation dates checked: <span class="num" id="spotter-dates"></span>. Override with <span class="num">?dates=YYYY-MM-DD,…</span>.</p>
+          <div class="state-banner" id="spotter-status" role="status">Preparing JPL field checks…</div>
+          <div class="table-scroll">
+            <table class="data-table spotter-table" id="spotter-table">
+              <thead><tr><th>Object</th><th>Date (UTC)</th><th>Predicted RA / Dec</th><th>V magnitude</th><th>Motion</th><th>Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p class="panel-foot">Predictions use JPL Small-Body Identification at 12:00 UTC on each supplied observation date. A blank result means no known object was returned, not that no uncatalogued object was present.</p>
+        </section>
 
-      <section class="chart-stage" aria-labelledby="distance-title">
-        <div class="section-heading stage-heading"><div><span class="kicker">DISTANCE TIMELINE</span><h2 id="distance-title">Recent and upcoming approaches</h2></div><span class="chart-note num">LD first · log distance</span></div>
-        <div class="timeline-chart" id="distance-chart"></div>
-        <p class="stage-caption"><span>Earth is the lower edge · the Moon is marked at 1 LD</span><span>Distances are nominal · objects and markers not to scale</span></p>
-      </section>
+        <section class="threat-context" aria-labelledby="threat-title">
+          <div class="section-heading context-heading"><div><h2 id="threat-title">CNEOS threat context</h2></div><span>Compact monitoring context, separate from the SPHEREx field matches.</span></div>
+          <div class="state-banner well" id="neo-status" role="status">Loading current NASA/JPL data…</div>
+          <div class="summary-grid" aria-label="Current summary">
+            <article class="summary-card well"><span>Highest Torino rating</span><strong class="num" id="summary-torino">—</strong><p id="summary-torino-note">Loading impact-monitoring results.</p></article>
+            <article class="summary-card well"><span>Closest upcoming</span><strong class="num" id="summary-closest">—</strong><p id="summary-closest-note">Loading close approaches.</p></article>
+            <article class="summary-card well"><span>Within the Moon's orbit</span><strong class="num" id="summary-moon">—</strong><p>Upcoming 60 days, nominal distance.</p></article>
+          </div>
 
-      <section class="data-panel well" aria-labelledby="approaches-title">
-        <div class="section-heading"><div><span class="kicker">90-DAY WINDOW</span><h2 id="approaches-title">Close approaches</h2></div><span class="result-count num" id="approach-count">—</span></div>
-        <div class="table-scroll">
-          <table class="data-table" id="approach-table">
-            <thead><tr>
-              <th scope="col"><button data-sort="name">Object <span aria-hidden="true"></span></button></th>
-              <th scope="col" aria-sort="ascending"><button data-sort="date">Date (UTC) <span aria-hidden="true">↑</span></button></th>
-              <th scope="col"><button data-sort="distanceLd">Distance <span aria-hidden="true"></span></button></th>
-              <th scope="col"><button data-sort="speedKms">Relative speed <span aria-hidden="true"></span></button></th>
-              <th scope="col"><button data-sort="h">H <span aria-hidden="true"></span></button></th>
-              <th scope="col"><button data-sort="diameterMinKm">Diameter <span aria-hidden="true"></span></button></th>
-            </tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <p class="panel-foot">Select an object for its orbit, physical data and next Earth approaches. Estimated diameter uses albedo 0.05–0.25 when JPL has no diameter.</p>
-      </section>
+          <section class="data-panel well compact-context" aria-labelledby="approaches-title">
+            <div class="section-heading"><div><h3 id="approaches-title">Closest approaches · 90-day window</h3></div><span class="result-count num" id="approach-count">—</span></div>
+            <div class="table-scroll"><table class="data-table" id="approach-table"><thead><tr>
+              <th scope="col"><button data-sort="name">Object <span></span></button></th><th scope="col" aria-sort="ascending"><button data-sort="date">Date (UTC) <span>↑</span></button></th><th scope="col"><button data-sort="distanceLd">Distance <span></span></button></th><th scope="col"><button data-sort="speedKms">Relative speed <span></span></button></th><th scope="col"><button data-sort="h">H <span></span></button></th><th scope="col"><button data-sort="diameterMinKm">Diameter <span></span></button></th>
+            </tr></thead><tbody></tbody></table></div>
+          </section>
 
-      <section class="data-panel well" aria-labelledby="risk-title">
-        <div class="section-heading"><div><span class="kicker">SENTRY</span><h2 id="risk-title">Impact-risk list</h2></div><span class="result-count num" id="risk-count">—</span></div>
-        <div class="scale-explain"><p><strong>Torino:</strong> a 0–10 public scale; 0 means no hazard.</p><p><strong>Palermo:</strong> a logarithmic technical scale; below −2 means no concern.</p></div>
-        <div class="table-scroll risk-scroll">
-          <table class="data-table" id="risk-table">
-            <thead><tr>
-              <th scope="col"><button data-risk-sort="name">Object <span aria-hidden="true"></span></button></th>
-              <th scope="col"><button data-risk-sort="impactProbability">Cumulative probability <span aria-hidden="true"></span></button></th>
-              <th scope="col" aria-sort="descending"><button data-risk-sort="palermoCumulative">Palermo cumulative <span aria-hidden="true">↓</span></button></th>
-              <th scope="col"><button data-risk-sort="palermoMax">Palermo max <span aria-hidden="true"></span></button></th>
-              <th scope="col"><button data-risk-sort="torino">Torino <span aria-hidden="true"></span></button></th>
-              <th scope="col"><button data-risk-sort="diameterKm">Diameter <span aria-hidden="true"></span></button></th>
-              <th scope="col"><button data-risk-sort="impactYears">Potential years <span aria-hidden="true"></span></button></th>
-              <th scope="col"><button data-risk-sort="potentialImpacts">Potential impacts <span aria-hidden="true"></span></button></th>
-            </tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </section>
+          <section class="data-panel well compact-context" aria-labelledby="risk-title">
+            <div class="section-heading"><div><h3 id="risk-title">Sentry impact-risk list</h3></div><span class="result-count num" id="risk-count">—</span></div>
+            <div class="scale-explain"><p><strong>Torino:</strong> a 0–10 public scale; 0 means no hazard.</p><p><strong>Palermo:</strong> a logarithmic technical scale; below −2 means no concern.</p></div>
+            <div class="table-scroll risk-scroll"><table class="data-table" id="risk-table"><thead><tr>
+              <th scope="col"><button data-risk-sort="name">Object <span></span></button></th><th scope="col"><button data-risk-sort="impactProbability">Cumulative probability <span></span></button></th><th scope="col" aria-sort="descending"><button data-risk-sort="palermoCumulative">Palermo cumulative <span>↓</span></button></th><th scope="col"><button data-risk-sort="palermoMax">Palermo max <span></span></button></th><th scope="col"><button data-risk-sort="torino">Torino <span></span></button></th><th scope="col"><button data-risk-sort="diameterKm">Diameter <span></span></button></th><th scope="col"><button data-risk-sort="impactYears">Potential years <span></span></button></th><th scope="col"><button data-risk-sort="potentialImpacts">Potential impacts <span></span></button></th>
+            </tr></thead><tbody></tbody></table></div>
+          </section>
+        </section>
+      </div>
 
-      <footer class="source-credit"><span class="tag tag-jpl">JPL</span><span>Data: NASA/JPL Center for Near Earth Object Studies (CNEOS) and Small-Body Database, via ssd-api.jpl.nasa.gov.</span><span>Text credits only · no NASA or JPL logos</span></footer>
+      <div id="orbits-panel" role="tabpanel" aria-labelledby="orbits-tab" class="tab-panel" hidden>
+        <section class="page-intro orbit-intro" aria-labelledby="orbit-page-heading">
+          <div><h2 id="orbit-page-heading">Compare orbits</h2><p>Compare 2–6 planets, the Moon, asteroids and comets on the same measured page.</p></div>
+          <form class="object-search" id="object-search" role="search"><label class="field well"><input id="object-query" list="built-in-list" aria-label="Object name or designation" placeholder="Apophis, Ceres, 1P…" autocomplete="off"></label><datalist id="built-in-list"><option value="Mercury"><option value="Venus"><option value="Earth"><option value="Mars"><option value="Jupiter"><option value="Saturn"><option value="Uranus"><option value="Neptune"><option value="Moon"></datalist><button class="key primary" type="submit">Add object</button></form>
+        </section>
+        <div class="state-banner well" id="orbit-status" role="status">Start with the built-in Earth and Mars, or add a JPL small body.</div>
+        <section class="selection-bar well" aria-label="Selected objects"><div id="selected-objects" class="selected-objects"></div><span class="selection-count num" id="selection-count">2 / 6</span></section>
+        <section class="chart-stage orbit-stage" aria-labelledby="orbit-plot-title"><div class="section-heading stage-heading"><div><h2 id="orbit-plot-title">Top-down orbital paths and today's positions</h2></div><div class="stage-controls" role="group" aria-label="Orbit plot scale"><button class="key stage-key" data-orbit-mode="inner" aria-pressed="true">Inner system</button><button class="key stage-key" data-orbit-mode="fit" aria-pressed="false">Fit all</button></div></div><div class="orbit-chart" id="orbit-chart"></div><p class="stage-caption"><span>Bodies not to scale</span><span>Tilt of the orbits is not shown</span></p></section>
+        <section class="data-panel well comparison-panel" aria-labelledby="comparison-title"><div class="section-heading"><div><h2 id="comparison-title">Comparison table</h2></div><label class="sort-control">Order objects by <select class="key" id="object-order"></select></label></div><div class="table-scroll"><table class="comparison-table" id="comparison-table"><thead></thead><tbody></tbody></table></div><p class="panel-foot">Min and max are highlighted within each numeric row. “—” includes a hover reason whenever a value is unavailable.</p></section>
+        <section class="chart-stage scatter-stage" aria-labelledby="scatter-title"><div class="section-heading stage-heading"><div><h2 id="scatter-title">Variable scatter with selectable axes</h2></div></div><div class="scatter-controls"><label>X <select class="key stage-key" id="scatter-x"></select></label><button class="key stage-key" id="x-scale" aria-pressed="false">X log</button><label>Y <select class="key stage-key" id="scatter-y"></select></label><button class="key stage-key" id="y-scale" aria-pressed="false">Y log</button></div><div class="scatter-chart" id="scatter-chart"></div><p class="stage-caption"><span>Hollow points are unselected · choose an object chip to fill it</span><span>Computed from the values in the table</span></p></section>
+      </div>
+
+      <footer class="source-credit"><span class="tag tag-jpl">JPL</span><span>Data: NASA/JPL CNEOS, Small-Body Database and Small-Body Identification, via ssd-api.jpl.nasa.gov.</span><span>Planetary elements: JPL “Approximate Positions of the Planets”, E. M. Standish.</span><span>Text credits only · no NASA or JPL logos</span></footer>
     </main>
   </div>
 
-  <dialog class="object-drawer" id="object-drawer" aria-labelledby="drawer-title">
-    <div class="drawer-head"><div><span class="kicker">SMALL-BODY DATABASE</span><h2 id="drawer-title">Object details</h2></div><button class="key icon" id="drawer-close" aria-label="Close object details">×</button></div>
-    <div id="drawer-body"><p>Choose an object from a table.</p></div>
-  </dialog>
+  <dialog class="object-drawer" id="object-drawer" aria-labelledby="drawer-title"><div class="drawer-head"><div><h2 id="drawer-title">Small-Body Database object details</h2></div><button class="key icon" id="drawer-close" aria-label="Close object details">×</button></div><div id="drawer-body"><p>Choose an object from a table.</p></div></dialog>
   <script type="module" src="app/neo/main.js"></script>
+  <script type="module" src="app/orbits/main.js"></script>
+  <script type="module" src="app/neo/spotter.js"></script>
 </body>
 </html>

@@ -1,77 +1,20 @@
 <!-- AI-written (OpenAI Codex) for Star Shift, NASA Space Apps 2026 -->
 <!doctype html>
-<html lang="en" data-motion="full" data-glass="glass" data-contrast="normal" data-text="normal">
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Orbit comparison · Star Shift</title>
-  <meta name="description" content="Compare JPL small-body and standard J2000 planetary orbits, distances and speeds.">
-  <link rel="icon" type="image/svg+xml" href="brand/favicon.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles/tokens.css">
-  <link rel="stylesheet" href="styles/e.css">
-  <link rel="stylesheet" href="styles/neo.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="0; url=neo.html?tab=orbits">
+  <title>Compare orbits · Asteroid Spotter · Star Shift</title>
 </head>
-<body class="data-page orbits-page">
-  <div class="data-app">
-    <nav class="rail data-rail" aria-label="Pages">
-      <a class="logo-link" href="index.html" aria-label="Star Shift viewer"><img class="logo-slot" src="brand/star-shift-symbol-small.svg" alt="" width="40" height="40"></a>
-      <a class="nav-btn" href="index.html"><span class="nav-icon" aria-hidden="true">◉</span>Viewer</a>
-      <a class="nav-btn" href="neo.html"><span class="nav-icon" aria-hidden="true">◇</span>Near-Earth</a>
-      <a class="nav-btn" href="orbits.html" aria-current="page"><span class="nav-icon" aria-hidden="true">◎</span>Orbits</a>
-      <a class="nav-btn rail-bottom" href="index.html#about"><span class="nav-icon" aria-hidden="true">i</span>About</a>
-    </nav>
-
-    <header class="topbar glass data-topbar">
-      <a class="mobile-logo" href="index.html"><img src="brand/star-shift-symbol-small.svg" alt="" width="30" height="30"><span>Star Shift</span></a>
-      <div class="top-title"><span class="eyebrow">SOLAR SYSTEM WORKBENCH</span><strong>Orbit comparison</strong></div>
-      <details class="page-menu">
-        <summary class="key">Pages</summary>
-        <nav class="glass" aria-label="Pages on mobile"><a href="index.html">Viewer</a><a href="neo.html">Near-Earth</a><a href="orbits.html" aria-current="page">Orbits</a><a href="index.html#about">About</a></nav>
-      </details>
-      <a class="key" href="neo.html">Near-Earth data</a>
-    </header>
-
-    <main class="data-content">
-      <section class="page-intro orbit-intro" aria-labelledby="page-heading">
-        <div><h1 id="page-heading">Orbit comparison</h1><p>Compare 2–6 planets, the Moon, asteroids and comets on the same measured page.</p></div>
-        <form class="object-search" id="object-search" role="search">
-          <label class="field well"><span aria-hidden="true">⌕</span><input id="object-query" list="built-in-list" aria-label="Object name or designation" placeholder="Apophis, Ceres, 1P…" autocomplete="off"></label>
-          <datalist id="built-in-list"><option value="Mercury"><option value="Venus"><option value="Earth"><option value="Mars"><option value="Jupiter"><option value="Saturn"><option value="Uranus"><option value="Neptune"><option value="Moon"></datalist>
-          <button class="key primary" type="submit">Add object</button>
-        </form>
-      </section>
-
-      <div class="state-banner well" id="orbit-status" role="status">Start with the built-in Earth and Mars, or add a JPL small body.</div>
-      <section class="selection-bar well" aria-label="Selected objects"><div id="selected-objects" class="selected-objects"></div><span class="selection-count num" id="selection-count">2 / 6</span></section>
-
-      <section class="chart-stage orbit-stage" aria-labelledby="orbit-plot-title">
-        <div class="section-heading stage-heading"><div><span class="kicker">TOP-DOWN VIEW</span><h2 id="orbit-plot-title">Orbital paths and today's positions</h2></div><div class="stage-controls" role="group" aria-label="Orbit plot scale"><button class="key stage-key" data-orbit-mode="inner" aria-pressed="true">Inner system</button><button class="key stage-key" data-orbit-mode="fit" aria-pressed="false">Fit all</button></div></div>
-        <div class="orbit-chart" id="orbit-chart"></div>
-        <p class="stage-caption"><span>Bodies not to scale</span><span>Tilt of the orbits is not shown</span></p>
-      </section>
-
-      <section class="data-panel well comparison-panel" aria-labelledby="comparison-title">
-        <div class="section-heading"><div><span class="kicker">VARIABLES</span><h2 id="comparison-title">Comparison table</h2></div><label class="sort-control">Order objects by <select class="key" id="object-order"></select></label></div>
-        <div class="table-scroll"><table class="comparison-table" id="comparison-table"><thead></thead><tbody></tbody></table></div>
-        <p class="panel-foot">Min and max are highlighted within each numeric row. “—” includes a hover reason whenever a value is unavailable.</p>
-      </section>
-
-      <section class="chart-stage scatter-stage" aria-labelledby="scatter-title">
-        <div class="section-heading stage-heading"><div><span class="kicker">SELECTABLE AXES</span><h2 id="scatter-title">Variable scatter</h2></div></div>
-        <div class="scatter-controls">
-          <label>X <select class="key stage-key" id="scatter-x"></select></label><button class="key stage-key" id="x-scale" aria-pressed="false">X log</button>
-          <label>Y <select class="key stage-key" id="scatter-y"></select></label><button class="key stage-key" id="y-scale" aria-pressed="false">Y log</button>
-        </div>
-        <div class="scatter-chart" id="scatter-chart"></div>
-        <p class="stage-caption"><span>Hollow points are unselected · choose an object chip to fill it</span><span>Computed from the values in the table</span></p>
-      </section>
-
-      <footer class="source-credit"><span class="tag tag-jpl">JPL</span><span>Small bodies: NASA/JPL Small-Body Database. Planetary J2000 elements: JPL, <a href="https://ssd.jpl.nasa.gov/planets/approx_pos.html">“Approximate Positions of the Planets”</a>, E. M. Standish.</span><span>Positions here use two-body propagation, not a live ephemeris.</span></footer>
-    </main>
-  </div>
-  <script type="module" src="app/orbits/main.js"></script>
+<body>
+  <p>Orbit comparison now lives in <a href="neo.html?tab=orbits">SPHEREx Asteroid Spotter</a>.</p>
+  <script>
+    // Preserve any existing query values while selecting the orbit tab.
+    const target = new URL('neo.html', location.href);
+    for (const [name, value] of new URLSearchParams(location.search)) target.searchParams.append(name, value);
+    target.searchParams.set('tab', 'orbits');
+    location.replace(target);
+  </script>
 </body>
 </html>

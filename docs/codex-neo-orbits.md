@@ -1,108 +1,57 @@
 <!-- AI-written (OpenAI Codex) for Star Shift, NASA Space Apps 2026 -->
-# Codex handoff: Near-Earth objects and orbit comparison
+# Codex handoff: SPHEREx Asteroid Spotter
 
-This handoff contains two standalone Star Shift pages plus a strict JPL relay mapper. Existing files were not changed; the lead can integrate these additions after the concurrent main-app work is complete.
+`web/neo.html` is now the SPHEREx-centred Asteroid Spotter. Its first tab identifies known asteroids and comets inside a requested field on supplied SPHEREx observation dates; its second tab contains the complete orbit-comparison workbench. `web/orbits.html` redirects to that tab.
 
-## What was built
+## What changed
 
-### I — Near-Earth objects
+- `web/app/neo/sb-ident.js` builds strict JPL SB Identification parameters and parses its field-driven response tables.
+- `web/app/neo/spotter.js` reads `ra`, `dec`, `fov`, `dates`, `from`, `to` and `tab` from the URL, runs asteroid and comet checks per distinct date, renders predictions and connects matches to the viewer and comparison tab.
+- The default field is Barnard's Star (`269.4461`, `+4.7707`, `0.5°`) with survey-window mid-dates `2025-08-15`, `2026-03-15` and `2026-08-15`.
+- The former NEO page is compact threat context: three calm summary cards, top 10 close approaches and top 10 Sentry rows. Every row still opens the SBDB drawer.
+- The orbit table, orbit plot, scatter plot and 2–6-object selector now live inside `neo.html?tab=orbits`. A caught object's Add button triggers its SBDB lookup there.
+- `tests/fixtures/jpl/sb_ident.json` is a hand-made fixture matching the documented JPL 1.1 `fields_second` / `data_second_pass` shape. `tests/jpl-sb-ident.test.mjs` covers parameter formatting, date normalisation, geocentric retry and parsing.
 
-`web/neo.html` loads recent 30-day and upcoming 60-day Earth approaches within 0.05 au from CAD, plus the current Sentry summary list. It shows:
+## Relay integration
 
-- an honest top summary (highest Torino value, closest upcoming approach and count within 1 LD);
-- an SVG time-versus-log-distance chart with the Moon marked at 1 LD;
-- a sortable, LD-first approach table with kilometres, au, speed, H and measured or H/albedo-estimated diameter;
-- a sortable Sentry table with cumulative probability, Palermo values and meanings, Torino chips, size, years and potential-impact count;
-- an SBDB object drawer with orbit elements, MOID, physical parameters and future Earth approaches;
-- loading/error states, source/fetch time, cache-age warning, keyboard row activation and phone card rows.
-
-### J — Orbit comparison
-
-`web/orbits.html` starts with Earth and Mars and accepts 2–6 objects. Mercury through Neptune and the Moon are built in; other names/designations are looked up in SBDB. It shows:
-
-- a variable-by-object comparison table, sortable by any row, with per-row min/max marks and reasons for missing values;
-- semi-major axis, eccentricity, inclination, node, perihelion argument, period, q, Q, MOID in au/LD, H, diameter, albedo, rotation, present Sun/Earth distances, present heliocentric speed, mean speed, next Earth approach and orbit class;
-- a top-down SVG orbit plot with Inner system / Fit all controls, distinct colour/dash/marker encodings, current positions and an au scale;
-- an SVG scatter chart with independently selectable X/Y variables and linear/log controls;
-- JPL versus computed source tags and an explicit two-body-position limitation.
-
-## New files
-
-- `proxy/jpl.js`
-- `tests/jpl-route.test.mjs`
-- `tests/jpl-model.test.mjs`
-- `tests/jpl-kepler.test.mjs`
-- `web/neo.html`
-- `web/orbits.html`
-- `web/styles/neo.css`
-- `web/app/neo/model.js`
-- `web/app/neo/charts.js`
-- `web/app/neo/main.js`
-- `web/app/orbits/kepler.js`
-- `web/app/orbits/model.js`
-- `web/app/orbits/charts.js`
-- `web/app/orbits/main.js`
-- `docs/codex-neo-orbits.md`
-
-The supplied `tests/fixtures/jpl/**` files are task inputs and were not edited.
-
-## Exact integration steps
-
-### 1. Connect the relay
-
-In `proxy/worker.js`, add this import beside the existing relay-route imports:
+In `proxy/worker.js`, import the route beside the other relay helpers:
 
 ```js
 import { jplRoute } from './jpl.js';
 ```
 
-Then, inside `upstreamFor(url)`, immediately after `const p = url.pathname;`, add exactly:
+Inside `upstreamFor(url)`, immediately after `const p = url.pathname;`, add:
 
 ```js
 const jpl = jplRoute(url); if (jpl) return jpl;
 ```
 
-The local server already uses `proxy/worker.js`, so no second server route is required. The mapper only accepts the five `/jpl/*` paths, validates query names per endpoint, caps values/query length, fixes the upstream host and returns a one-hour TTL (six hours for Sentry).
+`proxy/jpl.js` already allow-lists all SB Identification parameters used here, including `mpc-code`, `xobs`, FOV center/half-width, pass controls and `sb-kind`.
 
-### 2. Add navigation links
+## Navigation integration
 
-Add built-page links to the existing desktop rail and phone Pages sheet:
+Replace separate Near-Earth and Orbits navigation entries with one built-page link:
 
 ```html
-<a class="nav-btn" href="neo.html">Near-Earth</a>
-<a class="nav-btn" href="orbits.html">Orbits</a>
+<a class="nav-btn" href="neo.html">Spotter</a>
 ```
 
-Keep the current page's `aria-current="page"`. The new pages already link to Viewer, Near-Earth, Orbits and About.
+Use `neo.html?tab=orbits` for any direct Compare orbits link. Existing `orbits.html` links remain safe because that file preserves query parameters and redirects.
 
-### 3. Serve normally
+## URL contract
 
-No build step or dependency is required. Start the existing local server and open:
-
-- `http://127.0.0.1:8787/neo.html`
-- `http://127.0.0.1:8787/orbits.html`
-
-## Verification
-
-The offline tests parse the 14 November 2026 JPL fixtures and cover relay allow-listing/TTL, CAD/Sentry/SBDB normalization, H/albedo size bounds, Kepler's equation, Earth-like speed/distance, Ceres's period and Halley's eccentric orbit. Run all repository tests with:
+Example:
 
 ```text
-npm test
+neo.html?ra=269.4461&dec=4.7707&fov=0.5&dates=2025-08-15,2026-03-15,2026-08-15&from=2026-01-01&to=2026-12-31
 ```
 
-## Not tested live
+`fov` is the full square-field width in degrees; JPL receives half that value for both RA and Dec half-widths. Invalid/missing values fall back to the Barnard's Star defaults. Dates are deduplicated and validated as ISO calendar dates.
 
-- No live JPL request was made in this worktree; network behavior, current response volume and ambiguous live SBDB searches need an integrated relay smoke test.
-- The main Viewer navigation was not edited because this task permits new files only.
-- Browser layout, keyboard and dialog behavior should receive a final smoke test after the relay and nav integration.
+## Important JPL observer detail
 
-## Known limits
+The product brief requests geocentric `mpc-code=500`, so every check tries that form first. Current JPL documentation explicitly says code 500 is not a valid topocentric MPC code. On an HTTP failure, the Spotter retries the same request with the documented geocentric state-vector form `xobs=0,0,0,0,0,0`, retaining velocity components so motion can be returned. The visible status reports retries or both failure codes rather than showing an empty result as success.
 
-- Current positions use two-body propagation from the supplied osculating elements. Perturbations are omitted, so this is a comparison view, not an observing ephemeris.
-- Built-in planets use fixed J2000 elements from JPL/Standish without secular rates. The Moon uses standard mean geocentric J2000 elements added to the computed Earth position.
-- CAD epochs are TDB. For this 2026 dashboard they are converted to approximate UTC using TDB−UTC = 69.184 seconds; the millisecond-scale periodic TDB−TT term is omitted.
-- The orbit plot deliberately suppresses vertical tilt in the drawing; inclination remains in the table and the current-distance calculation uses 3D coordinates.
-- Sentry entries describe modelled potential impacts, not predictions of certain impacts. The page keeps the official scale values and calm explanatory wording.
-- Planet physical values are static catalogue values. H and Earth MOID are left unavailable where they are not meaningful rather than invented.
-- `/jpl/sb_ident` and `/jpl/horizons` are allow-listed for later team pages but are not called by these two pages.
+## Verification and live limits
 
+Run all offline tests with `npm test`. The parser is fixture-tested, but this worktree did not make live JPL calls. After the relay is connected, smoke-test at least one narrow field and confirm JPL still reports API version 1.1. SB Identification predicts catalogued visible-magnitude small bodies at a chosen timestamp; it does not prove that SPHEREx detected them, and a no-match result does not rule out uncatalogued objects. Positions and rates come from JPL; the orbit plot's current positions remain two-body approximations.
