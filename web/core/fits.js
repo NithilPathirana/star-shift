@@ -104,8 +104,13 @@ export function readImage(bytes, hdu) {
   return { nx, ny, data: out }; // row-major, row 0 = FITS y=1 (bottom)
 }
 
+export class FitsTruncatedError extends Error {
+  constructor(msg) { super(msg); this.name = 'FitsTruncatedError'; this.retryable = true; }
+}
+
 // Read a stream until the first `maxHDUs` HDUs are complete, then cancel it.
-// Returns a Uint8Array holding exactly those HDUs.
+// Returns a Uint8Array holding exactly those HDUs; throws FitsTruncatedError if the
+// stream ends first (each HDU's size is checked against its header's NAXIS/BITPIX).
 // Linear time: the buffer grows by doubling, and each HDU header is parsed once
 // (keeps CPU low on the Cloudflare free plan). maxBytes guards against huge inputs.
 export async function readHDUsFromStream(stream, maxHDUs, maxBytes = 8 * 1024 * 1024) {
@@ -136,7 +141,9 @@ export async function readHDUsFromStream(stream, maxHDUs, maxBytes = 8 * 1024 * 
         pos = pendingEnd; pendingEnd = -1; count++;
         if (count >= maxHDUs) return buf.slice(0, pos);
       }
-      if (done) return buf.slice(0, pos);
+      // The stream ended before the requested HDUs were all complete (dropped connection,
+      // truncated upstream file): never hand back partial bytes, so nobody caches them.
+      if (done) throw new FitsTruncatedError(`FITS stream truncated: ${count}/${maxHDUs} HDUs, ${len} bytes`);
     }
   } finally {
     reader.cancel().catch(() => {});

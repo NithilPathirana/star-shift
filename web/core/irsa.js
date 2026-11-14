@@ -128,6 +128,16 @@ export function cutoutUrl(uri, ra, dec, sizeDeg, base = IRSA) {
   return `${base}/${uri}?center=${ra.toFixed(6)},${dec.toFixed(6)}d&size=${sizeDeg}`;
 }
 
+// Wait `ms`, but stop at once (AbortError) when the load is cancelled.
+function sleep(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+    const t = setTimeout(() => { signal?.removeEventListener?.('abort', onAbort); resolve(); }, ms);
+    function onAbort() { clearTimeout(t); reject(signal.reason ?? new DOMException('Aborted', 'AbortError')); }
+    signal?.addEventListener?.('abort', onAbort, { once: true });
+  });
+}
+
 // Download a cutout but keep only PRIMARY, IMAGE and FLAGS (stops the download early).
 // IRSA's cutout service returns HTTP 503 now and then (seen often on 14 Nov 2026), so retry.
 export async function fetchCutout(uri, ra, dec, sizeDeg,
@@ -135,11 +145,18 @@ export async function fetchCutout(uri, ra, dec, sizeDeg,
   const url = cutoutUrl(uri, ra, dec, sizeDeg, base);
   for (let attempt = 0; ; attempt++) {
     const res = await fetchFn(url, { signal });
-    if (res.ok) return decodeCutout(await readHDUsFromStream(res.body, 3));
+    if (res.ok) {
+      // A body that breaks off mid-file is retried like a 503 (never decoded half-read).
+      try { return decodeCutout(await readHDUsFromStream(res.body, 3)); } catch (e) {
+        if (!(e?.retryable || e?.name === 'TypeError') || signal?.aborted || attempt >= retries) throw e;
+        await sleep(backoffMs * (attempt + 1), signal);
+        continue;
+      }
+    }
     res.body?.cancel?.().catch(() => {});
     const retryable = res.status === 503 || res.status === 502 || res.status === 429;
     if (!retryable || attempt >= retries) throw new Error(`HTTP ${res.status} for cutout`);
-    await new Promise(r => setTimeout(r, backoffMs * (attempt + 1)));
+    await sleep(backoffMs * (attempt + 1), signal);
   }
 }
 
@@ -150,17 +167,24 @@ export async function fetchCutoutLayers(uri, ra, dec, sizeDeg,
   const url = cutoutUrl(uri, ra, dec, sizeDeg, base) + (base === IRSA ? '' : '&hdus=5');
   for (let attempt = 0; ; attempt++) {
     const res = await fetchFn(url, { signal });
-    if (res.ok) return decodeCutout(await readHDUsFromStream(res.body, 5), 5);
+    if (res.ok) {
+      // A body that breaks off mid-file is retried like a 503 (never decoded half-read).
+      try { return decodeCutout(await readHDUsFromStream(res.body, 5), 5); } catch (e) {
+        if (!(e?.retryable || e?.name === 'TypeError') || signal?.aborted || attempt >= retries) throw e;
+        await sleep(backoffMs * (attempt + 1), signal);
+        continue;
+      }
+    }
     res.body?.cancel?.().catch(() => {});
     const retryable = res.status === 503 || res.status === 502 || res.status === 429;
     if (!retryable || attempt >= retries) throw new Error(`HTTP ${res.status} for cutout layers`);
-    await new Promise(r => setTimeout(r, backoffMs * (attempt + 1)));
+    await sleep(backoffMs * (attempt + 1), signal);
   }
 }
 
 export function decodeCutout(bytes, nHdus = 3) {
   const { hdus, done } = scanHDUs(bytes, nHdus);
-  if (!done) throw new Error('Cutout file incomplete');
+  if (!done) throw Object.assign(new Error('Cutout file incomplete'), { retryable: true });
   const imgHdu = hdus.find(h => h.header.EXTNAME === 'IMAGE');
   const flgHdu = hdus.find(h => h.header.EXTNAME === 'FLAGS');
   if (!imgHdu) throw new Error('No IMAGE extension');

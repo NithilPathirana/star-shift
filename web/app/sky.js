@@ -74,8 +74,14 @@ export function gmstDeg(date) {
   return norm360(280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T - (T ** 3) / 38710000);
 }
 
+// Catalogue (J2000) RA/Dec -> RA/Dec of date, which is what the local sky uses
+// (precession moves stars ~0.36° between 2000 and 2026).
+export function ofDate(ra, dec, date) { return precessFromJ2000(ra, dec, julianDate(date)); }
+
 // Altitude/azimuth (azimuth from north through east), ignoring refraction.
-export function altAz(ra, dec, lat, lon, date) {
+// ra/dec are J2000 (catalogue) unless { j2000: false } says they are already of date.
+export function altAz(ra, dec, lat, lon, date, { j2000 = true } = {}) {
+  if (j2000) [ra, dec] = ofDate(ra, dec, date);
   const H = norm360(gmstDeg(date) + lon - ra) * D2R;
   const d = dec * D2R, p = lat * D2R;
   const sinAlt = Math.sin(d) * Math.sin(p) + Math.cos(d) * Math.cos(p) * Math.cos(H);
@@ -84,22 +90,28 @@ export function altAz(ra, dec, lat, lon, date) {
   return { alt: alt * R2D, az: norm360(az * R2D) };
 }
 
-// Next transit and rise/set (altitude h0, default 0°) after `date`.
+// Transit and rise/set for J2000 ra/dec. h0 = -0.5667° (standard horizon: refraction at
+// the horizon, as in DESIGN.md). If the object is up now, this is the current pass (rise in
+// the past, set later today); otherwise the next pass (rise, transit, set all ahead).
 // Returns { transit, rise, set, transitAlt, always: 'up'|'down'|null }.
-export function riseTransitSet(ra, dec, lat, lon, date, h0 = 0) {
+export function riseTransitSet(ra, dec, lat, lon, date, h0 = -0.5667, { j2000 = true } = {}) {
+  if (j2000) [ra, dec] = ofDate(ra, dec, date);
   const SIDEREAL = 0.99726957; // solar days per sidereal day
-  const H0now = norm360(gmstDeg(date) + lon - ra); // hour angle now (deg)
-  const toTransit = ((360 - H0now) % 360) / 360 * SIDEREAL; // days
-  const transit = new Date(date.getTime() + toTransit * 86400000);
+  const DAY = 86400000;
+  const Hnow = norm360(gmstDeg(date) + lon - ra); // hour angle now (deg), 0..360
+  const Hs = Hnow >= 180 ? Hnow - 360 : Hnow;    // signed: <0 before transit, >0 after
   const transitAlt = 90 - Math.abs(lat - dec);
+  const at = (hDeg) => new Date(date.getTime() + (hDeg / 360) * SIDEREAL * DAY); // time when H = Hnow + hDeg
+  const nextTransit = at((360 - Hnow) % 360);
   const cosH = (Math.sin(h0 * D2R) - Math.sin(lat * D2R) * Math.sin(dec * D2R)) / (Math.cos(lat * D2R) * Math.cos(dec * D2R));
-  if (cosH < -1) return { transit, rise: null, set: null, transitAlt, always: 'up' };
-  if (cosH > 1) return { transit, rise: null, set: null, transitAlt, always: 'down' };
-  const Hdays = (Math.acos(cosH) * R2D) / 360 * SIDEREAL;
-  let rise = new Date(transit.getTime() - Hdays * 86400000);
-  const set = new Date(transit.getTime() + Hdays * 86400000);
-  if (rise < date && set < date) rise = new Date(rise.getTime() + SIDEREAL * 86400000);
-  return { transit, rise, set, transitAlt, always: null };
+  if (cosH < -1) return { transit: nextTransit, rise: null, set: null, transitAlt, always: 'up' };
+  if (cosH > 1) return { transit: nextTransit, rise: null, set: null, transitAlt, always: 'down' };
+  const half = Math.acos(cosH) * R2D; // semi-diurnal arc (deg of hour angle)
+  const transit = Math.abs(Hs) < half ? at(-Hs) : nextTransit; // up now -> this pass's transit
+  const Hdays = (half / 360) * SIDEREAL;
+  const rise = new Date(transit.getTime() - Hdays * DAY);
+  const set = new Date(transit.getTime() + Hdays * DAY);
+  return { transit, rise, set, transitAlt, always: null, up: Math.abs(Hs) < half };
 }
 
 // Sun position (low precision, ~0.01°) for "is it dark?".
@@ -118,7 +130,7 @@ export function visibleTonight(ra, dec, lat, lon, from, minAlt = 20) {
   for (let k = 0; k < 144; k++) {
     const t = new Date(from.getTime() + k * 600000);
     const s = sunRaDec(t);
-    if (altAz(s.ra, s.dec, lat, lon, t).alt > -12) continue;
+    if (altAz(s.ra, s.dec, lat, lon, t, { j2000: false }).alt > -12) continue; // Sun is already of date
     const a = altAz(ra, dec, lat, lon, t).alt;
     if (a >= minAlt) { mins += 10; if (!best || a > best.alt) best = { t, alt: a }; }
   }

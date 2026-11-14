@@ -40,6 +40,21 @@ function nearest(img, x, y) {
   return img.data[yi * img.nx + xi];
 }
 
+// Flags for a grid pixel whose bilinear value came out NaN: the nearest pixel's bits plus
+// the bits of every masked (NaN) pixel in the 2x2 footprint, so each hatched NaN pixel
+// carries the flags that blanked it (bilinear spreads one bad pixel over up to 4 grid
+// pixels; nearest alone flagged only one). Outside the cutout: no data, no flags.
+function nanFlags(cutout, x, y) {
+  const { nx, ny, data } = cutout.image;
+  if (!(x >= 0 && y >= 0 && x <= nx - 1 && y <= ny - 1)) return 0;
+  const x0 = Math.min(Math.floor(x), nx - 2), y0 = Math.min(Math.floor(y), ny - 2);
+  let f = nearest(cutout.flags, x, y);
+  for (const k of [y0 * nx + x0, y0 * nx + x0 + 1, (y0 + 1) * nx + x0, (y0 + 1) * nx + x0 + 1]) {
+    if (Number.isNaN(data[k])) f |= cutout.flags.data[k];
+  }
+  return f;
+}
+
 // Resample a decoded cutout onto `grid`. Returns { n, data: Float32Array, flags: Int32Array }.
 export function reproject(cutout, grid) {
   const { n } = grid;
@@ -49,8 +64,9 @@ export function reproject(cutout, grid) {
     for (let i = 0; i < n; i++) {
       const [ra, dec] = gridToWorld(grid, i, j);
       const [x, y] = cutout.wcs.worldToPix(ra, dec);
-      data[j * n + i] = bilinear(cutout.image, x, y);
-      if (cutout.flags) flags[j * n + i] = nearest(cutout.flags, x, y);
+      const v = bilinear(cutout.image, x, y);
+      data[j * n + i] = v;
+      if (cutout.flags) flags[j * n + i] = Number.isNaN(v) ? nanFlags(cutout, x, y) : nearest(cutout.flags, x, y);
     }
   }
   return { n, data, flags };

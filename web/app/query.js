@@ -49,7 +49,10 @@ function splitCoords(s) {
   else if (parts.length === 4) { ra = parts.slice(0, 2); dec = parts.slice(2); }
   else return null;
   if (ra.length > 3 || dec.length > 3) return null;
-  const raHours = hasHMS || ra.length > 1 || (s.includes(':') && ra.length > 1);
+  // The RA's own first unit decides: "17h…"/"17:…" = hours, "269°…"/"269d…" = degrees.
+  // Bare "17 57 48.5" (no units) stays hours, the usual convention.
+  const raUnit = /^\s*[+-]?[\d.]+\s*([hd°:])/i.exec(s)?.[1]?.toLowerCase();
+  const raHours = raUnit === 'd' || raUnit === '°' ? false : hasHMS || raUnit === ':' || ra.length > 1;
   return { ra, dec, raHours, explicit: hasHMS || hasDMS };
 }
 
@@ -75,19 +78,24 @@ export function parseQuery(input) {
   return { type: 'name', name: s };
 }
 
+// Round the whole angle to the last shown digit first, then split it, so 59.999 s
+// becomes the next minute ("01h 00m 00.00s"), never "00h 59m 60.00s".
 export function formatRA(deg) {
-  let h = (((deg % 360) + 360) % 360) / 15;
-  const hh = Math.floor(h); h = (h - hh) * 60;
-  const mm = Math.floor(h); const ss = (h - mm) * 60;
-  return `${String(hh).padStart(2, '0')}h ${String(mm).padStart(2, '0')}m ${ss.toFixed(2).padStart(5, '0')}s`;
+  let t = Math.round((((deg % 360) + 360) % 360) / 15 * 360000); // hundredths of a time-second
+  t %= 24 * 360000;
+  const hh = Math.floor(t / 360000); t -= hh * 360000;
+  const mm = Math.floor(t / 6000); t -= mm * 6000;
+  const ss = (t / 100).toFixed(2);
+  return `${String(hh).padStart(2, '0')}h ${String(mm).padStart(2, '0')}m ${ss.padStart(5, '0')}s`;
 }
 
 export function formatDec(deg) {
-  const sign = deg < 0 ? '−' : '+';
-  let d = Math.abs(deg);
-  const dd = Math.floor(d); d = (d - dd) * 60;
-  const mm = Math.floor(d); const ss = (d - mm) * 60;
-  return `${sign}${String(dd).padStart(2, '0')}° ${String(mm).padStart(2, '0')}′ ${ss.toFixed(1).padStart(4, '0')}″`;
+  let t = Math.round(Math.abs(deg) * 36000); // tenths of an arcsecond
+  const sign = deg < 0 && t > 0 ? '−' : '+';
+  const dd = Math.floor(t / 36000); t -= dd * 36000;
+  const mm = Math.floor(t / 600); t -= mm * 600;
+  const ss = (t / 10).toFixed(1);
+  return `${sign}${String(dd).padStart(2, '0')}° ${String(mm).padStart(2, '0')}′ ${ss.padStart(4, '0')}″`;
 }
 
 // ---- URL <-> state ----------------------------------------------------------------

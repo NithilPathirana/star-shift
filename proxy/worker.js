@@ -20,15 +20,51 @@ function reply(body, status, extra = {}) {
   return new Response(body, { status, headers: { ...CORS, ...extra } });
 }
 
+// Strict check of a TAP sync request; returns the ADQL text, or null to refuse.
+// The raw query string is forwarded unchanged (so cache keys stay the same), which means
+// it must hold exactly what we checked: known parameter names only, each at most once
+// (case-insensitive, so QUERY=…&query=… can't smuggle a second query past us), one
+// QUERY, no comments, no semicolons, no quoted identifiers, a single SELECT (no
+// subqueries/UNION), and every table after FROM / JOIN / a comma must match `tableRe`.
+const TAP_PARAMS = new Set(['request', 'lang', 'format', 'query', 'maxrec', 'responseformat']);
+export function tapQuery(url, tableRe) {
+  const seen = new Map();
+  for (const [k, v] of url.searchParams) {
+    const key = k.toLowerCase();
+    if (!TAP_PARAMS.has(key) || seen.has(key)) return null;
+    seen.set(key, v);
+  }
+  const q = seen.get('query');
+  if (!q || q.length > 4000) return null;
+  if (seen.has('lang') && !/^ADQL$/i.test(seen.get('lang'))) return null;
+  if (seen.has('request') && !/^doQuery$/i.test(seen.get('request'))) return null;
+  if (seen.has('format') && !/^(csv|json|votable|tsv)$/i.test(seen.get('format'))) return null;
+  if (seen.has('responseformat') && !/^(csv|json|votable|tsv)$/i.test(seen.get('responseformat'))) return null;
+  if (seen.has('maxrec') && !/^\d{1,5}$/.test(seen.get('maxrec'))) return null;
+  // String literals can hold anything; blank them out before looking at the structure.
+  const sql = q.replace(/'(?:[^']|'')*'/g, "''");
+  if (/'/.test(sql.replace(/''/g, ''))) return null;                  // unterminated string
+  if (/--|\/\*|\*\/|;|"|\\|[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(sql)) return null;
+  if (!/^\s*SELECT\b/i.test(sql) || (sql.match(/\bSELECT\b/gi) || []).length !== 1) return null;
+  if (/\b(UNION|INTERSECT|EXCEPT|INTO|TAP_UPLOAD)\b/i.test(sql)) return null;
+  const from = /\bFROM\b([\s\S]*?)(?=\bWHERE\b|\bORDER\b|\bGROUP\b|\bHAVING\b|\bOFFSET\b|$)/i.exec(sql);
+  if (!from || /\bFROM\b/i.test(sql.slice(from.index + 4))) return null;     // exactly one FROM
+  let clause = from[1];
+  for (let i = 0; i < 10 && /\(/.test(clause); i++) clause = clause.replace(/\([^()]*\)/g, ' ');
+  if (/[()]/.test(clause)) return null;
+  const tables = clause.split(/,|\bJOIN\b/i).map(part => part.trim().split(/\s+/)[0]);
+  if (!tables.length || !tables.every(t => tableRe.test(t))) return null;
+  return q;
+}
+
 function upstreamFor(url) {
   const p = url.pathname;
   const h = hipsRoute(url);
   if (h) return h.error ? { error: h.error } : { ...h, cacheKey: `${h.target}?ch=${h.channel ?? ''}&tint=${h.tint ?? ''}&pal=${h.tint ? PALETTE_VERSION : 0}` };
   if (p === '/TAP/sync') {
-    const q = url.searchParams.get('QUERY') || '';
     // Only read-only queries on the SPHEREx tables (stops use as a general IRSA relay).
-    if (!/^\s*SELECT\b/i.test(q) || !/\bspherex\.\w+/i.test(q) || q.length > 4000)
-      return { error: 'Only SELECT queries on spherex.* tables' };
+    const q = tapQuery(url, /^spherex\.\w+$/i);
+    if (!q) return { error: 'Only SELECT queries on spherex.* tables' };
     return { target: `${IRSA}/TAP/sync${url.search}`, kind: 'tap', ttl: 3600 };
   }
   if (p === '/SIA') {
@@ -37,10 +73,10 @@ function upstreamFor(url) {
     return { target: `${IRSA}/SIA?COLLECTION=${c}&POS=${encodeURIComponent(pos).replace(/%20/g, '+')}&RESPONSEFORMAT=VOTABLE`, kind: 'tap', ttl: 86400 };
   }
   if (p === '/gaia/tap/sync') {
-    const q = url.searchParams.get('QUERY') || '';
-    // Small cone searches only: SELECT TOP <=2000 ... gaiadr3.* ... CONTAINS(...)
-    const top = /^\s*SELECT\s+TOP\s+(\d+)\b/i.exec(q);
-    if (!top || Number(top[1]) > 2000 || !/\bgaiadr3\.\w+/i.test(q) || !/\bCONTAINS\s*\(/i.test(q) || q.length > 4000)
+    // Small cone searches only: SELECT TOP <=2000 ... FROM gaiadr3.* ... CONTAINS(...)
+    const q = tapQuery(url, /^gaiadr3\.\w+$/i);
+    const top = q && /^\s*SELECT\s+TOP\s+(\d+)\b/i.exec(q);
+    if (!top || Number(top[1]) > 2000 || !/\bCONTAINS\s*\(/i.test(q))
       return { error: 'Only small Gaia DR3 cone searches' };
     return { target: `${GAIA}${url.search}`, kind: 'tap', ttl: 86400 };
   }
@@ -102,7 +138,17 @@ export async function handle(request, { fetchFn = fetch, cache = globalThis.cach
     // tinted tiles: short browser cache so palette tweaks show up; the relay's own cache keeps them longer
     out = reply(bytes, 200, { 'Content-Type': up.kind === 'hips-tile' ? 'image/png' : 'application/fits', 'Cache-Control': `public, max-age=${up.tint ? 3600 : up.ttl}` });
   } else if (up.kind === 'cutout') {
-    const bytes = await readHDUsFromStream(res.body, up.hdus || 3);
+    let bytes;
+    try {
+      bytes = await readHDUsFromStream(res.body, up.hdus || 3);
+    } catch (e) {
+      // Truncated or broken stream: never cache it. Serve an older copy if we have one,
+      // else 503 so the browser retries (it already retries IRSA's own 503s).
+      const old = await stale();
+      if (old) return old;
+      const busy = !/too large/.test(e && e.message);
+      return reply(`Upstream cutout incomplete (${e && e.message})`, busy ? 503 : 502, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store', 'Retry-After': '2' });
+    }
     out = reply(bytes, 200, { 'Content-Type': 'application/fits', 'Cache-Control': `public, max-age=${up.ttl}` });
   } else {
     out = reply(await res.text(), 200, {

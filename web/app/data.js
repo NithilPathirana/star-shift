@@ -134,7 +134,7 @@ export async function loadLayers(frame, grid, { base, fetchFn = fetch, signal } 
 // Per-pixel wavelength (µm) on the display grid, from the -TAB lookup (wave.js).
 export function waveMap(frame, grid, tables) {
   const tab = tables?.[String(frame.detector)];
-  if (!tab || !frame.cut?.W?.CRPIX1W) return null;
+  if (!tab || !Number.isFinite(frame.cut?.W?.CRPIX1W)) return null;
   const n = grid.n, out = new Float32Array(n * n);
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
     const [ra, dec] = gridToWorld(grid, i, j);
@@ -183,28 +183,82 @@ export async function run(query, settings, { base, fetchFn = fetch, signal, tabl
   if (!signal?.aborted) emit({ type: 'DONE' });
 }
 
-// Measure the target's motion from the frames themselves: centroid near the predicted spot
-// in every frame with a clear detection (peak > 5 sigma), turn pixel positions into sky
-// offsets, and fit a straight line against time. Returns null when there's too little signal.
-export function measureMotion(frames, grid, { radius = 3.5, minSnr = 5, minFrames = 6 } = {}) {
-  const pts = [];
-  for (const f of frames) {
-    const start = f.expected || [grid.c, grid.c];
-    const c = centroid(f, start[0], start[1], radius);
-    if (!c || !(c.snr > minSnr) || Math.hypot(c.x - start[0], c.y - start[1]) > 2) continue;
+// Measure the target's motion from the frames themselves, independently of any catalogue
+// proper motion (works for coordinate searches too). Steps:
+//  1. seed: stack the first ~60 days of frames and centroid the brightest source near the
+//     grid centre (or near the catalogue prediction, when frames carry `expected`);
+//  2. track: walk the frames in time order, centroiding each one around the position
+//     predicted from the frames already measured (a 2 px gate drops misfits and other stars);
+//  3. fit east/north offsets against time (one 3-sigma clip pass) -> mas/yr with errors.
+// Accepts any subset of frames, in any order (e.g. only those the contamination filter keeps).
+// Returns { ok, frames, span, pmra, pmdec, pmraErr, pmdecErr, total, totalErr, seeded, points }.
+export function measureMotion(frames, grid, { radius = 3.5, minSnr = 5, minFrames = 6, gate = 2, searchRadius = 5, seedDays = 60 } = {}) {
+  const fs = (frames || []).filter(f => f && f.data && Number.isFinite(f.mjd)).slice().sort((a, b) => a.mjd - b.mjd);
+  if (fs.length < minFrames) return { frames: 0, ok: false, reason: 'too few frames' };
+  // 1. seed position from the first season's median stack
+  let seed = null, seeded = 'blind';
+  for (let s = 0; s < fs.length && !seed; ) {
+    const season = [];
+    let k = s;
+    while (k < fs.length && fs[k].mjd <= fs[s].mjd + seedDays) season.push(fs[k++]);
+    const ex = season.filter(f => Array.isArray(f.expected) && f.expected.every(Number.isFinite));
+    const around = ex.length
+      ? [ex.reduce((a, f) => a + f.expected[0], 0) / ex.length, ex.reduce((a, f) => a + f.expected[1], 0) / ex.length]
+      : [grid.c, grid.c];
+    const st = stackFrames(season);
+    let best = -Infinity, bx = around[0], by = around[1];
+    for (let j = Math.floor(around[1] - searchRadius); j <= Math.ceil(around[1] + searchRadius); j++) {
+      for (let i = Math.floor(around[0] - searchRadius); i <= Math.ceil(around[0] + searchRadius); i++) {
+        if (i < 0 || j < 0 || i >= st.n || j >= st.n || Math.hypot(i - around[0], j - around[1]) > searchRadius) continue;
+        const v = st.data[j * st.n + i];
+        if (Number.isFinite(v) && v > best) { best = v; bx = i; by = j; }
+      }
+    }
+    const c = best > -Infinity ? centroid(st, bx, by, radius) : null;
+    if (c && c.snr > minSnr && Math.hypot(c.x - bx, c.y - by) <= gate) { seed = [c.x, c.y]; seeded = ex.length ? 'catalogue' : 'blind'; }
+    s = k;
+  }
+  if (!seed) return { frames: 0, ok: false, reason: 'no clear source near the centre' };
+  // 2. track frame by frame from the last measured positions
+  const acc = [];
+  const predict = (t) => {
+    if (!acc.length) return seed;
+    const ts = acc.map(p => p.t);
+    if (acc.length >= 4 && Math.max(...ts) - Math.min(...ts) > 0.3) {
+      const fx = fitLine(ts, acc.map(p => p.x)), fy = fitLine(ts, acc.map(p => p.y));
+      return [fx.a + fx.b * t, fy.a + fy.b * t];
+    }
+    const last = acc.slice(-3);
+    const med = (a) => a.slice().sort((p, q) => p - q)[a.length >> 1];
+    return [med(last.map(p => p.x)), med(last.map(p => p.y))];
+  };
+  for (const f of fs) {
+    const t = mjdToEpochYear(f.mjd);
+    const [sx, sy] = predict(t);
+    const c = centroid(f, sx, sy, radius);
+    if (!c || !(c.snr > minSnr) || Math.hypot(c.x - sx, c.y - sy) > gate) continue;
     const [ra, dec] = gridToWorld(grid, c.x, c.y);
     const [xi, eta] = tanProject(ra, dec, grid.ra0, grid.dec0);
-    pts.push({ t: mjdToEpochYear(f.mjd), e: xi * 3600, n: eta * 3600 });
+    acc.push({ t, mjd: f.mjd, x: c.x, y: c.y, e: xi * 3600, n: eta * 3600 });
   }
-  if (pts.length < minFrames) return { frames: pts.length, ok: false };
-  const ts = pts.map(p => p.t);
-  const span = Math.max(...ts) - Math.min(...ts);
-  if (span < 0.3) return { frames: pts.length, ok: false, span };
-  const fe = fitLine(ts, pts.map(p => p.e)), fn = fitLine(ts, pts.map(p => p.n));
-  const pmra = fe.b * 1000, pmdec = fn.b * 1000, se = fe.sigmaB * 1000, sn = fn.sigmaB * 1000;
+  // 3. straight-line fit with one outlier-clipping pass
+  const fit = (pts) => {
+    const ts = pts.map(p => p.t);
+    return { ts, fe: fitLine(ts, pts.map(p => p.e)), fn: fitLine(ts, pts.map(p => p.n)) };
+  };
+  let pts = acc;
+  if (pts.length < minFrames) return { frames: pts.length, ok: false, seeded };
+  let F = fit(pts);
+  const rms = Math.max(Math.hypot(F.fe.rms, F.fn.rms), 0.05);
+  const kept = pts.filter((p, k) => Math.hypot(p.e - F.fe.a - F.fe.b * F.ts[k], p.n - F.fn.a - F.fn.b * F.ts[k]) <= 3 * rms);
+  if (kept.length >= minFrames && kept.length < pts.length) { pts = kept; F = fit(pts); }
+  const span = Math.max(...F.ts) - Math.min(...F.ts);
+  if (span < 0.3) return { frames: pts.length, ok: false, span, seeded };
+  const pmra = F.fe.b * 1000, pmdec = F.fn.b * 1000, se = F.fe.sigmaB * 1000, sn = F.fn.sigmaB * 1000;
   const total = Math.hypot(pmra, pmdec);
   const err = total > 0 ? Math.hypot(pmra * se, pmdec * sn) / total : Math.hypot(se, sn);
-  return { ok: true, frames: pts.length, span, pmra, pmdec, pmraErr: se, pmdecErr: sn, total, totalErr: err };
+  return { ok: true, frames: pts.length, span, pmra, pmdec, pmraErr: se, pmdecErr: sn, total, totalErr: err,
+    seeded, rejected: acc.length - pts.length, points: pts.map(p => ({ mjd: p.mjd, x: p.x, y: p.y })) };
 }
 
 // Tangential velocity (km/s) = 4.74 × μ (arcsec/yr) × distance (pc) = 4.74 × μ / parallax (arcsec).

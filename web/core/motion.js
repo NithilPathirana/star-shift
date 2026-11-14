@@ -51,7 +51,7 @@ export function separationArcsec(ra1, dec1, ra2, dec2) {
 
 // "08h55m10.831s" / "08 55 10.831" / "133.795" -> degrees. Dec likewise ("-7d14m42.53s").
 export function parseAngle(text, isRA) {
-  const s = String(text).trim();
+  const s = String(text).trim().replace(/^[−‒–—﹣－]/, '-'); // Unicode minus/dashes -> '-'
   if (/^[+-]?\d+(\.\d+)?$/.test(s)) return Number(s);
   const sign = /^\s*-/.test(s) ? -1 : 1;
   const parts = s.replace(/^[+-]/, '').split(/[hdms:°'"′″\s]+/).filter(Boolean).map(Number);
