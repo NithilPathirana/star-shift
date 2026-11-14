@@ -71,7 +71,12 @@ export function createContam(ctx) {
     if (arr === null) return { f, note: f.raw?.layers?.failed ? `${L.label}: IRSA busy, not fetched` : `${L.label}: not in this cutout` };
     const key = '_L_' + S.layer;
     const pf = f[key] || (f[key] = { exp: f.exp, d: Array.from(arr, v => (Number.isFinite(v) ? v : null)), range: layerRange(arr) });
-    return { f: pf, ramp: 'copper', range: pf.range, unit: (f.raw?.layers?.units?.[S.layer] || (S.layer === 'variance' ? 'MJy2 / sr2' : 'MJy / sr')).replace(/\s+/g, '') };
+    return { f: pf, ramp: 'copper', range: pf.range, unit: unitText(f.raw?.layers?.units?.[S.layer], S.layer) };
+  }
+  function unitText(u, layer) { // 'MJy2 / sr2', '(MJy/sr)^2' -> 'MJy²/sr²'
+    const t = String(u || (layer === 'variance' ? 'MJy2/sr2' : 'MJy/sr')).replace(/\s+/g, '');
+    if (/^\(MJy\/sr\)(\^|\*\*)?2$/i.test(t)) return 'MJy²/sr²';
+    return t.replace(/MJy\^?2/gi, 'MJy²').replace(/sr\^?2/gi, 'sr²');
   }
   function drawWave(cv, wave, n, c, o, exp) {
     const g = cv.getContext('2d'); if (cv.width !== n * c) { cv.width = n * c; cv.height = n * c; }
@@ -82,24 +87,52 @@ export function createContam(ctx) {
     if (o.ring && exp) { g.strokeStyle = o.ringColor; g.lineWidth = Math.max(2, c / 8); g.setLineDash([c * 0.5, c * 0.35]); g.beginPath(); g.arc((exp[0] + .5) * c, (exp[1] + .5) * c, 2.2 * c, 0, Math.PI * 2); g.stroke(); g.setLineDash([]); }
   }
 
-  /* ----- flag marks: one ivory colour, the shape tells the kind ----- */
-  function stroke(g, path, lw) { g.lineWidth = lw + 2; g.strokeStyle = UNDER; path(); g.stroke(); g.lineWidth = lw; g.strokeStyle = IVORY; path(); g.stroke(); }
+  /* ----- flag marks: one ivory colour, the shape tells the kind (DESIGN.md 23) -----
+     Each mark sits in the pixel's top-left corner and takes at most a third of it (1.25 px stroke,
+     ivory 85%), so the star stays visible. 6+ touching pixels of one kind: one outline round the
+     block and a single mark in its top-left pixel. */
+  const MARK = 'rgba(255,246,232,.85)', HALO = 'rgba(11,9,7,.5)';
+  function stroke(g, path, lw) { g.lineWidth = lw + 1.5; g.strokeStyle = HALO; path(); g.stroke(); g.lineWidth = lw; g.strokeStyle = MARK; path(); g.stroke(); }
   function mark(g, id, x, y, c, lw) {
-    const P = (fx, fy) => [x + fx * c, y + fy * c];
-    if (id === 'cosmic') stroke(g, () => { g.beginPath(); g.moveTo(...P(.28, .28)); g.lineTo(...P(.72, .72)); g.moveTo(...P(.72, .28)); g.lineTo(...P(.28, .72)); }, lw);
-    else if (id === 'overflow') { g.beginPath(); g.moveTo(...P(.58, 0)); g.lineTo(...P(1, 0)); g.lineTo(...P(1, .42)); g.closePath(); g.fillStyle = IVORY; g.fill(); g.lineWidth = 1; g.strokeStyle = UNDER; g.stroke(); }
-    else if (id === 'scatter') for (const t of [.25, .5, .75]) { g.beginPath(); g.arc(...P(t, 1 - t), Math.max(1.2, c * .07), 0, Math.PI * 2); g.fillStyle = IVORY; g.fill(); g.lineWidth = 1; g.strokeStyle = UNDER; g.stroke(); }
-    else stroke(g, () => { g.beginPath(); g.rect(...P(.12, .12), c * .76, c * .76); }, Math.max(1, lw * .7));
+    const m = c / 3, i0 = Math.max(1, c * .04), P = (fx, fy) => [x + i0 + fx * (m - i0), y + i0 + fy * (m - i0)];
+    if (id === 'cosmic') stroke(g, () => { g.beginPath(); g.moveTo(...P(0, 0)); g.lineTo(...P(1, 1)); g.moveTo(...P(1, 0)); g.lineTo(...P(0, 1)); }, lw);
+    else if (id === 'overflow') { g.beginPath(); g.moveTo(...P(0, 0)); g.lineTo(...P(1, 0)); g.lineTo(...P(0, 1)); g.closePath(); g.fillStyle = MARK; g.fill(); g.lineWidth = .75; g.strokeStyle = HALO; g.stroke(); }
+    else if (id === 'scatter') for (const t of [.12, .5, .88]) { g.beginPath(); g.arc(...P(t, 1 - t), Math.max(.9, m * .12), 0, Math.PI * 2); g.fillStyle = MARK; g.fill(); }
+    else stroke(g, () => { g.beginPath(); g.rect(...P(0, 0), m - i0, m - i0); }, lw * .8);
+  }
+  // 4-connected blocks of pixels whose first shown kind is the same
+  function blocks(kind, n) {
+    const seen = new Uint8Array(n * n), out = [];
+    for (let i = 0; i < n * n; i++) {
+      if (!kind[i] || seen[i]) continue;
+      const k = kind[i], cells = [i], q = [i]; seen[i] = 1;
+      while (q.length) { const j = q.pop(), x = j % n, y = (j - x) / n;
+        for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) { if (nx < 0 || ny < 0 || nx >= n || ny >= n) continue; const h = ny * n + nx; if (!seen[h] && kind[h] === k) { seen[h] = 1; cells.push(h); q.push(h); } } }
+      out.push({ k, cells });
+    }
+    return out;
   }
   function drawMarks(cv, f, n, c) {
     const raw = f?.raw; if (!raw?.flags) return;
-    const g = cv.getContext('2d'), dpr = devicePixelRatio || 1, lw = 1.5 * dpr, tiny = c < 10 * dpr;
-    for (let i = 0; i < n * n; i++) {
-      const ks = pixelKinds(raw.flags[i], raw.masks).filter(id => S.show[id]); if (!ks.length) continue;
-      const x = (i % n) * c, y = Math.floor(i / n) * c;
-      if (tiny) { mark(g, 'other', x, y, c, 1); continue; }
-      mark(g, ks[0], x, y, c, lw);
-      if (ks.length > 1) { g.beginPath(); g.arc(x + c * .14, y + c * .86, dpr, 0, Math.PI * 2); g.fillStyle = IVORY; g.fill(); }
+    const g = cv.getContext('2d'), dpr = devicePixelRatio || 1, lw = 1.25 * dpr, tiny = c < 10 * dpr;
+    const kind = new Array(n * n), multi = new Uint8Array(n * n);
+    for (let i = 0; i < n * n; i++) { const ks = pixelKinds(raw.flags[i], raw.masks).filter(id => S.show[id]); if (ks.length) { kind[i] = ks[0]; multi[i] = ks.length > 1; } }
+    for (const b of blocks(kind, n)) {
+      if (b.cells.length >= 6) {
+        const set = new Set(b.cells), path = () => { g.beginPath();
+          for (const j of b.cells) { const x = (j % n) * c, y = Math.floor(j / n) * c, X = j % n, Y = Math.floor(j / n);
+            if (Y === 0 || !set.has(j - n)) { g.moveTo(x, y); g.lineTo(x + c, y); }
+            if (Y === n - 1 || !set.has(j + n)) { g.moveTo(x, y + c); g.lineTo(x + c, y + c); }
+            if (X === 0 || !set.has(j - 1)) { g.moveTo(x, y); g.lineTo(x, y + c); }
+            if (X === n - 1 || !set.has(j + 1)) { g.moveTo(x + c, y); g.lineTo(x + c, y + c); } } };
+        stroke(g, path, lw);
+        const tl = Math.min(...b.cells); mark(g, b.k, (tl % n) * c, Math.floor(tl / n) * c, c, lw);
+      } else for (const j of b.cells) {
+        const x = (j % n) * c, y = Math.floor(j / n) * c;
+        if (tiny) { g.fillStyle = MARK; g.fillRect(x, y, Math.max(1, c / 3), Math.max(1, c / 3)); continue; }
+        mark(g, b.k, x, y, c, lw);
+        if (multi[j]) { g.beginPath(); g.arc(x + c * .14, y + c * .86, .9 * dpr, 0, Math.PI * 2); g.fillStyle = MARK; g.fill(); }
+      }
     }
     if (S.show.airglow && raw.glow?.flagged) { // whole-image property: one wave line along the top edge
       const W = n * c, a = Math.max(2, c * .22), y0 = Math.max(6, c * .5), per = Math.max(16, c * 2);
@@ -209,10 +242,14 @@ export function createContam(ctx) {
     const hk = HIDE_KINDS.filter(k => V.FA.some(f => k.frame ? (f.raw.glow?.known || f.raw.glow?.nearHe) : bitsNamed(f.raw.flagNames, k.bits)));
     const hid = V.FA.filter(f => !V.F.includes(f)), sat = V.FA.filter(f => summary(f).saturated).length;
     const d = f => R.fmtDate(f.date);
-    $('flHide').innerHTML = hk.map(k => `<label class="fl-hide"><input type="checkbox" data-hide="${k.id}" ${S.hide.has(k.id) ? 'checked' : ''}> ${esc(k.name)} <span class="num">${nAff(k.id)} of ${V.FA.length}</span></label>`).join('')
+    const pop = $('flagsPop'), h3 = pop.querySelector('h3'), foot = pop.querySelector('.foot');
+    if (h3) h3.hidden = true; // the section title lives in the <summary> below
+    if (foot) foot.textContent = `Flags come from the archive's own quality mask for each image. "Touch the star" = within ${CORE_PX} pixels (~${Math.round(CORE_PX * 6.15)}″) of where it should be.`;
+    const wasOpen = !!$('flHide').querySelector('details')?.open;
+    $('flHide').innerHTML = `<details class="fl-sec"${wasOpen ? ' open' : ''}><summary>Hide images where these touch the star${hideSet().size ? ` <span class="num">· ${hid.length} hidden</span>` : ''}</summary>` + hk.map(k => `<label class="fl-hide"><input type="checkbox" data-hide="${k.id}" ${S.hide.has(k.id) ? 'checked' : ''}> ${esc(k.name)} <span class="num">${nAff(k.id)} of ${V.FA.length}</span></label>`).join('')
       + `<p class="fl-note">Counts only hits within ${CORE_PX} pixels of the star.${sat ? ` ${sat} image${sat === 1 ? ' has' : 's have'} a saturated core (the star filled its own pixels): shown, not hidden.` : ''}</p>`
       + (hideSet().size ? `<p class="fl-hidden num">${hid.length} image${hid.length === 1 ? '' : 's'} hidden</p>` : '')
-      + (hid.length ? `<ul class="fl-why">${hid.map(f => `<li title="${esc(whyHidden(f) || '')}"><span class="num">${d(f)}</span> ${esc(whyHidden(f) || '')}</li>`).join('')}</ul>` : '');
+      + (hid.length ? `<ul class="fl-why">${hid.map(f => `<li title="${esc(whyHidden(f) || '')}"><span class="num">${d(f)}</span> ${esc(whyHidden(f) || '')}</li>`).join('')}</ul>` : '') + '</details>';
     $('flRows').querySelectorAll('[data-show]').forEach(b => { b.onclick = () => { const id = b.dataset.show; S.show[id] = !S.show[id]; persist(); ctx.Snd.play('click'); ctx.redraw(); renderPop(); }; });
     $('flHide').querySelectorAll('[data-hide]').forEach(cb => { cb.onchange = () => { const id = cb.dataset.hide; cb.checked ? S.hide.add(id) : S.hide.delete(id); persist(); ctx.Snd.play('click'); ctx.refilter(); renderPop(); }; });
   }

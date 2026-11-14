@@ -419,7 +419,16 @@ function closePop() { if (!openPop) return; const { pop, btn } = openPop; pop.cl
 $('clarityBtn').onclick = e => { e.stopPropagation(); openPop?.pop.id === 'clarity' ? closePop() : showPop($('clarity'), $('clarityBtn')); };
 $('helpBtn').onclick = e => { e.stopPropagation(); openPop?.pop.id === 'help' ? closePop() : showPop($('help'), $('helpBtn')); };
 $('flagsMore').onclick = e => { e.stopPropagation(); if (openPop?.pop.id === 'flagsPop') return closePop(); CX.renderPop(); showPop($('flagsPop'), $('flagsMore'));
-  const r = $('flagsMore').getBoundingClientRect(), p = $('flagsPop'); p.style.top = Math.max(12, r.top - p.offsetHeight - 10) + 'px'; };
+  placeFlagsPop(); };
+// Flag legend: inside the stage, at most min(520 px, stage height − 16 px) tall (it scrolls inside),
+// anchored by its bottom so opening the "Hide images" section grows it upwards.
+function placeFlagsPop() {
+  const r = $('flagsMore').getBoundingClientRect(), st = $('stage').getBoundingClientRect(), p = $('flagsPop');
+  p.style.maxHeight = Math.max(160, Math.min(520, st.height - 16)) + 'px';
+  p.style.top = 'auto'; p.style.bottom = (innerHeight - Math.min(r.top - 10, st.bottom - 8)) + 'px';
+  p.style.right = Math.max(innerWidth - st.right + 8, innerWidth - r.right, 8) + 'px';
+}
+addEventListener('resize', () => { if (openPop?.pop.id === 'flagsPop') placeFlagsPop(); });
 $('aboutBtn').onclick = e => { e.stopPropagation(); showPop($('help'), $('helpBtn')); };
 document.addEventListener('pointerdown', e => { if (openPop && !openPop.pop.contains(e.target) && !openPop.btn.contains(e.target)) closePop(); });
 function sheet(on) { $('insp').classList.toggle('open', on); $('scrim').classList.toggle('on', on); $('infoBtn').setAttribute('aria-expanded', on); if (on) Snd.play('tick'); }
@@ -427,8 +436,8 @@ $('infoBtn').onclick = () => sheet(!$('insp').classList.contains('open')); $('in
 
 /* ---------- keyboard ---------- */
 addEventListener('keydown', e => {
+  if (e.key === 'Escape') { const p = openPop; closePop(); sheet(false); hideTip(); p?.btn.focus?.(); return; } // also from a checkbox in a popover
   if (e.target.closest?.('input,textarea')) return;
-  if (e.key === 'Escape') { closePop(); sheet(false); hideTip(); return; }
   if (scene === 'map' && document.activeElement === $('mapWrap')) {
     const k = e.key;
     if (k === 'ArrowLeft') { e.preventDefault(); return skymap.panBy(0.1, 0); } if (k === 'ArrowRight') { e.preventDefault(); return skymap.panBy(-0.1, 0); }

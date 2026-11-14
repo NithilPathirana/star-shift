@@ -189,3 +189,28 @@ html[data-motion=full] .gh-bar:not([hidden]) { animation: ghIn 180ms ease-out; }
 .fl-why { list-style: none; margin: 4px 0 0; padding: 0; max-height: 132px; overflow-y: auto; font-size: .6875rem; color: var(--ink-2); }
 .fl-why li { padding: 2px 0; border-top: 1px solid rgba(84,62,42,.09); }
 .fl-why .num { color: var(--muted); margin-right: 6px; }
+/* flag legend: scrolls inside its own box (max height set in ui.js placeFlagsPop), hide section collapsed */
+.fl-pop { overflow-y: auto; overscroll-behavior: contain; }
+.fl-sec { margin-top: 10px; border-top: 1px solid rgba(84,62,42,.12); padding-top: 6px; }
+.fl-sec summary { cursor: pointer; font-size: .8125rem; font-weight: 600; color: var(--ink); min-height: 32px; display: flex; align-items: center; gap: 6px; list-style: none; }
+.fl-sec summary::-webkit-details-marker { display: none; }
+.fl-sec summary::before { content: '▸'; color: var(--copper); font-size: .75rem; transition: transform 120ms ease-out; }
+.fl-sec[open] summary::before { transform: rotate(90deg); }
+html[data-motion=reduce] .fl-sec summary::before { transition: none; }
+.fl-sec summary .num { font-weight: 400; color: var(--copper); font-size: .75rem; }
+.fl-sec summary:focus-visible { outline: 2px solid var(--copper-key); outline-offset: 2px; border-radius: 4px; }
+@media (max-width: 699px) { .fl-sec summary { min-height: 44px; } }
+/* phone fixes (Design Studio review): Layers row stays inside the dock, FLAGS ▾ pinned right;
+   chip clear of the 30″ scale bar; compass above the tool row */
+@container dock (max-width:520px) {
+  .layer-group { min-width: 0; max-width: 100%; }
+  .layers { overflow: visible; min-width: 0; max-width: 100%; }
+  .layers .lseg { flex: 1 1 auto; min-width: 0; width: auto; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; grid-auto-columns: minmax(76px, 1fr); }
+  .layers .lseg::-webkit-scrollbar { display: none; }
+  .layers .flags-split { flex: none; }
+}
+@media (max-width: 699px) {
+  .chip { max-width: calc(100% - 128px); overflow: hidden; }
+  .compass { bottom: 64px; }
+}
+@media (max-width: 699px) { #stage:has(#ghostBar:not([hidden])) .compass { bottom: 146px; } }

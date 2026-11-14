@@ -11,7 +11,8 @@ export const HE_LINE_UM = 1.0833;
 
 // Table order = drawing priority (DESIGN.md 23: a pixel shows the first kind it has).
 export const KINDS = [
-  { id: 'cosmic', name: 'Cosmic ray hit', meaning: 'A particle hit the detector during the exposure', bits: ['TRANSIENT', 'SNOWBALL', 'HALO'] },
+  // TRANSIENT is defined in the archive's FLAGS header as "Transient detected during SUR" (sample-up-the-ramp)
+  { id: 'cosmic', name: 'Signal jump (cosmic ray or bright star)', meaning: 'The signal jumped during the exposure. Usually a particle hit; on a very bright star the star itself sets it off.', bits: ['TRANSIENT', 'SNOWBALL', 'HALO'] },
   { id: 'overflow', name: 'Pixel overflow', meaning: 'Too bright: the pixel filled up before the exposure ended', bits: ['OVERFLOW'] },
   { id: 'scatter', name: 'Scattered light', meaning: 'Stray light from a bright source in or outside the view', bits: ['GHOST', 'GHOST_FPA', 'GHOST_EXT'] },
   { id: 'airglow', name: 'Airglow', meaning: 'Glow from Earth\'s upper air at 1.083 µm (whole image)', frame: true },

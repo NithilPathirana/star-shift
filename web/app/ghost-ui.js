@@ -133,9 +133,17 @@ export function createGhost(ctx) {
     const lab = `${ghostLabel(f.mjd, G.years)} · Predicted`;
     g.font = `500 ${11 * dpr}px "IBM Plex Mono", ui-monospace, monospace`;
     const tw = g.measureText(lab).width, pad = 5 * dpr, lh = 18 * dpr;
+    // the part of the canvas the stage really shows (on a phone the canvas can be wider than the stage)
+    const cr0 = cv.getBoundingClientRect(), st0 = $('stage').getBoundingClientRect(), k0 = cr0.width / W || 1;
+    const vx0 = Math.max(0, (st0.left - cr0.left) / k0), vx1 = Math.min(W, (st0.right - cr0.left) / k0);
+    const vy0 = Math.max(0, (st0.top - cr0.top) / k0), vy1 = Math.min(W, (st0.bottom - cr0.top) / k0);
     let lx = gx + R + 6 * dpr, ly = gy - lh / 2;
-    if (lx + tw + 2 * pad > W) lx = gx - R - 6 * dpr - tw - 2 * pad;
-    ly = Math.max(2, Math.min(W - lh - 2, ly));
+    if (lx + tw + 2 * pad > vx1 - 4 * dpr) lx = gx - R - 6 * dpr - tw - 2 * pad; // flip to the ring's other side
+    if (lx < vx0 + 4 * dpr) { // fits on neither side: centre it under (or over) the ring, inside the visible part
+      lx = Math.max(vx0 + 4 * dpr, Math.min(vx1 - 4 * dpr - tw - 2 * pad, gx - (tw + 2 * pad) / 2));
+      ly = gy + R + 6 * dpr + lh <= vy1 - 2 ? gy + R + 6 * dpr : gy - R - 6 * dpr - lh;
+    }
+    ly = Math.max(vy0 + 2, Math.min(vy1 - lh - 2, ly));
     g.fillStyle = `rgba(21,17,14,${0.82 * a})`; g.beginPath(); g.roundRect ? g.roundRect(lx, ly, tw + 2 * pad, lh, 9 * dpr) : g.rect(lx, ly, tw + 2 * pad, lh); g.fill();
     g.fillStyle = IV(0.95 * a); g.textBaseline = 'middle'; g.fillText(lab, lx + pad, ly + lh / 2 + 0.5);
     }
@@ -145,7 +153,8 @@ export function createGhost(ctx) {
     const cr = cv.getBoundingClientRect(), st = $('stage').getBoundingClientRect(), k = cr.width / W;
     const cx = cr.left + cr.width / 2 - st.left, cy = cr.top + cr.height / 2 - st.top;
     const dx = gx * k + cr.left - st.left - cx, dy = gy * k + cr.top - st.top - cy;
-    const s = Math.min((st.width / 2 - 120) / Math.abs(dx || 1e-9), (st.height / 2 - (dy > 0 && !bar.hidden ? 120 : 70)) / Math.abs(dy || 1e-9));
+    // 10 px further in than before so the chip stays off the airglow wave along the top edge
+    const s = Math.min((st.width / 2 - 130) / Math.abs(dx || 1e-9), (st.height / 2 - (dy > 0 && !bar.hidden ? 130 : 80)) / Math.abs(dy || 1e-9));
     const mv = moved(G.star, f.mjd, G.years);
     off.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" style="transform:rotate(${Math.atan2(dy, dx)}rad)" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>Predicted: off the image · ${fmtArc(mv.arcsec)} ${mv.dir}</span>`;
     off.style.left = (cx + dx * s) + 'px'; off.style.top = (cy + dy * s) + 'px';
@@ -191,11 +200,15 @@ export function createGhost(ctx) {
     const [gx, gy] = px[px.length - 1], a = G.alpha;
     const pxPerArcsec = $('mapWrap').clientWidth / (ctx.skymap.fov() * 3600), R = Math.max(9, 13.5 * pxPerArcsec);
     const ticks = tr.ticks.map(t => ctx.skymap.toPix(t.ra, t.dec)).filter(Boolean);
+    // label beside the ring; flips to the ring's other side when it would cross the stage edge
+    const lw = ghostLabel(ctx.NOW_MJD, G.years).length * 6.8 + 82, Wm = $('mapWrap').clientWidth, Hm = $('mapWrap').clientHeight;
+    let lx = gx + R + 6; if (lx + lw > Wm - 8 && gx - R - 6 - lw >= 8) lx = gx - R - 6 - lw;
+    const ly = Math.max(17, Math.min(Hm - 17, gy));
     svg.innerHTML = `<g opacity="${a}"><polyline points="${px.map(p => p.join(',')).join(' ')}" fill="none" stroke="rgba(11,9,7,.55)" stroke-width="2.6" stroke-dasharray="2 4" stroke-linecap="round"/>
       <polyline points="${px.map(p => p.join(',')).join(' ')}" fill="none" stroke="${IV(0.9)}" stroke-width="1" stroke-dasharray="2 4" stroke-linecap="round"/>
       ${ticks.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.6" fill="${IV(0.85)}"/>`).join('')}
       <circle cx="${gx}" cy="${gy}" r="${R}" fill="none" stroke="${IV(0.18)}" stroke-width="6"/><circle cx="${gx}" cy="${gy}" r="${R}" fill="none" stroke="${IV(0.8)}" stroke-width="1.5"/>
-      <g class="gh-lab" transform="translate(${gx + R + 6},${gy})"><rect x="0" y="-9" width="${ghostLabel(ctx.NOW_MJD, G.years).length * 6.8 + 82}" height="18" rx="9" fill="rgba(21,17,14,.82)"/><text x="6" y="4" fill="${IV(0.95)}">${esc(ghostLabel(ctx.NOW_MJD, G.years))} · Predicted</text></g></g>`;
+      <g class="gh-lab" transform="translate(${lx},${ly})"><rect x="0" y="-9" width="${lw}" height="18" rx="9" fill="rgba(21,17,14,.82)"/><text x="6" y="4" fill="${IV(0.95)}">${esc(ghostLabel(ctx.NOW_MJD, G.years))} · Predicted</text></g></g>`;
   }
 
   return { G, forTarget, forSelection, drawCanvas, update, placeMap, syncKey, renderCD };
