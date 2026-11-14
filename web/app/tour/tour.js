@@ -3,7 +3,7 @@
 // It reads the app only through the DOM and the read-only window.__app hook; it never edits ui.js state.
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 import { STEPS, INTRO, WAITING, OUTRO, PHONE_MAX, filterSteps, counterText, neighbour,
-  shouldOffer, remember, reducedMotion, placeCard, unionRect } from './steps.js';
+  shouldOffer, remember, reducedMotion, placeCard, unionRect, pickVariant, bodyFor } from './steps.js';
 
 const $ = id => document.getElementById(id);
 const isPhone = () => innerWidth <= PHONE_MAX;
@@ -24,14 +24,17 @@ function shown(el) {
   for (let p = el; p && p !== document.body; p = p.parentElement) if (p.hidden || getComputedStyle(p).display === 'none') return false;
   return true;
 }
-const elsOf = step => (step.targets || []).flatMap(sel => [...document.querySelectorAll(sel)]);
+const els = targets => (targets || []).flatMap(sel => [...document.querySelectorAll(sel)]);
+const selShown = sel => els([sel]).some(shown), selExists = sel => !!document.querySelector(sel);
+const variant = step => pickVariant(step, selShown, selExists); // own targets, or the phone alternative, or null
 function targetRect(step) {
-  const r = unionRect(elsOf(step).filter(shown).map(e => e.getBoundingClientRect()));
+  const v = variant(step); if (!v || !v.targets) return null;
+  const r = unionRect(els(v.targets).filter(shown).map(e => e.getBoundingClientRect()));
   return r && { left: r.left - PAD, top: r.top - PAD, width: r.width + 2 * PAD, height: r.height + 2 * PAD };
 }
 const inViewer = () => $('app')?.dataset.scene === 'viewer';
 function available(step) {
-  if (step.scene === 'viewer' && !inViewer()) return elsOf(step).length > 0; // checked for real once the time-lapse is open
+  if (step.scene === 'viewer' && !inViewer()) return els(step.targets).length > 0; // checked for real once the time-lapse is open
   return !!targetRect(step);
 }
 const steps = () => filterSteps(STEPS, { hasNotebook: typeof window.openNotebook === 'function', isAvailable: available });
@@ -46,6 +49,7 @@ async function until(test, ms, run) { const t0 = performance.now(); while (!test
 async function openViewer(run) {
   if (viewerReady()) return true;
   if (!inViewer()) {
+    run.opened = true; // the tour opened the time-lapse: step 2 says so, and leaving step 2 pauses it
     if ($('stMap') && !$('stMap').hidden) $('mapOpenFilm')?.click(); // map failed: its own "Open time-lapse" key
     else {
       if (!app()?.M?.sel?.t?.preset) {
@@ -90,6 +94,8 @@ function update() {
   if (!run || run.dead) return;
   const step = run.cur, r = step.targets ? targetRect(step) : null;
   const phone = isPhone(), vw = innerWidth, vh = innerHeight;
+  // phone: once per step, as soon as its part can be measured, scroll it above the bottom sheet
+  if (r && phone && run.scrolledFor !== step.id) { run.scrolledFor = step.id; card.classList.add('sheet'); scrollAboveSheet(step); return update(); }
   const key = r ? `${r.left|0},${r.top|0},${r.width|0},${r.height|0},${vw},${vh}` : `none,${vw},${vh},${run.mode}`;
   if (key !== run.last) {
     run.last = key;
@@ -112,7 +118,7 @@ function update() {
       const c = { w: card.offsetWidth, h: card.offsetHeight };
       const st = $('stage')?.getBoundingClientRect();
       let p;
-      if (r) p = placeCard(r, c, { w: vw, h: vh }, step.prefer);
+      if (r) p = placeCard(r, c, { w: vw, h: vh }, variant(step)?.prefer || step.prefer);
       else if (st && st.width) p = { left: Math.round(st.left + (st.width - c.w) / 2), top: Math.round(st.top + (st.height - c.h) / 2) };
       else p = { left: Math.round((vw - c.w) / 2), top: Math.round((vh - c.h) / 2) };
       card.style.left = p.left + 'px'; card.style.top = p.top + 'px';
@@ -127,28 +133,33 @@ function scrollAboveSheet(step) {
   const sheetH = card.offsetHeight + 16, room = innerHeight - sheetH;
   document.documentElement.style.setProperty('--tour-sheet-h', sheetH + 'px');
   const want = Math.max(8, (room - r.height) / 2);
-  if (r.top < 8 || r.top + r.height > room) scrollBy({ top: r.top - want, behavior: reduce() ? 'auto' : 'smooth' });
+  if (r.top >= 8 && r.top + r.height <= room) return;
+  const y0 = scrollY, dy = r.top - want;
+  if (reduce() || document.hidden) return scrollBy({ top: dy });
+  scrollBy({ top: dy, behavior: 'smooth' });
+  setTimeout(() => { if (Math.abs(scrollY - y0) < 1) scrollTo({ top: y0 + dy }); }, 450); // smooth scroll stalls when the page isn't painting
 }
 
 function render(step, mode) {
-  run.cur = step; run.mode = mode; run.last = null;
+  run.cur = step; run.mode = mode; run.last = null; run.scrolledFor = null;
   const list = run.list, i = list.findIndex(s => s.id === step.id);
   card.querySelector('#tourCount').textContent = mode === 'step' ? counterText(i, list.length) : '';
   card.querySelector('#tourCount').hidden = mode !== 'step';
   card.querySelector('#tourTitle').textContent = step.title;
-  card.querySelector('#tourBody').textContent = step.body;
+  const body = bodyFor(step, (step.targets && variant(step)?.body) || step.body, { openedName: run.opened ? (app()?.V?.name || "Barnard's Star") : null });
+  card.querySelector('#tourBody').textContent = body;
   const back = card.querySelector('#tourBack'), next = card.querySelector('#tourNext'), skip = card.querySelector('#tourSkip');
   back.hidden = mode === 'intro' || mode === 'waiting' || (mode === 'step' && !neighbour(STEPS, list, step.id, -1));
   next.hidden = mode === 'waiting';
   next.textContent = step.next || 'Next';
   skip.hidden = mode === 'outro';
   layer.classList.toggle('waiting', mode === 'waiting');
-  live.textContent = `${mode === 'step' ? counterText(i, list.length) + '. ' : ''}${step.title}. ${step.body}`;
+  live.textContent = `${mode === 'step' ? counterText(i, list.length) + '. ' : ''}${step.title}. ${body}`;
   // fade + 8 px rise (180 ms, ease-out); instant with Reduce motion
   hole.classList.toggle('moving', !reduce());
   clearTimeout(run.moveT); run.moveT = setTimeout(() => hole.classList.remove('moving'), 260);
   card.classList.remove('in'); void card.offsetWidth; card.classList.add('in');
-  update(); scrollAboveSheet(step); update();
+  update();
   (next.hidden ? skip : next).focus({ preventScroll: true });
 }
 
@@ -174,11 +185,22 @@ function go(dir) {
   const cur = run.cur;
   if (cur.id === 'outro' && dir > 0) return end();
   if (cur.id === 'waiting') return;
+  if (cur.id === 'play') leavePlay();
   run.list = steps();
   const nxt = neighbour(STEPS, run.list, cur.id, dir);
   if (nxt) return show(nxt, dir);
   if (dir > 0) return render(OUTRO, 'outro');
   if (cur.id !== 'intro') render(INTRO, 'intro');
+}
+
+// leaving step 2: pause the time-lapse the tour opened (once), with the app's own pause key, so later
+// steps (flags) don't flicker. Its autoplay can start a moment after loading, so watch for it briefly.
+function leavePlay() {
+  if (!run?.opened || run.paused) return;
+  const r = run; r.paused = true;
+  const tryPause = () => { const k = $('play'); if (k?.dataset.playing === 'true') { k.click(); return true; } return false; };
+  if (tryPause()) return;
+  let n = 0; const iv = setInterval(() => { if (r.dead || r.cur?.id === 'play' || tryPause() || ++n > 25) clearInterval(iv); }, 200);
 }
 
 function onKey(e) { if (run && e.key === 'Escape') { end(); } }
@@ -196,12 +218,13 @@ export function start(returnTo) {
   addEventListener('resize', onMove); addEventListener('scroll', onMove, { passive: true, capture: true });
   render(INTRO, 'intro');
   run.raf = requestAnimationFrame(loop);
+  run.iv = setInterval(update, 250); // rAF stops in background tabs; this keeps the outline honest there too
 }
 
 export function end() {
   if (!run) return;
   const r = run; r.dead = true; run = null;
-  cancelAnimationFrame(r.raf); clearTimeout(r.moveT);
+  cancelAnimationFrame(r.raf); clearTimeout(r.moveT); clearInterval(r.iv);
   removeEventListener('keydown', onKey, true);
   removeEventListener('resize', onMove); removeEventListener('scroll', onMove, { capture: true });
   remember(getStore(), 'done');
@@ -213,17 +236,26 @@ export function end() {
     document.documentElement.style.removeProperty('--tour-sheet-h');
   }, ms);
   // focus goes back where it was (after ui.js's own Esc handler has run)
-  setTimeout(() => { const t = r.returnTo; (t && t.isConnected && shown(t) ? t : $('helpBtn'))?.focus?.({ preventScroll: true }); }, 0);
+  setTimeout(() => {
+    const ok = el => el && el !== document.body && el.isConnected && shown(el);
+    [r.returnTo, $('helpBtn'), $('pagesBtn')].find(ok)?.focus?.({ preventScroll: true });
+  }, 0);
 }
 
 /* ---------- the first-visit offer ---------- */
 function placeOffer() {
   if (!offer || offer.hidden) return;
-  if (isPhone()) { offer.style.cssText = ''; offer.classList.add('sheet'); return; }
-  offer.classList.remove('sheet');
+  if (isPhone()) { // one 56 px strip just under the top bar, clear of the dock's Play key
+    const tb = $('topbar')?.getBoundingClientRect();
+    offer.classList.add('strip'); offer.style.cssText = `top:${Math.round((tb ? tb.bottom : 0) + scrollY + 8)}px`;
+    return;
+  }
+  offer.classList.remove('strip'); offer.style.cssText = '';
   const st = $('stage')?.getBoundingClientRect(); if (!st) return;
-  offer.style.right = Math.max(12, innerWidth - st.right + 16) + 'px';
-  offer.style.bottom = Math.max(12, innerHeight - st.bottom + 56) + 'px';
+  const ip = $('insp'), ir = ip && shown(ip) ? ip.getBoundingClientRect() : null; // the info panel overlaps the stage's right edge
+  const edge = ir && ir.left > st.left && ir.left < st.right ? ir.left : st.right;
+  offer.style.right = Math.max(12, innerWidth - edge + 16) + 'px';
+  offer.style.bottom = Math.max(12, innerHeight - st.bottom + 72) + 'px'; // clear of the map's credit strip
 }
 function hideOffer(instant) {
   if (!offer || offer.hidden) return;
@@ -234,10 +266,11 @@ function showOffer() {
   if (run || !shouldOffer(getStore())) return;
   offer = document.createElement('section'); offer.className = 'tour-offer glass'; offer.setAttribute('aria-labelledby', 'tourOfferT');
   offer.innerHTML = `<p class="tour-offer-t" id="tourOfferT">${esc('New here? Take a 2-minute tour')}</p>
-    <div class="tour-actions"><button class="key" type="button" id="tourLater">Not now</button><button class="key primary" type="button" id="tourGo">Start tour</button></div>`;
+    <div class="tour-actions"><button class="key tour-later" type="button" id="tourLater">Not now</button><button class="key primary" type="button" id="tourGo"><span class="o-lg">Start tour</span><span class="o-sm">Tour</span></button><button class="key icon tour-x" type="button" id="tourX" aria-label="Not now">✕</button></div>`;
   document.body.append(offer);
   offer.querySelector('#tourGo').onclick = () => start($('helpBtn'));
-  offer.querySelector('#tourLater').onclick = () => { remember(getStore(), 'dismissed'); hideOffer(); };
+  const later = () => { remember(getStore(), 'dismissed'); hideOffer(); };
+  offer.querySelector('#tourLater').onclick = later; offer.querySelector('#tourX').onclick = later;
   placeOffer(); addEventListener('resize', placeOffer);
   void offer.offsetWidth; offer.classList.add('in');
 }

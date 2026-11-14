@@ -19,6 +19,7 @@ export const WAITING = {
 export const OUTRO = {
   id: 'outro', title: "That's it",
   body: 'Help (the ? key) has this tour and the shortcuts.', targets: ['#helpBtn'], prefer: ['below', 'left'], next: 'Done',
+  alt: { targets: ['#pagesBtn'], body: 'Help, under Pages, has this tour and the shortcuts.' }, // phones: no ? key in the top bar
 };
 
 /**
@@ -32,16 +33,24 @@ export const STEPS = [
     body: "Barnard's Star, Epsilon Indi B and WISE 0855 drift across the sky between photos; RW Aurigae and R Draconis stay put but change brightness. Pick one to fly the sky map there." },
   { id: 'play', scene: 'viewer', targets: ['.transport', '.tl'], prefer: ['above', 'below'],
     title: 'Watch it move',
-    body: 'Play flips through every photo in date order. The timeline groups them into observing seasons about six months apart; drag it, or use ← and → to step.' },
+    // when the tour opened the time-lapse itself, bodyFor() puts "We've opened <name> for you." in front
+    body: 'Play flips through every photo in date order, and the timeline groups them into observing seasons about six months apart; drag it, or use ← and → to step.' },
   { id: 'blink', scene: 'viewer', targets: ['#viewSeg'], prefer: ['above', 'below'],
     title: 'Blink to catch the shift',
     body: 'Blink flips between the first and the last season, so anything that moved jumps back and forth. Compare puts the two side by side.' },
   { id: 'flags', scene: 'viewer', targets: ['.flags-split'], prefer: ['above', 'left'],
     title: 'Flags mark doubtful pixels',
-    body: 'Hatched squares are pixels the archive marked as unusable or contaminated. FLAGS shows or hides them, and the arrow beside it opens the legend.' },
+    // three short sentences by the lead's wording (Sat night review); the only step allowed three
+    body: 'Hatched squares have no data. Outlines and small marks are pixels the archive flagged. FLAGS shows or hides them, and the arrow beside it opens the legend.' },
   { id: 'bands', scene: 'viewer', targets: ['#bandTool'], prefer: ['right', 'above', 'below'],
     title: 'Six colour bands',
     body: 'SPHEREx sees from 0.74 to 5 µm, split here into six colour bands that tint the timeline and the wavelength chip. Open this key to rename, recolour or resize them.' },
+  // the project's twist: only when a link to spot.html is on screen (rail), or, on phones, in the Pages sheet
+  { id: 'spot', scene: 'any', targets: ['.rail a[href$="spot.html"]'], prefer: ['right', 'below', 'above'],
+    title: 'Spot a mover',
+    body: 'Your turn: blink a patch, click anything that moves, and the app checks it against flags, known stars and known asteroids. Then save what you found to your notebook.',
+    alt: { targets: ['#pagesBtn'], requires: '#pagesPop a[href$="spot.html"]', prefer: ['below', 'left'],
+      body: 'Your turn: under Pages, Spot lets you blink a patch, click anything that moves, and the app checks it against flags, known stars and known asteroids. Then save what you found to your notebook.' } },
   { id: 'notebook', scene: 'any', when: 'notebook', targets: ['[data-tour="notebook"]', '#nbAdd', '.nb-add'], prefer: ['below', 'left', 'above'],
     title: 'Your notebook',
     body: 'The + saves what you found, with its date and position, so you can come back to it later.' },
@@ -55,6 +64,26 @@ export const STEPS = [
 export function filterSteps(steps, env = {}) {
   const ok = env.isAvailable || (() => true);
   return steps.filter(s => (s.when !== 'notebook' || !!env.hasNotebook) && ok(s));
+}
+
+/**
+ * Which targets a step uses here: its own if one is on screen, else its `alt` (e.g. the Pages key on
+ * phones, when the Pages sheet holds the link), else null (the step is dropped).
+ * shown(selector) → a matching element is visible; exists(selector) → one is in the page.
+ */
+export function pickVariant(step, shown, exists) {
+  if (!step.targets) return { targets: null, body: step.body, prefer: step.prefer };
+  if (step.targets.some(shown)) return { targets: step.targets, body: step.body, prefer: step.prefer };
+  const a = step.alt;
+  if (a && (!a.requires || exists(a.requires)) && a.targets.some(shown)) return { targets: a.targets, body: a.body || step.body, prefer: a.prefer || step.prefer };
+  return null;
+}
+
+/** The card text: step 2 says so when the tour opened the time-lapse itself. */
+export function bodyFor(step, body, ctx = {}) {
+  const text = body ?? step.body;
+  if (step.id === 'play' && ctx.openedName) return `We've opened ${ctx.openedName} for you. ${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+  return text;
 }
 
 /** "2 of 5" (mono in the card). i is the 0-based index in the filtered list. */

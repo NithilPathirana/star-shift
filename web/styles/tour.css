@@ -38,7 +38,15 @@
 .tour-offer.in{opacity:1;transform:none}
 .tour-offer-t{font-size:.9375rem;font-weight:600;color:var(--ink)}
 .tour-offer .tour-actions{justify-content:flex-end;margin-top:12px}
-.tour-offer.sheet{left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:auto}
+.tour-offer .tour-x,.tour-offer .o-sm{display:none}
+/* phone: one 56 px strip under the top bar (text · Tour · close), clear of the dock */
+.tour-offer.strip{position:absolute;left:8px;right:8px;bottom:auto;width:auto;height:56px;display:flex;align-items:center;gap:8px;padding:6px 6px 6px 14px;border-radius:16px}
+.tour-offer.strip .tour-offer-t{flex:1;min-width:0;font-size:.8125rem;line-height:1.25}
+.tour-offer.strip .tour-actions{margin-top:0;gap:6px;flex:none}
+.tour-offer.strip .key{min-height:44px}
+.tour-offer.strip .tour-later,.tour-offer.strip .o-lg{display:none}
+.tour-offer.strip .tour-x{display:inline-flex;width:44px}
+.tour-offer.strip .o-sm{display:inline}
 
 /* Help popover: "Take the tour" at the top */
 #help .tour-start{width:100%;margin:0 0 14px}

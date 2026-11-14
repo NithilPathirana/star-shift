@@ -4,33 +4,67 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { STEPS, INTRO, OUTRO, TOUR_KEY, filterSteps, counterText, neighbour, shouldOffer, remember,
-  reducedMotion, placeCard, unionRect } from '../web/app/tour/steps.js';
+  reducedMotion, placeCard, unionRect, pickVariant, bodyFor } from '../web/app/tour/steps.js';
 
 const ids = list => list.map(s => s.id);
 const memStore = (init = {}) => { const m = new Map(Object.entries(init)); return {
   getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), m }; };
 const throwing = { getItem() { throw new Error('SecurityError'); }, setItem() { throw new Error('QuotaExceeded'); } };
 
-test('steps: five counted steps without the notebook, six with it', () => {
-  assert.deepEqual(ids(filterSteps(STEPS, {})), ['picks', 'play', 'blink', 'flags', 'bands']);
-  assert.deepEqual(ids(filterSteps(STEPS, { hasNotebook: true })), ['picks', 'play', 'blink', 'flags', 'bands', 'notebook']);
+test('steps: order, with the notebook only when it is built', () => {
+  assert.deepEqual(ids(filterSteps(STEPS, {})), ['picks', 'play', 'blink', 'flags', 'bands', 'spot']);
+  assert.deepEqual(ids(filterSteps(STEPS, { hasNotebook: true })), ['picks', 'play', 'blink', 'flags', 'bands', 'spot', 'notebook']);
 });
 
-test('steps: titles are at most five words, bodies one or two sentences', () => {
+const sentences = t => t.split(/[.!?](\s|$)/).filter(x => x && x.trim()).length;
+test('steps: titles are at most five words, bodies one or two sentences (flags: three, by the lead)', () => {
   for (const s of [...STEPS, INTRO, OUTRO]) {
     assert.ok(s.title.split(/\s+/).length <= 5, s.title);
-    const sentences = s.body.split(/[.!?](\s|$)/).filter(x => x && x.trim()).length;
-    assert.ok(sentences >= 1 && sentences <= 2, `${s.id}: ${sentences} sentences`);
-    assert.ok(!/!/.test(s.body), 'calm: no exclamation marks');
+    for (const b of [s.body, s.alt?.body].filter(Boolean)) {
+      const n = sentences(b);
+      assert.ok(n >= 1 && n <= (s.id === 'flags' ? 3 : 2), `${s.id}: ${n} sentences`);
+      assert.ok(!/!/.test(b), 'calm: no exclamation marks');
+    }
   }
   assert.match(INTRO.body, /^Every six months, NASA's SPHEREx photographs the whole sky\./);
+  const flags = STEPS.find(s => s.id === 'flags');
+  assert.equal(flags.body, 'Hatched squares have no data. Outlines and small marks are pixels the archive flagged. FLAGS shows or hides them, and the arrow beside it opens the legend.');
+  const spot = STEPS.find(s => s.id === 'spot');
+  assert.equal(spot.title, 'Spot a mover');
+  assert.match(spot.body, /^Your turn: blink a patch, click anything that moves/);
+});
+
+test('step 2 says when the tour opened the time-lapse, still in two sentences', () => {
+  const play = STEPS.find(s => s.id === 'play');
+  assert.equal(bodyFor(play, play.body, {}), play.body);
+  const b = bodyFor(play, play.body, { openedName: "Barnard's Star" });
+  assert.ok(b.startsWith("We've opened Barnard's Star for you. Play flips"));
+  assert.equal(sentences(b), 2);
+  assert.equal(bodyFor(STEPS[0], STEPS[0].body, { openedName: 'X' }), STEPS[0].body); // only step 2
+});
+
+test('spot step: rail link when shown, else the Pages key when the sheet holds the link, else dropped', () => {
+  const spot = STEPS.find(s => s.id === 'spot');
+  const rail = '.rail a[href$="spot.html"]', pagesLink = '#pagesPop a[href$="spot.html"]';
+  const desk = pickVariant(spot, sel => sel === rail, () => true);
+  assert.deepEqual(desk.targets, [rail]); assert.equal(desk.body, spot.body);
+  const phone = pickVariant(spot, sel => sel === '#pagesBtn', sel => sel === pagesLink);
+  assert.deepEqual(phone.targets, ['#pagesBtn']); assert.match(phone.body, /under Pages, Spot/);
+  assert.equal(pickVariant(spot, sel => sel === '#pagesBtn', () => false), null); // no Spot link anywhere
+  assert.equal(pickVariant(spot, () => false, () => true), null);
+  // the last card points at Pages on phones, where the top bar has no ? key
+  assert.match(pickVariant(OUTRO, sel => sel === '#pagesBtn', () => true).body, /under Pages/);
+  assert.match(pickVariant(OUTRO, sel => sel === '#helpBtn', () => true).body, /the \? key/);
+  // the step list (and counter) shrink when it is dropped
+  const list = filterSteps(STEPS, { isAvailable: s => s.id !== 'spot' });
+  assert.equal(counterText(list.length - 1, list.length), '5 of 5');
 });
 
 test('steps: a step whose target is missing or hidden is dropped and the counter shrinks', () => {
   const list = filterSteps(STEPS, { isAvailable: s => s.id !== 'bands' });
-  assert.deepEqual(ids(list), ['picks', 'play', 'blink', 'flags']);
-  assert.equal(counterText(list.length - 1, list.length), '4 of 4');
-  assert.deepEqual(ids(filterSteps(STEPS, { hasNotebook: true, isAvailable: s => s.id !== 'notebook' })).length, 5);
+  assert.deepEqual(ids(list), ['picks', 'play', 'blink', 'flags', 'spot']);
+  assert.equal(counterText(list.length - 1, list.length), '5 of 5');
+  assert.equal(filterSteps(STEPS, { hasNotebook: true, isAvailable: s => s.id !== 'notebook' }).length, 6);
 });
 
 test('counter: "k of n", empty for out-of-range input', () => {
@@ -46,10 +80,10 @@ test('neighbour: next/back follow the master order, even after the current step 
   assert.equal(neighbour(STEPS, all, 'intro', 1).id, 'picks');
   assert.equal(neighbour(STEPS, all, 'picks', 1).id, 'play');
   assert.equal(neighbour(STEPS, all, 'picks', -1), null); // nothing before step 1
-  assert.equal(neighbour(STEPS, all, 'bands', 1), null);  // then the outro
+  assert.equal(neighbour(STEPS, all, 'spot', 1), null);  // then the outro
   assert.equal(neighbour(STEPS, noBlink, 'blink', 1).id, 'flags');
   assert.equal(neighbour(STEPS, noBlink, 'blink', -1).id, 'play');
-  assert.equal(neighbour(STEPS, all, 'outro', -1).id, 'bands');
+  assert.equal(neighbour(STEPS, all, 'outro', -1).id, 'spot');
 });
 
 test('storage: offered only on a first visit; any answer stops it', () => {
