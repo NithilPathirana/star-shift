@@ -31,6 +31,19 @@ function number(value, digits = 2) {
   return value === null || !Number.isFinite(value) ? '—' : value.toLocaleString('en-US', { maximumFractionDigits: digits });
 }
 
+// The app's coordinate format (DESIGN.md 25): 17h 58m 12.6s, +04° 32′ 33″ (JPL gives about 0.1 s and 1″).
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+function fmtRA(deg) {
+  let t = Math.round((((deg % 360) + 360) % 360) / 15 * 36000) % (24 * 36000); // tenths of a time-second
+  const h = Math.floor(t / 36000); t -= h * 36000; const m = Math.floor(t / 600); t -= m * 600;
+  return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${(t / 10).toFixed(1).padStart(4, '0')}s`;
+}
+function fmtDec(deg) {
+  let t = Math.round(Math.abs(deg) * 3600); const sign = deg < 0 && t > 0 ? '−' : '+';
+  const d = Math.floor(t / 3600); t -= d * 3600; const m = Math.floor(t / 60); t -= m * 60;
+  return `${sign}${String(d).padStart(2, '0')}° ${String(m).padStart(2, '0')}′ ${String(t).padStart(2, '0')}″`;
+}
+
 function coordinateToDegrees(value, isRa) {
   const match = /^([+\-]?)(\d+)[ :](\d+)[ :'](\d+(?:\.\d+)?)/.exec(String(value || '').replace(/[hms°′″"]/g, ':'));
   if (!match) return null;
@@ -59,7 +72,8 @@ function renderRows(rows) {
     object.append(element('strong', '', item.name), element('small', '', item.kind === 'c' ? 'Comet' : 'Asteroid'));
     const date = element('td', 'num', item.date || '—'); date.dataset.label = 'Date';
     const position = element('td', 'num'); position.dataset.label = 'Predicted position';
-    position.append(element('span', '', item.ra || '—'), element('small', '', item.dec || '—'));
+    const raDeg = coordinateToDegrees(item.ra, true), decDeg = coordinateToDegrees(item.dec, false);
+    position.append(element('span', '', raDeg === null ? (item.ra || '—') : fmtRA(raDeg)), element('small', '', decDeg === null ? (item.dec || '—') : fmtDec(decDeg)));
     const magnitude = element('td', 'num', item.visualMagnitude === null ? '—' : `${number(item.visualMagnitude, 2)} mag`);
     magnitude.dataset.label = 'V magnitude';
     if (item.visualMagnitude === null) magnitude.title = 'JPL did not report a visual magnitude';
