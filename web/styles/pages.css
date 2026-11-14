@@ -127,6 +127,10 @@ html[data-motion=full] .skel i{animation:pg-shimmer 1.4s linear infinite}
   .picks{display:none}
   .key,.chip-k{min-height:44px}
   .sp-plot{min-height:220px}
+  .seasons button{min-height:44px}
+  .pg-target.sp-tl{flex-direction:column;align-items:flex-start;gap:2px}
+  .pg-target.sp-tl #tPm{display:flex;flex-direction:column;gap:2px}
+  .pg-target.sp-tl .sp-sep{display:none}
   .detail{grid-template-columns:1fr}
   /* table rows become two-line cards */
   .atable thead{display:none}

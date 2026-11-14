@@ -348,8 +348,9 @@ html[data-motion=reduce] *,html[data-motion=reduce] *::before,html[data-motion=r
 .reticle{position:absolute;left:50%;top:50%;width:30px;height:30px;margin:-15px 0 0 -15px;pointer-events:none;opacity:.55;
   background:linear-gradient(var(--stage-muted),var(--stage-muted)) 50% 0/1.5px 8px no-repeat,linear-gradient(var(--stage-muted),var(--stage-muted)) 50% 100%/1.5px 8px no-repeat,
   linear-gradient(var(--stage-muted),var(--stage-muted)) 0 50%/8px 1.5px no-repeat,linear-gradient(var(--stage-muted),var(--stage-muted)) 100% 50%/8px 1.5px no-repeat}
-.sel{position:absolute;border:1.5px solid var(--ring);border-radius:3px;pointer-events:none;view-transition-name:shot-a;box-shadow:0 0 0 1px rgba(0,0,0,.5),inset 0 0 0 1px rgba(0,0,0,.4)}
-.sel span{position:absolute;left:-1px;bottom:calc(100% + 6px);font:600 .75rem/1 var(--font-ui);letter-spacing:.04em;text-transform:uppercase;color:#F3CFA6;white-space:nowrap}
+/* sky-map patch marker (#sel) only: a bare .sel also hit the Archive's selected table row (.arow.sel). :where keeps the old specificity */
+.sel:where(#sel){position:absolute;border:1.5px solid var(--ring);border-radius:3px;pointer-events:none;view-transition-name:shot-a;box-shadow:0 0 0 1px rgba(0,0,0,.5),inset 0 0 0 1px rgba(0,0,0,.4)}
+.sel:where(#sel) span{position:absolute;left:-1px;bottom:calc(100% + 6px);font:600 .75rem/1 var(--font-ui);letter-spacing:.04em;text-transform:uppercase;color:#F3CFA6;white-space:nowrap}
 .pin{position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;display:grid;place-items:center;z-index:2}
 .pin::before{content:"";width:8px;height:8px;border-radius:50%;background:#F3E6D4;box-shadow:0 0 0 2px rgba(21,17,14,.95),0 0 0 3px rgba(243,207,166,.5)}
 .pin:focus-visible{outline:2.5px solid #E3A777;outline-offset:1px}

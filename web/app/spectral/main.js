@@ -37,7 +37,10 @@ async function load(q) {
     if (ctrl.signal.aborted) return;
     S.target = t;
     const tl = targetLine(t);
-    $('tName').textContent = tl.name; $('tCoords').textContent = tl.coords; $('tPm').textContent = tl.pm;
+    $('tName').textContent = tl.name; $('tCoords').textContent = tl.coords;
+    // motion and "Position now" as separate parts, so a phone can put each on its own line (pages.css .sp-tl)
+    $('tPm').innerHTML = tl.pm.split(' · ').filter(Boolean).map(x => `<span class="sp-sep" aria-hidden="true"> · </span><span>${esc(x)}</span>`).join('');
+    $('tName').parentElement.classList.add('sp-tl');
     document.title = `${tl.name} · Spectral Explorer · Star Shift`;
     setStatus('Asking IRSA which SPHEREx images cover this star…');
     const p = listPosition(t);
@@ -289,7 +292,7 @@ function draw() {
     placed.push({ p, x, y });
     const shape = SHAPES[Math.max(0, p.season) % SHAPES.length];
     const st = p.flagged ? `fill="#15110E" stroke="${p.color}" stroke-width="1.5"` : `fill="${p.color}" stroke="rgba(11,9,7,.6)" stroke-width=".75"`;
-    s += `<g ${st}>${shapePath(shape, x, y, 3.6)}</g>`;
+    s += `<g ${st}>${shapePath(shape, x, y, W < 700 ? 3 : 3.6)}</g>`; // ~6 px markers on a phone-width chart
   }
   if (S.hover) {
     const h = placed.find(q => q.p === S.hover);

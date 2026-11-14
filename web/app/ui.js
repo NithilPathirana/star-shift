@@ -90,8 +90,9 @@ addEventListener('keydown', () => Snd.wake(), { capture: true });
 function segSelect(seg, pred) {
   const btns = [...seg.querySelectorAll('.seg-btn')]; let idx = 0;
   btns.forEach((b, k) => { const on = pred(b); b.setAttribute('aria-pressed', on); if (on) idx = k; });
-  const th = seg.querySelector('.seg-thumb'); const w = (seg.clientWidth - 6) / btns.length;
-  th.style.width = w + 'px'; th.style.transform = `translateX(${idx * w}px)`;
+  // sized in % of the segment (not measured px), so it follows the control through any resize
+  const th = seg.querySelector('.seg-thumb');
+  th.style.width = `calc((100% - 6px) / ${btns.length})`; th.style.transform = `translateX(${idx * 100}%)`;
 }
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600); }
 
