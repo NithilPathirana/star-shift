@@ -263,7 +263,7 @@ html[data-motion=reduce] .pf-open svg{transition:none}
   /* each row becomes a card: object + verdict, then expected + measured, then limits */
   .pf-table thead{display:none}
   .pf-table,.pf-table tbody{display:block}
-  .pf-table tr.pf-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:10px;row-gap:6px;padding:12px 8px;border-bottom:1px solid rgba(84,62,42,.14)}
+  .pf-table tr.pf-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:10px;row-gap:6px;padding:12px 16px;border-bottom:1px solid rgba(84,62,42,.14)}
   .pf-table tr.pf-row td{border:0;padding:0;min-width:0;max-width:none}
   .pf-table .pf-obj{grid-column:1;grid-row:1}
   .pf-table .pf-ver{grid-column:2;grid-row:1;text-align:right}

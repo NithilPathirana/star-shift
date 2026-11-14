@@ -43,6 +43,16 @@ const S = {
 const lastIdx = () => S.stacks.length - 1;
 const blinked = () => [S.stacks[0], S.stacks[lastIdx()]];
 
+/* ------------------------------------------------------------------ screen-reader announcements
+   AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+   The verdict card and the checks list are re-rendered on every update (and the asteroid timer ticks each
+   second), so they are not live regions; only one short verdict line is announced, and only when it changes. */
+$('verdict').removeAttribute('aria-live'); $('lines').removeAttribute('aria-live');
+const verdictLive = Object.assign(document.createElement('p'), { className: 'sr-only', id: 'verdictLive' });
+verdictLive.setAttribute('aria-live', 'polite'); verdictLive.setAttribute('aria-atomic', 'true');
+$('side').append(verdictLive);
+function announceVerdict(text) { if (verdictLive.textContent !== text) verdictLive.textContent = text; }
+
 /* ------------------------------------------------------------------ toast */
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600); }
 
@@ -449,6 +459,7 @@ function renderVerdict(s) {
   const v = s.verdict, el = $('verdict');
   const waitingJpl = v?.kind === 'pending' && v.running?.length === 1 && v.running[0] === 'asteroid';
   el.hidden = !(v && (v.kind !== 'pending' || waitingJpl));
+  announceVerdict(waitingJpl ? `Suspect ${s.n}: waiting for the asteroid check.` : v && v.kind !== 'pending' ? `Suspect ${s.n} verdict: ${v.title}${v.sub ? ` ${v.sub}` : ''}.` : '');
   if (waitingJpl) {
     el.className = 'glass sm-verdict v-wait';
     el.innerHTML = `<p class="sm-vk">Verdict for suspect <span class="num">${s.n}</span></p><h2>Waiting for the asteroid check</h2>
