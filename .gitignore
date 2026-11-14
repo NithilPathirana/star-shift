@@ -9,3 +9,4 @@ evidence/cache/
 evidence/frames_*.json
 evidence/wrangler-dev.log
 evidence/prove_run.log
+.serena/
