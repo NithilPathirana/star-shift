@@ -6,10 +6,19 @@
 
 import { readHDUsFromStream } from '../web/core/fits.js';
 import { hipsRoute, channelProperties, tintPalettePNG, PALETTE_VERSION } from './hips.js';
+import { jplRoute } from './jpl.js'; // Codex: allow-listed JPL SSD APIs (cad, sentry, sbdb, sb_ident, horizons)
 
 const IRSA = 'https://irsa.ipac.caltech.edu';
 const GAIA = 'https://gea.esac.esa.int/tap-server/tap/sync';
 const CUTOUT_PATH = /^\/ibe\/data\/spherex\/[\w./-]+\.fits$/;
+// Telescope compare (DESIGN.md 31a): one 2MASS Ks atlas image or one AllWISE W1/W2 atlas
+// image per patch, as small cutouts. Exact file-name patterns only; IBE sends these gzipped,
+// so the relay unzips them and keeps the first HDU (the image).
+export const SURVEY_PATHS = [
+  /^\/ibe\/data\/twomass\/allsky\/allsky\/\d{6}[ns]\/s\d{3}\/image\/ki\d{7}\.fits\.gz$/,
+  /^\/ibe\/data\/wise\/allwise\/p3am_cdd\/\d{2}\/\d{4}\/\d{4}[pm]\d{3}_ac51\/\d{4}[pm]\d{3}_ac51-w[12]-int-3\.fits$/,
+];
+const SIA_COLLECTIONS = ['spherex_dr1', 'spherex_qr3', 'spherex_qr2', 'twomass_allsky', 'wise_allwise'];
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -59,6 +68,7 @@ export function tapQuery(url, tableRe) {
 
 function upstreamFor(url) {
   const p = url.pathname;
+  const jpl = jplRoute(url); if (jpl) return jpl;
   const h = hipsRoute(url);
   if (h) return h.error ? { error: h.error } : { ...h, cacheKey: `${h.target}?ch=${h.channel ?? ''}&tint=${h.tint ?? ''}&pal=${h.tint ? PALETTE_VERSION : 0}` };
   if (p === '/TAP/sync') {
@@ -69,7 +79,8 @@ function upstreamFor(url) {
   }
   if (p === '/SIA') {
     const c = url.searchParams.get('COLLECTION') || '', pos = url.searchParams.get('POS') || '';
-    if (!['spherex_dr1', 'spherex_qr3', 'spherex_qr2'].includes(c) || !/^circle [-\d.]+ [-\d.]+ [\d.]+$/.test(pos)) return { error: 'Only SPHEREx SIA position searches' };
+    if (!SIA_COLLECTIONS.includes(c) || !/^circle [-\d.]+ [-\d.]+ [\d.]+$/.test(pos)) return { error: 'Only SPHEREx, 2MASS or AllWISE SIA position searches' };
+    if (!c.startsWith('spherex') && !(Number(pos.split(' ')[3]) <= 0.1)) return { error: 'Search radius too large' };
     return { target: `${IRSA}/SIA?COLLECTION=${c}&POS=${encodeURIComponent(pos).replace(/%20/g, '+')}&RESPONSEFORMAT=VOTABLE`, kind: 'tap', ttl: 86400 };
   }
   if (p === '/gaia/tap/sync') {
@@ -92,7 +103,22 @@ function upstreamFor(url) {
     if (hdus === '5') return { target, kind: 'cutout', hdus: 5, cacheKey: `${target}&hdus=5`, ttl: 30 * 86400 };
     return { target, kind: 'cutout', ttl: 30 * 86400 };
   }
+  if (SURVEY_PATHS.some(re => re.test(p))) {
+    const center = url.searchParams.get('center') || '', size = Number(url.searchParams.get('size'));
+    if ([...url.searchParams.keys()].some(k => k !== 'center' && k !== 'size')) return { error: 'Only center and size' };
+    if (!/^-?\d{1,3}(\.\d{1,8})?,-?\d{1,2}(\.\d{1,8})?$/.test(center) || !(size >= 0.01 && size <= 0.25)) return { error: 'Bad center/size' };
+    return { target: `${IRSA}${p}?center=${center}&size=${size}`, kind: 'survey', ttl: 30 * 86400 };
+  }
   return { error: 'Not found', status: 404 };
+}
+
+// IBE cutouts arrive gzipped (Content-Type application/gzip): unzip when the magic bytes say so.
+async function surveyFits(res) {
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (bytes.length > 12 * 1024 * 1024) throw new Error('FITS stream too large');
+  const gz = bytes[0] === 0x1f && bytes[1] === 0x8b;
+  const stream = new Response(bytes).body;
+  return readHDUsFromStream(gz ? stream.pipeThrough(new DecompressionStream('gzip')) : stream, 1);
 }
 
 // Options: tapTtl overrides how long TAP answers are cached; staleIfError serves an
@@ -148,6 +174,14 @@ export async function handle(request, { fetchFn = fetch, cache = globalThis.cach
       if (old) return old;
       const busy = !/too large/.test(e && e.message);
       return reply(`Upstream cutout incomplete (${e && e.message})`, busy ? 503 : 502, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store', 'Retry-After': '2' });
+    }
+    out = reply(bytes, 200, { 'Content-Type': 'application/fits', 'Cache-Control': `public, max-age=${up.ttl}` });
+  } else if (up.kind === 'survey') {
+    let bytes;
+    try { bytes = await surveyFits(res); } catch (e) {
+      const old = await stale();
+      if (old) return old;
+      return reply(`Upstream cutout incomplete (${e && e.message})`, /too large/.test(e && e.message) ? 502 : 503, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store', 'Retry-After': '2' });
     }
     out = reply(bytes, 200, { 'Content-Type': 'application/fits', 'Cache-Control': `public, max-age=${up.ttl}` });
   } else {

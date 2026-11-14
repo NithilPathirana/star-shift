@@ -51,7 +51,7 @@ export function diskCache(dir = CACHE_DIR) {
   };
 }
 
-const RELAY = /^\/(TAP\/sync|SIA$|gaia\/tap\/sync|ibe\/data\/spherex\/|hips\/spherex\/)/;
+const RELAY = /^\/(TAP\/sync|SIA$|gaia\/tap\/sync|ibe\/data\/spherex\/|ibe\/data\/twomass\/allsky\/allsky\/|ibe\/data\/wise\/allwise\/p3am_cdd\/|hips\/spherex\/|jpl\/(cad|sentry|sbdb|sb_ident|horizons)$)/;
 
 async function serveStatic(path, res) {
   let rel = decodeURIComponent(path);
