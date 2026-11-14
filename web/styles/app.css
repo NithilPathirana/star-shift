@@ -70,9 +70,9 @@ kbd { font: var(--text-xs) var(--font-mono); padding: 0 var(--space-1); border: 
 /* player */
 .player { max-width: var(--viewer-max); margin: var(--space-3) auto 0; display: grid; gap: var(--space-2); }
 .player[aria-disabled="true"] { opacity: 0.5; }
-.player-row { display: flex; align-items: center; gap: var(--space-2); }
+.player-row { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
 .when { flex: 1; min-width: 0; display: flex; flex-direction: column; padding-left: var(--space-2); }
-.when-date { font: var(--weight-medium) var(--text-md) var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.when-date { display: block; font: var(--weight-medium) var(--text-md) var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .when-count { font-size: var(--text-xs); }
 .speed select, .field select { min-height: var(--tap-size); padding: 0 var(--space-2); font: inherit; color: var(--color-text); background: var(--color-surface); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-2); }
 .scrub input { width: 100%; min-height: var(--tap-size); accent-color: var(--color-accent); }
@@ -118,5 +118,6 @@ kbd { font: var(--text-xs) var(--font-mono); padding: 0 var(--space-1); border: 
   .state-title { font-size: var(--text-lg); }
   .keys { display: none; }
   .brand { font-size: var(--text-md); }
+  .when-date { font-size: var(--text-sm); white-space: normal; }
 }
 @media (pointer: coarse) { .keys { display: none; } }

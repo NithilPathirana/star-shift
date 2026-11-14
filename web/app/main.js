@@ -11,6 +11,10 @@ const $ = (id) => document.getElementById(id);
 const BASE = location.origin; // the local server relays IRSA/Gaia on the same origin
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const fmtDate = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+// "31 Oct – 13 Dec 2025" (year once when both dates share it)
+const fmtRange = (a, b) => (a.getUTCFullYear() === b.getUTCFullYear()
+  ? `${a.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })} – ${fmtDate(b)}`
+  : `${fmtDate(a)} – ${fmtDate(b)}`);
 const fmtDateTime = (d) => `${fmtDate(d)}, ${d.toISOString().slice(11, 16)} UTC`;
 
 const ICON = {
@@ -224,7 +228,7 @@ function render(state, prev) {
   $('play').setAttribute('aria-label', state.playing ? 'Pause' : 'Play');
 
   const cur = current(state);
-  const label = !cur ? '—' : cur.kind === 'stack' ? `${fmtDate(cur.startDate)} – ${fmtDate(cur.endDate)}` : fmtDateTime(new Date(cur.date + 'Z'));
+  const label = !cur ? '—' : cur.kind === 'stack' ? fmtRange(cur.startDate, cur.endDate) : fmtDateTime(new Date(cur.date + 'Z'));
   $('when-date').textContent = label;
   $('when-count').textContent = n ? (cur?.kind === 'stack' ? `Season ${state.index + 1} of ${n} · ${cur.count} frames stacked` : `Frame ${state.index + 1} of ${n}`) : '';
   scrub.setAttribute('aria-valuetext', n ? `${label}, ${state.index + 1} of ${n}` : 'No frames');

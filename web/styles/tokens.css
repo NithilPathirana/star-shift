@@ -5,7 +5,8 @@
 :root {
   color-scheme: dark;
 
-  /* colour (contrast on --color-bg: text 15.9:1, muted 7.6:1, accent 8.2:1) */
+  /* colour. Checked contrast (WCAG): text/bg 15.9, muted/bg 8.2, muted/surface 7.6,
+     accent/bg 9.5, button text/accent 9.3, danger/bg 9.4, warning/surface 10.9 */
   --color-bg: #0e0f11;
   --color-surface: #16181b;
   --color-surface-2: #1e2125;

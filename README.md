@@ -7,6 +7,15 @@ Type any sky position (or a star name) and see every SPHEREx image of that spot,
 > (Claude, by Anthropic) working under the team's direction. The team chose the idea,
 > checked the science and approved the design. Files carry an "AI-written code" header.
 
+## The web app (`web/`)
+- `index.html` + `styles/tokens.css` (all colours, type, spacing, radii, motion as CSS variables) + `styles/app.css`.
+- `app/main.js` wires the page; `app/state.js` (pure reducer: idle → resolving → listing → loading → ready / empty / error);
+  `app/query.js` (star names or RA/Dec in common formats, friendly errors, shareable URLs `?q=` or `?ra=&dec=` plus settings);
+  `app/data.js` (pipeline shared with `tools/prebake.mjs`); `app/render.js` (brightness scales, smooth/true pixels);
+  `app/presets.js` (NASA's five test targets, so they work even if SIMBAD is down).
+- Keyboard: Space play/pause, ←/→ step, Home/End. Respects reduced motion (no auto-play).
+- `node tools/prebake.mjs` (server running) fills the disk cache for the five targets so they load instantly and offline.
+
 ## How it works
 - `web/core/` – plain JavaScript, runs in the browser and in Node:
   - `irsa.js` – finds SPHEREx images through IRSA's TAP service and downloads cutouts,
