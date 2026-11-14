@@ -289,40 +289,24 @@ function setCoordText(ra, dec) { $('coordTxt').textContent = `${R.fmtRA(ra)}  ${
 
 /* ---------- loading the time-lapse (real progress drives the rocket) ---------- */
 function rocketAt(frac) {
-  $('l2Hair').style.transform = `scaleX(${frac})`; $('thinBar').style.transform = `scaleX(${frac})`;
+  $('thinBar').style.transform = `scaleX(${frac})`; // the ScanLoader draws its own progress
 }
 /* loader v2 media + exit clip (DESIGN.md section 17; from design-v1.html) */
-// Rocket animation removed (Nithil, Sat night): the loader is a clean progress line and count until
-// the Studio's code-based 'spectral scan' loader arrives. leaveLoader() then simply fades out.
-function mountRocket() { const box = $('l2Media'); if (box) box.innerHTML = ''; }
-/* exit: play the 1.5 s hand-off clip (rocket sweeps past, flame fills the frame warm-white), then fade into the viewer.
-   Reduce motion, or a clip that fails to start within 400 ms, falls back to the plain cross-fade. */
-let leaving = false;
+// Loader: Design Studio's code-based ScanLoader (design/loader/scan/), drawn from the real frames.
+const LOADER_MODE = 'scan'; // 'scan' (band-tinted plate + wavelength ruler) or 'sheet' (contact sheet): Kurucharan's pick
 function leaveLoader() {
-  const L = $('stLoading'); if (L.hidden || leaving) return; leaving = true;
-  const done = () => { L.classList.add('leaving'); setTimeout(() => { L.hidden = true; L.classList.remove('leaving', 'can-start', 'exiting'); const v = L.querySelector('video'); if (v) v.pause(); leaving = false; }, set.motion ? 0 : 400); };
-  const loop = L.querySelector('#l2Media video'); if (set.motion || !loop) return done();
-  const res = loop.currentSrc.includes('-720') ? '720' : '1080', base = 'loader/v2/';
-  const ex = document.createElement('video'); ex.muted = true; ex.playsInline = true; ex.preload = 'auto'; ex.className = 'l2-exit';
-  ex.innerHTML = `<source src="${base}rocket-exit-${res}.webm" type="video/webm"><source src="${base}rocket-exit-${res}.mp4" type="video/mp4">`;
-  let finished = false; const finish = () => { if (finished) return; finished = true; done(); setTimeout(() => ex.remove(), 450); };
-  ex.addEventListener('ended', finish); ex.addEventListener('error', finish);
-  const guard = setTimeout(() => { if (ex.currentTime === 0) finish(); }, 400);       // never trap the user behind a clip that won't play
-  ex.addEventListener('playing', () => { clearTimeout(guard); L.classList.add('exiting'); setTimeout(finish, 1700); });
-  $('l2Media').appendChild(ex); ex.play().catch(finish);
+  const L = $('stLoading'); if (L.hidden || !V.scan) return;
+  const scan = V.scan; V.scan = null; scan.done();
+  setTimeout(() => { L.hidden = true; scan.destroy(); }, set.motion ? 0 : 400);
 }
-
-function showState(id) { ['stLoading', 'stError', 'stEmpty'].forEach(x => { $(x).hidden = x !== id; }); if (id !== 'stLoading') document.querySelector('#l2Media video')?.pause(); }
+// showState(null) leaves #stLoading alone so leaveLoader() can fade it out
+function showState(id) { ['stLoading', 'stError', 'stEmpty'].forEach(x => { if (id === null && x === 'stLoading') return; $(x).hidden = x !== id; }); if (id && id !== 'stLoading') { V.scan?.destroy(); V.scan = null; } }
 let arriveCount = 0;
 function progress() {
   const done = V.F.length + V.failed, N = Math.max(1, V.planned);
-  $('lcount').innerHTML = `<b>${V.F.length}</b> of ${V.planned || '…'} loaded`;
   rocketAt(done / N);
   const slow = V.retries > 0 && V.status === 'loading';
-  $('stLoading').classList.toggle('slow', slow);
-  const vid = document.querySelector('#l2Media video'); if (vid) { if (slow && !vid.paused) vid.pause(); else if (!slow && vid.paused && !$('stLoading').hidden) vid.play().catch(() => {}); }
-  $('retryTxt').textContent = slow ? `IRSA is slow. ${V.F.length} of ${V.planned} kept. Retrying automatically (${V.retries} retries so far).` : '';
-  $('retryNow').hidden = true;
+  V.scan?.slow(slow ? `IRSA is slow. ${V.F.length} of ${V.planned} kept. Retrying ${V.retries} image${V.retries === 1 ? '' : 's'}` : null);
   if (V.status === 'loading' && (V.target?.pmra || V.target?.pmdec)) $('d-meas').textContent = `measuring… (${V.F.length} of ${V.planned || '…'} images)`;
 }
 function load(query, label) {
@@ -330,14 +314,21 @@ function load(query, label) {
   P.pause(); clearInterval(bt); if (mode !== 'play') { mode = 'play'; $('stage').className = 'stage mode-play'; segSelect($('viewSeg'), b => b.dataset.mode === 'play'); }
   Object.assign(V, { query, target: null, grid: null, raws: [], F: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, status: 'loading', motion: null, seasons: [], name: label || 'this patch' });
   P.i = 0; shown = -1; arriveCount = 0;
-  $('lTitle').textContent = `Finding images of ${V.name}`; $('stLoading').classList.remove('slow', 'can-start', 'leaving', 'exiting'); mountRocket();
+  $('stLoading').classList.remove('leaving');
+  V.scan?.destroy();
+  V.scan = window.ScanLoader($('scanLoader'), {
+    mode: LOADER_MODE, target: V.name, bands: ranges, reducedMotion: set.motion,
+    onStart: () => { Snd.play('click'); $('thin').hidden = false; leaveLoader(); if (!set.motion) P.play(); },
+    onRetry: () => { Snd.play('click'); if (V.query) load(V.query, V.name); },
+  });
   showState('stLoading'); $('thin').hidden = true; buildTimeline(); progress(); draw(); onFrame(0);
   const emit = (e) => {
     if (ctl.signal.aborted) return;
-    if (e.type === 'RESOLVED') { V.target = e.target; V.name = label || e.target.name || 'this patch'; $('lTitle').textContent = `Finding images of ${V.name}`; }
+    if (e.type === 'RESOLVED') { V.target = e.target; V.name = label || e.target.name || 'this patch'; V.scan?.set({ target: V.name }); }
     else if (e.type === 'PLANNED') {
       V.grid = e.plan.grid; V.n = V.grid.n; V.planned = e.plan.planned; V.plannedMjds = e.plan.mjds || [];
       V.total = e.plan.total;
+      V.scan?.set({ total: V.planned, plan: V.plannedMjds.map(mjd => ({ mjd })) });
       if (!V.planned) { V.status = 'empty'; showState('stEmpty'); return; }
       $('tName').textContent = V.name; $('ra').textContent = R.fmtRA(V.grid.ra0); $('dec').textContent = R.fmtDec(V.grid.dec0); setCoordText(V.grid.ra0, V.grid.dec0);
       $('d-field').textContent = `${Math.round(V.n * V.grid.scale)}″ · north up`;
@@ -345,8 +336,8 @@ function load(query, label) {
     } else if (e.type === 'FRAME') {
       const f = toF(e.frame); V.raws.push(e.frame);
       let k = V.F.findIndex(x => x.mjd > f.mjd); if (k < 0) k = V.F.length; V.F.splice(k, 0, f);
+      V.scan?.add(f);
       if (k <= P.i && V.F.length > 1) P.i++;
-      if (V.F.length === 8 && !$('stLoading').hidden) $('stLoading').classList.add('can-start'); // 'Start watching' appears
       progress(); rebuildSoon();
     } else if (e.type === 'FRAME_FAILED') { V.failed++; progress(); }
     else if (e.type === 'RETRY_WAIT') { V.retries++; progress(); }
@@ -374,8 +365,6 @@ function load(query, label) {
 }
 $('retry').onclick = () => { Snd.play('click'); if (V.query) load(V.query, V.name); };
 $('useLoaded').onclick = () => { showState(null); Snd.play('click'); };
-$('retryNow').onclick = () => { Snd.play('click'); if (V.query) load(V.query, V.name); };
-$('l2Start').onclick = () => { Snd.play('click'); $('thin').hidden = false; leaveLoader(); if (!set.motion) P.play(); };
 
 /* ---------- popovers + sheets ---------- */
 let openPop = null;
@@ -512,9 +501,9 @@ $('mapWrap').addEventListener('pointermove', e => { pointer = { x: e.clientX, y:
 function mapZoom(f) { if (!skymap.aladin) return; skymap.setFov(skymap.fov() / f); Snd.play(f > 1 ? 'zoomIn' : 'zoomOut'); }
 function mapFit() { if (!skymap.aladin) return; skymap.setFov(60); Snd.play('click'); }
 function flyTo(ra, dec, fovDeg, done) {
-  skymap.init(ra, dec, fovDeg).then(() => {
+  return skymap.init(ra, dec, fovDeg).then(() => {
     try { skymap.goTo(ra, dec, fovDeg); } catch (err) { console.warn('sky map', err); }
-    setTimeout(() => { placeOverlays(); done?.(); }, 0);
+    return new Promise(res => setTimeout(() => { placeOverlays(); done?.(); res(); }, 0));
   }).catch(err => { console.warn('sky map', err); mapFailed(); done?.(); });
 }
 function mapFailed() { $('stMap').hidden = false; Snd.play('error'); }
@@ -522,7 +511,7 @@ $('mapOpenFilm').onclick = () => { $('stMap').hidden = true; if (!M.sel) { const
 $('mapRetry').onclick = () => location.reload();
 
 function select(ra, dec, t, fromUser) {
-  if (!t) {
+  if (!t && fromUser) { // snap a user's click to a nearby target pin (not programmatic selections)
     const hit = TARGETS.find(x => { const a = skymap.toPix(x.ra, x.dec), b = skymap.toPix(ra, dec); return a && b && Math.hypot(a[0] - b[0], a[1] - b[1]) < 16; });
     if (hit) t = hit;
   }
@@ -538,15 +527,15 @@ async function goTo(text) {
   let q;
   try { q = parseQuery(text); } catch (err) { if (err instanceof QueryError) { showSearchError(text, err.message); Snd.play('error'); return; } throw err; }
   if (scene !== 'map') toMap(true);
-  if (q.type === 'coords') { flyTo(q.ra, q.dec, Math.min(skymap.aladin ? skymap.fov() : 1, 1), () => select(q.ra, q.dec, null, false)); return; }
+  if (q.type === 'coords') { return flyTo(q.ra, q.dec, Math.min(skymap.aladin ? skymap.fov() : 1, 1), () => select(q.ra, q.dec, null, false)); return; }
   const preset = findPreset(q.name);
-  if (preset) { const t = TARGETS.find(x => x.key === preset.key); flyTo(t.ra, t.dec, 2, () => select(t.ra, t.dec, t, false)); return; }
+  if (preset) { const t = TARGETS.find(x => x.key === preset.key); return flyTo(t.ra, t.dec, 2, () => select(t.ra, t.dec, t, false)); return; }
   $('serr').hidden = true; toast(`Looking up “${q.name}” in SIMBAD…`);
   try {
     const tg = await resolveTarget(q);
     const now = (tg.pmra || tg.pmdec) ? propagate(tg, NOW_MJD) : tg;
     const t = { key: 'q', name: tg.name, id: tg.otype ? otypeName(tg.otype) : 'SIMBAD object', ra: now.ra, dec: now.dec, simbad: tg };
-    flyTo(t.ra, t.dec, 2, () => select(t.ra, t.dec, t, false));
+    await flyTo(t.ra, t.dec, 2, () => select(t.ra, t.dec, t, false));
   } catch (err) { showSearchError(q.name, /recursive|wasm|unreachable|aliasing/i.test(err.message) ? '' : err.message); Snd.play('error'); }
 }
 function showSearchError(text, why) {

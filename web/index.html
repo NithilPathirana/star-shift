@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles/e.css">
 <link rel="stylesheet" href="styles/live.css">
+<link rel="stylesheet" href="styles/scan-loader.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="fx"></defs></svg>
@@ -82,16 +83,7 @@
       <div class="scalebar num"><i id="sbar"></i>30″</div>
       <div class="loading-thin" id="thin" hidden><i id="thinBar"></i></div>
 
-      <div class="state loader2" id="stLoading" hidden>
-        <div class="l2-media" id="l2Media"></div>
-        <div class="l2-shade"></div>
-        <div class="l2-center">
-          <div class="l2-pill" id="retryBar" role="status"><span id="retryTxt">IRSA is slow. Retrying automatically.</span><button class="key" id="retryNow">Retry now</button></div>
-          <button class="key primary l2-start" id="l2Start">Start watching</button>
-          <p class="l2-line" aria-live="polite"><span id="lTitle">Finding images</span> · <span id="lcount"><b>0</b> loaded</span></p>
-        </div>
-        <i class="l2-hair" aria-hidden="true"><b id="l2Hair"></b></i>
-      </div>
+      <div class="state loader2" id="stLoading" hidden><div id="scanLoader"></div></div>
       <div class="state error" id="stError" hidden role="alert">
         <div><h2>The NASA archive (IRSA) isn't answering</h2>
           <p id="errTxt">Some images arrived and are kept. Retry fetches only the missing ones.</p>
@@ -216,6 +208,7 @@
 <div class="sr-only" aria-live="polite" id="live"></div>
 
 <script src="app/erender.js"></script>
+<script src="app/scan-loader.js"></script>
 <script type="module" src="app/ui.js"></script>
 </body>
 </html>
