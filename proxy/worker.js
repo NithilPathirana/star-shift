@@ -5,6 +5,7 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 
 import { readHDUsFromStream } from '../web/core/fits.js';
+import { hipsRoute, channelProperties, tintPalettePNG } from './hips.js';
 
 const IRSA = 'https://irsa.ipac.caltech.edu';
 const GAIA = 'https://gea.esac.esa.int/tap-server/tap/sync';
@@ -21,6 +22,8 @@ function reply(body, status, extra = {}) {
 
 function upstreamFor(url) {
   const p = url.pathname;
+  const h = hipsRoute(url);
+  if (h) return h.error ? { error: h.error } : { ...h, cacheKey: `${h.target}?ch=${h.channel ?? ''}&tint=${h.tint ?? ''}` };
   if (p === '/TAP/sync') {
     const q = url.searchParams.get('QUERY') || '';
     // Only read-only queries on the SPHEREx tables (stops use as a general IRSA relay).
@@ -56,7 +59,7 @@ export async function handle(request, { fetchFn = fetch, cache = globalThis.cach
   if (up.error) return reply(up.error, up.status || 400, { 'Content-Type': 'text/plain' });
   if (up.kind === 'tap' && tapTtl) up.ttl = tapTtl;
 
-  const cacheKey = new Request(up.target);
+  const cacheKey = new Request(up.cacheKey || up.target);
   if (cache) {
     const hit = await cache.match(cacheKey);
     if (hit) return hit;
@@ -80,7 +83,13 @@ export async function handle(request, { fetchFn = fetch, cache = globalThis.cach
   }
 
   let out;
-  if (up.kind === 'cutout') {
+  if (up.kind === 'hips-props') {
+    out = reply(channelProperties(await res.text(), up.channel), 200, { 'Content-Type': 'text/plain', 'Cache-Control': `public, max-age=${up.ttl}` });
+  } else if (up.kind === 'hips-tile' || up.kind === 'hips-bin') {
+    let bytes = new Uint8Array(await res.arrayBuffer());
+    if (up.tint) bytes = tintPalettePNG(bytes, up.tint);
+    out = reply(bytes, 200, { 'Content-Type': up.kind === 'hips-tile' ? 'image/png' : 'application/fits', 'Cache-Control': `public, max-age=${up.ttl}` });
+  } else if (up.kind === 'cutout') {
     const bytes = await readHDUsFromStream(res.body, 3);
     out = reply(bytes, 200, { 'Content-Type': 'application/fits', 'Cache-Control': `public, max-age=${up.ttl}` });
   } else {
