@@ -7,7 +7,7 @@ import { makeGrid, reproject } from '../../core/align.js';
 import { wavelengthAt } from '../../core/wave.js';
 import { propagate } from '../../core/motion.js';
 import { DEFAULT_BANDS } from '../bands.js';
-import { toRows, seasonsOf, sortRows, filterRows, paginate, rowsToCSV, summarizeFlags, viewerUrl, FLAG_KINDS, flagText, bandAt } from './logic.js';
+import { toRows, seasonsOf, sortRows, filterRows, paginate, rowsToCSV, summarizeFlags, targetViewerUrl, FLAG_KINDS, flagText, bandAt } from './logic.js';
 import { base, initShell, resolve, listPosition, targetLine, download, slug, esc, cutoutSizeDeg, cutoutCenter } from './shell.js';
 
 const $ = (id) => document.getElementById(id);
@@ -161,7 +161,7 @@ function rowHtml(r) {
     <td>${r.release.toUpperCase()}</td>
     <td class="r">${fl}</td>
     <td>${st}</td>
-    <td class="links"><a href="${esc(r.irsaUrl)}" target="_blank" rel="noopener" title="${esc(r.irsaUrl)}">FITS ↗</a><a href="${esc(viewerUrl(S.target.ra, S.target.dec, r.mjd))}" title="Play in Star Shift">Play</a></td>
+    <td class="links"><a href="${esc(r.irsaUrl)}" target="_blank" rel="noopener" title="${esc(r.irsaUrl)}">FITS ↗</a><a href="${esc(targetViewerUrl(S.target, r.mjd))}" title="Play in Star Shift">Play</a></td>
   </tr>`;
   return open ? main + detailHtml(r) : main;
 }
@@ -185,7 +185,7 @@ function detailHtml(r) {
     : r.status === 'failed' ? '<p>— The cutout could not be downloaded. <button class="linkbtn" data-act="retry">Retry</button></p>' : '<p class="dim">— Loading the cutout…</p>'}</div>
     <div><h3>File</h3><p class="num url">${esc(r.irsaUrl)}</p>
       <p class="num dim">MJD ${r.mjd.toFixed(6)} – ${r.mjdEnd?.toFixed(6) ?? '—'} · ${esc(r.iso)}</p>
-      <p><button class="key" data-act="flags">Check flags</button> <a class="key" href="${esc(viewerUrl(S.target.ra, S.target.dec, r.mjd))}">Play in Star Shift</a></p></div>
+      <p><button class="key" data-act="flags">Check flags</button> <a class="key" href="${esc(targetViewerUrl(S.target, r.mjd))}">Play in Star Shift</a></p></div>
   </div></td></tr>`;
 }
 
@@ -267,7 +267,7 @@ $('rows').addEventListener('click', (e) => {
   if (act === 'retry' || act === 'flags') { r.status = 'waiting'; S.cache.delete(r.uri); fetchRow(r); return; }
   if (tr.classList.contains('drow')) return;
   select(r);
-  location.href = viewerUrl(S.target.ra, S.target.dec, r.mjd);
+  location.href = targetViewerUrl(S.target, r.mjd);
 });
 $('rows').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.target.matches('tr.arow')) e.target.click();

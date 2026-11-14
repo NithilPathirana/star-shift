@@ -7,7 +7,7 @@ import { listImages, fetchCutout, maskBadPixels } from '../../core/irsa.js';
 import { wavelengthAt } from '../../core/wave.js';
 import { propagate } from '../../core/motion.js';
 import { DEFAULT_BANDS, DETECTORS } from '../bands.js';
-import { seasonsOf, seasonIndex, mjdToUtc, bandAt, viewerUrl } from '../archive/logic.js';
+import { seasonsOf, seasonIndex, mjdToUtc, bandAt, targetViewerUrl } from '../archive/logic.js';
 import { IRSA } from '../../core/irsa.js';
 import {
   X_RANGE, FEATURES, APERTURES, CUTOUT_DEG, PIXEL_ARCSEC, pickImages, aperturePhotometry, pixelSolidAngle, toMilliJy,
@@ -336,7 +336,7 @@ $('plot').addEventListener('mousemove', (ev) => {
 $('plot').addEventListener('mouseleave', () => { S.hover = null; showTip(null); draw(); });
 $('plot').addEventListener('click', (ev) => {
   const h = nearest(ev);
-  if (h) location.href = viewerUrl(S.target.ra, S.target.dec, h.p.mjd);
+  if (h) location.href = targetViewerUrl(S.target, h.p.mjd);
 });
 new ResizeObserver(() => scheduleDraw()).observe($('plot'));
 

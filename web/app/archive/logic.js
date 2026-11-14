@@ -5,6 +5,7 @@
 
 import { DEFAULT_BANDS } from '../bands.js';
 import { IRSA } from '../../core/irsa.js';
+import { PRESETS, findPreset } from '../presets.js';
 
 export const PAGE_SIZES = [50, 100, 250];
 export const MJD_UNIX = 40587; // MJD of 1970-01-01T00:00 UTC
@@ -203,6 +204,17 @@ export function rowsToCSV(rows, seasons = []) {
 // Link that opens the patch in the main viewer. `mjd` lets the viewer jump to that image if it supports it.
 export function viewerUrl(ra, dec, mjd) {
   const p = new URLSearchParams({ ra: (+ra).toFixed(5), dec: (+dec).toFixed(5), scene: 'viewer' });
+  if (Number.isFinite(mjd)) p.set('mjd', mjd.toFixed(5));
+  return `index.html?${p}`;
+}
+
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+// Play link for a resolved target: one of the five built-in targets goes by its name (?q=<label>),
+// so the viewer uses the name, the ring and the pre-saved data; any other patch keeps ra/dec.
+export function targetViewerUrl(t, mjd) {
+  const preset = t?.presetKey ? PRESETS.find(p => p.key === t.presetKey) : (t?.name ? findPreset(t.name) : null);
+  if (!preset) return viewerUrl(t.ra, t.dec, mjd);
+  const p = new URLSearchParams({ q: preset.label, scene: 'viewer' });
   if (Number.isFinite(mjd)) p.set('mjd', mjd.toFixed(5));
   return `index.html?${p}`;
 }

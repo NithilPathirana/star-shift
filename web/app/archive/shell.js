@@ -3,7 +3,7 @@
 // the search box, name/coordinate resolution, Clarity + Pages popovers and small helpers. Browser only.
 
 import { parseQuery, fromURL, formatRA, formatDec } from '../query.js';
-import { findPreset } from '../presets.js';
+import { PRESETS, findPreset } from '../presets.js';
 import { resolveName } from '../../core/resolve.js';
 import { propagate } from '../../core/motion.js';
 
@@ -23,6 +23,17 @@ export function updateNav(q) {
     const extra = a.dataset.page === 'index.html' && s ? '&scene=viewer' : '';
     a.href = a.dataset.page + (s ? '?' + s + extra : '');
   }
+  // "Tonight?" (rail key and Pages sheet) carries the object too, as it does from the Viewer.
+  // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+  for (const a of document.querySelectorAll('a[href^="planetarium.html"]')) a.href = 'planetarium.html' + (s ? '?' + s : '');
+}
+
+// The quick picks: the same five built-in targets, in the same order, as the Viewer (web/app/presets.js).
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+function renderPicks() {
+  const box = document.querySelector('.picks');
+  if (!box) return;
+  box.innerHTML = PRESETS.map(p => `<button class="key pick" type="button" title="${esc(p.note)}">${esc(p.label)}</button>`).join('');
 }
 
 export function currentQuery(fallback = "Barnard's Star") {
@@ -41,7 +52,7 @@ export function initShell(onQuery) {
     updateNav(q);
     onQuery(q);
   };
-  initClarity(); initPops();
+  initClarity(); initPops(); renderPicks();
   form.addEventListener('submit', (e) => { e.preventDefault(); go(input.value); });
   for (const b of document.querySelectorAll('.pick')) b.addEventListener('click', () => { input.value = b.textContent; go(b.textContent); });
   window.addEventListener('popstate', () => { const q = currentQuery(); updateNav(q); onQuery(q); });
