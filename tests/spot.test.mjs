@@ -21,24 +21,37 @@ test('quick picks are the five NASA targets; surprise patches are distinct and p
 });
 
 // ---------- checklist state machine
-test('checklist runs one line at a time in the table order', () => {
+test('checklist: all checks run at once; each line settles on its own; retry only a failed line', () => {
   let s = L.checklistStep(L.initChecklist(), { type: 'start' });
-  assert.deepEqual(s.lines.map(l => l.status), ['checking', 'pending', 'pending', 'pending']);
-  // a result for a line that is not being checked is ignored
-  assert.equal(L.checklistStep(s, { type: 'done', id: 'star', status: 'clear' }), s);
-  s = L.checklistStep(s, { type: 'done', id: 'flags', status: 'clear', text: 'ok' });
-  assert.deepEqual(s.lines.map(l => l.status), ['clear', 'checking', 'pending', 'pending']);
+  assert.deepEqual(s.lines.map(l => l.status), ['checking', 'checking', 'checking', 'checking']);
   s = L.checklistStep(s, { type: 'done', id: 'star', status: 'clear' });
-  s = L.checklistStep(s, { type: 'done', id: 'asteroid', status: 'failed', text: 'no reply' });
-  assert.equal(L.decideVerdict(s).kind, 'pending');
+  s = L.checklistStep(s, { type: 'done', id: 'flags', status: 'clear', text: 'ok' });
+  assert.deepEqual(s.lines.map(l => l.status), ['clear', 'clear', 'checking', 'checking']);
+  assert.equal(L.checklistStep(s, { type: 'done', id: 'star', status: 'failed' }), s, 'a settled line is not overwritten');
   s = L.checklistStep(s, { type: 'done', id: 'seasons', status: 'clear' });
-  assert.ok(L.isFinished(s));
-  // retry only the line that could not check; the others keep their results
+  assert.equal(L.decideVerdict(s).kind, 'pending', 'Unexplained waits for JPL');
+  assert.deepEqual(L.decideVerdict(s).running, ['asteroid']);
+  s = L.checklistStep(s, { type: 'done', id: 'asteroid', status: 'failed', text: 'no reply' });
+  assert.ok(L.isFinished(s)); assert.equal(L.decideVerdict(s).kind, 'incomplete');
   s = L.checklistStep(s, { type: 'retry', id: 'asteroid' });
   assert.deepEqual(s.lines.map(l => l.status), ['clear', 'clear', 'checking', 'clear']);
   s = L.checklistStep(s, { type: 'done', id: 'asteroid', status: 'clear' });
-  assert.ok(L.isFinished(s));
+  assert.equal(L.decideVerdict(s).kind, 'unexplained');
   assert.equal(L.checklistStep(s, { type: 'retry', id: 'flags' }), s, 'a clear line cannot be retried');
+});
+
+test('the verdict shows before JPL answers when the quick checks decide it, and an asteroid upgrades an artefact', () => {
+  let s = L.checklistStep(L.initChecklist(), { type: 'start' });
+  s = L.checklistStep(s, { type: 'done', id: 'flags', status: 'clear' });
+  assert.equal(L.decideVerdict(s).kind, 'pending', 'the star check decides first');
+  const star = L.checklistStep(s, { type: 'done', id: 'star', status: 'explained', data: { best: { name: 'X' }, mover: true } });
+  const v = L.decideVerdict(star);
+  assert.equal(v.kind, 'known-star'); assert.deepEqual(v.running, ['asteroid', 'seasons']);
+  s = L.checklistStep(s, { type: 'done', id: 'star', status: 'clear' });
+  s = L.checklistStep(s, { type: 'done', id: 'seasons', status: 'explained', text: 'only 1' });
+  assert.equal(L.decideVerdict(s).kind, 'artefact'); assert.deepEqual(L.decideVerdict(s).running, ['asteroid']);
+  s = L.checklistStep(s, { type: 'done', id: 'asteroid', status: 'explained', data: { hit: { name: '541093 (2018 RJ4)' } } });
+  assert.equal(L.decideVerdict(s).kind, 'known-asteroid');
 });
 
 const finished = (st) => {

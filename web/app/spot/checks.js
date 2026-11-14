@@ -42,8 +42,9 @@ export async function runStarCheck({ at, epochs, base, fetchFn = fetch, signal, 
 // One sb_ident request; on a non-404 failure with the MPC 500 observer, ask again with the
 // geocentric state vector (as the Asteroid Spotter does).
 async function askJpl({ at, season, base, fetchFn, signal, timeoutMs }) {
+  const budget = timeoutSignal(signal, timeoutMs); // one budget for both observer tries
   const one = async (observer) => {
-    const res = await fetchFn(base + sbIdentPath({ ra: at.ra, dec: at.dec, utc: season.utc, observer }), { signal: timeoutSignal(signal, timeoutMs) });
+    const res = await fetchFn(base + sbIdentPath({ ra: at.ra, dec: at.dec, utc: season.utc, observer }), { signal: budget });
     if (!res.ok) { res.body?.cancel?.().catch(() => {}); return { ok: false, status: res.status }; }
     let json; try { json = await res.json(); } catch { return { ok: false, error: 'an unreadable answer' }; }
     if (!json?.signature) return { ok: false, error: json?.message || 'an unexpected answer' };
@@ -52,7 +53,7 @@ async function askJpl({ at, season, base, fetchFn, signal, timeoutMs }) {
   const base1 = { label: season.label, mjd: season.mjd, utc: season.utc };
   try {
     let r = await one('mpc-500');
-    if (!r.ok && r.status !== 404) r = await one('geocentric-state');
+    if (!r.ok && r.status !== 404 && !budget.aborted) r = await one('geocentric-state');
     return { ...base1, ...r };
   } catch (e) {
     if (signal?.aborted) throw e;

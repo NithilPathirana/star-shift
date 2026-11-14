@@ -165,3 +165,26 @@ html[data-motion=reduce] .sm-toast{transition:none}
   .sm-sheet-head{display:flex;justify-content:space-between;align-items:center;font-size:1rem}
   .sm-sheet-head .key{min-height:44px}
 }
+
+/* Design fixes (Sat): folded picker, one-line checks, verdict on top, sticky image */
+.sm-pfold{display:none;align-items:center;justify-content:space-between;gap:8px;font-size:.875rem;color:var(--ink-2)}
+.sm-pfold b{color:var(--ink)}
+.sm-pfold .key{min-height:34px;font-size:.8125rem}
+.sm-pick.folded{padding:8px 10px 8px 14px}
+.sm-pick.folded .sm-pfold{display:flex}
+.sm-pick.folded > :not(.sm-pfold){display:none}
+.sm-l details{padding-left:0}
+.sm-l summary{display:grid;grid-template-columns:20px minmax(0,1fr) auto;column-gap:10px;row-gap:1px;align-items:center;min-height:36px}
+.sm-l summary::after{grid-column:3;grid-row:1}
+.sm-l summary .sm-lr{grid-column:2 / 4;padding-left:0;font-size:.78rem;font-weight:400;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sm-l summary .sm-lr:empty{display:none}
+.sm-l details[open] summary .sm-lr{white-space:normal}
+.sm-l details > :not(summary){margin-left:30px}
+.sm-l .sm-retry{justify-self:start;margin-left:30px}
+.sm-vrun{font-size:.8125rem;color:var(--copper);font-weight:600}
+.sm-verdict.v-wait h2{font-size:1rem;color:var(--ink-2)}
+@media (min-width:1101px){.sm-stage-wrap{position:sticky;top:var(--gap);align-self:start}}
+@media (max-width:700px){
+  .sm-verdict .sm-vkeys .key,.sm-pfold .key,.sm-l .sm-retry{min-height:44px}
+  .sm-l summary{min-height:44px}
+}

@@ -17,7 +17,7 @@ import { notebookAdd, openNotebook } from '../notebook/notebook.js';
 import {
   LOAD_SETTINGS, MAX_SUSPECTS, QUICK, fieldByKey, pickSurprise, nearestField, fmtDay, seasonRange, fmtPos,
   ARTEFACT_KINDS, flagsAtSpot, evaluateFlags, decideSeasons, seasonPresence, STATE_WORD, checkTitle,
-  initChecklist, checklistStep, isFinished, decideVerdict, summaryText, REPORT_LINKS, ASTEROID_HALF_WIDTH_DEG, offsetText,
+  initChecklist, checklistStep, decideVerdict, summaryText, REPORT_LINKS, ASTEROID_HALF_WIDTH_DEG, offsetText,
 } from './logic.js';
 import { runStarCheck, runAsteroidCheck } from './checks.js';
 
@@ -26,7 +26,6 @@ const R = window.MockRender;
 const BASE = location.origin;
 const root = document.documentElement;
 const reduce = () => root.dataset.motion === 'reduce';
-const delay = (ms) => new Promise(r => setTimeout(r, ms));
 
 let tables = null;
 const tablesReady = fetch('core/data/spectral_wcs.json').then(r => r.json()).then(t => { tables = t; }).catch(() => {});
@@ -58,6 +57,11 @@ function choose(f, push = true) {
   if (push) history.pushState(null, '', '?field=' + encodeURIComponent(f.key));
   loadField(f);
 }
+function foldPick(fold) {
+  $('pick').classList.toggle('folded', fold); $('pChange').setAttribute('aria-expanded', String(!fold));
+  if (S.field) $('pfName').textContent = S.field.label;
+}
+$('pChange').onclick = () => { foldPick(false); $('pick').querySelector('.sm-picks button')?.focus(); };
 function markPicks() {
   for (const b of $('quick').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.key === S.field?.key));
 }
@@ -81,7 +85,7 @@ async function loadField(f) {
   S.ctl?.abort(); const ctl = S.ctl = new AbortController();
   stopBlink(); clearSuspects();
   Object.assign(S, { field: f, target: f.target, grid: null, frames: [], stacks: [], seasonFrames: [], ready: false, loaded: 0, planned: 0, failed: 0, show: 0 });
-  markPicks(); $('pickNote').textContent = '';
+  markPicks(); $('pickNote').textContent = ''; foldPick(true);
   $('fName').textContent = fieldTitle(f);
   const now = propagate(f.target, Date.now() / 86400000 + 40587);
   $('fCoords').textContent = `Field centre now: ${formatRA(now.ra)} ${formatDec(now.dec)}`;
@@ -136,7 +140,7 @@ function oneSeason(f) {
   const c = propagate(f.target, 61000), near = nearestField(c.ra, c.dec);
   showState('This patch has only one SPHEREx season so far', `A mover needs two seasons to compare. The nearest field with two or more is ${near.field.label}.`,
     [[`Try ${near.field.label}`, () => choose(near.field)]]);
-  $('pickNote').textContent = 'That patch has one season so far; pick another.';
+  $('pickNote').textContent = 'That patch has one season so far; pick another.'; foldPick(false);
 }
 
 /* ------------------------------------------------------------------ blink + drawing */
@@ -242,42 +246,54 @@ function middleImage(stack) {
   for (const f of fs) if (Math.abs(f.mjd - stack.mjd) < Math.abs(b.mjd - stack.mjd)) b = f;
   return b;
 }
-async function runChecks(s, retryId) {
-  const tok = s.token = {};
+// All four checks start at once (lead, after the Design run): the quick ones settle in a moment,
+// JPL in about a minute (90 s budget). The verdict shows as soon as the checks so far decide it.
+function runChecks(s, retryId) {
   s.check = retryId ? checklistStep(s.check, { type: 'retry', id: retryId }) : checklistStep(s.check, { type: 'start' });
-  s.verdict = null; renderSide(); steps();
+  const ids = retryId ? [retryId] : ['flags', 'star', 'asteroid', 'seasons'];
+  s.gen = s.gen || {}; const my = {}; for (const id of ids) my[id] = s.gen[id] = {};
+  if (ids.includes('asteroid')) s.astStart = Date.now();
   const [A, B] = blinked();
   const at = { ra: s.ra, dec: s.dec };
   const epochs = [{ mjd: A.mjd, label: 'First season' }, { mjd: B.mjd, label: 'Latest season' }];
-  const pending = new Set(s.check.lines.filter(l => l.status === 'checking' || l.status === 'pending').map(l => l.id));
-  const pStar = pending.has('star') ? runStarCheck({ at, epochs, base: BASE }).catch(e => ({ status: 'failed', text: `The star catalogues did not answer (${e.message}).`, near: [] })) : null;
-  const pAst = pending.has('asteroid') ? runAsteroidCheck({ at, base: BASE, seasons: [A, B].map((st, i) => { const f = middleImage(st); return { label: epochs[i].label, mjd: f.mjd, utc: f.date, obsid: f.obsid }; }) })
-    .catch(e => ({ status: 'failed', text: `Could not ask JPL (${e.message}).`, results: [] })) : null;
-  const gap = () => (reduce() ? 0 : 300);
-  while (!isFinished(s.check)) {
-    const line = s.check.lines[s.check.cursor];
-    let res;
-    if (line.id === 'flags') res = evaluateFlags([A, B].map((st, i) => ({ label: epochs[i].label, frames: st.frames })), s.x, s.y);
-    else if (line.id === 'star') res = await pStar;
-    else if (line.id === 'asteroid') res = await pAst;
-    else {
-      const mover = s.lines.star?.mover ? s.lines.star.best : null;
-      res = decideSeasons(seasonPresence(S.stacks, (i) => {
-        const pts = [[s.x, s.y]];
-        if (mover) { const p = propagate(mover, S.stacks[i].mjd); pts.push(worldToGrid(S.grid, p.ra, p.dec)); }
-        return pts;
-      }));
-    }
-    await delay(gap());
-    if (s.token !== tok) return;
-    s.lines[line.id] = res;
-    s.check = checklistStep(s.check, { type: 'done', id: line.id, status: res.status, text: res.text, data: res });
-    if (line.id === 'star') draw();
-    renderSide();
+  const settle = (id, res) => {
+    if (s.gen[id] !== my[id] || !S.suspects.includes(s)) return; // removed, or a newer run of this check
+    s.lines[id] = res;
+    s.check = checklistStep(s.check, { type: 'done', id, status: res.status, text: res.text, data: res });
+    update(s);
+  };
+  const seasonsNow = () => {
+    const mover = s.lines.star?.mover ? s.lines.star.best : null;
+    return decideSeasons(seasonPresence(S.stacks, (i) => {
+      const pts = [[s.x, s.y]];
+      if (mover) { const p = propagate(mover, S.stacks[i].mjd); pts.push(worldToGrid(S.grid, p.ra, p.dec)); }
+      return pts;
+    }));
+  };
+  update(s);
+  if (my.flags) setTimeout(() => settle('flags', evaluateFlags([A, B].map((st, i) => ({ label: epochs[i].label, frames: st.frames })), s.x, s.y)), reduce() ? 0 : 150);
+  if (my.star) {
+    runStarCheck({ at, epochs, base: BASE }).catch(e => ({ status: 'failed', text: `The star catalogues did not answer (${e.message}).`, near: [] }))
+      .then(res => { settle('star', res); if (my.seasons) settle('seasons', seasonsNow()); }); // seasons uses a known mover's predicted places
+  } else if (my.seasons) setTimeout(() => settle('seasons', seasonsNow()), 0);
+  if (my.asteroid) {
+    runAsteroidCheck({ at, base: BASE, seasons: [A, B].map((st, i) => { const f = middleImage(st); return { label: epochs[i].label, mjd: f.mjd, utc: f.date, obsid: f.obsid }; }) })
+      .catch(e => ({ status: 'failed', text: `Could not ask JPL (${e.message}).`, results: [] }))
+      .then(res => settle('asteroid', res));
   }
+}
+function update(s) {
+  const before = s.verdict?.kind;
   s.verdict = decideVerdict(s.check);
+  if (s.id === S.sel && before && before !== 'pending' && s.verdict.kind !== 'pending' && s.verdict.kind !== before) toast(`Suspect ${s.n}: the verdict changed to ${s.verdict.title}.`);
   renderSide(); steps(); draw();
 }
+// running seconds for the JPL check, updated each second without re-drawing the panel
+setInterval(() => {
+  const s = selected(); if (!s?.astStart) return;
+  const sec = `${Math.round((Date.now() - s.astStart) / 1000)} s`;
+  for (const el of document.querySelectorAll('[data-secs]')) el.textContent = sec;
+}, 1000);
 
 /* ------------------------------------------------------------------ side panel: suspects, checklist, verdict, report */
 const ICON = {
@@ -291,24 +307,24 @@ function renderSide() {
   $('susCount').textContent = `${S.suspects.length} of ${MAX_SUSPECTS}`;
   $('susEmpty').hidden = !!S.suspects.length; $('sheetOpen').hidden = !S.suspects.length;
   $('sus').innerHTML = S.suspects.map(s => {
-    const v = s.verdict && s.verdict.kind !== 'pending' ? s.verdict.title : isFinished(s.check) ? '' : 'checking…';
+    const v = s.verdict && s.verdict.kind !== 'pending' ? s.verdict.title : 'checking…';
     return `<li class="${s.id === S.sel ? 'on' : ''}"><button class="sm-sbtn" type="button" data-id="${s.id}" aria-pressed="${s.id === S.sel}"><span class="sm-num num">${s.n}</span><span class="sm-spos num">${esc(formatRA(s.ra))}<br>${esc(formatDec(s.dec))}</span><span class="sm-sv">${esc(v)}</span></button><button class="key xbtn" type="button" data-rm="${s.id}" aria-label="Remove suspect ${s.n}" title="Remove suspect ${s.n}">✕</button></li>`;
   }).join('');
   for (const b of $('sus').querySelectorAll('[data-id]')) b.onclick = () => select(+b.dataset.id);
   for (const b of $('sus').querySelectorAll('[data-rm]')) b.onclick = () => removeSuspect(+b.dataset.rm);
   const s = selected();
-  $('checkPanel').hidden = !s; $('verdict').hidden = !s?.verdict || s.verdict.kind === 'pending'; $('report').hidden = s?.verdict?.kind !== 'unexplained';
+  $('checkPanel').hidden = !s; $('report').hidden = s?.verdict?.kind !== 'unexplained';
   $('sheetTitle').textContent = s ? `Suspect ${s.n}` : 'Suspects';
-  if (!s) return;
+  if (!s) { $('verdict').hidden = true; return; }
   $('chkN').textContent = s.n;
   const open = new Set([...$('lines').querySelectorAll('details[open]')].map(d => d.dataset.id));
+  const secs = () => `<span data-secs>${s.astStart ? Math.round((Date.now() - s.astStart) / 1000) : 0} s</span>`;
   $('lines').innerHTML = s.check.lines.map(l => {
-    const word = l.status === 'checking' && l.id === 'asteroid' ? 'Checking… (JPL can take a minute)' : STATE_WORD[l.status];
+    const word = l.status === 'checking' && l.id === 'asteroid' ? `Checking… · ${secs()}` : esc(STATE_WORD[l.status]);
+    const result = l.text ? esc(l.text) : l.status === 'checking' && l.id === 'asteroid' ? 'JPL can take a minute (at most 90 s).' : '';
     const ev = l.data ? evidence(l.id, l.data, s) : '';
-    const retry = l.status === 'failed' && isFinished(s.check) ? `<button class="key sm-retry" type="button" data-retry="${l.id}">Retry</button>` : '';
-    return `<li class="sm-l st-${l.status}"><div class="sm-lh"><span class="sm-ic">${ICON[l.status]}</span><span class="sm-lt"><b>${esc(checkTitle(l.id))}</b><span class="sm-word">${esc(word)}</span></span>${retry}</div>
-      ${l.text ? `<p class="sm-lr">${esc(l.text)}</p>` : ''}
-      ${ev ? `<details data-id="${l.id}"${open.has(l.id) ? ' open' : ''}><summary>Evidence</summary>${ev}</details>` : ''}</li>`;
+    const retry = l.status === 'failed' ? `<button class="key sm-retry" type="button" data-retry="${l.id}">Retry</button>` : '';
+    return `<li class="sm-l st-${l.status}"><details data-id="${l.id}"${open.has(l.id) ? ' open' : ''}><summary><span class="sm-ic">${ICON[l.status]}</span><span class="sm-lt"><b>${esc(checkTitle(l.id))}</b><span class="sm-word">${word}</span></span><span class="sm-lr">${result}</span></summary>${ev}</details>${retry}</li>`;
   }).join('');
   for (const b of $('lines').querySelectorAll('[data-retry]')) b.onclick = () => runChecks(s, b.dataset.retry);
   paintThumbs(s);
@@ -402,6 +418,15 @@ function notebookEntry(s) {
 }
 function renderVerdict(s) {
   const v = s.verdict, el = $('verdict');
+  const waitingJpl = v?.kind === 'pending' && v.running?.length === 1 && v.running[0] === 'asteroid';
+  el.hidden = !(v && (v.kind !== 'pending' || waitingJpl));
+  if (waitingJpl) {
+    el.className = 'glass sm-verdict v-wait';
+    el.innerHTML = `<p class="sm-vk">Verdict for suspect <span class="num">${s.n}</span></p><h2>Waiting for the asteroid check</h2>
+      <p class="sm-vb">The other three checks found nothing that explains this. "Unexplained" needs JPL's asteroid check too.</p>
+      <p class="sm-vrun">Asteroid check still running · <span data-secs>${Math.round((Date.now() - (s.astStart || Date.now())) / 1000)} s</span></p>`;
+    return;
+  }
   if (!v || v.kind === 'pending') { el.innerHTML = ''; return; }
   const retry = v.retry ? v.retry.map(id => `<button class="key" type="button" data-vretry="${id}">Retry "${esc(checkTitle(id))}"</button>`).join('') : '';
   el.className = `glass sm-verdict v-${v.kind}`;
@@ -409,6 +434,7 @@ function renderVerdict(s) {
     <h2>${esc(v.title)}${v.sub ? ` <span class="sm-vsub">${esc(v.sub)}</span>` : ''}</h2>
     <p class="sm-vb">${v.body.map(esc).join(' ')}</p>
     ${v.evidence?.length ? `<ul class="sm-vev">${v.evidence.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+    ${v.running?.includes('asteroid') ? `<p class="sm-vrun">Asteroid check still running · <span data-secs>${Math.round((Date.now() - (s.astStart || Date.now())) / 1000)} s</span>${v.kind === 'artefact' ? '. A known asteroid here would change this answer' : ''}.</p>` : ''}
     ${v.notRun ? `<p class="sm-evn">${esc(v.notRun)}</p>` : ''}
     ${retry ? `<div class="sm-vkeys">${retry}</div>` : ''}
     <div class="sm-record"><p><b>Record it.</b> Save this suspect's position, the two seasons, the four checks and the verdict to your lab notebook (kept on this device).</p>
@@ -435,7 +461,7 @@ $('copy').onclick = async () => {
 /* ------------------------------------------------------------------ stepper */
 function steps() {
   const s = selected(), v = s?.verdict;
-  const cur = !S.ready ? 1 : !S.suspects.length ? 2 : (v && v.kind !== 'pending') || (s && s.check.cursor >= 0) ? 4 : 3;
+  const cur = !S.ready ? 1 : !S.suspects.length ? 2 : (v && v.kind !== 'pending') || (s && s.check.lines.some(l => l.status !== 'pending')) ? 4 : 3;
   const done = { 1: S.ready ? S.field.label : '', 2: S.ready ? `${fmtDay(S.stacks[0].startDate).replace(/^\d+ /, '')} ↔ ${fmtDay(S.stacks[lastIdx()].endDate).replace(/^\d+ /, '')}` : '',
     3: S.suspects.length ? `${S.suspects.length} suspect${S.suspects.length === 1 ? '' : 's'}` : '', 4: v && v.kind !== 'pending' ? v.title : '' };
   for (const b of document.querySelectorAll('.sm-step')) {
@@ -448,7 +474,7 @@ function steps() {
 }
 for (const b of document.querySelectorAll('.sm-step')) b.onclick = () => {
   const k = +b.dataset.step;
-  if (k === 1) { $('pick').scrollIntoView({ behavior: reduce() ? 'auto' : 'smooth', block: 'center' }); $('pick').querySelector('button')?.focus({ preventScroll: true }); }
+  if (k === 1) { foldPick(false); $('pick').scrollIntoView({ behavior: reduce() ? 'auto' : 'smooth', block: 'center' }); $('pick').querySelector('button')?.focus({ preventScroll: true }); }
   else if (k === 4) { openSheet(); $('side').scrollIntoView({ behavior: reduce() ? 'auto' : 'smooth', block: 'nearest' }); }
   else $('stage').scrollIntoView({ behavior: reduce() ? 'auto' : 'smooth', block: 'center' });
 };

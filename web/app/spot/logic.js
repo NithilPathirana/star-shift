@@ -207,7 +207,7 @@ export const SB_IDENT_ALLOWED = ['mpc-code', 'lat', 'lon', 'alt', 'dxy', 'dz', '
   'fov-ra-center', 'fov-dec-center', 'fov-ra-hwidth', 'fov-dec-hwidth', 'two-pass', 'mag-required', 'suppress-first-pass', 'req-elem', 'sb-group', 'sb-kind'];
 export const ASTEROID_MATCH_ARCSEC = 15;  // 2.4 pixels: our click, the season stack and the observer offset (below)
 export const ASTEROID_HALF_WIDTH_DEG = 0.03; // 108″ box around the ring: shows the nearest objects as evidence
-export const JPL_TIMEOUT_MS = 120000; // sb_ident took 50-75 s per request through the relay (lead, 14 Nov 2026)
+export const JPL_TIMEOUT_MS = 90000; // whole JPL budget per season (both observer tries); sb_ident took 50-75 s (lead, 14 Nov 2026)
 
 // '2025-08-15T20:46:08.896' (an image's DATE-AVG) -> '2025-08-15_20:46:08' (JPL obs-time, full UTC)
 export function utcToJplTime(utc) {
@@ -323,36 +323,29 @@ export const STATE_WORD = { pending: 'Waiting', checking: 'Checking…', clear: 
 export const checkTitle = (id) => CHECKS.find(c => c.id === id)?.title || id;
 
 export function initChecklist() {
-  return { lines: CHECKS.map(c => ({ id: c.id, status: 'pending', text: '', data: null })), cursor: -1 };
+  return { lines: CHECKS.map(c => ({ id: c.id, status: 'pending', text: '', data: null })) };
 }
-const nextPending = (lines, from) => { for (let i = from; i < lines.length; i++) if (lines[i].status === 'pending') return i; return lines.length; };
-// Actions: { type: 'start' } · { type: 'done', id, status, text, data } (only the line being checked) ·
-// { type: 'retry', id } (a line that could not check runs again; the others keep their results).
+// The checks run in parallel (lead, after the Design run: never queue the quick checks behind JPL).
+// Actions: { type: 'start' } (every line checking) · { type: 'done', id, status, text, data } (any line
+// still checking) · { type: 'retry', id } (a line that could not check runs again; others keep results).
 export function checklistStep(state, action) {
   const lines = state.lines.map(l => ({ ...l }));
-  if (action.type === 'start') {
-    const fresh = initChecklist();
-    fresh.lines[0].status = 'checking'; fresh.cursor = 0;
-    return fresh;
-  }
+  const i = lines.findIndex(l => l.id === action.id);
+  if (action.type === 'start') return { lines: initChecklist().lines.map(l => ({ ...l, status: 'checking' })) };
   if (action.type === 'done') {
-    const i = lines.findIndex(l => l.id === action.id);
-    if (i < 0 || i !== state.cursor || lines[i].status !== 'checking') return state;
-    if (!['clear', 'explained', 'failed'].includes(action.status)) return state;
+    if (i < 0 || lines[i].status !== 'checking' || !['clear', 'explained', 'failed'].includes(action.status)) return state;
     lines[i] = { ...lines[i], status: action.status, text: action.text || '', data: action.data ?? null };
-    const nx = nextPending(lines, i + 1);
-    if (nx < lines.length) lines[nx].status = 'checking';
-    return { lines, cursor: nx };
+    return { lines };
   }
   if (action.type === 'retry') {
-    const i = lines.findIndex(l => l.id === action.id);
-    if (i < 0 || lines[i].status !== 'failed' || state.cursor < lines.length) return state;
+    if (i < 0 || lines[i].status !== 'failed') return state;
     lines[i] = { ...lines[i], status: 'checking', text: '', data: null };
-    return { lines, cursor: i };
+    return { lines };
   }
   return state;
 }
-export const isFinished = (state) => state.cursor >= state.lines.length;
+const isDone = (l) => ['clear', 'explained', 'failed'].includes(l.status);
+export const isFinished = (state) => state.lines.every(isDone);
 
 // ---------------------------------------------------------------- verdict
 // Spec order (DESIGN.md 34): Known star · Likely artefact · Known asteroid · Unexplained.
@@ -360,23 +353,26 @@ export const isFinished = (state) => state.cursor >= state.lines.length;
 // (the missing check could not undo that explanation); "Unexplained" needs all four clear;
 // with no explanation and a check that could not run, there is no verdict.
 export function decideVerdict(state) {
-  if (!isFinished(state)) return { kind: 'pending' };
   const by = Object.fromEntries(state.lines.map(l => [l.id, l]));
   const failed = state.lines.filter(l => l.status === 'failed').map(l => l.id);
+  // checks still running when the answer is already decided (shown as "… still running · Ns")
+  const running = state.lines.filter(l => !isDone(l)).map(l => l.id);
   const notRun = failed.length ? `The ${failed.map(id => `"${checkTitle(id)}"`).join(' and ')} check could not run; it would not change this answer.` : null;
+  const decided = (v) => ({ ...v, running });
   if (by.star.status === 'explained') {
     const b = by.star.data?.best, mover = by.star.data?.mover;
     const name = b?.name || 'a catalogued star';
-    return { kind: 'known-star', title: 'Known star', sub: mover ? 'moving as expected' : 'not moving between these seasons',
+    return decided({ kind: 'known-star', title: 'Known star', sub: mover ? 'moving as expected' : 'not moving between these seasons',
       body: mover ? [`This is ${name}, a star known to move this much.`, 'You found it by eye: that is exactly how it is done.']
         : [`This is ${name}, a catalogued star.`, 'Its catalogued motion is too small to shift it between these seasons, so a change you saw is in brightness, not position.'],
-      evidence: [by.star.text], notRun, decidedBy: 'star' };
+      evidence: [by.star.text], notRun, decidedBy: 'star' });
   }
+  if (!isDone(by.star)) return { kind: 'pending' };
   if (by.asteroid.status === 'explained') {
     const h = by.asteroid.data?.hit;
-    return { kind: 'known-asteroid', title: isComet(h?.name) ? 'Known comet' : 'Known asteroid', sub: 'passing through',
+    return decided({ kind: 'known-asteroid', title: isComet(h?.name) ? 'Known comet' : 'Known asteroid', sub: 'passing through',
       body: [`This is ${h?.name || 'a known Solar System object'}, a known ${isComet(h?.name) ? 'comet' : 'asteroid'}, passing through.`, 'JPL\'s orbit list predicts it at this spot on this date.'],
-      evidence: [by.asteroid.text], notRun, decidedBy: 'asteroid' };
+      evidence: [by.asteroid.text], notRun, decidedBy: 'asteroid' });
   }
   const why = [];
   if (by.flags.status === 'explained') why.push(by.flags.text);
@@ -384,9 +380,10 @@ export function decideVerdict(state) {
   const fp = by.flags.status === 'explained' ? [] : (by.flags.data?.per || []).filter(p => p.flagged);
   if (why.length && fp.length) why.push(`The archive also flags this spot in ${fp.map(p => `${p.flagged} of ${p.n} images of the ${p.label.toLowerCase()}`).join(' and ')}.`);
   if (why.length) {
-    return { kind: 'artefact', title: 'Likely artefact', sub: '', body: ['This is most likely not a real object.', 'Here is why.'],
-      evidence: why, notRun, decidedBy: by.flags.status === 'explained' ? 'flags' : 'seasons' };
+    return decided({ kind: 'artefact', title: 'Likely artefact', sub: '', body: ['This is most likely not a real object.', 'Here is why.'],
+      evidence: why, notRun, decidedBy: by.flags.status === 'explained' ? 'flags' : 'seasons' });
   }
+  if (running.length) return { kind: 'pending', running }; // "Unexplained" waits for every check
   if (failed.length) {
     const names = failed.map(id => `"${checkTitle(id)}"`).join(' and ');
     return { kind: 'incomplete', title: 'We could not finish checking', sub: '',
