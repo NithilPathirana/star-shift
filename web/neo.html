@@ -1,0 +1,105 @@
+<!-- AI-written (OpenAI Codex) for Star Shift, NASA Space Apps 2026 -->
+<!doctype html>
+<html lang="en" data-motion="full" data-glass="glass" data-contrast="normal" data-text="normal">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Near-Earth objects · Star Shift</title>
+  <meta name="description" content="Calm, factual NASA/JPL close-approach and impact-monitoring data for near-Earth objects.">
+  <link rel="icon" type="image/svg+xml" href="brand/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/e.css">
+  <link rel="stylesheet" href="styles/neo.css">
+</head>
+<body class="data-page neo-page">
+  <div class="data-app">
+    <nav class="rail data-rail" aria-label="Pages">
+      <a class="logo-link" href="index.html" aria-label="Star Shift viewer"><img class="logo-slot" src="brand/star-shift-symbol-small.svg" alt="" width="40" height="40"></a>
+      <a class="nav-btn" href="index.html"><span class="nav-icon" aria-hidden="true">◉</span>Viewer</a>
+      <a class="nav-btn" href="neo.html" aria-current="page"><span class="nav-icon" aria-hidden="true">◇</span>Near-Earth</a>
+      <a class="nav-btn" href="orbits.html"><span class="nav-icon" aria-hidden="true">◎</span>Orbits</a>
+      <a class="nav-btn rail-bottom" href="index.html#about"><span class="nav-icon" aria-hidden="true">i</span>About</a>
+    </nav>
+
+    <header class="topbar glass data-topbar">
+      <a class="mobile-logo" href="index.html"><img src="brand/star-shift-symbol-small.svg" alt="" width="30" height="30"><span>Star Shift</span></a>
+      <div class="top-title"><span class="eyebrow">ASTRONOMICAL THREAT INTELLIGENCE</span><strong>Near-Earth objects</strong></div>
+      <details class="page-menu">
+        <summary class="key">Pages</summary>
+        <nav class="glass" aria-label="Pages on mobile"><a href="index.html">Viewer</a><a href="neo.html" aria-current="page">Near-Earth</a><a href="orbits.html">Orbits</a><a href="index.html#about">About</a></nav>
+      </details>
+      <a class="key" href="orbits.html">Compare orbits</a>
+    </header>
+
+    <main class="data-content">
+      <section class="page-intro" aria-labelledby="page-heading">
+        <div><h1 id="page-heading">Near-Earth objects</h1><p>Close approaches and long-term CNEOS impact monitoring, presented without alarm.</p></div>
+        <div class="freshness" id="freshness"><span class="tag tag-jpl">JPL</span><span>Waiting for data</span></div>
+      </section>
+
+      <div class="state-banner well" id="neo-status" role="status">Loading current NASA/JPL data…</div>
+
+      <section class="summary-grid" aria-label="Current summary">
+        <article class="summary-card well"><span>Highest Torino rating</span><strong class="num" id="summary-torino">—</strong><p id="summary-torino-note">Loading impact-monitoring results.</p></article>
+        <article class="summary-card well"><span>Closest upcoming</span><strong class="num" id="summary-closest">—</strong><p id="summary-closest-note">Loading close approaches.</p></article>
+        <article class="summary-card well"><span>Within the Moon's orbit</span><strong class="num" id="summary-moon">—</strong><p>Upcoming 60 days, nominal distance.</p></article>
+      </section>
+
+      <section class="chart-stage" aria-labelledby="distance-title">
+        <div class="section-heading stage-heading"><div><span class="kicker">DISTANCE TIMELINE</span><h2 id="distance-title">Recent and upcoming approaches</h2></div><span class="chart-note num">LD first · log distance</span></div>
+        <div class="timeline-chart" id="distance-chart"></div>
+        <p class="stage-caption"><span>Earth is the lower edge · the Moon is marked at 1 LD</span><span>Distances are nominal · objects and markers not to scale</span></p>
+      </section>
+
+      <section class="data-panel well" aria-labelledby="approaches-title">
+        <div class="section-heading"><div><span class="kicker">90-DAY WINDOW</span><h2 id="approaches-title">Close approaches</h2></div><span class="result-count num" id="approach-count">—</span></div>
+        <div class="table-scroll">
+          <table class="data-table" id="approach-table">
+            <thead><tr>
+              <th scope="col"><button data-sort="name">Object <span aria-hidden="true"></span></button></th>
+              <th scope="col" aria-sort="ascending"><button data-sort="date">Date (UTC) <span aria-hidden="true">↑</span></button></th>
+              <th scope="col"><button data-sort="distanceLd">Distance <span aria-hidden="true"></span></button></th>
+              <th scope="col"><button data-sort="speedKms">Relative speed <span aria-hidden="true"></span></button></th>
+              <th scope="col"><button data-sort="h">H <span aria-hidden="true"></span></button></th>
+              <th scope="col"><button data-sort="diameterMinKm">Diameter <span aria-hidden="true"></span></button></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="panel-foot">Select an object for its orbit, physical data and next Earth approaches. Estimated diameter uses albedo 0.05–0.25 when JPL has no diameter.</p>
+      </section>
+
+      <section class="data-panel well" aria-labelledby="risk-title">
+        <div class="section-heading"><div><span class="kicker">SENTRY</span><h2 id="risk-title">Impact-risk list</h2></div><span class="result-count num" id="risk-count">—</span></div>
+        <div class="scale-explain"><p><strong>Torino:</strong> a 0–10 public scale; 0 means no hazard.</p><p><strong>Palermo:</strong> a logarithmic technical scale; below −2 means no concern.</p></div>
+        <div class="table-scroll risk-scroll">
+          <table class="data-table" id="risk-table">
+            <thead><tr>
+              <th scope="col"><button data-risk-sort="name">Object <span aria-hidden="true"></span></button></th>
+              <th scope="col"><button data-risk-sort="impactProbability">Cumulative probability <span aria-hidden="true"></span></button></th>
+              <th scope="col" aria-sort="descending"><button data-risk-sort="palermoCumulative">Palermo cumulative <span aria-hidden="true">↓</span></button></th>
+              <th scope="col"><button data-risk-sort="palermoMax">Palermo max <span aria-hidden="true"></span></button></th>
+              <th scope="col"><button data-risk-sort="torino">Torino <span aria-hidden="true"></span></button></th>
+              <th scope="col"><button data-risk-sort="diameterKm">Diameter <span aria-hidden="true"></span></button></th>
+              <th scope="col"><button data-risk-sort="impactYears">Potential years <span aria-hidden="true"></span></button></th>
+              <th scope="col"><button data-risk-sort="potentialImpacts">Potential impacts <span aria-hidden="true"></span></button></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="source-credit"><span class="tag tag-jpl">JPL</span><span>Data: NASA/JPL Center for Near Earth Object Studies (CNEOS) and Small-Body Database, via ssd-api.jpl.nasa.gov.</span><span>Text credits only · no NASA or JPL logos</span></footer>
+    </main>
+  </div>
+
+  <dialog class="object-drawer" id="object-drawer" aria-labelledby="drawer-title">
+    <div class="drawer-head"><div><span class="kicker">SMALL-BODY DATABASE</span><h2 id="drawer-title">Object details</h2></div><button class="key icon" id="drawer-close" aria-label="Close object details">×</button></div>
+    <div id="drawer-body"><p>Choose an object from a table.</p></div>
+  </dialog>
+  <script type="module" src="app/neo/main.js"></script>
+</body>
+</html>
