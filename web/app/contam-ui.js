@@ -175,7 +175,7 @@ export function createContam(ctx) {
     }
     const tables = ctx.tables();
     const wb = $('layerSeg').querySelector('[data-layer=wave]');
-    const waveOk = !!(tables && (!raw || (tables[String(raw.detector)] && raw.cut?.W?.CRPIX1W)));
+    const waveOk = !!(tables && (!raw || (tables[String(raw.detector)] && Number.isFinite(raw.cut?.W?.CRPIX1W))));
     wb.disabled = !waveOk && S.layer !== 'wave'; wb.title = waveOk ? LAYERS.wave.tip : 'Not in this cutout';
     for (const id of ['variance', 'zodi']) {
       const b = $('layerSeg').querySelector(`[data-layer=${id}]`), missing = raw?.layers && !raw.layers.failed && raw.layers[id] === null;
