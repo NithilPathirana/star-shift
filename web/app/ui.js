@@ -18,6 +18,8 @@ import { propagate, separationArcsec, mjdToDate } from '../core/motion.js';
 import { gridToWorld } from '../core/align.js';
 import { createContam } from './contam-ui.js';
 import { createGhost } from './ghost-ui.js';
+import { createLightcurve } from './lightcurve/index.js'; // brightness-vs-date strip (info panel)
+import { createCleanBlink } from './cleanblink.js'; // Blink: hide overlays, zoom on the star
 import { createTelescopes } from './telescopes/index.js'; // Telescope compare (DESIGN.md 31a)
 
 const R = window.MockRender;
@@ -138,6 +140,7 @@ function buildTimeline() {
   const g = document.createElement('span'); g.className = 'ghost'; g.innerHTML = '<b></b>'; track.appendChild(g);
   track.setAttribute('aria-valuemax', String(Math.max(1, F.length)));
   applyRanges();
+  LC.data(F.map(f => f.raw), V.grid, V.name, V.status === 'loading'); // brightness strip follows the shown images
 }
 let tlRaf = 0; const rebuildSoon = () => { if (!tlRaf) tlRaf = requestAnimationFrame(() => { tlRaf = 0; buildTimeline(); onFrame(P.i); }); };
 
@@ -157,9 +160,10 @@ function layout() {
   $('sbar').style.width = (cssCell * 30 / 6.15) + 'px';
   draw(); placeHits();
 }
-const opt = cv => ({ ramp: set.ramp, cell: +cv.dataset.dev, ring: set.ring && !!V.target, ringColor: getComputedStyle(root).getPropertyValue('--ring').trim(),
+const opt = cv => CB.opt({ ramp: set.ramp, cell: +cv.dataset.dev, ring: set.ring && !!V.target, ringColor: getComputedStyle(root).getPropertyValue('--ring').trim(),
   maskBg: '#211b16', maskInk: '#6b5d50', stretch: set.str, hatch: set.hatch });
 function cross(cv, fx, fy) {
+  if (CB.on) return; // Clean Blink hides the cross
   const c = cv.getContext('2d'), k = +cv.dataset.dev, x = (fx + .5) * k, y = (fy + .5) * k;
   c.strokeStyle = '#9DB89F'; c.lineWidth = Math.max(1.5, k / 10); c.beginPath();
   c.moveTo(x - 3.4 * k, y); c.lineTo(x - 1.2 * k, y); c.moveTo(x + 1.2 * k, y); c.lineTo(x + 3.4 * k, y);
@@ -233,6 +237,7 @@ function onFrame(i, manual) {
   $('tlDate').textContent = R.fmtDate(f.date);
   track.setAttribute('aria-valuenow', i + 1); track.setAttribute('aria-valuetext', `Image ${i + 1}, ${R.fmtDate(f.date)}`);
   setCounter(i, manual);
+  LC.mark(i);
   $('play').dataset.playing = P.playing; $('play').setAttribute('aria-label', P.playing ? 'Pause' : 'Play');
   $('pi').innerHTML = P.playing ? '<path d="M5 4h3.5v12H5zM11.5 4H15v12h-3.5z" fill="currentColor"/>' : '<path d="M6 4l10 6-10 6z" fill="currentColor"/>';
   if (manual) $('live').textContent = `Image ${i + 1} of ${F.length}, ${R.fmtDate(f.date)}${f.um ? ', ' + f.um.toFixed(2) + ' micrometres' : ''}`;
@@ -247,6 +252,12 @@ const CX = createContam({ $, R, V, P, esc, set, Snd, base: BASE, tables: () => t
   mode: () => mode, redraw: () => { draw(); }, refilter: () => refilter(), stackRaws: () => V.F.map(f => f.raw).sort((a, b) => a.mjd - b.mjd),
   closePop: () => closePop(), hideTip: () => hideTip(),
   tipAt: (html, x, y) => { clearTimeout(tipT); $('tip').innerHTML = html; placeTip({ left: x - 10, right: x + 10, top: y - 10, height: 20 }); } });
+// Brightness-vs-date strip (lightcurve/) and Clean Blink (cleanblink.js)
+const LC = createLightcurve({ $, esc, colourOf: um => rangeOf(um)?.c,
+  onPick: i => { if (mode === 'compare' || mode === 'blink') setMode('play'); P.pause(); P.set(i, true); Snd.play('scrub'); } });
+const CB = createCleanBlink({ $, Snd, mode: () => mode, n: () => V.n, cell: () => cssCell, redraw: () => draw(),
+  getView: () => ({ zoom, panX, panY }), setView: v => { zoom = v.zoom; if (v.panX != null) { panX = v.panX; panY = v.panY; } layout(); },
+  target: () => (firstS()?.exp && lastS()?.exp ? [firstS().exp, lastS().exp] : null) });
 function restack() { V.stacks = V.F.length ? buildStacks(V.F.map(f => f.raw).sort((a, b) => a.mjd - b.mjd)).map(stackToF) : []; }
 // Measure the motion from the images the flag filter keeps (also with no catalogue motion, e.g. a
 // coordinate search). Runs when loading finishes and again whenever the filter changes.
@@ -279,6 +290,7 @@ function setMode(m, withSound) {
     segSelect($('viewSeg'), b => b.dataset.mode === m);
     if (m !== 'play') P.pause();
     if (m === 'blink') { side = 0; bt = setInterval(() => { side ^= 1; draw(); }, set.motion ? 1500 : 600); }
+    if (m !== 'blink') CB.leave();
     zoom = 1; layout(); onFrame(P.i);
   };
   if (withSound) Snd.play('tick');
@@ -363,6 +375,7 @@ function load(query, label) {
   V.ctl?.abort(); const ctl = V.ctl = new AbortController();
   P.pause(); clearInterval(bt); if (mode !== 'play') { mode = 'play'; $('stage').className = 'stage mode-play'; segSelect($('viewSeg'), b => b.dataset.mode === 'play'); }
   TS.show(false); TS.reset();
+  CB.leave(); LC.data(null, null, label, true);
   CX.reset();
   Object.assign(V, { query, target: null, grid: null, raws: [], F: [], FA: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, status: 'loading', motion: null, seasons: [], name: label || 'this patch' });
   P.i = 0; shown = -1; arriveCount = 0;

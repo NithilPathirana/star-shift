@@ -1,0 +1,46 @@
+{
+ "about": "tools/export_still.mjs: Barnard's Star, SPHEREx season stacks overlaid in colour. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.",
+ "generated": "2026-11-14T22:27:53.752Z",
+ "images": 120,
+ "failed": 0,
+ "crop": {
+  "px": 13,
+  "x0": 6,
+  "y0": 6,
+  "arcsec": 80
+ },
+ "stretch": "viewer 'auto' (asinh, 2-99.7 percentile), per season stack",
+ "seasons": [
+  {
+   "colour": "#e39650",
+   "dates": "15 Aug 2025 – 1 Oct 2025",
+   "images": 40,
+   "star": [
+    5.93,
+    6.87
+   ]
+  },
+  {
+   "colour": "#fff6e8",
+   "dates": "11 Mar 2026 – 5 May 2026",
+   "images": 40,
+   "star": [
+    6.01,
+    5.93
+   ]
+  },
+  {
+   "colour": "#6096ff",
+   "dates": "16 Aug 2026 – 22 Sep 2026",
+   "images": 40,
+   "star": [
+    6.06,
+    5.21
+   ]
+  }
+ ],
+ "star": "catalogue position (SIMBAD proper motion) averaged over each season, in crop pixels (computed)",
+ "move": "north, about 1.7 pixels (10″) in a year",
+ "maskedPixelsInCrop": 0,
+ "credit": "Data: NASA SPHEREx via IRSA"
+}

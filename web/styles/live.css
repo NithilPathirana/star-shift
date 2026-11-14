@@ -296,6 +296,55 @@ html[data-motion=full] .tele-wait { animation: tele-pulse 1.4s ease-in-out infin
 .tele { bottom: 14px; }
 .tele-panels { flex: none; }
 
+/* lightcurve + clean blink */
+/* Brightness-vs-date strip in the info panel (app/lightcurve/). DESIGN.md 25 charts: dark flat
+   plate, Plex Mono 11 px axes in --stage-muted, band colours as data colours only (points),
+   selected point filled, others hollow; text never under 11 px. */
+.lc-sec summary { justify-content: flex-start; gap: 8px; }
+.lc-sec .lc-h { flex: 1; font-size: .875rem; font-weight: 600; color: var(--ink); }
+.lc-plot { margin-top: 10px; border-radius: 10px; background: var(--stage); min-height: 48px; overflow: hidden; }
+.lc-svg { display: block; cursor: pointer; touch-action: manipulation; }
+.lc-svg:focus-visible { outline: 2.5px solid var(--ring); outline-offset: -3px; border-radius: 10px; }
+.lc-bg { fill: rgba(255,245,230,.035); }
+.lc-zero { stroke: rgba(255,235,210,.22); stroke-width: 1; stroke-dasharray: 3 3; }
+.lc-mean { stroke: #FFF6E8; stroke-opacity: .75; stroke-width: 1.5; }
+.lc-ax { fill: var(--stage-muted); font: 11px var(--font-num); font-variant-numeric: tabular-nums; }
+.lc-gl { fill: var(--stage-text); font: 600 11px var(--font-ui); }
+.lc-pt { fill: transparent; stroke: var(--pc); stroke-width: 1.4; }
+.lc-pt.hov { stroke-width: 2.4; }
+.lc-pt.on { fill: var(--pc); stroke: #FFF6E8; stroke-width: 1.5; }
+.lc-head { fill: none; stroke: var(--ring); stroke-width: 1.5; pointer-events: none; }
+.lc-msg { margin: 0; padding: 14px 12px; font-size: .8125rem; line-height: 1.45; color: var(--stage-text); }
+.lc-read { margin: 8px 0 0; min-height: 1.45em; font-size: .75rem; line-height: 1.45; color: var(--ink-2); }
+.lc-read b { color: var(--ink); font-weight: 600; }
+.lc-read:empty { display: none; }
+.lc-sum { margin-top: 8px; display: grid; gap: 6px; }
+.lc-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: .8125rem; }
+.lc-k { color: var(--muted); white-space: nowrap; }
+.lc-v { text-align: right; color: var(--ink); }
+.lc-v b { font-weight: 600; }
+.lc-v small { display: block; font-size: .75rem; color: var(--muted); }
+.lc-mk { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border: 1.5px solid var(--muted); }
+.lc-mk.lc-circle { border-radius: 50%; }
+.lc-skip { margin: 4px 0 0; font-size: .75rem; line-height: 1.45; color: var(--muted); }
+.lc-cap { margin-top: 8px; font-size: .75rem; line-height: 1.45; }
+@media (max-width: 699px) { .lc-sec summary { min-height: 44px; } }
+
+/* Clean Blink (app/cleanblink.js): one key on the stage, Blink view only. While on, every
+   overlay is hidden (the canvas skips ring, hatch and cross itself) and the stage zooms in. */
+.cb-key { display: none; position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 3;
+  align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(255,235,210,.22); background: rgba(21,17,14,.82); color: var(--stage-text);
+  font: 600 .8125rem var(--font-ui); white-space: nowrap; transition: background var(--t-press, 120ms), border-color var(--t-press, 120ms); }
+.app[data-scene=viewer] .mode-blink .cb-key { display: inline-flex; }
+.cb-key[aria-pressed=true] { border-color: var(--ring); box-shadow: inset 0 0 0 1px var(--ring); color: #FFF6E8; }
+.cb-key:focus-visible { outline: 2.5px solid var(--ring); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) { .cb-key:hover { background: rgba(48,40,33,.94); } }
+.stage.clean-blink .chip, .stage.clean-blink .flag, .stage.clean-blink .lgd, .stage.clean-blink .hit,
+.stage.clean-blink .gh-off, .stage.clean-blink .gh-bar, .stage.clean-blink .cap { display: none !important; }
+/* phone: the tool rail runs along the stage bottom, so the key sits top-right under the season pill */
+@media (max-width: 699px) { .cb-key { height: 44px; padding: 0 16px; left: auto; right: 12px; top: 52px; bottom: auto; transform: none; } }
+
 /* bands + notebook */
 /* AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
    Blink: one label (the season, in the chip) replaced on every flip; no empty flag pill, and the

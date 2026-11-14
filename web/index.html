@@ -106,6 +106,7 @@
       <div class="scalebar num"><i id="sbar"></i>30″</div>
       <div class="lgd num" id="layerLgd" hidden></div>
       <div class="gh-off num" id="ghostOff" hidden></div>
+      <button class="cb-key" id="cleanKey" aria-pressed="false" title="Hide every overlay and zoom in on the star"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="3"/><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/></svg><span class="cb-l">Clean blink</span></button>
       <div class="gh-bar" id="ghostBar" hidden><span class="gh-end num" id="ghMin">−50 yr</span><input type="range" id="ghRange" min="-50" max="50" step="1" value="0" aria-label="Ghost date, years from this image"><span class="gh-end num" id="ghMax">+50 yr</span><span class="gh-read num" id="ghRead"></span><button class="key" id="ghReset">Reset</button></div>
       <div class="loading-thin" id="thin" hidden><i id="thinBar"></i></div>
 
@@ -158,6 +159,14 @@
       <p class="note">The dashed ring is worked out from the star's catalogue motion for this date.</p>
       <div class="ring-row"><span><i class="ring-key"></i>Show ring</span><button class="switch well" role="switch" aria-checked="true" id="ringSw" aria-label="Show predicted position ring"><i></i></button></div>
       <div id="ghInfo" class="gh-info" hidden></div>
+    </section>
+    <section class="insp-sec lc-sec"><!-- brightness-vs-date strip (app/lightcurve/) -->
+      <details id="lcBox" open><summary><span class="lc-h">Brightness over time</span><span class="tag tag-obs">Observed</span></summary>
+        <div class="lc-plot" id="lcPlot"></div>
+        <p class="lc-read num" id="lcRead"></p>
+        <div class="lc-sum" id="lcSum"></div>
+        <p class="note lc-cap" id="lcCap"></p>
+      </details>
     </section>
     <section class="insp-sec">
       <details><summary>More detail</summary>
