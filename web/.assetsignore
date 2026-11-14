@@ -1,0 +1,13 @@
+# AI-written (OpenAI Codex) for Star Shift, NASA Space Apps 2026.
+# Development-only pages and any accidentally copied render sources stay private.
+.assetsignore
+dev/
+**/_build/
+**/_build/**
+**/raw/
+**/raw/**
+**/*unwatermarked*
+**/*.map
+.env
+.env.*
+.dev.vars
