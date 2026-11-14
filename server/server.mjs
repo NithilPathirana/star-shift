@@ -57,7 +57,7 @@ async function serveStatic(path, res) {
   let rel = decodeURIComponent(path);
   let base = WEB;
   if (rel.startsWith('/loader/')) { // only the loader media, nothing else from design/
-    if (!/^\/loader\/(v2\/)?[\w.-]+\.(webm|mp4|webp|png)$/.test(rel)) { res.writeHead(404).end('Not found'); return; }
+    if (!/^\/loader\/(v1\.1\/)?[\w.-]+\.(webm|mp4|webp|png)$/.test(rel)) { res.writeHead(404).end('Not found'); return; }
     base = LOADER; rel = rel.slice('/loader'.length);
   }
   if (rel.endsWith('/')) rel += 'index.html';

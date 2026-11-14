@@ -293,11 +293,12 @@ function rocketAt(frac) {
 }
 /* loader v2 media + exit clip (DESIGN.md section 17; from design-v1.html) */
 // Loader: Design Studio's code-based ScanLoader (design/loader/scan/), drawn from the real frames.
-const LOADER_MODE = 'scan'; // 'scan' (band-tinted plate + wavelength ruler) or 'sheet' (contact sheet): Kurucharan's pick
+// 'astronaut' (Design Studio's video loop, v1.1; falls back to ScanLoader if the video can't play), 'scan' or 'sheet'
+const LOADER = 'astronaut';
 function leaveLoader() {
   const L = $('stLoading'); if (L.hidden || !V.scan) return;
-  const scan = V.scan; V.scan = null; scan.done();
-  setTimeout(() => { L.hidden = true; scan.destroy(); }, set.motion ? 0 : 400);
+  const scan = V.scan; V.scan = null; const ms = scan.done(); // AstroLoader returns its exit time; ScanLoader returns nothing
+  setTimeout(() => { L.hidden = true; scan.destroy(); }, set.motion ? 0 : (ms ?? 400));
 }
 // showState(null) leaves #stLoading alone so leaveLoader() can fade it out
 function showState(id) { ['stLoading', 'stError', 'stEmpty'].forEach(x => { if (id === null && x === 'stLoading') return; $(x).hidden = x !== id; }); if (id && id !== 'stLoading') { V.scan?.destroy(); V.scan = null; } }
@@ -316,8 +317,8 @@ function load(query, label) {
   P.i = 0; shown = -1; arriveCount = 0;
   $('stLoading').classList.remove('leaving');
   V.scan?.destroy();
-  V.scan = window.ScanLoader($('scanLoader'), {
-    mode: LOADER_MODE, target: V.name, bands: ranges, reducedMotion: set.motion,
+  V.scan = (LOADER === 'astronaut' && window.AstroLoader ? window.AstroLoader : window.ScanLoader)($('scanLoader'), {
+    mode: LOADER, base: '/loader/v1.1/', target: V.name, bands: ranges, reducedMotion: set.motion,
     onStart: () => { Snd.play('click'); $('thin').hidden = false; leaveLoader(); if (!set.motion) P.play(); },
     onRetry: () => { Snd.play('click'); if (V.query) load(V.query, V.name); },
   });
