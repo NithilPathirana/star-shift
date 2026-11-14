@@ -11,3 +11,5 @@ evidence/wrangler-dev.log
 evidence/prove_run.log
 .serena/
 .cache/
+evidence/display_*.json
+evidence/display_*.log
