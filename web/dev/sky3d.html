@@ -1,6 +1,9 @@
 <!doctype html>
 <!-- Dev page: the 3D sky (Sky3D) on its own, with an fps meter.
-     URL options: ?ra=&dec=&fov=&ch=&grid=1&bench=1 (bench = 10 s slow pan, fps logged to console and #fps).
+     URL options: ?ra=&dec=&fov=&ch=&grid=1&bench=1&debug=1&hold=3/496,4/1986&fail=3/485 (bench = 10 s slow pan, fps logged to console and #fps;
+     debug = tile-loader state as JSON in #dbg, readable with headless --dump-dom;
+     hold = order/npix tiles whose fetch never finishes (shows the Allsky fallback);
+     fail = tiles whose first fetch fails with HTTP 503 (they should load on the retry).
      AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. -->
 <html lang="en">
 <head>
@@ -37,9 +40,22 @@
 <div id="read" class="pill">–</div>
 <div id="tip" class="pill"></div>
 <div id="credit" class="pill"></div>
+<pre id="dbg" class="pill" style="display:none;left:12px;top:48px;max-width:60%;white-space:pre-wrap;font-size:10px"></pre>
 <script type="module">
   import { Sky3D } from '../app/sky3d/index.js';
   const q = new URLSearchParams(location.search), $ = (id) => document.getElementById(id);
+  const tileRe = (k) => q.get(k) ? q.get(k).split(',').map(t => { const [o, n] = t.split('/'); return `/Norder${o}/Dir${Math.floor(n / 10000) * 10000}/Npix${n}.png`; }) : [];
+  const hold = tileRe('hold'), fail = tileRe('fail');
+  if (hold.length || fail.length) { // test hooks: stall or fail chosen tiles
+    const real = window.fetch;
+    window.fetch = (url, opt) => {
+      const u = String(url);
+      if (hold.some(t => u.endsWith(t))) return new Promise(() => {});
+      const f = fail.findIndex(t => u.endsWith(t));
+      if (f >= 0) { fail.splice(f, 1); return Promise.resolve(new Response('', { status: 503 })); }
+      return real(url, opt);
+    };
+  }
   let mouse = [0, 0];
   addEventListener('pointermove', (e) => { mouse = [e.clientX, e.clientY]; });
   const sky = new Sky3D($('sky'), {
@@ -49,6 +65,15 @@
     onMove: (c, f) => console.log('move', c.ra.toFixed(3), c.dec.toFixed(3), f.toFixed(3)),
   });
   window.sky = sky;
+  if (q.get('debug') === '1') { // tile-loader state: wanted order/tiles and each wanted tile's state
+    const d = $('dbg'); d.style.display = 'block';
+    setInterval(() => {
+      const w = sky.want || {}, st = {};
+      for (const e of sky.tiles.values()) st[`${e.order}:${e.state}`] = (st[`${e.order}:${e.state}`] || 0) + 1;
+      const wanted = (w.tiles || []).slice(0, 12).map(n => [...sky.tiles.values()].find(e => e.order === w.order && e.n === n)?.state || '-');
+      d.textContent = JSON.stringify({ order: w.order, nWant: (w.tiles || []).length, first: (w.tiles || []).slice(0, 12), wanted, st, queue: sky.queue?.length, inflight: sky.inflight, layers: [...sky.layers.values()].map(l => l.state) });
+    }, 250);
+  }
   $('credit').textContent = sky.credit;
   const num = (k, d) => (q.has(k) ? +q.get(k) : d);
   if (q.has('ch')) { sky.setChannel(+q.get('ch')); $('ch').value = q.get('ch'); }

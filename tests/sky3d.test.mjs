@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { pixToVec, vecToPix, nestToXYF, xyfToNest, tileUV, allskyRect, tilePath, parent, children } from '../web/app/sky3d/healpix.js';
-import { radecToVec, vecToRadec, frame, project, unproject, chooseOrder, visibleTiles, pickStar, starColor, starSize, starBright, magLimit, detailRamp, easeInOut, slerpRadec, panned, imageryAlpha, starAlpha, vfov, gridStep, dot, pickNearest, namesQuery } from '../web/app/sky3d/view.js';
+import { radecToVec, vecToRadec, frame, project, unproject, chooseOrder, visibleTiles, pickStar, starColor, starSize, starBright, magLimit, detailRamp, easeInOut, slerpRadec, panned, imageryAlpha, starAlpha, allskySoft, retryDelay, vfov, gridStep, dot, pickNearest, namesQuery } from '../web/app/sky3d/view.js';
 import { propagate, NAMES } from '../tools/make_stars.mjs';
 
 // Made with astropy_healpix.healpix_to_lonlat / lonlat_to_healpix (order='nested').
@@ -145,4 +145,21 @@ test('stars.json: Hipparcos stars, sane count, named bright stars at the right p
   assert.ok(Object.keys(NAMES).length >= 100 && Object.keys(d.names).length >= 100);
   const [r, de] = propagate(0, 0, 3600, 3600, 1); // 3600 mas/yr = 0.001 deg/yr, for 1 yr
   assert.ok(Math.abs(r - 0.001) < 1e-12 && Math.abs(de - 0.001) < 1e-12);
+});
+
+test('allskySoft: smooth the magnified Allsky fallback only in the detail range', () => {
+  const v = (fov, w = 907) => ({ ra: 0, dec: 0, fov, w, h: 500 });
+  assert.equal(allskySoft(v(60)), 0); // wide view: Milky Way base untouched
+  assert.equal(allskySoft(v(25), 4000, 2), 0); // above DETAIL_START, even when magnified
+  assert.equal(allskySoft(v(10)), 1); // default view (Barnard's Star, 10 deg): fully smoothed
+  assert.equal(allskySoft(v(1)), 1);
+  for (let f = 0.1; f < 120; f *= 1.3) { const s = allskySoft(v(f)); assert.ok(s >= 0 && s <= 1, `${f}: ${s}`); }
+});
+
+test('retryDelay: failed tiles retry with back-off, 404 and the 4th failure give up', () => {
+  assert.equal(retryDelay(1, 503), 1500);
+  assert.equal(retryDelay(2), 3000);
+  assert.equal(retryDelay(3, 502), 6000);
+  assert.equal(retryDelay(4, 503), null);
+  assert.equal(retryDelay(1, 404), null);
 });

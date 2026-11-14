@@ -72,6 +72,22 @@ export function chooseOrder(view, dpr = 1, { tile = 512, maxOrder = 5, minOrder 
   return maxOrder;
 }
 
+// How much to smooth the Allsky fallback (0..1). Its thumbnails are every 8th pixel of the
+// 8-bit order-3 tiles (not an average), so magnified they turn the sky noise into big blocky
+// blobs that read as a different texture next to loaded detail tiles. Smoothing them while they
+// are magnified (> 1 screen px per texel) leaves a soft sky of the same mean light instead.
+// Only in the detail range (it fades in with detailRamp): wide views keep the Milky Way as it was.
+export function allskySoft(view, dpr = 1, cellPx = 64) {
+  const mag = pxPerDeg(view) * Math.min(2, dpr) * (58.6 / 8 / cellPx); // screen px per Allsky texel
+  return Math.max(0, Math.min(1, (mag - 1) / 2)) * Math.min(1, 3 * detailRamp(view.fov));
+}
+// Failed tile loads are retried with back-off (an upstream hiccup must not leave a permanent
+// coarse patch); a 404 (no data there) or the 4th failure gives up. Returns ms, or null.
+export function retryDelay(tries, status) {
+  if (status === 404 || tries >= 4) return null;
+  return 1500 * 2 ** Math.max(0, tries - 1);
+}
+
 // Tiles of `order` that may be on screen, centre tile first (load order).
 export function visibleTiles(view, order, fr = frame(view.ra, view.dec)) {
   const lim = viewRadius(view);

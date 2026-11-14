@@ -8,10 +8,10 @@
 
 import * as THREE from '../../vendor/three-0.186.1/three.module.js';
 import { simbadCone, otypeName } from '../skymap.js';
-import { pixToVec, tileUV, allskyRect, tilePath, parent, children, npix } from './healpix.js';
+import { pixToVec, tileUV, allskyRect, tilePath, parent, children, npix, ALLSKY_COLS } from './healpix.js';
 import {
   radecToVec, vecToRadec, frame, project, unproject, vfov, clipScale, pickNearest, namesQuery, viewRadius, chooseOrder, visibleTiles,
-  imageryAlpha, starAlpha, detailRamp, magLimit, starColor, pickStar, slerpRadec, easeInOut, panned,
+  imageryAlpha, starAlpha, detailRamp, allskySoft, retryDelay, magLimit, starColor, pickStar, slerpRadec, easeInOut, panned,
   gridStep, wrap360, wrap180, clampDec, clampFov, MAX_FOV, GESTURE_MIN_FOV,
 } from './view.js';
 
@@ -42,7 +42,13 @@ const TILE_VS = STEREO + `out vec2 vUv; void main() { vUv = uv; gl_Position = st
 // holes. A ~0 pixel that has bright pixels (> 0.3) as its first non-blank neighbour in at least 5
 // of 8 directions (searched out to 34 texels in 512 px tiles, 2 in the 64 px Allsky thumbnails)
 // takes the brightest of them instead.
-const TILE_FS = `out vec4 outColor; uniform sampler2D map; uniform float alpha; uniform float nearest; uniform vec2 texSize; uniform int fillSteps; in vec2 vUv;
+// soft > 0 (Allsky only, when magnified): mix in a Gaussian blur (sigma 1 texel, kept inside the
+// vUv's cellPx atlas cell) so the coarse fallback reads as soft sky, not blocky blobs (allskySoft).
+// The blur averages light, not display values: the composite's black point (bp) is applied per
+// texel first and the mean is taken in linear light (gamma 2.2), then mapped back. Loaded tiles
+// show the same sky as fine 8-bit grain, and grain emits more light than its mean display value,
+// so a plain blur would look darker than the detail tiles next to it.
+const TILE_FS = `out vec4 outColor; uniform sampler2D map; uniform float alpha; uniform float nearest; uniform vec2 texSize; uniform int fillSteps; uniform float soft; uniform float cellPx; uniform float bp; in vec2 vUv;
 float lum(vec4 t) { return t.a < 0.5 ? 0.0 : (t.r + t.g + t.b) / 3.0; }
 const vec2 DIRS[8] = vec2[8](vec2(1, 0), vec2(-1, 0), vec2(0, 1), vec2(0, -1), vec2(0.7071, 0.7071), vec2(-0.7071, 0.7071), vec2(0.7071, -0.7071), vec2(-0.7071, -0.7071));
 const float RADII[8] = float[8](1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 21.0, 34.0);
@@ -57,12 +63,27 @@ vec4 fillCore(vec2 base) {
   }
   return hits >= 5 ? vec4(best, 1.0) : vec4(0.0);
 }
-void main() {
+vec3 sharpColor() {
   vec2 base = floor(vUv * texSize) + 0.5;
   vec4 c0 = textureLod(map, base / texSize, 0.0);
-  if (lum(c0) <= 0.02) { vec4 f = fillCore(base); if (f.a > 0.5) { outColor = vec4(f.rgb, alpha); return; } }
+  if (lum(c0) <= 0.02) { vec4 f = fillCore(base); if (f.a > 0.5) return f.rgb; }
   // Linear filtering must not pull a bright texel towards a neighbouring blank core (dark dots).
-  vec3 c = nearest > 0.5 ? c0.rgb : (lum(c0) > 0.3 && fillSteps > 2 ? max(texture(map, vUv).rgb, c0.rgb) : texture(map, vUv).rgb);
+  return nearest > 0.5 ? c0.rgb : (lum(c0) > 0.3 && fillSteps > 2 ? max(texture(map, vUv).rgb, c0.rgb) : texture(map, vUv).rgb);
+}
+vec3 softColor() {
+  vec2 p = vUv * texSize, o = floor(p / cellPx) * cellPx, lo = o + 0.5, hi = o + cellPx - 0.5, k = floor(p);
+  vec3 acc = vec3(0.0); float wsum = 0.0;
+  for (int j = -2; j <= 2; j++) for (int i = -2; i <= 2; i++) {
+    vec2 q = k + vec2(i, j) + 0.5, d = q - p;
+    float w = exp(-0.5 * dot(d, d));
+    vec4 t = texelFetch(map, ivec2(clamp(q, lo, hi)), 0);
+    acc += w * pow(max((t.rgb * step(0.5, t.a) - bp) / (1.0 - bp), 0.0), vec3(2.2)); wsum += w;
+  }
+  return pow(acc / wsum, vec3(1.0 / 2.2)) * (1.0 - bp) + bp;
+}
+void main() {
+  vec3 c = sharpColor();
+  if (soft > 0.0) c = mix(c, softColor(), soft);
   outColor = vec4(c, alpha);
 }`;
 const COMP_VS = `out vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
@@ -145,7 +166,7 @@ function allskyGeometry(W, H) {
 
 async function loadTexture(url, signal) {
   const res = await fetch(url, { signal });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
+  if (!res.ok) throw Object.assign(new Error('HTTP ' + res.status), { status: res.status });
   const bmp = await createImageBitmap(await res.blob(), { premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
   const tex = new THREE.Texture(bmp);
   tex.flipY = false; tex.colorSpace = THREE.NoColorSpace;
@@ -490,7 +511,7 @@ export class Sky3D {
       loadTexture(`${url}/Norder3/Allsky.png`, this.abort.signal).then((tex) => {
         if (!this.allskyGeo) this.allskyGeo = allskyGeometry(tex.image.width, tex.image.height);
         l.tex = tex; l.state = 'ready';
-        l.mesh = new THREE.Mesh(this.allskyGeo, mat(TILE_VS, TILE_FS, { ...this.U, fillSteps: { value: 2 }, map: { value: tex }, alpha: { value: 1 }, nearest: { value: 0 }, texSize: { value: new THREE.Vector2(tex.image.width, tex.image.height) } }));
+        l.mesh = new THREE.Mesh(this.allskyGeo, mat(TILE_VS, TILE_FS, { ...this.U, fillSteps: { value: 2 }, map: { value: tex }, alpha: { value: 1 }, nearest: { value: 0 }, soft: { value: 0 }, bp: { value: 0 }, cellPx: { value: tex.image.width / ALLSKY_COLS }, texSize: { value: new THREE.Vector2(tex.image.width, tex.image.height) } }));
         l.mesh.frustumCulled = false; l.mesh.renderOrder = -1;
         this._trimLayers(); this._kick();
       }).catch((err) => { l.state = 'failed'; if (err?.name !== 'AbortError') console.warn('sky3d: allsky failed', url, err); });
@@ -514,22 +535,29 @@ export class Sky3D {
     for (const l of layers) this._layer(l.url);
     const q = [];
     for (const n of tiles) for (const l of layers) {
-      const url = `${l.url}/${tilePath(order, n)}`;
-      if (!this.tiles.has(url)) q.push({ url, order, n });
+      const url = `${l.url}/${tilePath(order, n)}`, e = this.tiles.get(url);
+      if (!e || (e.state === 'failed' && e.retryAt && performance.now() >= e.retryAt)) q.push({ url, order, n });
     }
     this.queue = q;
     this._pump();
   }
   _pump() {
     while (this.inflight < MAX_INFLIGHT && this.queue.length) {
-      const job = this.queue.shift();
-      if (this.tiles.has(job.url)) continue;
-      const e = { ...job, state: 'loading', tex: null, mesh: null, born: 0, used: 0 };
+      const job = this.queue.shift(), old = this.tiles.get(job.url);
+      if (old && !(old.state === 'failed' && old.retryAt && performance.now() >= old.retryAt)) continue;
+      const e = { ...job, state: 'loading', tex: null, mesh: null, born: 0, used: 0, tries: old?.tries || 0 };
       this.tiles.set(job.url, e);
       this.inflight++;
       loadTexture(job.url, this.abort.signal)
         .then((tex) => { e.tex = tex; e.state = 'decoded'; })
-        .catch((err) => { e.state = 'failed'; if (err?.name !== 'AbortError') console.warn('sky3d: tile failed', job.url, err?.message); })
+        .catch((err) => {
+          e.state = 'failed';
+          if (err?.name === 'AbortError') return;
+          e.tries++;
+          const wait = retryDelay(e.tries, err?.status); // try again later: see retryDelay
+          if (wait != null) { e.retryAt = performance.now() + wait; setTimeout(() => { if (!this.abort.signal.aborted && this.tiles.get(e.url) === e) this._updateWanted(); }, wait + 20); }
+          else console.warn('sky3d: tile failed', job.url, err?.message);
+        })
         .finally(() => { this.inflight--; this._evict(); this._pump(); this._kick(); });
     }
   }
@@ -551,7 +579,7 @@ export class Sky3D {
       this.renderer.initTexture(e.tex);
       let g = this.geos.get(`${e.order}/${e.n}`);
       if (!g) { g = tileGeometry(e.order, e.n); this.geos.set(`${e.order}/${e.n}`, g); }
-      e.mesh = new THREE.Mesh(g, mat(TILE_VS, TILE_FS, { ...this.U, fillSteps: { value: 8 }, map: { value: e.tex }, alpha: { value: 0 }, nearest: { value: 0 }, texSize: { value: new THREE.Vector2(e.tex.image.width, e.tex.image.height) } }));
+      e.mesh = new THREE.Mesh(g, mat(TILE_VS, TILE_FS, { ...this.U, fillSteps: { value: 8 }, map: { value: e.tex }, alpha: { value: 0 }, nearest: { value: 0 }, soft: { value: 0 }, bp: { value: 0 }, cellPx: { value: e.tex.image.width }, texSize: { value: new THREE.Vector2(e.tex.image.width, e.tex.image.height) } }));
       e.mesh.frustumCulled = false; e.mesh.renderOrder = e.order;
       e.state = 'ready'; e.born = now;
     }
@@ -581,6 +609,8 @@ export class Sky3D {
       if (!l || l.state !== 'ready') continue; // a finished load asks for a new frame itself
       l.used = now;
       const sc = this.tileScene; sc.clear(); sc.add(l.mesh);
+      const lu = l.mesh.material.uniforms; // smoothing of the Allsky fallback: see allskySoft and TILE_FS
+      lu.soft.value = allskySoft(this._view(), r.getPixelRatio()); lu.bp.value = L.additive ? 0 : SKY_FLOOR * ramp;
       if (this.want?.order) {
         const o = this.want.order, extra = new Set();
         for (const n of this.want.tiles) {
