@@ -37,12 +37,15 @@ test('listImages falls back to TAP when SIA fails', async () => {
   assert.ok(seen.some(u => u.includes('/TAP/sync')));
 });
 
-test('relay allows only SPHEREx SIA position searches', async () => {
+test('relay allows SPHEREx (any radius) and 2MASS/AllWISE (radius <= 0.1 deg) SIA position searches only', async () => {
   const log = []; const fetchFn = async (u) => { log.push(u); return new Response('<VOTABLE/>'); };
   let r = await handle(new Request('https://r.example/SIA?COLLECTION=spherex_dr1&POS=circle+10.5+-20.25+0.0005&RESPONSEFORMAT=VOTABLE'), { fetchFn, cache: null });
   assert.equal(r.status, 200);
   assert.equal(log[0], 'https://irsa.ipac.caltech.edu/SIA?COLLECTION=spherex_dr1&POS=circle+10.5+-20.25+0.0005&RESPONSEFORMAT=VOTABLE');
-  for (const bad of ['/SIA?COLLECTION=wise_allwise&POS=circle+1+2+0.1', '/SIA?COLLECTION=spherex_dr1&POS=polygon+1+2+3', '/SIA?COLLECTION=spherex_dr1&POS=circle+1+2+0.1;drop'])
+  for (const good of ['/SIA?COLLECTION=spherex_qr3&POS=circle+1+2+0.5', '/SIA?COLLECTION=wise_allwise&POS=circle+1+2+0.1', '/SIA?COLLECTION=twomass_allsky&POS=circle+1+2+0.001'])
+    assert.equal((await handle(new Request('https://r.example' + good), { fetchFn, cache: null })).status, 200, good);
+  for (const bad of ['/SIA?COLLECTION=wise_allwise&POS=circle+1+2+0.2', '/SIA?COLLECTION=twomass_allsky&POS=circle+1+2+1', '/SIA?COLLECTION=spitzer_sha&POS=circle+1+2+0.01',
+    '/SIA?COLLECTION=spherex_dr1&POS=polygon+1+2+3', '/SIA?COLLECTION=spherex_dr1&POS=circle+1+2+0.1;drop'])
     assert.ok((await handle(new Request('https://r.example' + bad), { fetchFn, cache: null })).status >= 400, bad);
-  assert.equal(log.length, 1);
+  assert.equal(log.length, 4);
 });

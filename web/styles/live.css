@@ -255,3 +255,37 @@ html[data-motion=reduce] .fl-sec summary::before { transition: none; }
 :root{color-scheme:light}
 .notebook-dialog{color-scheme:dark}
 
+/* telescopes: Telescope compare view (DESIGN.md 31a). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+.view .seg { width: 344px; }
+@container dock (max-width:1480px) { .view .seg { width: 312px; } }
+@container dock (max-width:520px) { .view .seg { width: 100%; } }
+.mode-telescopes .screens, .mode-telescopes .scalebar, .mode-telescopes .gh-bar, .mode-telescopes .gh-off, .mode-telescopes .lgd { display: none !important; }
+.tele { position: absolute; inset: 52px var(--pad-r, 24px) 58px 76px; display: flex; flex-direction: column; gap: 10px; min-height: 0; color: var(--stage-text); }
+.tele-head { display: grid; gap: 2px; }
+.tele-line { margin: 0; font-size: .8125rem; color: var(--stage-text); }
+.tele-tags { margin: 0; font-size: .75rem; color: var(--stage-muted); }
+.tele-tags .t-mini { font-size: .75rem; padding: 1px 5px; }
+.tele .t-obs { background: rgba(157,184,160,.18); color: #B9D1BC; }
+.tele .t-calc { background: rgba(227,168,107,.16); color: #F0C493; }
+.tele-panels { flex: 1; min-height: 0; display: flex; justify-content: center; align-items: flex-start; gap: 18px; }
+.tele-p { margin: 0; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.tele-box { position: relative; line-height: 0; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,235,210,.14); }
+.tele-box canvas { display: block; }
+.tele-msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px; text-align: center; line-height: 1.35; font-size: .8125rem; color: var(--stage-text); pointer-events: none; }
+.tele-msg:empty { display: none; }
+.tele-msg b { font-weight: 600; background: rgba(21,17,14,.82); padding: 4px 10px; border-radius: 8px; }
+.tele-msg span { font-size: .75rem; color: var(--stage-muted); background: rgba(21,17,14,.82); padding: 2px 8px; border-radius: 6px; max-width: 100%; overflow-wrap: anywhere; }
+.tele-msg .key { pointer-events: auto; }
+.tele-cap { margin: 0; font-size: .75rem; line-height: 1.45; color: var(--stage-muted); }
+.tele-cap b { color: var(--stage-text); font-weight: 600; font-family: var(--font-ui); }
+.tele-chip { display: inline-block; font: 600 .75rem/1 var(--font-ui); letter-spacing: .06em; padding: 3px 6px 2px; margin: 0 2px; border-radius: 4px; border: 1px solid rgba(255,235,210,.45); color: var(--stage-text); vertical-align: 1px; }
+.tele-sub { margin: 0; font-size: .75rem; line-height: 1.4; color: var(--stage-muted); }
+.tele-note { margin: 0; font-size: .75rem; color: var(--stage-muted); }
+html[data-motion=full] .tele-wait { animation: tele-pulse 1.4s ease-in-out infinite alternate; }
+@keyframes tele-pulse { from { opacity: .55; } to { opacity: 1; } }
+@media (max-width: 699px) {
+  .tele { inset: 48px 8px 8px 8px; overflow-y: auto; touch-action: pan-y; }
+  .tele-panels { flex: none; flex-direction: column; align-items: center; gap: 16px; }
+  .tele-p { width: 100% !important; }
+}
+@media (max-width: 699px) { .tele { overflow: visible; } }

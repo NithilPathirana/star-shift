@@ -17,6 +17,7 @@ import { propagate, separationArcsec, mjdToDate } from '../core/motion.js';
 import { gridToWorld } from '../core/align.js';
 import { createContam } from './contam-ui.js';
 import { createGhost } from './ghost-ui.js';
+import { createTelescopes } from './telescopes/index.js'; // Telescope compare (DESIGN.md 31a)
 
 const R = window.MockRender;
 const $ = id => document.getElementById(id), root = document.documentElement;
@@ -180,6 +181,7 @@ function info(f, head) {
 function draw() {
   const A = $('cvA'), B = $('cvB'), F = V.F;
   $('ghostOff').hidden = true;
+  if (mode === 'telescopes') { const f = F[Math.min(P.i, F.length - 1)]; TS.refresh(); TS.draw(); info(f || null); $('chip').innerHTML = CX.chipLead() + '<span>Telescopes · same patch, same scale, north up</span>'; return; }
   if (!F.length) { const c = A.getContext('2d'); c.clearRect(0, 0, A.width, A.height); info(null); $('chip').innerHTML = ''; return; }
   const ex = firstS()?.exp || F[0].exp;
   if (mode === 'play' || V.stacks.length < 2) {
@@ -209,7 +211,7 @@ function setCounter(i, animate) {
 }
 function onFrame(i, manual) {
   const F = V.F;
-  if (mode === 'play') draw(); if (openPop?.pop.id === 'flagsPop' && !P.playing) CX.renderPop();
+  if (mode === 'play' || mode === 'telescopes') draw(); if (openPop?.pop.id === 'flagsPop' && !P.playing) CX.renderPop();
   GH.syncKey(); GH.update();
   if (!F.length) { setCounter(0); return; }
   i = Math.min(i, F.length - 1);
@@ -251,7 +253,7 @@ function remeasure() {
 function refilter() {
   const cur = V.F[P.i]; V.F = CX.filter(V.FA);
   if (cur && V.F.length) { let b = 0; V.F.forEach((f, k) => { if (Math.abs(f.mjd - cur.mjd) < Math.abs(V.F[b].mjd - cur.mjd)) b = k; }); P.i = b; } else P.i = 0;
-  if (V.status === 'ready') { restack(); remeasure(); if (mode !== 'play' && V.stacks.length < 2) setMode('play'); }
+  if (V.status === 'ready') { restack(); remeasure(); if (mode !== 'play' && mode !== 'telescopes' && V.stacks.length < 2) setMode('play'); }
   if (!V.F.length && V.FA.length) toast('Every image is hidden by the flag filter. Untick a box under FLAGS to bring them back.');
   buildTimeline(); // sets V.seasons for the count below
   $('d-n').textContent = `${V.F.length} shown of ${V.total}${V.FA.length > V.F.length ? ` · ${V.FA.length - V.F.length} hidden by flags` : ''} · ${V.seasons.length} season${V.seasons.length === 1 ? '' : 's'}`;
@@ -261,10 +263,11 @@ function step(d) { if (mode !== 'play') setMode('play'); P.pause(); const before
 
 function setMode(m, withSound) {
   if (m === mode) return;
-  if (m !== 'play' && V.stacks.length < 2) { toast('Compare and Blink need two seasons of images.'); Snd.play('error'); return; }
+  if (m !== 'play' && m !== 'telescopes' && V.stacks.length < 2) { toast('Compare and Blink need two seasons of images.'); Snd.play('error'); return; }
+  if (m === 'telescopes' && !V.grid) { toast('Telescopes needs a patch: pick one first.'); Snd.play('error'); return; }
   clearInterval(bt);
   const apply = () => {
-    mode = m; const st = $('stage'); st.classList.remove('mode-play', 'mode-compare', 'mode-blink'); st.classList.add('mode-' + m);
+    mode = m; const st = $('stage'); st.classList.remove('mode-play', 'mode-compare', 'mode-blink', 'mode-telescopes'); st.classList.add('mode-' + m); TS.show(m === 'telescopes');
     segSelect($('viewSeg'), b => b.dataset.mode === m);
     if (m !== 'play') P.pause();
     if (m === 'blink') { side = 0; bt = setInterval(() => { side ^= 1; draw(); }, set.motion ? 1500 : 600); }
@@ -350,6 +353,7 @@ function progress() {
 function load(query, label) {
   V.ctl?.abort(); const ctl = V.ctl = new AbortController();
   P.pause(); clearInterval(bt); if (mode !== 'play') { mode = 'play'; $('stage').className = 'stage mode-play'; segSelect($('viewSeg'), b => b.dataset.mode === 'play'); }
+  TS.show(false); TS.reset();
   CX.reset();
   Object.assign(V, { query, target: null, grid: null, raws: [], F: [], FA: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, status: 'loading', motion: null, seasons: [], name: label || 'this patch' });
   P.i = 0; shown = -1; arriveCount = 0;
@@ -536,6 +540,7 @@ const skymap = new SkyMap($('mapWrap'), {
   onView: () => placeOverlays(),
 });
 // The Ghost (DESIGN.md 24): predicted past/future position on the time-lapse and the sky map.
+const TS = createTelescopes({ $, V, P, esc, base: BASE, zoom: () => zoom, get GH() { return GH; } });
 const GH = createGhost({ $, V, P, esc, set, Snd, NOW_MJD, skymap, scene: () => scene, mode: () => mode, redraw: () => { if (scene === 'viewer') draw(); } });
 let pinEls = [];
 function placeOverlays() {

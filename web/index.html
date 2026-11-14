@@ -82,6 +82,12 @@
         <div class="map-read num" id="mapRead"></div>
         <p class="map-ph" id="mapCredit">Drag to look around, scroll to zoom. Stars: Hipparcos (ESA). Imagery: NASA/SPHEREx DR1 (Caltech/IPAC) at <span id="mapWl">1.63 µm</span>.</p>
       </div>
+      <div class="tele" id="tele" hidden><!-- Telescope compare (DESIGN.md 31a) -->
+        <div class="tele-head"><p class="tele-line">These are different wavelengths and different cameras. Compare where things are, not how bright they look.</p>
+        <p class="tele-tags num">Images <span class="t-mini t-obs">Observed</span> · rings and trail <span class="t-mini t-calc">Computed</span> · images: NASA SPHEREx, NASA WISE (AllWISE) and 2MASS (UMass/IPAC), via IRSA</p></div>
+        <div class="tele-panels" id="telePanels"></div>
+        <p class="tele-note num" id="teleNote"></p>
+      </div>
       <div class="chip num" id="chip"></div>
       <span class="flag" id="flag"></span>
       <div class="tools glass" id="tools" role="toolbar" aria-label="Tools" aria-orientation="vertical">
@@ -182,7 +188,7 @@
       <div class="tl-labels num" id="tlLabels"></div>
     </div>
     <div class="viewer-only group view"><span class="group-l">View</span>
-      <div class="seg well" role="group" aria-label="View" id="viewSeg"><span class="seg-thumb"></span><button class="seg-btn" data-mode="play" aria-pressed="true">Time</button><button class="seg-btn" data-mode="compare" aria-pressed="false">Compare</button><button class="seg-btn" data-mode="blink" aria-pressed="false">Blink</button></div></div>
+      <div class="seg well" role="group" aria-label="View" id="viewSeg"><span class="seg-thumb"></span><button class="seg-btn" data-mode="play" aria-pressed="true">Time</button><button class="seg-btn" data-mode="compare" aria-pressed="false">Compare</button><button class="seg-btn" data-mode="blink" aria-pressed="false">Blink</button><button class="seg-btn" data-mode="telescopes" aria-pressed="false" title="The same patch from SPHEREx, AllWISE and 2MASS">Telescopes</button></div></div>
     <div class="viewer-only group speed"><span class="group-l">Speed</span>
       <div class="seg well" role="group" aria-label="Speed" id="speedSeg"><span class="seg-thumb"></span><button class="seg-btn" data-fps="2" aria-pressed="false">Slow</button><button class="seg-btn" data-fps="4" aria-pressed="true">Normal</button><button class="seg-btn" data-fps="8" aria-pressed="false">Fast</button></div></div>
     <div class="viewer-only group layer-group"><span class="group-l layers-l">Layers</span>
