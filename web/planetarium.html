@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles/e.css">
-<link rel="stylesheet" href="styles/planetarium.css?v=2">
+<link rel="stylesheet" href="styles/planetarium.css?v=3">
 </head>
 <body>
 <div class="app pl-app" id="app">
@@ -83,9 +83,10 @@
         <dt>Time zone</dt><dd id="plTz">—</dd>
       </dl>
       <p class="pl-lock note"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="9" width="12" height="8.5" rx="2"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9"/></svg>Your location stays in your browser. It is never sent or saved anywhere.</p>
+      <a class="key pl-air-link" href="#air">What gets through the air ↓</a>
     </section>
     <section class="insp-sec">
-      <p class="credit">Sun, Moon and planets: computed in your browser with Astronomy Engine by Don Cross (MIT licence). Stars: Hipparcos (ESA), new reduction (van Leeuwen 2007), via the ESA Gaia archive. Asteroids and comets: from JPL when a JPL feed is connected. Logo: AI-generated (original image made with an AI image tool; tool name to be confirmed); the small-size version and the favicon were redrawn as SVG by Claude (Anthropic).</p>
+      <p class="credit">Sun, Moon and planets: computed in your browser with Astronomy Engine by Don Cross (MIT licence). Stars: Hipparcos (ESA), new reduction (van Leeuwen 2007), via the ESA Gaia archive. Asteroids and comets: from JPL when a JPL feed is connected. Logo: AI-generated with ChatGPT; small-size version and favicon redrawn as SVG by Claude.</p>
     </section>
   </aside>
 
@@ -115,6 +116,18 @@
     </div>
   </footer>
 </div>
+
+<section class="pl-air" id="air" aria-labelledby="airH">
+  <div class="pl-air-head">
+    <h2 id="airH">What gets through the air</h2><span class="tag tag-calc">COMPUTED</span>
+    <p class="note" id="airTarget">Pick something on the sky to see how high it is from each place now.</p>
+  </div>
+  <p class="pl-air-lead">Air soaks up parts of the 0.74–5.01 µm light that SPHEREx sees, mostly through water vapour and carbon dioxide. Hatched = the air blocks it; clear = it gets through. The number on each band is how much gets through, on average.</p>
+  <div class="pl-air-rows" id="airRows" role="list"><p class="note">Loading the transmission curves…</p></div>
+  <p class="pl-air-rule num" id="airRule"></p>
+  <p class="note pl-air-src">Shading: ATRAN sky-transmission models (Lord, S. D. 1992, NASA Technical Memorandum 103957), courtesy of Gemini Observatory: Mauna Kea at 1.6 mm water vapour and Cerro Pachón at 2.3, 4.3 and 10 mm, looking straight up (airmass 1.0), averaged into 0.01 µm steps. Typical clear night for this height. Real nights change with water vapour. <span id="airGap"></span></p>
+  <details class="pl-air-how"><summary>How each row was chosen</summary><ul id="airHow"></ul><p class="note">Only Mauna Kea has its own curve. The other places borrow the nearest real curve by height and water vapour, used as is: it is not rescaled, because the water, carbon dioxide and ozone parts of a curve cannot be separated. Heights above sea level from public site data. Target height and airmass (Kasten and Young 1989) are worked out in your browser for each place at the time shown above.</p></details>
+</section>
 
 <div class="pop glass pl-place-pop" id="placePop" role="dialog" aria-label="Choose a place" hidden>
   <h2>See the sky from</h2>

@@ -7,6 +7,7 @@ import { makeView, unproject, zoomAbout } from './projection.js';
 import { draw } from './render.js';
 import { OBSERVATORIES, NASA_CENTRES, DEFAULT_PLACE, ALL_PRESETS, parsePlace, fmtLat, fmtLon } from './places.js';
 import { smallBodies, onProvidersChanged } from './extras.js';
+import { initAir, updateAir } from './atmo-ui.js';
 
 const $ = (id) => document.getElementById(id);
 const root = document.documentElement;
@@ -105,6 +106,7 @@ function recompute() {
   S.small = S.smallRaw ? S.smallRaw.map(b => ({ ...b, ...starAltAz(b.ra, b.dec, t, obs) })) : [];
   clearTimeout(smallTimer); smallTimer = setTimeout(fetchSmall, 400);
   updateClock(t); updateDay(t); updateSel(t); S.dirty = true;
+  updateAir({ place: S.place, sel: S.sel, time: t }); // "What gets through the air" (31b), throttled inside
 }
 async function fetchSmall() { // hook for JPL asteroids/comets (extras.js); gets the time only
   const my = ++smallSeq, list = await smallBodies(curTime());
@@ -217,7 +219,7 @@ function renderSel() {
   }
   S.dirty = true;
 }
-function select(obj) { if (obj) Object.assign(obj, selAltAz(obj, curTime())); S.sel = obj; renderSel(); if (obj) announce(`${obj.name} selected`); }
+function select(obj) { if (obj) Object.assign(obj, selAltAz(obj, curTime())); S.sel = obj; renderSel(); updateAir({ place: S.place, sel: S.sel, time: curTime() }, true); if (obj) announce(`${obj.name} selected`); }
 
 /* ---------- picking ---------- */
 function pickAt(px, py, forClick) {
@@ -439,6 +441,7 @@ function announce(msg) { $('live').textContent = msg; }
 
 /* ---------- start ---------- */
 applySettings();
+initAir($('air'));
 { const ro = new ResizeObserver(() => layout()); ro.observe(canvas); ro.observe($('dock')); }
 layout(); S.view.fov = defaultFov(); setFov(S.view.fov);
 setPlace(S.place); showTab(curTab);
