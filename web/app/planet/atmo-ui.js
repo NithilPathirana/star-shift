@@ -5,7 +5,7 @@
 // web/data/atran/). Nothing here is sent anywhere: the place stays in this page's memory.
 import { observer, bodies, starAltAz } from './astro.js';
 import { DEFAULT_BANDS } from '../bands.js';
-import { RULER, RULE_TEXT, COMPARE_SITES, curveForPlace, bandMean, verdict, rulerSegments, targetLine, coverage } from './atmo.js';
+import { RULER, RULE_TEXT, COMPARE_SITES, curveForPlace, bandMean, verdict, rulerSegments, targetLine, coverage, darkRanges, fmtRanges } from './atmo.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pct = (um) => ((um - RULER.min) / (RULER.max - RULER.min) * 100);
@@ -71,12 +71,14 @@ function bandChips(curveRef) {
     if (!curveRef) return `<li><button class="air-band" type="button" aria-label="${esc(b.name)}: no air in the way"><i style="background:${b.color}"></i><span class="bn">${esc(b.name)}</span></button></li>`;
     const m = bandMean(data, curveRef.curve, b.min, b.max);
     if (!m) return `<li><button class="air-band" type="button" aria-label="${esc(b.name)}: no curve"><i style="background:${b.color}"></i><span class="bn">${esc(b.name)}</span> ${dash('No transmission curve covers this band')}</button></li>`;
-    const v = verdict(m.mean), p = Math.round(m.mean * 100);
+    const v0 = verdict(m.mean), p = Math.round(m.mean * 100), best = curveRef.bestCase;
+    // best case (mountain curve for a low place): the number is an upper limit; only 'blocked' is certain
+    const v = best && v0 !== 'blocked' ? 'atmost' : v0;
     const part = m.partial ? `<sup title="Only ${m.from.toFixed(2)}–${m.to.toFixed(2)} µm has a curve">†</sup>` : '';
     const name = v === 'blocked' ? `<s>${esc(b.name)}</s>` : esc(b.name);
-    const word = v === 'open' ? '' : ` <span class="st">${v}</span>`;
-    const aria = `${b.name}: ${p}% gets through${m.partial ? ` (measured over ${m.from.toFixed(2)}–${m.to.toFixed(2)} µm only)` : ''}, ${v}`;
-    return `<li><button class="air-band is-${v}" type="button" aria-label="${esc(aria)}"><i style="background:${b.color}"></i><span class="bn">${name}</span> <span class="num">${p}%${part}</span>${word}</button></li>`;
+    const word = v === 'open' || v === 'atmost' ? '' : ` <span class="st">${v}</span>`;
+    const aria = `${b.name}: ${best ? 'at most ' : ''}${p}% gets through${m.partial ? ` (measured over ${m.from.toFixed(2)}–${m.to.toFixed(2)} µm only)` : ''}${v === 'atmost' ? ', best case' : ', ' + v}`;
+    return `<li><button class="air-band is-${v}" type="button" aria-label="${esc(aria)}"><i style="background:${b.color}"></i><span class="bn">${name}</span> <span class="num">${best ? 'at most ' : ''}${p}%${part}</span>${word}</button></li>`;
   }).join('') + '</ul>';
 }
 
@@ -87,19 +89,22 @@ function renderRows(chosen) {
     const ref = curveForPlace(p, data);
     if (!ref) return; // no curve for this place: leave the row out (DESIGN.md 31b)
     const segs = rulerSegments(data, ref.curve);
-    const short = ref.approximate ? `approximate · from ${ref.curve.site}, ${ref.curve.pwvMm} mm` : `own curve · ${ref.curve.pwvMm} mm water vapour`;
+    const fmtM2 = (m) => `${Math.round(m).toLocaleString('en-GB')} m`;
+    const short = ref.bestCase ? `Best case: this is a mountain curve from ${fmtM2(ref.curve.siteAltM)}. At sea level less gets through.`
+      : ref.approximate ? `approximate · from ${ref.curve.site}, ${ref.curve.pwvMm} mm` : `own curve · ${ref.curve.pwvMm} mm water vapour`;
+    const dark = fmtRanges(darkRanges(data, ref.curve));
     const known = Number.isFinite(p.elev) && !(p.id === 'coords' || p.id === 'me');
     const height = known ? fmtM(p.elev) : 'height not known';
     methods.push(`<li><b>${esc(p.name)}</b>: ${esc(ref.how)}.</li>`);
     h += `<div class="air-row" role="listitem" data-i="${i}">
-      <div class="air-place"><b>${esc(p.name)}</b>${p.chosen ? '<span class="air-you">chosen place</span>' : ''}<span class="num">${height}</span><small>${esc(short)}</small></div>
-      <div class="air-mid">${bandChips(ref)}${rulerHtml(segs, `Air transmission from ${p.name}, 0.74 to 5.01 micrometres`)}</div>
+      <div class="air-place"><b>${esc(p.name)}</b>${p.chosen ? '<span class="air-you">chosen place</span>' : ''}<span class="num">${height}</span><small${ref.bestCase ? ' class="air-best"' : ''}>${esc(short)}</small></div>
+      <div class="air-mid">${bandChips(ref)}${rulerHtml(segs, `Air transmission from ${p.name}, 0.74 to 5.01 micrometres`)}<p class="air-dark num">Dark from here${ref.bestCase ? ', even in this best case' : ''}: ${esc(dark)}</p></div>
       <div class="air-target num" data-site="${i}"></div>
     </div>`;
   });
   h += `<div class="air-row air-space" role="listitem">
     <div class="air-place"><b>SPHEREx, in space</b><span class="num">in orbit, above the air</span><small>no air in the way</small></div>
-    <div class="air-mid">${bandChips(null)}${rulerHtml([], 'No air in the way: clear from 0.74 to 5.01 micrometres')}<p class="air-cap">No air in the way</p></div>
+    <div class="air-mid">${bandChips(null)}${rulerHtml([], 'No air in the way: clear from 0.74 to 5.01 micrometres')}<p class="air-dark air-cap num">Dark from here: nowhere</p></div>
     <div class="air-target air-na">No air, so no airmass</div>
   </div>`;
   el.querySelector('#airRows').innerHTML = h;

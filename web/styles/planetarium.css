@@ -200,3 +200,9 @@ h1.pl-title{margin:0;line-height:inherit}
 
 /* Lab notebook dialog colour schemes (nav parity with the other pages) */
 :root{color-scheme:light}.notebook-dialog{color-scheme:dark}
+/* air panel: dark ranges, best-case label, six fixed band columns (Design pass 2) */
+.air-dark{margin:3px 0 0;font-size:.75rem;color:var(--ink)}
+.air-place small.air-best{color:var(--coral);font-weight:600}
+.air-bands{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px 10px}
+.air-band{align-items:flex-start;flex-wrap:wrap;column-gap:5px;row-gap:0}
+.air-band i{margin-top:3px}

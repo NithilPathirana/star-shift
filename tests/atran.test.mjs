@@ -102,3 +102,30 @@ test('ruler segments cover 0.74–5.01 µm with no gaps; the uncovered start is 
   for (let i = 1; i < segs.length; i++) assert.ok(Math.abs(segs[i].from - segs[i - 1].to) < 1e-9);
   assert.ok(segs.slice(1).every(s => s.block >= 0 && s.block <= 1));
 });
+
+test('best case: a place far below its curve’s site is labelled best case, mountain sites stay approximate', async () => {
+  const { curveForPlace: cfp } = await import('../web/app/planet/atmo.js');
+  const col = cfp({ id: 'colombo', elev: 5 }, DATA);
+  assert.equal(col.bestCase, true); assert.match(col.how, /^Best case: this is a mountain curve from 2,722 m/); assert.match(col.how, /At sea level less gets through/);
+  assert.equal(cfp({ id: 'coords', elev: 0 }, DATA).bestCase, true);
+  assert.equal(cfp({ id: 'paranal', elev: 2635 }, DATA).bestCase, false);
+  assert.equal(cfp({ id: 'kittpeak', elev: 2096 }, DATA).bestCase, false); // 626 m below: still "approximate"
+  assert.equal(cfp({ id: 'maunakea', elev: 4205 }, DATA).bestCase, false);
+});
+
+test('dark ranges: contiguous bins under 5%, small gaps merged, specks dropped, "nowhere" when clear', async () => {
+  const { darkRanges, fmtRanges } = await import('../web/app/planet/atmo.js');
+  const toy = { startUm: 1.0, stepUm: 0.01 };
+  // 1.00-1.02 dark, 1.03 clear, 1.04-1.05 dark (merged: gap 0.02); 1.10 a single speck (dropped); 1.20-1.22 dark
+  const t = Array(30).fill(0.9); [0, 1, 2, 4, 5, 10, 20, 21, 22].forEach(i => { t[i] = 0.01; });
+  assert.deepEqual(darkRanges(toy, { t }, { lo: 0, hi: 9 }), [{ from: 1, to: 1.05 }, { from: 1.2, to: 1.22 }]);
+  assert.equal(fmtRanges(darkRanges(toy, { t: Array(30).fill(0.9) }, { lo: 0, hi: 9 })), 'nowhere');
+  assert.equal(fmtRanges([{ from: 2.57, to: 2.8 }]), '2.57–2.80 µm');
+  // real curves: the 2.7 µm water and 4.3 µm CO₂ gaps are dark from every site; nothing outside the ruler
+  for (const c of Object.values(DATA.curves)) {
+    const r = darkRanges(DATA, c);
+    assert.ok(r.some(x => x.from <= 2.7 && x.to >= 2.7), 'water 2.7 µm');
+    assert.ok(r.some(x => x.from <= 4.3 && x.to >= 4.3), 'CO2 4.3 µm');
+    assert.ok(r.every(x => x.from >= RULER.min && x.to <= RULER.max));
+  }
+});

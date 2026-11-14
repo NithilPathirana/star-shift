@@ -9,7 +9,7 @@ export const RULER = { min: 0.74, max: 5.01 }; // SPHEREx range, as the other ru
 // that gets through across the band (straight up, airmass 1.0).
 export const BLOCKED_BELOW = 0.20; // mean < 20% -> "blocked"
 export const OPEN_FROM = 0.80;     // mean >= 80% -> open; in between -> "partly"
-export const RULE_TEXT = 'Blocked = under 20% of the band’s light gets through, on average across the band. Partly = 20–80%. Open = 80% or more. Worked out looking straight up (airmass 1.0).';
+export const RULE_TEXT = 'Blocked = under 20% of the band’s light gets through, on average across the band. Partly = 20–80%. Open = 80% or more. Dark = under 5% gets through (gaps under 0.05 µm merged). Worked out looking straight up (airmass 1.0).';
 
 // Which real curve each kind of place uses. Only Mauna Kea has its own curve; every other
 // place borrows the nearest real curve by height and water vapour, used as is (not rescaled,
@@ -30,6 +30,8 @@ export const COMPARE_SITES = [
 ];
 
 const fmtInt = (n) => Math.round(n).toLocaleString('en-GB');
+export const BEST_CASE_BELOW_M = 1000; // place more than this far below its curve's site -> "best case"
+export const DARK_BELOW = 0.05;        // "dark": under 5% gets through
 
 // Pick the curve for a place and say honestly how it was chosen.
 // Returns { key, curve, approximate, how } or null if the data has no curve at all.
@@ -40,13 +42,16 @@ export function curveForPlace(place, data) {
   const key = CURVE_FOR_HEIGHT.find(r => h >= r.minM).key;
   const curve = data.curves[key]; if (!curve) return null;
   const own = place?.id === 'maunakea' && key === 'mk_16_10';
+  // A mountain curve for a place far below the mountain is a BEST CASE, not an approximation:
+  // the thicker, wetter air lower down lets less through.
+  const bestCase = !own && h < curve.siteAltM - BEST_CASE_BELOW_M;
   const src = `${curve.site} curve (${fmtInt(curve.siteAltM)} m, ${curve.pwvMm} mm water vapour)`;
   let how;
   if (own) how = `Gemini’s own Mauna Kea curve, ${curve.pwvMm} mm water vapour`;
-  else if (key === 'cp_100_10') how = `approximate, borrowed from ${src}: the wettest real curve we have. Air near sea level in the tropics often holds 30–50 mm of water vapour, so the real loss there is larger.`;
+  else if (bestCase) how = `Best case: this is a mountain curve from ${fmtInt(curve.siteAltM)} m (${curve.site}, ${curve.pwvMm} mm water vapour, the wettest real curve we have). At sea level less gets through, so every number is an upper limit`;
   else how = `approximate, borrowed from ${src}: the nearest real curve by height and water vapour, used as is (not rescaled)`;
   if (!heightKnown) how = `height not known, treated as sea level; ${how}`;
-  return { key, curve, approximate: !own, how };
+  return { key, curve, approximate: !own, bestCase, how };
 }
 
 // Transmission at one wavelength (µm): linear between the 0.01 µm bin centres.
@@ -114,3 +119,17 @@ export function rulerSegments(data, curve, lo = RULER.min, hi = RULER.max) {
   if (hi > c1) out.push({ from: Math.max(lo, c1), to: hi, block: null });
   return out;
 }
+
+// Contiguous wavelength ranges (µm, bin centres) inside the ruler where under 5% gets through.
+// Dark bins closer than `mergeUm` are merged; single-bin specks are dropped. Returns [{from, to}].
+export function darkRanges(data, curve, { below = DARK_BELOW, mergeUm = 0.04, minBins = 2, lo = RULER.min, hi = RULER.max } = {}) {
+  const out = [];
+  let cur = null;
+  curve.t.forEach((v, i) => {
+    const w = Math.round((data.startUm + i * data.stepUm) * 1000) / 1000;
+    if (w < lo || w > hi || v == null || !(v < below)) return;
+    if (cur && w - cur.to <= mergeUm + 1e-9) { cur.to = w; cur.n++; } else { cur = { from: w, to: w, n: 1 }; out.push(cur); }
+  });
+  return out.filter(r => r.n >= minBins).map(({ from, to }) => ({ from, to }));
+}
+export const fmtRanges = (rs) => (rs.length ? rs.map(r => `${r.from.toFixed(2)}–${r.to.toFixed(2)} µm`).join(', ') : 'nowhere');
