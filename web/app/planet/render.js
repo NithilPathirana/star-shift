@@ -97,8 +97,11 @@ function drawStars(ctx, v, S, opt, picks) {
     ctx.globalAlpha = a; ctx.fillStyle = S.color[i];
     if (size < 2.2) ctx.fillRect(x - size / 2, y - size / 2, size, size);
     else {
-      if (m < 2 && u >= 0) { // faint halo out to 3× the core for bright stars
-        ctx.globalAlpha = a * 0.14; ctx.beginPath(); ctx.arc(x, y, size * 1.5, 0, 6.2832); ctx.fill(); ctx.globalAlpha = a;
+      if (m < 2 && u >= 0) { // soft radial halo (35% to 0) so it never reads as a selection ring
+        const R = size * 1.8, g = ctx.createRadialGradient(x, y, size / 2, x, y, R);
+        g.addColorStop(0, S.color[i]); g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.globalAlpha = a * 0.35; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, R, 0, 6.2832); ctx.fill();
+        ctx.globalAlpha = a; ctx.fillStyle = S.color[i];
       }
       ctx.beginPath(); ctx.arc(x, y, size / 2, 0, 6.2832); ctx.fill();
     }
@@ -118,14 +121,16 @@ function placeLabel(ctx, text, x, y, rects, force) {
   return false;
 }
 
-function drawStarLabels(ctx, v, S, rects) {
+// keep: label rects of Solar System objects; a star name within 24 px of one is hidden (the planet's label wins)
+function drawStarLabels(ctx, v, S, rects, keep = []) {
+  const blk = [...rects, ...keep.map(q => [q[0] - 24, q[1] - 24, q[2] + 24, q[3] + 24])]; // star labels also avoid each other
   const lim = Math.min(2.2 + Math.max(0, Math.log2(90 / v.fov)) * 1.2, 6), p = [0, 0];
   ctx.font = `12px ${SANS}`; ctx.fillStyle = C.muted; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   for (const i of S.named) {
     if (S.mag[i] > lim) continue;
     const u = S.hor[3 * i + 2]; if (u < 0) continue;
     if (!project(v, S.hor[3 * i], S.hor[3 * i + 1], u, p) || p[0] < 0 || p[1] < 0 || p[0] > v.w || p[1] > v.h) continue;
-    placeLabel(ctx, S.names.get(i), p[0] + S.size[i] / 2 + 5, p[1], rects, false);
+    placeLabel(ctx, S.names.get(i), p[0] + S.size[i] / 2 + 5, p[1], blk, false);
   }
 }
 
@@ -179,12 +184,17 @@ function drawBodies(ctx, v, list, opt, picks, rects) {
   }
 }
 
+// Selected object: the section 19 reticle in its snapped state (40 px solid copper ring + four 6 px ticks).
 function drawSelection(ctx, v, sel) {
   if (!sel) return;
   const vec = altAzToVec(sel.alt, sel.az), p = project(v, vec[0], vec[1], vec[2], [0, 0]);
   if (!p) return;
-  ctx.strokeStyle = C.ring; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
-  ctx.beginPath(); ctx.arc(p[0], p[1], 14, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]);
+  const [x, y] = p, r = 20;
+  ctx.strokeStyle = '#C27A43'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832);
+  ctx.moveTo(x, y - r - 2); ctx.lineTo(x, y - r - 8); ctx.moveTo(x, y + r + 2); ctx.lineTo(x, y + r + 8);
+  ctx.moveTo(x - r - 2, y); ctx.lineTo(x - r - 8, y); ctx.moveTo(x + r + 2, y); ctx.lineTo(x + r + 8, y);
+  ctx.stroke();
 }
 
 // state: { view:{az,alt,fov}, w, h, dpr, stars:S, bodies:[], small:[], sel, opt }
@@ -203,8 +213,9 @@ export function draw(ctx, st) {
   if (st.opt.below && st.stars) drawStarsBelow(ctx, v, st.stars, opt, picks); // at 35%
   drawHorizon(ctx, v, g);
   const rects = st.avoid ? st.avoid.map(r => [...r]) : []; // screen areas covered by chips
+  const n0 = rects.length;
   drawBodies(ctx, v, [...(st.bodies || []), ...(st.small || [])], opt, picks, rects);
-  if (st.stars && st.opt.labels) drawStarLabels(ctx, v, st.stars, rects);
+  if (st.stars && st.opt.labels) drawStarLabels(ctx, v, st.stars, rects, rects.slice(n0));
   drawSelection(ctx, v, st.sel);
   return picks;
 }

@@ -116,6 +116,7 @@ onProvidersChanged(() => fetchSmall());
 
 function updateClock(t) {
   $('tLocal').textContent = fmtLocal(t); $('tUtc').textContent = fmtUtc(t);
+  $('dockTime').textContent = `${fmtLocal(t)} local · ${fmtUtc(t)} UTC`;
   const l = lstHours(t, S.place.lon), lh = Math.floor(l), lm = Math.floor((l - lh) * 60);
   $('tLst').textContent = `${pad(lh)}:${pad(lm)}`;
   $('offOut').textContent = offsetLabel(S.offsetMin);
@@ -159,7 +160,18 @@ function updateSel(t) {
   if (S.playing && now - lastSelT < 300) { clearTimeout(selTimer); selTimer = setTimeout(() => renderSel(), 320); return; }
   lastSelT = now; renderSel();
 }
-function row(label, value, tag) { return `<dt>${label}</dt><dd>${value} ${tag || ''}</dd>`; }
+// Rows carry no tags; each group heading shows its source tag once (DESIGN.md section 25).
+function row(label, value) { return `<dt>${label}</dt><dd>${value}</dd>`; }
+const group = (title, tag, body) => `<div class="ih pl-grp"><h3>${title}</h3>${tag || ''}</div><dl class="pl-dl">${body}</dl>`;
+function fmtRA(deg) { // 00h 34m 15.3s
+  let s = ((deg % 360) + 360) % 360 / 15 * 3600; s = Math.round(s * 10) / 10; if (s >= 86400) s -= 86400;
+  const h = Math.floor(s / 3600), mi = Math.floor((s - h * 3600) / 60), se = s - h * 3600 - mi * 60;
+  return `${pad(h)}h ${pad(mi)}m ${se.toFixed(1).padStart(4, '0')}s`;
+}
+function fmtDec(deg) { // +00° 48′ 49″
+  let s = Math.round(Math.abs(deg) * 3600); const d = Math.floor(s / 3600), mi = Math.floor((s - d * 3600) / 60), se = s - d * 3600 - mi * 60;
+  return `${deg < 0 ? '−' : '+'}${pad(d)}° ${pad(mi)}′ ${pad(se)}″`;
+}
 function renderSel() {
   const sel = S.sel, rows = $('selRows'), play = $('playPatch'), why = $('playWhy');
   if (!sel) {
@@ -170,29 +182,33 @@ function renderSel() {
   $('selKind').textContent = { sun: 'Star (our Sun)', moon: 'Moon', planet: 'Planet', small: 'Asteroid or comet', star: 'Star', point: 'Spot on the sky' }[sel.kind];
   $('selName').textContent = sel.name; $('selHint').hidden = true;
   const src = sel.kind === 'small' ? TAG.jpl : TAG.c;
-  let h = row('Altitude now', `${sel.alt.toFixed(1)}°`, src) + row('Azimuth now', `${sel.az.toFixed(1)}° ${compass(sel.az)}`, src);
-  let pass = null;
+  let h = group('Now from here', src, row('Altitude', `${sel.alt.toFixed(1)}°`) + row('Azimuth', `${sel.az.toFixed(1)}° ${compass(sel.az)}`));
+  let pass = null, p = '';
   try { pass = sel.kind === 'small' ? passTimes({ kind: 'point', ra: sel.ra, dec: sel.dec }, t, obs) : passTimes(sel, t, obs); } catch { pass = null; }
-  if (!pass) h += row('Rise', dash('Could not be computed'), '') + row('Highest', dash('Could not be computed'), '') + row('Set', dash('Could not be computed'), '');
+  if (!pass) p = row('Rise', dash('Could not be computed')) + row('Highest', dash('Could not be computed')) + row('Set', dash('Could not be computed'));
   else if (pass.always) {
     const w = pass.always === 'up' ? 'Never sets from here' : 'Never rises from here';
-    h += row('Rise', dash(w)) + row('Highest', pass.transit ? `${fmtLocal(pass.transit, false)} ${dayWord(pass.transit, t)} · ${pass.transitAlt.toFixed(0)}°` : dash(w), TAG.c) + row('Set', dash(w));
-    h += `<dt></dt><dd class="pl-note">${w}</dd>`;
+    p = row('Rise', dash(w)) + row('Highest', pass.transit ? `${fmtLocal(pass.transit, false)} ${dayWord(pass.transit, t)} · ${pass.transitAlt.toFixed(0)}°` : dash(w)) + row('Set', dash(w));
+    p += `<dt></dt><dd class="pl-note">${w}</dd>`;
   } else {
     const tm = (d, why) => d ? `${fmtLocal(d, false)} ${dayWord(d, t)}` : dash(why);
-    h += row('Rise', tm(pass.rise, 'No rise in the 24 hours searched'), pass.rise ? TAG.c : '')
-      + row('Highest', pass.transit ? `${tm(pass.transit)} · ${pass.transitAlt.toFixed(0)}°` : dash('Not found in the next day'), pass.transit ? TAG.c : '')
-      + row('Set', tm(pass.set, 'No set in the 24 hours searched'), pass.set ? TAG.c : '');
+    p = row('Rise', tm(pass.rise, 'No rise in the 24 hours searched'))
+      + row('Highest', pass.transit ? `${tm(pass.transit)} · ${pass.transitAlt.toFixed(0)}°` : dash('Not found in the next day'))
+      + row('Set', tm(pass.set, 'No set in the 24 hours searched'));
   }
-  if (sel.kind === 'moon') h += row('Distance', `${Math.round(sel.distAU * 149597870.7).toLocaleString('en-GB')} km`, TAG.c);
-  else if (isBody) h += row('Distance', Number.isFinite(sel.distAU) ? `${sel.distAU.toFixed(3)} AU` : dash('Not given by the source'), Number.isFinite(sel.distAU) ? src : '');
-  else if (sel.kind === 'star') h += row('Distance', dash('Not in this star list (positions and brightness only)'));
-  if (sel.kind === 'point') h += row('Brightness', dash('A spot on the sky, not an object'));
-  else if (Number.isFinite(sel.mag)) h += row('Brightness', `mag ${sel.mag.toFixed(sel.kind === 'star' ? 2 : 1)}`, sel.kind === 'star' ? TAG.cat : src);
-  else h += row('Brightness', dash('Not given by the source'));
-  if (sel.kind === 'moon' && Number.isFinite(sel.phase)) h += row('Lit', `${Math.round(sel.phase * 100)}%`, TAG.c);
-  h += row('RA (J2000)', `${sel.ra.toFixed(4)}°`, sel.kind === 'star' ? TAG.cat : src) + row('Dec (J2000)', `${sel.dec >= 0 ? '+' : '−'}${Math.abs(sel.dec).toFixed(4)}°`, sel.kind === 'star' ? TAG.cat : src);
-  rows.innerHTML = h; rows.hidden = false;
+  h += group('Rise and set', pass ? TAG.c : '', p);
+  const otag = sel.kind === 'star' ? TAG.cat : src;
+  let o = '';
+  if (sel.kind === 'moon') o += row('Distance', `${Math.round(sel.distAU * 149597870.7).toLocaleString('en-GB')} km`);
+  else if (isBody) o += row('Distance', Number.isFinite(sel.distAU) ? `${sel.distAU.toFixed(3)} AU` : dash('Not given by the source'));
+  else if (sel.kind === 'star') o += row('Distance', dash('Not in this star list (positions and brightness only)'));
+  if (sel.kind === 'point') o += row('Brightness', dash('A spot on the sky, not an object'));
+  else if (Number.isFinite(sel.mag)) o += row('Brightness', `mag ${sel.mag.toFixed(sel.kind === 'star' ? 2 : 1)}`);
+  else o += row('Brightness', dash('Not given by the source'));
+  if (sel.kind === 'moon' && Number.isFinite(sel.phase)) o += row('Lit', `${Math.round(sel.phase * 100)}%`);
+  o += row('RA (J2000)', `<span class="num">${fmtRA(sel.ra)}</span>`) + row('Dec (J2000)', `<span class="num">${fmtDec(sel.dec)}</span>`);
+  h += group(sel.kind === 'point' ? 'This spot' : 'Position and size', otag, o);
+  rows.innerHTML = h; rows.hidden = false; // rows is a <div> holding grouped <dl>s
   if (isBody) { // the time-lapse shows one fixed patch; Solar System objects move out of it
     play.hidden = true; why.hidden = false; why.textContent = 'The time-lapse holds one fixed patch of sky, so it cannot follow objects in our Solar System.';
   } else {
@@ -336,9 +352,10 @@ function showPop(pop, btn, alignLeft) {
   pop.style.top = Math.min(r.bottom + 10, innerHeight - 160) + 'px';
   if (alignLeft) { pop.style.left = Math.max(12, Math.min(r.left, innerWidth - pop.offsetWidth - 12)) + 'px'; pop.style.right = 'auto'; pop.style.transformOrigin = 'top left'; }
   else { pop.style.right = Math.max(12, innerWidth - r.right) + 'px'; pop.style.left = 'auto'; }
-  requestAnimationFrame(() => { pop.classList.add('open'); if (pop.id === 'placePop') segSelect($('placeTabs'), b => b.dataset.tab === curTab); });
+  if (pop.id === 'placePop') segSelect($('placeTabs'), b => b.dataset.tab === curTab);
+  requestAnimationFrame(() => pop.classList.add('open'));
   btn.setAttribute('aria-expanded', 'true'); openPop = { pop, btn };
-  setTimeout(() => (pop.querySelector('[aria-selected=true], button, input') || pop).focus(), 30);
+  setTimeout(() => (pop.querySelector('[role=tab][aria-selected=true]') || pop.querySelector('button, input') || pop).focus(), 30);
 }
 function closePop(refocus) {
   if (!openPop) return; const { pop, btn } = openPop; pop.classList.remove('open'); btn.setAttribute('aria-expanded', 'false');

@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles/e.css">
-<link rel="stylesheet" href="styles/planetarium.css">
+<link rel="stylesheet" href="styles/planetarium.css?v=2">
 </head>
 <body>
 <div class="app pl-app" id="app">
@@ -62,7 +62,7 @@
       <p class="pl-kicker" id="selKind">Pick something</p>
       <h2 class="target" id="selName">Click a planet, a star or any spot</h2>
       <p class="note" id="selHint">Drag to look around. The wheel or pinch zooms.</p>
-      <dl id="selRows" hidden></dl>
+      <div id="selRows" hidden></div>
       <a class="key primary pl-play" id="playPatch" href="index.html" hidden>Play this patch over time</a>
       <p class="note pl-why" id="playWhy" hidden></p>
     </section>
@@ -100,8 +100,9 @@
       <div class="pl-ticks num" aria-hidden="true"><span>−12 h</span><span>−6 h</span><span>0</span><span>+6 h</span><span>+12 h</span></div>
     </div>
     <div class="group pl-date">
-      <label class="group-l" for="tDate">Date and time</label>
+      <label class="group-l" for="tDate">Date and time at this place</label>
       <input type="datetime-local" id="tDate" class="field well num pl-date-in" step="60">
+      <p class="pl-dock-time num" id="dockTime" aria-live="off"></p>
     </div>
     <div class="group pl-speed">
       <span class="group-l">Speed</span>
