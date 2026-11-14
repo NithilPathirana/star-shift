@@ -273,6 +273,9 @@ export function measureMotion(frames, grid, { radius = 3.5, minSnr = 5, minFrame
     significant: total >= 3 * totalErrFull && total >= MIN_MOTION_MASYR,
     floor: Math.max(3 * totalErrFull, MIN_MOTION_MASYR), upperLimit: Math.max(total + 2 * totalErrFull, MIN_MOTION_MASYR),
     seeded, rejected: acc.length - T.pts.length,
+    // for the measurability rule (motionMeasurability below): images given to the fit, and how
+    // many of the fitted positions came from an image with a blanked (saturated/masked) core
+    inputFrames: fs.length, maskedFrames: T.pts.filter(p => p.masked).length,
     points: T.pts.map(p => ({ mjd: p.mjd, x: p.x, y: p.y, e: p.e, n: p.n, w: p.w })),
     fit: { ae: fe.a, be: fe.b, an: fn.a, bn: fn.b } };
 }
@@ -293,6 +296,43 @@ export const SYS_FLOOR_MASYR = 150;
 // i.e. an effect of a bright star the field-star floor does not cover. So a motion under 0.7″/yr
 // is reported as "no significant motion" even when it is over 3σ.
 export const MIN_MOTION_MASYR = 700;
+
+// Measurability rule, shared by the viewer (ui.js) and the Proof page (proof/logic.js
+// motionVerdict). A fitted motion is "not measurable here" when:
+//   slow:      the catalogue motion moves the star less than one 6.15″ pixel over the fitted
+//              dates (nothing to see, so any fitted motion is the method's floor, not the star);
+//   fit:       the fit could not run;
+//   saturated: the star's centre is blanked (saturated/masked) in MASKED_CORE_FRAC or more of
+//              the fitted images, so every position comes from the edges of a blanked core
+//              (R Draconis: 40 of 40; Barnard's Star, still measurable: 81 of 120).
+// `why` keeps the Proof page's order (slow, then fit, then saturated); `slow` and `saturated`
+// are both reported so the viewer can word every reason that applies.
+// m: measureMotion() result; catalogueMasYr: catalogue total motion (null if none);
+// spanYears: dates covered (defaults to the fit's own span).
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+export const MASKED_CORE_FRAC = 0.9;
+export function motionMeasurability(m, { catalogueMasYr = null, spanYears = null } = {}) {
+  const span = Number.isFinite(spanYears) ? spanYears : m?.span;
+  const shiftPx = Number.isFinite(catalogueMasYr) && span > 0 ? (catalogueMasYr / 1000) * span / PIXEL : null;
+  const maskedFrac = m?.ok && m.frames > 0 && Number.isFinite(m.maskedFrames) ? m.maskedFrames / m.frames : null;
+  const slow = shiftPx != null && shiftPx < 1;
+  const saturated = maskedFrac != null && maskedFrac >= MASKED_CORE_FRAC;
+  const why = slow ? 'slow' : !m?.ok ? 'fit' : saturated ? 'saturated' : null;
+  return { measurable: !why, why, slow, saturated, shiftPx, maskedFrac };
+}
+
+// Detectors a target's motion is measured on (preset data, e.g. WISE 0855: [5, 6], where it
+// shows), or null for all detectors. Used by the viewer and tools/make_proof.mjs alike.
+export function motionDetectors(preset) {
+  const d = preset?.motionDetectors;
+  return Array.isArray(d) && d.length ? d.slice().sort((a, b) => a - b) : null;
+}
+// "5–6" for a run of detectors, else "1, 3".
+export function detectorText(dets) {
+  if (!dets?.length) return '';
+  const run = dets.every((d, k) => k === 0 || d === dets[k - 1] + 1);
+  return run && dets.length > 1 ? `${dets[0]}–${dets[dets.length - 1]}` : dets.join(', ');
+}
 
 // One measured position: grid (x, y), sky offsets (arcsec east/north of the grid centre)
 // with annual parallax taken out, and the image's kind for weighting: detector + whether any

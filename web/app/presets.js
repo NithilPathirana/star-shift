@@ -11,7 +11,8 @@ export const PRESETS = [
     note: 'A pair of brown dwarfs' },
   { key: 'wise-0855', label: 'WISE 0855', aliases: ['wise 0855', 'wise 0855-0714', 'wise j085510.83-071442.5', 'wisea j085510.74-071442.5'],
     target: { name: 'WISE 0855−0714', ra: 133.81890825, dec: -7.247048, pmra: -8123.7, pmdec: 673.2, plx: 439, epoch: 2000, source: 'SIMBAD' },
-    note: 'Coldest known brown dwarf', bandHint: 'Only visible at 3.8–5 µm (bands 5–6)' },
+    note: 'Coldest known brown dwarf', bandHint: 'Only visible at 3.8–5 µm (bands 5–6)',
+    motionDetectors: [5, 6] }, // its motion is measured on these detectors only (viewer + Proof; data.js motionDetectors)
   { key: 'rw-aur', label: 'RW Aurigae', aliases: ['rw aurigae', 'rw aur'],
     target: { name: 'RW Aurigae', ra: 76.95652603458333, dec: 30.401438173888888, pmra: 7.23, pmdec: -20.33, plx: 15.42, rv: 15.0, epoch: 2000, source: 'SIMBAD' },
     note: 'Young star that changes brightness' },

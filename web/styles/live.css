@@ -382,3 +382,22 @@ html[data-motion=reduce] .state.loader2 { transition: none; }
   .chip .bl-r, .chip .bl-d, .chip .bl-st { display: none; }
   .mode-blink .chip { max-width: calc(100% - 24px); }
 }
+/* ===== Viewer QA fixes, 15 Nov 2026. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. ===== */
+/* Quick picks: the top-bar coordinates (also in the info panel) give way below a 1400 px top bar, so all
+   five picks fit at 1366 px; when they still don't fit, the side with hidden picks fades (ui.js sets
+   .more-l / .more-r) instead of a fixed fade that also dimmed the last pick when everything fitted. */
+@container top (max-width:1400px) { .coords { display: none; } }
+.picks { -webkit-mask: none; mask: none; }
+.picks.more-r { -webkit-mask: linear-gradient(90deg,#000 calc(100% - 56px),transparent); mask: linear-gradient(90deg,#000 calc(100% - 56px),transparent); }
+.picks.more-l { -webkit-mask: linear-gradient(90deg,transparent,#000 56px); mask: linear-gradient(90deg,transparent,#000 56px); }
+.picks.more-l.more-r { -webkit-mask: linear-gradient(90deg,transparent,#000 56px,#000 calc(100% - 56px),transparent); mask: linear-gradient(90deg,transparent,#000 56px,#000 calc(100% - 56px),transparent); }
+/* Stage tool column: never past the bottom of the stage. Short windows get 36 px keys; if it still
+   doesn't fit it scrolls. */
+@media (min-width: 700px) {
+  .tools { max-height: calc(100% - 68px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+  .tools::-webkit-scrollbar { display: none; }
+}
+@media (min-width: 700px) and (max-height: 720px) {
+  .tools { gap: 2px; padding: 4px; }
+  .tools .glass-btn { width: 36px; height: 36px; }
+}

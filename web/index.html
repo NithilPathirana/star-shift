@@ -102,12 +102,12 @@
         <button class="glass-btn" id="ringTool" aria-label="Predicted position ring" aria-pressed="true"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="3 2.2"><circle cx="10" cy="10" r="6.5"/></svg></button>
         <button class="glass-btn" id="ghostKey" aria-label="Ghost: predicted past and future position" aria-pressed="false" disabled title="No catalogued motion for this object"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8.5" cy="11.5" r="5.5" stroke-dasharray="1.6 2.2"/><path d="M12.5 7.5l4.5-4.5M13 3h4v4"/></svg></button>
       </div>
-      <svg class="compass" width="40" height="40" viewBox="0 0 44 44" aria-label="North up, east left"><path d="M34 34V10M34 34H10" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M34 6l-3 6h6zM6 34l6-3v6z" fill="currentColor"/><text x="38" y="12" fill="currentColor" font-size="11">N</text><text x="4" y="28" fill="currentColor" font-size="11">E</text></svg>
+      <svg class="compass" width="40" height="40" viewBox="0 0 44 44" role="img" aria-label="North up, east left"><path d="M34 34V10M34 34H10" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M34 6l-3 6h6zM6 34l6-3v6z" fill="currentColor"/><text x="38" y="12" fill="currentColor" font-size="11">N</text><text x="4" y="28" fill="currentColor" font-size="11">E</text></svg>
       <div class="scalebar num"><i id="sbar"></i>30″</div>
       <div class="lgd num" id="layerLgd" hidden></div>
       <div class="gh-off num" id="ghostOff" hidden></div>
       <button class="cb-key" id="cleanKey" aria-pressed="false" title="Hide every overlay and zoom in on the star"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="3"/><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/></svg><span class="cb-l">Clean blink</span></button>
-      <div class="gh-bar" id="ghostBar" hidden><span class="gh-end num" id="ghMin">−50 yr</span><input type="range" id="ghRange" min="-50" max="50" step="1" value="0" aria-label="Ghost date, years from this image"><span class="gh-end num" id="ghMax">+50 yr</span><span class="gh-read num" id="ghRead"></span><button class="key" id="ghReset">Reset</button></div>
+      <div class="gh-bar" id="ghostBar" hidden><span class="gh-end num" id="ghMin">−50 yr</span><input type="range" id="ghRange" min="-50" max="50" step="1" value="0" aria-label="Ghost date, years from this image"><span class="gh-end num" id="ghMax">+50 yr</span><span class="gh-read num" id="ghRead"></span><button class="key" id="ghReset" aria-label="Reset the Ghost to this image's date">Reset</button></div>
       <div class="loading-thin" id="thin" hidden><i id="thinBar"></i></div>
 
       <div class="state loader2" id="stLoading" hidden><div id="scanLoader"></div></div>

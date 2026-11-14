@@ -1,6 +1,6 @@
 {
  "about": "Numbers for web/proof.html, computed by tools/make_proof.mjs from the app pipeline (data.js) on cached SPHEREx cutouts. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.",
- "generated": "2026-11-14T17:22:41.990Z",
+ "generated": "2026-11-14T23:45:38.807Z",
  "settings": {
   "fovArcmin": 2.5,
   "maxImages": 120,
@@ -28,7 +28,7 @@
    ],
    [
     "NOT MEASURABLE",
-    "the catalogue motion moves the star less than one 6.15″ pixel over the dates we have, or the fit could not run."
+    "the catalogue motion moves the star less than one 6.15″ pixel over the dates we have, the star's centre is saturated (masked) in 90% or more of the fitted images, or the fit could not run."
    ]
   ],
   "brightness": [

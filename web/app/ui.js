@@ -5,8 +5,8 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 
 import { parseQuery, QueryError, DEFAULT_SETTINGS } from './query.js';
-import { run, buildStacks, measureMotion, resolveTarget } from './data.js';
-import { kinematics, tangentialVelocity, toLSR } from './kinematics.js';
+import { run, buildStacks, measureMotion, resolveTarget, motionMeasurability, motionDetectors, detectorText } from './data.js';
+import { kinematics, tangentialVelocity, toLSR, totalPM } from './kinematics.js';
 import { PRESETS, findPreset } from './presets.js';
 import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight, altAz, riseTransitSet } from './sky.js';
 import { simbadCone, otypeName, CHANNEL_UM } from './skymap.js';
@@ -262,11 +262,42 @@ function restack() { V.stacks = V.F.length ? buildStacks(V.F.map(f => f.raw).sor
 // Measure the motion from the images the flag filter keeps (also with no catalogue motion, e.g. a
 // coordinate search). Runs when loading finishes and again whenever the filter changes.
 function remeasure() {
-  try { V.motion = V.grid && V.F.length ? measureMotion(V.F.map(f => f.raw), V.grid) : null; } catch { V.motion = null; }
+  // A preset may say which detectors its motion is measured on (WISE 0855: 5–6, where it shows);
+  // the Proof page uses the same images (data.js motionDetectors).
+  const preset = V.query?.type === 'name' ? findPreset(V.query.name) : null, dets = motionDetectors(preset);
+  const raws = V.F.map(f => f.raw).filter(f => !dets || dets.includes(f.detector));
+  try { V.motion = V.grid && raws.length ? measureMotion(raws, V.grid) : null; } catch { V.motion = null; }
+  if (V.motion) V.motion.detectors = dets;
   // only a final fit counts: all planned images tried and at least two observing seasons
-  if (V.motion?.ok && visits(V.F).length < 2) V.motion = { ok: false, frames: V.motion.frames, reason: 'one season only' };
-  $('d-meas').textContent = V.motion?.ok ? `${V.motion.significant === false ? `no significant motion (< ${(V.motion.upperLimit / 1000).toFixed(2)}″/yr)` : `${(V.motion.total / 1000).toFixed(2)} ± ${(V.motion.totalErr / 1000).toFixed(2)}″/yr`} (${V.FA.length > V.F.length ? 'flagged images hidden, ' : ''}${V.motion.frames} images)` : V.motion ? (V.motion.reason === 'one season only' ? 'needs two seasons to measure' : V.motion.reason === 'too few frames' ? 'too few images to measure' : 'too faint to measure') : '—';
+  if (V.motion?.ok && visits(V.F).length < 2) V.motion = { ok: false, frames: V.motion.frames, reason: 'one season only', detectors: dets };
+  const mc = motionCheck(), mo = V.motion;
+  $('d-meas').textContent = mo?.ok
+    ? (mc && !mc.measurable ? `not measurable here (${mc.saturated ? 'centre saturated' : mc.slow ? 'moves under a pixel' : 'no fit'})`
+      : `${mo.significant === false ? `no significant motion (< ${(mo.upperLimit / 1000).toFixed(2)}″/yr)` : `${(mo.total / 1000).toFixed(2)} ± ${(mo.totalErr / 1000).toFixed(2)}″/yr`}`)
+      + ` (${V.FA.length > V.F.length ? 'flagged images hidden, ' : ''}${mo.frames} images${dets ? `, detectors ${detectorText(dets)}` : ''})`
+    : mo ? (mo.reason === 'one season only' ? 'needs two seasons to measure' : mo.reason === 'too few frames' ? 'too few images to measure' : 'too faint to measure') : '—';
   repaintMot?.();
+}
+// The shared measurability rule (data.js motionMeasurability, also on the Proof page) for the
+// current fit: catalogue motion from the loaded target (none for a coordinate patch).
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+function motionCheck() {
+  const mo = V.motion; if (!mo?.ok) return null;
+  const t = V.target, cat = t && (t.pmra || t.pmdec) ? totalPM(t.pmra, t.pmdec) : null;
+  return motionMeasurability(mo, { catalogueMasYr: cat });
+}
+// Plain words for a not-measurable fit: { head, note } (head = the row value, note = the detail).
+function notMeasurableText(mc, mo) {
+  const all = mo.maskedFrames === mo.frames;
+  const satHead = `the star's centre is saturated in ${all ? 'every image' : `${mo.maskedFrames} of the ${mo.frames} measured images`}`;
+  const t = V.target, catYr = t && (t.pmra || t.pmdec) ? totalPM(t.pmra, t.pmdec) / 1000 : null;
+  const slowTxt = mc.slow && catYr != null ? `its catalogue motion, ${catYr.toFixed(2)}″/yr, moves it only ${mc.shiftPx.toFixed(3)} of a 6.15″ pixel over these ${mo.span.toFixed(1)} years` : '';
+  const fitTxt = mo.significant !== false ? `${(mo.total / 1000).toFixed(2)} ± ${(mo.totalErr / 1000).toFixed(2)}″/yr` : `no significant motion (&lt; ${(mo.upperLimit / 1000).toFixed(2)}″/yr)`;
+  if (mc.saturated) return { head: `Not measurable here: ${satHead}`,
+    note: `So every position comes from the edges of a blanked core${mo.significant !== false ? `, and the fit's ${fitTxt} from ${mo.frames} images is not a real motion` : ''}.${slowTxt ? ` Also, ${slowTxt}.` : ''}` };
+  if (mc.slow) return { head: `Not measurable here: ${slowTxt.replace(/^its/, 'the')}`,
+    note: mo.significant !== false ? `The fit gives ${fitTxt} from ${mo.frames} images, which is not a real motion: a star this slow should show none.` : `As expected, the ${mo.frames} images show ${fitTxt}.` };
+  return { head: 'Not measurable here: the fit could not run', note: '' };
 }
 // Re-apply the "hide images with…" filter, keeping the current image (or the nearest one in time).
 function refilter() {
@@ -279,6 +310,15 @@ function refilter() {
   onFrame(P.i);
 }
 function step(d) { if (mode !== 'play') setMode('play'); P.pause(); const before = seasonOf(P.i); P.set(P.i + d, true); Snd.play(seasonOf(P.i) !== before ? 'season' : 'scrub'); }
+// startViewTransition with its promises handled: a transition that is skipped or aborted (another
+// one starts, the page is hidden) rejects ready/finished/updateCallbackDone, and the update still
+// runs, so those rejections are expected and must not surface as "Uncaught (in promise)".
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+function viewTransition(update) {
+  const t = document.startViewTransition(update);
+  for (const p of [t?.ready, t?.finished, t?.updateCallbackDone]) p?.catch?.(() => {});
+  return t;
+}
 
 function setMode(m, withSound) {
   if (m === mode) return;
@@ -294,7 +334,7 @@ function setMode(m, withSound) {
     zoom = 1; layout(); onFrame(P.i);
   };
   if (withSound) Snd.play('tick');
-  if (document.startViewTransition && !set.motion) document.startViewTransition(apply); else apply();
+  if (document.startViewTransition && !set.motion) viewTransition(apply); else apply();
 }
 document.querySelectorAll('[data-mode]').forEach(b => { b.onclick = () => setMode(b.dataset.mode, true); });
 document.querySelectorAll('[data-fps]').forEach(b => { b.onclick = () => { P.fps = +b.dataset.fps; segSelect($('speedSeg'), x => x === b); Snd.play('tick'); }; });
@@ -378,13 +418,16 @@ function progress() {
   V.scan?.slow(slow ? `IRSA is slow. ${V.F.length} of ${V.planned} kept. Retrying ${V.retries} image${V.retries === 1 ? '' : 's'}` : null);
   if (V.status === 'loading') $('d-meas').textContent = `measuring… (${V.F.length} of ${V.planned || '…'} images)`;
 }
+// A coordinate patch's heading (capitalised); the loader's "Finding images of …" keeps it lower case.
+let holdMjd = null; // ?mjd= from the URL: the image to stop on once loading finishes
+const PATCH_NAME = 'This patch', loaderName = n => (n === PATCH_NAME ? 'this patch' : n);
 function load(query, label) {
   V.ctl?.abort(); const ctl = V.ctl = new AbortController();
   P.pause(); clearInterval(bt); if (mode !== 'play') { mode = 'play'; $('stage').className = 'stage mode-play'; segSelect($('viewSeg'), b => b.dataset.mode === 'play'); }
   TS.show(false); TS.reset();
   CB.leave(); LC.data(null, null, label, true);
   CX.reset();
-  Object.assign(V, { query, target: null, grid: null, raws: [], F: [], FA: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, status: 'loading', motion: null, seasons: [], name: label || 'this patch' });
+  Object.assign(V, { query, target: null, grid: null, raws: [], F: [], FA: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, status: 'loading', motion: null, seasons: [], name: label || PATCH_NAME });
   P.i = 0; shown = -1; arriveCount = 0;
   $('stLoading').classList.remove('leaving');
   // a loader still fading out from the last load shares #scanLoader: finish it now, or its late
@@ -394,15 +437,15 @@ function load(query, label) {
   { const L = $('stLoading'); L.classList.add('ld-wait'); clearTimeout(ldReveal); ldReveal = setTimeout(() => L.classList.remove('ld-wait'), LOADER_GRACE); }
   // Reduce motion -> the scan loader (DESIGN.md 17b); otherwise the astronaut video (it falls back to ScanLoader itself)
   V.scan = (LOADER === 'astronaut' && !set.motion && window.AstroLoader ? window.AstroLoader : window.ScanLoader)($('scanLoader'), {
-    mode: LOADER, base: '/loader/v1.1/', target: V.name, bands: ranges.map(r => ({ ...r, name: bandName(r) })), // caption says "CO₂-ice band", a range
+    mode: LOADER, base: '/loader/v1.1/', target: loaderName(V.name), bands: ranges.map(r => ({ ...r, name: bandName(r) })), // caption says "CO₂-ice band", a range
     reducedMotion: set.motion,
-    onStart: () => { Snd.play('click'); $('thin').hidden = false; const w = leaveLoader(); if (!set.motion) setTimeout(() => P.play(), w); },
+    onStart: () => { Snd.play('click'); $('thin').hidden = false; const w = leaveLoader(); if (!set.motion && !Number.isFinite(holdMjd)) setTimeout(() => P.play(), w); },
     onRetry: () => { Snd.play('click'); if (V.query) load(V.query, V.name); },
   });
   showState('stLoading'); $('thin').hidden = true; buildTimeline(); progress(); draw(); onFrame(0);
   const emit = (e) => {
     if (ctl.signal.aborted) return;
-    if (e.type === 'RESOLVED') { V.target = e.target; GH.forTarget(e.target); V.name = label || e.target.name || 'this patch'; V.scan?.set({ target: V.name }); }
+    if (e.type === 'RESOLVED') { V.target = e.target; GH.forTarget(e.target); V.name = label || e.target.name || PATCH_NAME; V.scan?.set({ target: loaderName(V.name) }); }
     else if (e.type === 'PLANNED') {
       V.grid = e.plan.grid; V.n = V.grid.n; V.planned = e.plan.planned; V.plannedMjds = e.plan.mjds || [];
       V.total = e.plan.total;
@@ -428,9 +471,12 @@ function load(query, label) {
       remeasure();
       buildTimeline(); findOther(); // buildTimeline sets V.seasons for the count below
       $('d-n').textContent = `${V.F.length} shown of ${V.total}${V.FA.length > V.F.length ? ` · ${V.FA.length - V.F.length} hidden by flags` : ''} · ${V.seasons.length} season${V.seasons.length === 1 ? '' : 's'}`;
+      // ?mjd= (Archive/Spectrum "Play" links): show the image nearest that date and stay paused there
+      const held = Number.isFinite(holdMjd) && V.F.length > 0;
+      if (held) { const m = holdMjd; holdMjd = null; let b = 0; V.F.forEach((f, k) => { if (Math.abs(f.mjd - m) < Math.abs(V.F[b].mjd - m)) b = k; }); P.pause(); P.set(b, true); }
       onFrame(P.i); Snd.play('confirm');
       toast(V.failed ? `${V.F.length} images are in. ${V.failed} couldn't be fetched (IRSA busy); Retry later fills them.` : `All ${V.F.length} images are in.`);
-      setTimeout(() => { if (!set.motion && !P.playing) P.play(); }, leaveWait);
+      setTimeout(() => { if (!set.motion && !P.playing && !held) P.play(); }, leaveWait);
     } else if (e.type === 'ERROR' || e.type === 'NOT_FOUND') {
       V.status = 'error'; $('thin').hidden = true;
       $('errTxt').textContent = e.message + (V.F.length ? ` ${V.F.length} images arrived and are kept.` : '');
@@ -616,11 +662,28 @@ function select(ra, dec, t, fromUser) {
 }
 
 /* search / quick picks: fly the map there and select */
+// Old Archive/Spectrum links (and typed coordinates) give ra/dec. Within PRESET_SNAP_ARCSEC of a
+// quick-pick star, at its catalogue (J2000) position or anywhere along its track up to a year after
+// now, they open as that star: name, ring, catalogue motion and pre-saved images.
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+const PRESET_SNAP_ARCSEC = 10;
+function presetNear(ra, dec) {
+  let best = null, bestSep = Infinity;
+  for (const t of TARGETS) for (let k = 0; k <= 80; k++) { // Barnard's Star: 80 steps of ~4.6″ along 27 years
+    const p = propagate(t.preset.target, 51544.5 + (NOW_MJD + 365 - 51544.5) * k / 80), sep = separationArcsec(ra, dec, p.ra, p.dec);
+    if (sep < bestSep) { bestSep = sep; best = t; }
+  }
+  return bestSep <= PRESET_SNAP_ARCSEC ? best : null;
+}
 async function goTo(text) {
   let q;
   try { q = parseQuery(text); } catch (err) { if (err instanceof QueryError) { showSearchError(text, err.message); Snd.play('error'); return; } throw err; }
   if (scene !== 'map') toMap(true);
-  if (q.type === 'coords') { return flyTo(q.ra, q.dec, Math.min(skymap.aladin ? skymap.fov() : 1, 1), () => select(q.ra, q.dec, null, false)); return; }
+  if (q.type === 'coords') {
+    const pt = presetNear(q.ra, q.dec); // a ra/dec on (or within 10″ of) a quick-pick star opens as that star
+    if (pt) return flyTo(pt.ra, pt.dec, 2, () => select(pt.ra, pt.dec, pt, false));
+    return flyTo(q.ra, q.dec, Math.min(skymap.aladin ? skymap.fov() : 1, 1), () => select(q.ra, q.dec, null, false));
+  }
   const preset = findPreset(q.name);
   if (preset) { const t = TARGETS.find(x => x.key === preset.key); return flyTo(t.ra, t.dec, 2, () => select(t.ra, t.dec, t, false)); return; }
   $('serr').hidden = true; toast(`Looking up “${q.name}” in SIMBAD…`);
@@ -640,6 +703,19 @@ function showSearchError(text, why) {
 $('q').addEventListener('input', () => { $('serr').hidden = true; });
 function doSearch() { $('serr').hidden = true; Snd.play('click'); goTo($('q').value); }
 document.querySelector('form.search').onsubmit = (e) => { e.preventDefault(); doSearch(); };
+// Quick picks that don't all fit: fade the side that has more (live.css .more-l / .more-r), let a
+// mouse wheel scroll them sideways, and bring a focused pick into view.
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+{
+  const pk = document.querySelector('.topbar .picks');
+  if (pk) {
+    const edges = () => { const max = pk.scrollWidth - pk.clientWidth; pk.classList.toggle('more-l', pk.scrollLeft > 2); pk.classList.toggle('more-r', max - pk.scrollLeft > 2); };
+    pk.addEventListener('scroll', edges, { passive: true });
+    pk.addEventListener('wheel', e => { if (pk.scrollWidth > pk.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { pk.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+    pk.addEventListener('focusin', e => e.target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' }));
+    new ResizeObserver(edges).observe(pk); edges();
+  }
+}
 document.querySelectorAll('.pick').forEach(b => { b.onclick = () => { Snd.play('click'); document.querySelectorAll('.pick').forEach(x => x.setAttribute('aria-pressed', x === b)); $('q').value = b.textContent; goTo(b.textContent); }; });
 
 /* ---------- coordinate details panel ---------- */
@@ -714,12 +790,23 @@ function motionHTML(sel, t, cat, gaia, same, looking) {
   // measured in these images (OBSERVED), once the patch has been played and the fit is final
   if (same && V.motion?.ok && firstS() && lastS() && V.stacks.length > 1) {
     // data.js significance rule (also on the Proof page): under 3σ -> "no significant motion (< upper limit)"
+    // data.js measurability rule (also on the Proof page): saturated core / under a pixel -> "Not measurable here"
+    const mc = motionCheck(), meas = !mc || mc.measurable;
     const m = V.motion.total / 1000, me = V.motion.totalErr / 1000, sig = V.motion.significant !== false;
-    const val = sig ? `${m.toFixed(2)} ± ${me.toFixed(2)}″/yr` : `no significant motion (&lt; ${(V.motion.upperLimit / 1000).toFixed(2)}″/yr)`;
-    const nHid = V.FA.length - V.F.length, used = nHid > 0 ? `flagged images hidden, ${V.motion.frames} images` : `from ${V.motion.frames} images`;
-    h += row('Measured in these images (SPHEREx)', `${val} · ${used}`, 'obs', nbMeasured());
-    if (k?.mu != null) h += `<p class="mot-cmp num">Catalogue ${k.arcsecYr.toFixed(2)}″/yr · measured here ${sig ? `${m.toFixed(1)} ± ${me.toFixed(1)}″/yr` : val}</p>`;
-    const vtm = sig ? tangentialVelocity(V.motion.total, plxFrom?.plx) : null;
+    const dets = V.motion.detectors, detTxt = dets ? ` (detectors ${detectorText(dets)}, where ${esc(V.name)} shows)` : '';
+    const nHid = V.FA.length - V.F.length, used = (nHid > 0 ? `flagged images hidden, ${V.motion.frames} images` : `from ${V.motion.frames} images`) + detTxt;
+    if (meas) {
+      const val = sig ? `${m.toFixed(2)} ± ${me.toFixed(2)}″/yr` : `no significant motion (&lt; ${(V.motion.upperLimit / 1000).toFixed(2)}″/yr)`;
+      h += row('Measured in these images (SPHEREx)', `${val} · ${used}`, 'obs', nbMeasured());
+      if (k?.mu != null) h += `<p class="mot-cmp num">Catalogue ${k.arcsecYr.toFixed(2)}″/yr · measured here ${sig ? `${m.toFixed(1)} ± ${me.toFixed(1)}″/yr` : val}</p>`;
+    } else {
+      const nm = notMeasurableText(mc, V.motion);
+      h += row('Measured in these images (SPHEREx)', nm.head, 'obs', nbMeasured());
+      if (nm.note) h += `<p class="quiet">${nm.note}</p>`;
+      if (k?.mu != null) h += `<p class="mot-cmp num">Catalogue ${k.arcsecYr.toFixed(2)}″/yr · not measurable here</p>`;
+    }
+    // a speed from the measured motion only when that motion is measurable and significant
+    const vtm = sig && meas ? tangentialVelocity(V.motion.total, plxFrom?.plx) : null;
     if (vtm) h += row('Speed across the sky, from the measured motion', `${vtm.toFixed(0)} km/s`, 'calc',
       ent(`${name}speed across the sky, from the motion measured in SPHEREx images`, +vtm.toFixed(0), 'km/s', '', `Measured motion with the ${srcName(plxFrom)} parallax`, 'COMPUTED'));
   } else if (!same && k?.mu != null) h += '<p class="quiet">Play this patch to measure the motion from the SPHEREx images.</p>';
@@ -790,8 +877,11 @@ window.openNotebook = openNotebook; // also the hook the guided tour looks for (
 const posText = (ra, dec) => `${R.fmtRA(ra)} ${R.fmtDec(dec)} (${ra.toFixed(5)}°, ${sgn(dec)})`;
 function nbMeasured() {
   const mo = V.motion; if (!mo?.ok) return null;
-  const sig = mo.significant !== false, used = `${mo.frames} images${V.FA.length > V.F.length ? ', flagged images hidden' : ''}`;
+  const sig = mo.significant !== false, used = `${mo.frames} images${mo.detectors ? `, detectors ${detectorText(mo.detectors)}` : ''}${V.FA.length > V.F.length ? ', flagged images hidden' : ''}`;
   const base = { unit: '″/yr', source: 'SPHEREx images via IRSA, motion fitted in Star Shift', tag: 'OBSERVED' };
+  const mc = motionCheck();
+  if (mc && !mc.measurable) return { ...base, unit: '', uncertainty: '', value: 'not measurable',
+    label: `${V.name}: motion not measurable in these SPHEREx images (${mc.saturated ? 'centre saturated' : mc.slow ? 'catalogue motion under one pixel over these dates' : 'no fit'}; ${used})` };
   return sig ? { ...base, label: `${V.name}: proper motion measured in these SPHEREx images (${used})`, value: +(mo.total / 1000).toFixed(2), uncertainty: +(mo.totalErr / 1000).toFixed(2) }
     : { ...base, label: `${V.name}: no significant motion in these SPHEREx images (${used}); upper limit`, value: `< ${(mo.upperLimit / 1000).toFixed(2)}`, uncertainty: '' };
 }
@@ -1050,12 +1140,12 @@ function toViewer(instant, then) {
   let ran = false; // a page that is not drawing (e.g. a hidden pane) never runs the transition's update: run it anyway after 600 ms
   if (!instant) setTimeout(() => go(), 600);
   const go = () => { if (ran) return; ran = true; scene = 'viewer'; app.dataset.scene = 'viewer'; then?.(); hideTip(); layout(); onFrame(P.i); placeHits(); GH.placeMap(); if (innerWidth < 1100) sheet(false); updateURL(); };
-  if (!instant && document.startViewTransition && !set.motion) document.startViewTransition(go); else go();
+  if (!instant && document.startViewTransition && !set.motion) viewTransition(go); else go();
 }
 function toMap(instant) {
   const go = () => { scene = 'map'; app.dataset.scene = 'map'; P.pause(); clearInterval(bt); hideTip(); closePop(); GH.syncKey(); GH.renderCD(); requestAnimationFrame(GH.placeMap); requestAnimationFrame(placeOverlays); updateURL(); if (M.sel) setCoordText(M.sel.ra, M.sel.dec); };
   if (!instant) Snd.play('tick');
-  if (!instant && document.startViewTransition && !set.motion) document.startViewTransition(go); else go();
+  if (!instant && document.startViewTransition && !set.motion) viewTransition(go); else go();
 }
 function playPatch() {
   const s = M.sel; if (!s) return;
@@ -1064,7 +1154,7 @@ function playPatch() {
   const query = preset ? { type: 'name', name: preset.label } : t?.simbad ? { type: 'name', name: t.simbad.name } : { type: 'coords', ra: s.ra, dec: s.dec };
   const same = V.query && JSON.stringify(V.query) === JSON.stringify(query) && V.status === 'ready';
   if (skymap.aladin && !set.motion) skymap.setFov(Math.max(0.05, (150 / 3600) / 0.42));
-  setTimeout(() => toViewer(false, same ? null : () => load(query, t ? t.name : 'this patch')), set.motion ? 0 : 250);
+  setTimeout(() => toViewer(false, same ? null : () => load(query, t ? t.name : PATCH_NAME)), set.motion ? 0 : 250);
 }
 $('cdPlay').onclick = playPatch; $('mdPlay').onclick = playPatch; $('mapBack').onclick = () => toMap(false);
 
@@ -1092,6 +1182,7 @@ function init() {
   app.dataset.scene = 'map';
   applySettings(); buildTimeline(); layout();
   const qp = new URLSearchParams(location.search);
+  if (qp.get('scene') === 'viewer' && qp.get('mjd') && Number.isFinite(+qp.get('mjd'))) holdMjd = +qp.get('mjd');
   if (qp.get('ghost') !== null && Number.isFinite(+qp.get('ghost'))) GH.G.pending = { years: +qp.get('ghost'), viewer: qp.get('scene') === 'viewer' };
   const first = TARGETS[0];
   skymap.init(first.ra, first.dec, 10).catch(() => { mapFailed(); }).then(() => { if (!skymap.aladin) return;

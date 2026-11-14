@@ -11,7 +11,7 @@
 // Usage: (server running on 8787) node tools/make_proof.mjs
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { run, measureMotion, seasons, SYS_FLOOR_MASYR, MIN_MOTION_MASYR } from '../web/app/data.js';
+import { run, measureMotion, seasons, SYS_FLOOR_MASYR, MIN_MOTION_MASYR, motionDetectors } from '../web/app/data.js';
 import { PRESETS } from '../web/app/presets.js';
 import { DEFAULT_SETTINGS } from '../web/app/query.js';
 import { classifyFrame, visibleFrames, HIDE_IDS } from '../web/core/contam.js';
@@ -98,6 +98,7 @@ function motion(frames, grid) {
   if (!m.ok) return { ok: false, reason: m.reason || 'no steady track', frames: m.frames || 0 };
   const dets = [...new Set(frames.filter(f => m.points.some(q => q.mjd === f.mjd)).map(f => f.detector))].sort();
   return { ok: true, total: m.total, totalErr: m.totalErr, statErr: m.statErr, sysErr: m.sysErr, refStars: m.refStars, significant: m.significant, upperLimit: m.upperLimit, pmra: m.pmra, pmdec: m.pmdec, pa: motionPA(m.pmra, m.pmdec),
+    maskedFrames: m.maskedFrames, inputFrames: m.inputFrames, // for the shared measurability rule (not written out)
     frames: m.frames, rejected: m.rejected, span: m.span, seasons: used.map(s => ({ from: day(s.startMjd), to: day(s.endMjd), n: s.frames.length })),
     detectors: dets,
     points: m.points.map(p => ({ mjd: r2(p.mjd, 3), e: r2(p.e, 3), n: r2(p.n, 3) })),
@@ -165,15 +166,16 @@ for (const p of PRESETS) {
   const saturated = cls.filter(c => c.saturated).length;
   const flagged = frames.length - visibleFrames(frames, new Set(HIDE_IDS), f => cls[frames.indexOf(f)]).length;
   const allSeasons = seasons(frames);
-  const longOnly = !!p.bandHint; // presets.js: "Only visible at 3.8–5 µm (bands 5–6)"
-  const main = longOnly ? frames.filter(f => f.detector >= 5) : frames;
+  const dets = motionDetectors(p); // presets.js motionDetectors (WISE 0855: [5, 6]); the viewer uses the same
+  const longOnly = !!dets;
+  const main = dets ? frames.filter(f => dets.includes(f.detector)) : frames;
   const M = {
     all: motion(frames, grid),
     short: motion(frames.filter(f => f.detector <= 4), grid),
     long: motion(frames.filter(f => f.detector >= 5), grid),
     filtersOn: motion(visibleFrames(main, new Set(HIDE_IDS), f => cls[frames.indexOf(f)]), grid),
   };
-  const m = longOnly ? M.long : M.all;
+  const m = dets ? motion(main, grid) : M.all;
   const spanYears = (frames[frames.length - 1].mjd - frames[0].mjd) / 365.25;
   const v = motionVerdict(m, cat.total, cat.err, m.ok ? m.span : spanYears);
   const catRef = PM_REF[cat.bibcode] || (cat.bibcode ? `${cat.bibcode} (via SIMBAD)` : 'SIMBAD');
