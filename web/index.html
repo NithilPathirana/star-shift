@@ -27,6 +27,7 @@
       <label class="field well"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="5.5"/><path d="M12 12l4 4"/></svg>
         <input id="q" aria-label="Star name or sky coordinates" value="" placeholder="Star name, or RA Dec like 269.45 +4.69" autocomplete="off"></label>
       <button class="key primary" type="submit">Show</button>
+      <div class="serr" id="serr" role="alert" hidden></div>
     </form>
     <div class="picks" role="group" aria-label="Example targets">
       <button class="key pick" aria-pressed="false">Barnard's Star</button>
@@ -61,7 +62,7 @@
         <div class="sel" id="sel"><span>Selected patch</span></div>
         <div class="reticle" aria-hidden="true"></div>
         <div class="state" id="stMap" hidden role="alert"><div><h2>Sky map couldn't load</h2><p>The time-lapse still works.</p><div class="row"><button class="key primary" id="mapOpenFilm">Open time-lapse</button><button class="key" id="mapRetry">Try the map again</button></div></div></div>
-        <div class="sky-cursor" id="skyCursor" aria-hidden="true"><svg width="44" height="44" viewBox="0 0 44 44" fill="none" stroke="#E3A86B" stroke-width="1.5"><circle cx="22" cy="22" r="9" stroke-dasharray="3 2.4"/><path d="M22 2v9M22 33v9M2 22h9M33 22h9"/></svg><span class="sc-label" id="scLabel"></span></div>
+        <div class="cur" id="cur" aria-hidden="true"><svg viewBox="-20 -20 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><circle r="12"/><path d="M0 -20v6M0 14v6M-20 0h6M14 0h6"/></svg><span class="cur-tag" id="curTag"></span></div>
         <div class="map-read num" id="mapRead"></div>
         <p class="map-ph" id="mapCredit">SPHEREx DR1 all-sky map (IRSA HiPS) at <span id="mapWl">1.63 µm</span>. Rings: named objects from SIMBAD.</p>
       </div>

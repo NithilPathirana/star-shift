@@ -49,10 +49,13 @@ function applySettings() {
 }
 
 /* ---------- sound: Web Audio, synthesised, quiet, ≤120 ms, throttled ---------- */
-const Snd = { ctx: null, last: 0,
+/* sounds v2 (DESIGN.md section 20): separate throttle clock per event group */
+const Snd = { ctx: null, last: 0, clocks: {},
   wake() { if (!this.ctx) { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { /* no audio */ } } else if (this.ctx.state === 'suspended') this.ctx.resume(); },
   play(type) {
-    if (!set.sound || !this.ctx) return; const now = performance.now(); if (now - this.last < 45) return; this.last = now;
+    if (!set.sound || !this.ctx) return; const now = performance.now();
+    const group = /^zoom/.test(type) ? 'zoom' : type === 'scrub' ? 'scrub' : /^season/.test(type) ? 'season' : 'ui';
+    const gap = { zoom: 150, scrub: 35, season: 250, ui: 45 }[group]; if (now - (this.clocks[group] || 0) < gap) return; this.clocks[group] = now;
     const c = this.ctx, t = c.currentTime;
     const tone = (f, at, dur, wave, peak) => { const o = c.createOscillator(), g = c.createGain(); o.type = wave; o.frequency.setValueAtTime(f, t + at);
       g.gain.setValueAtTime(0.0001, t + at); g.gain.exponentialRampToValueAtTime(peak, t + at + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + at + dur);
@@ -62,6 +65,20 @@ const Snd = { ctx: null, last: 0,
     if (type === 'detent') tone(1300, 0, .03, 'triangle', .055);
     if (type === 'confirm') { tone(660, 0, .06, 'sine', .055); tone(990, .055, .065, 'sine', .05); }
     if (type === 'error') { tone(240, 0, .07, 'triangle', .05); tone(190, .05, .07, 'triangle', .045); }
+    if (type === 'zoomIn' || type === 'zoomOut') { // soft pitch glide + "air"
+      const up = type === 'zoomIn', o = c.createOscillator(), lp = c.createBiquadFilter(), g = c.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(up ? 420 : 680, t); o.frequency.exponentialRampToValueAtTime(up ? 680 : 420, t + .09);
+      lp.type = 'lowpass'; lp.frequency.value = 1800; lp.Q.value = .7;
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.03, t + .012); g.gain.exponentialRampToValueAtTime(.0001, t + .1);
+      o.connect(lp).connect(g).connect(c.destination); o.start(t); o.stop(t + .12);
+      const len = Math.floor(c.sampleRate * .07), buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const nz = c.createBufferSource(), bp = c.createBiquadFilter(), ng = c.createGain(); nz.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = 1200; bp.Q.value = .8;
+      ng.gain.setValueAtTime(.0001, t); ng.gain.exponentialRampToValueAtTime(.01, t + .01); ng.gain.exponentialRampToValueAtTime(.0001, t + .07);
+      nz.connect(bp).connect(ng).connect(c.destination); nz.start(t); nz.stop(t + .08);
+    }
+    if (type === 'scrub') tone(3200, 0, .012, 'triangle', .018);
+    if (type === 'season') { tone(880, 0, .055, 'sine', .04); tone(1320, .05, .065, 'sine', .04); }
+    if (type === 'seasonSoft') { tone(880, 0, .055, 'sine', .02); tone(1320, .05, .065, 'sine', .02); }
   } };
 addEventListener('pointerdown', () => Snd.wake(), { capture: true });
 addEventListener('keydown', () => Snd.wake(), { capture: true });
@@ -108,6 +125,7 @@ function buildTimeline() {
     pending.map(m => `<i class="tick pending" style="left:${pos(m)}%"></i>`).join('') + '<span class="key thumb" id="thumb"></span>';
   $('tlLabels').innerHTML = V.seasons.map(v => `<span style="left:${(pos(F[v.from].mjd) + pos(F[v.to].mjd)) / 2}%">${seasonName(v)}</span>`).join('');
   ticks = [...track.querySelectorAll('.tick:not(.pending)')];
+  const g = document.createElement('span'); g.className = 'ghost'; g.innerHTML = '<b></b>'; track.appendChild(g);
   track.setAttribute('aria-valuemax', String(Math.max(1, F.length)));
   applyRanges();
 }
@@ -189,6 +207,7 @@ function onFrame(i, manual) {
   placeHits();
   const th = $('thumb'); if (th) th.style.left = pos(f.mjd) + '%';
   const s = seasonOf(i);
+  if (!manual && P.playing && i > 0 && s !== seasonOf(i - 1)) Snd.play('seasonSoft');
   if (s >= 0) $('seasonLbl').innerHTML = `<b>Season ${s + 1}</b> of ${V.seasons.length} · ${seasonName(V.seasons[s])}`;
   $('tlDate').textContent = R.fmtDate(f.date);
   track.setAttribute('aria-valuenow', i + 1); track.setAttribute('aria-valuetext', `Image ${i + 1}, ${R.fmtDate(f.date)}`);
@@ -202,7 +221,7 @@ const P = { i: 0, fps: 4, playing: false, timer: null,
   play() { if (P.playing || V.F.length < 2) return; P.playing = true; const tick = () => { if (!P.playing) return; P.timer = setTimeout(() => { P.set(P.i + 1); tick(); }, 1000 / P.fps); }; tick(); onFrame(P.i); },
   pause() { P.playing = false; clearTimeout(P.timer); onFrame(P.i); },
   toggle() { P.playing ? P.pause() : P.play(); } };
-function step(d) { if (mode !== 'play') setMode('play'); P.pause(); const before = seasonOf(P.i); P.set(P.i + d, true); Snd.play(seasonOf(P.i) !== before ? 'detent' : 'tick'); }
+function step(d) { if (mode !== 'play') setMode('play'); P.pause(); const before = seasonOf(P.i); P.set(P.i + d, true); Snd.play(seasonOf(P.i) !== before ? 'season' : 'scrub'); }
 
 function setMode(m, withSound) {
   if (m === mode) return;
@@ -228,15 +247,22 @@ function scrub(x) {
   const F = V.F; if (!F.length) return;
   const r = track.getBoundingClientRect(), m = t0 + Math.min(1, Math.max(0, (x - r.left) / r.width)) * (t1 - t0);
   let b = 0; F.forEach((f, k) => { if (Math.abs(f.mjd - m) < Math.abs(F[b].mjd - m)) b = k; });
-  if (b === P.i) return; const s = seasonOf(b); if (lastSeason >= 0 && s !== lastSeason) Snd.play('detent'); lastSeason = s; P.set(b, true);
+  if (b === P.i) return; const s = seasonOf(b); if (lastSeason >= 0 && s !== lastSeason) Snd.play('season'); else Snd.play('scrub'); lastSeason = s; P.set(b, true);
 }
 track.addEventListener('pointerdown', e => { if (mode !== 'play') setMode('play'); P.pause(); track.setPointerCapture(e.pointerId); track.classList.add('grab'); lastSeason = seasonOf(P.i); scrub(e.clientX); track.onpointermove = ev => scrub(ev.clientX); });
 const endGrab = () => { track.onpointermove = null; track.classList.remove('grab'); };
+track.addEventListener('pointermove', e => { // ghost tick with date pill under the pointer
+  const g = track.querySelector('.ghost'), F = V.F; if (!g || !F.length) return;
+  const r = track.getBoundingClientRect(), m = t0 + Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * (t1 - t0);
+  let b = 0; F.forEach((f, k) => { if (Math.abs(f.mjd - m) < Math.abs(F[b].mjd - m)) b = k; });
+  const f = F[b], rg = rangeOf(f.um); g.style.left = pos(f.mjd) + '%';
+  g.firstChild.innerHTML = `${rg ? `<i style="--rc:${rg.c}"></i>` : ''}${R.fmtDate(f.date)}${f.um ? ` · λ ${f.um.toFixed(2)} µm` : ''}${rg ? ' · ' + esc(rg.name) : ''}`;
+});
 track.addEventListener('pointerup', endGrab); track.addEventListener('pointercancel', endGrab);
 track.addEventListener('keydown', e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); step(e.key === 'ArrowRight' ? 1 : -1); } });
 
-$('zin').onclick = () => { if (scene === 'map') return mapZoom(1.6); zoom = Math.min(4, zoom + 1); layout(); Snd.play('click'); };
-$('zout').onclick = () => { if (scene === 'map') return mapZoom(1 / 1.6); zoom = Math.max(1, zoom - 1); layout(); Snd.play('click'); };
+$('zin').onclick = () => { if (scene === 'map') return mapZoom(1.6); zoom = Math.min(4, zoom + 1); layout(); Snd.play('zoomIn'); };
+$('zout').onclick = () => { if (scene === 'map') return mapZoom(1 / 1.6); zoom = Math.max(1, zoom - 1); layout(); Snd.play('zoomOut'); };
 $('zfit').onclick = () => { if (scene === 'map') return mapFit(); zoom = 1; layout(); Snd.play('click'); };
 (() => { const sc = $('screens'); let sx, sy, ox, oy;
   sc.addEventListener('pointerdown', e => { if (zoom === 1) return; sc.setPointerCapture(e.pointerId); sc.classList.add('panning'); sx = e.clientX; sy = e.clientY; ox = panX; oy = panY;
@@ -414,27 +440,30 @@ function refraction() {
   });
 }
 
-/* ---------- cursor motion: sky crosshair that follows the pointer, magnetic controls ---------- */
+/* ---------- cursor motion (DESIGN 19): sky reticle with lerp, magnetic snap to pins, click ripple ---------- */
 const fine = mq('(hover: hover) and (pointer: fine)');
 (() => {
-  const cur = $('skyCursor'), lab = $('scLabel'), wrap = () => $('mapWrap');
-  let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0, inside = false;
-  const loop = () => {
-    const k = set.motion ? 1 : 0.32; cx += (tx - cx) * k; cy += (ty - cy) * k;
-    cur.style.transform = `translate(${cx}px, ${cy}px)`;
-    raf = (Math.abs(tx - cx) + Math.abs(ty - cy) > 0.3) ? requestAnimationFrame(loop) : 0;
-  };
-  document.addEventListener('pointermove', e => {
-    if (!fine || scene !== 'map') return;
-    const w = wrap(), r = w.getBoundingClientRect();
-    const isIn = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom && !(e.target instanceof Element && e.target.closest('.tools, .map-read, .inspector, .pin'));
-    if (isIn !== inside) { inside = isIn; cur.classList.toggle('on', isIn); if (isIn) { cx = tx; cy = ty; } }
-    if (!isIn) return;
-    const host = w.parentElement.getBoundingClientRect();
-    tx = e.clientX - host.left; ty = e.clientY - host.top;
-    if (skymap.aladin) { const p = skymap.toWorld(e.clientX - r.left, e.clientY - r.top); if (p) lab.textContent = `${R.fmtRA(p[0])}  ${R.fmtDec(p[1])}`; }
-    if (!raf) raf = requestAnimationFrame(loop);
-  }, { passive: true });
+  const cur = $('cur'), tag = $('curTag'), w = $('mapWrap');
+  let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0, dragging = false;
+  const loop = () => { const k = set.motion ? 1 : .32; cx += (tx - cx) * k; cy += (ty - cy) * k; cur.style.transform = `translate(${cx}px,${cy}px)`;
+    raf = Math.abs(tx - cx) + Math.abs(ty - cy) > .3 ? requestAnimationFrame(loop) : 0; };
+  if (fine) {
+    w.addEventListener('pointermove', e => {
+      const r = w.getBoundingClientRect(); let x = e.clientX - r.left, y = e.clientY - r.top, snap = null;
+      pinEls.forEach((p, i) => { if (p.hidden) return; const px = parseFloat(p.style.left), py = parseFloat(p.style.top); if (Math.hypot(px - x, py - y) < 18) snap = [px, py, TARGETS[i]]; });
+      if (e.buttons) { dragging = true; cur.classList.remove('on'); return; }
+      if (snap) { x = snap[0]; y = snap[1]; }
+      cur.classList.toggle('snap', !!snap); cur.classList.add('on');
+      const p = skymap.aladin ? skymap.toWorld(x, y) : null;
+      tag.textContent = snap ? snap[2].name : p ? `${R.fmtRA(p[0])}  ${R.fmtDec(p[1])}` : '';
+      if (!cur.dataset.init) { cx = tx = x; cy = ty = y; cur.dataset.init = '1'; }
+      tx = x; ty = y; if (!raf) raf = requestAnimationFrame(loop);
+    });
+    w.addEventListener('pointerleave', () => cur.classList.remove('on'));
+    w.addEventListener('pointerdown', () => { dragging = false; cur.classList.add('press'); });
+    w.addEventListener('pointerup', () => { cur.classList.remove('press'); if (dragging || set.motion) return;
+      const rp = document.createElement('span'); rp.className = 'ripple'; rp.style.left = tx + 'px'; rp.style.top = ty + 'px'; $('mapLayer').appendChild(rp); setTimeout(() => rp.remove(), 460); });
+  }
   // magnetic pull: controls lean up to 3 px towards the pointer, then spring back
   if (fine) document.querySelectorAll('.key, .knob, .glass-btn').forEach(el => {
     el.addEventListener('pointermove', e => {
@@ -471,7 +500,7 @@ function placeOverlays() {
 }
 function readout(ra, dec) { const t = `${R.fmtRA(ra)}  ${R.fmtDec(dec)}`; $('mdCursor').textContent = t; $('mapRead').innerHTML = `<span>FOV ${fovTxt()}</span><span class="sep">·</span><span>${t}</span>`; }
 $('mapWrap').addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; if (!skymap.aladin) return; const r = $('mapWrap').getBoundingClientRect(), w = skymap.toWorld(e.clientX - r.left, e.clientY - r.top); if (w) readout(w[0], w[1]); });
-function mapZoom(f) { if (!skymap.aladin) return; skymap.setFov(skymap.fov() / f); Snd.play('tick'); }
+function mapZoom(f) { if (!skymap.aladin) return; skymap.setFov(skymap.fov() / f); Snd.play(f > 1 ? 'zoomIn' : 'zoomOut'); }
 function mapFit() { if (!skymap.aladin) return; skymap.setFov(60); Snd.play('click'); }
 function flyTo(ra, dec, fovDeg, done) {
   skymap.init(ra, dec, fovDeg).then(() => {
@@ -498,20 +527,27 @@ function select(ra, dec, t, fromUser) {
 /* search / quick picks: fly the map there and select */
 async function goTo(text) {
   let q;
-  try { q = parseQuery(text); } catch (err) { if (err instanceof QueryError) { toast(err.message); Snd.play('error'); return; } throw err; }
+  try { q = parseQuery(text); } catch (err) { if (err instanceof QueryError) { showSearchError(text, err.message); Snd.play('error'); return; } throw err; }
   if (scene !== 'map') toMap(true);
   if (q.type === 'coords') { flyTo(q.ra, q.dec, Math.min(skymap.aladin ? skymap.fov() : 1, 1), () => select(q.ra, q.dec, null, false)); return; }
   const preset = findPreset(q.name);
   if (preset) { const t = TARGETS.find(x => x.key === preset.key); flyTo(t.ra, t.dec, 2, () => select(t.ra, t.dec, t, false)); return; }
-  toast(`Looking up “${q.name}” in SIMBAD…`);
+  $('serr').hidden = true; toast(`Looking up “${q.name}” in SIMBAD…`);
   try {
     const tg = await resolveTarget(q);
     const now = (tg.pmra || tg.pmdec) ? propagate(tg, NOW_MJD) : tg;
     const t = { key: 'q', name: tg.name, id: tg.otype ? otypeName(tg.otype) : 'SIMBAD object', ra: now.ra, dec: now.dec, simbad: tg };
     flyTo(t.ra, t.dec, 2, () => select(t.ra, t.dec, t, false));
-  } catch (err) { toast(/recursive|wasm|unreachable|aliasing/i.test(err.message) ? "The sky map couldn't move there. Try again, or open the time-lapse." : err.message); Snd.play('error'); }
+  } catch (err) { showSearchError(q.name, /recursive|wasm|unreachable|aliasing/i.test(err.message) ? '' : err.message); Snd.play('error'); }
 }
-function doSearch() { Snd.play('click'); goTo($('q').value); }
+function showSearchError(text, why) {
+  const near = TARGETS.find(x => { const a = x.name.toLowerCase().replace(/[^a-z]/g, ''), b = String(text).toLowerCase().replace(/[^a-z]/g, ''); return b.length > 3 && (a.startsWith(b.slice(0, 4)) || b.startsWith(a.slice(0, 4))); });
+  const el = $('serr'); el.hidden = false;
+  el.innerHTML = `<span>${why ? esc(why) : `Couldn't find “${esc(text)}”.`}</span>${near ? `<button class="key" id="serrFix">Try ${esc(near.name)}</button>` : ''}<span style="color:var(--muted)">or type RA Dec like 269.45 +4.69</span>`;
+  if (near) $('serrFix').onclick = () => { el.hidden = true; $('q').value = near.name; goTo(near.name); };
+}
+$('q').addEventListener('input', () => { $('serr').hidden = true; });
+function doSearch() { $('serr').hidden = true; Snd.play('click'); goTo($('q').value); }
 document.querySelector('form.search').onsubmit = (e) => { e.preventDefault(); doSearch(); };
 document.querySelectorAll('.pick').forEach(b => { b.onclick = () => { Snd.play('click'); document.querySelectorAll('.pick').forEach(x => x.setAttribute('aria-pressed', x === b)); $('q').value = b.textContent; goTo(b.textContent); }; });
 

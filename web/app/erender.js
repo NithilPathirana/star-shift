@@ -88,8 +88,8 @@
   R.fmtMonth = iso => { const d = new Date(iso.slice(0, 10) + 'T00:00:00Z'); return `${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
 
   // Sexagesimal formatting for the info panel
-  R.fmtRA = deg => { let h = deg / 15; const hh = Math.floor(h); let m = (h - hh) * 60; const mm = Math.floor(m); const ss = ((m - mm) * 60).toFixed(1); return `${String(hh).padStart(2, '0')}h ${String(mm).padStart(2, '0')}m ${ss.padStart(4, '0')}s`; };
-  R.fmtDec = deg => { const sg = deg < 0 ? '−' : '+'; deg = Math.abs(deg); const d = Math.floor(deg); const m = Math.floor((deg - d) * 60); const s = (((deg - d) * 60 - m) * 60).toFixed(0); return `${sg}${String(d).padStart(2, '0')}° ${String(m).padStart(2, '0')}′ ${String(s).padStart(2, '0')}″`; };
+  R.fmtRA = deg => { let ts = Math.round(((deg % 360) + 360) % 360 / 15 * 36000) / 10; const hh = Math.floor(ts / 3600) % 24; ts -= Math.floor(ts / 3600) * 3600; const mm = Math.floor(ts / 60); const ss = (ts - mm * 60).toFixed(1); return `${String(hh).padStart(2, '0')}h ${String(mm).padStart(2, '0')}m ${ss.padStart(4, '0')}s`; };
+  R.fmtDec = deg => { const sg = deg < 0 ? '−' : '+'; let ts = Math.round(Math.abs(deg) * 3600); const d = Math.floor(ts / 3600); ts -= d * 3600; const m = Math.floor(ts / 60), s = ts - m * 60; return `${sg}${String(d).padStart(2, '0')}° ${String(m).padStart(2, '0')}′ ${String(s).padStart(2, '0')}″`; };
 
   // Minimal frame player
   R.Player = function (count, onFrame) {
