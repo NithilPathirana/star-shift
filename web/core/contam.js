@@ -21,7 +21,15 @@ export const PIXEL_KINDS = KINDS.filter(k => !k.frame).map(k => k.id);
 // Bits that describe a pixel but are not a problem with it.
 export const INFO_BITS = ['SOURCE', 'FULLSAMPLE'];
 
-const truthy = v => v === true || /^(t|true|1|yes)$/i.test(String(v ?? '').trim());
+// Header flag values: FITS logicals arrive as true/false or 'T'/'F'; some products write 0/1 or a
+// fraction. A positive number means "contaminated"; 0, F, false, blank mean clean.
+export function truthy(v) {
+  if (v === true) return true;
+  if (typeof v === 'number') return Number.isFinite(v) && v > 0;
+  const t = String(v ?? '').trim();
+  if (t !== '' && Number.isFinite(Number(t))) return Number(t) > 0;
+  return /^(t|true|yes)$/i.test(t);
+}
 
 // { cosmic, overflow, scatter, other } bit masks for one image's flag definitions.
 export function kindMasks(flagNames) {
@@ -79,8 +87,9 @@ export function airglowOf(header, um, bwUm) {
   if (he) reasons.push('HE_AIRGLOW_CONT');
   if (aurora) reasons.push('AURORA_CONT');
   if (shuttle) reasons.push('SHUTTLE_GLOW_CONT');
-  if (nearHe) reasons.push('near 1.083 µm');
-  return { he, aurora, shuttle, nearHe, ampl, flagged: reasons.length > 0, reasons, known: 'HE_AIRGLOW_CONT' in h };
+  // nearHe is information only (the star's wavelength sits on the helium line); flagged means the
+  // archive's header says the image is contaminated.
+  return { he, aurora, shuttle, nearHe, ampl, flagged: reasons.length > 0, reasons, info: nearHe ? ['near 1.083 µm'] : [], known: 'HE_AIRGLOW_CONT' in h };
 }
 
 // ---- "Hide images where these touch the star" (DESIGN.md 23) ----

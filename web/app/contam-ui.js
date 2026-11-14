@@ -237,7 +237,7 @@ export function createContam(ctx) {
     flaggedText(f) { // "Flagged pixels 23 of 625" + breakdown for the title
       const raw = f?.raw; if (!raw) return null;
       const c = countKinds(raw.flags, raw.masks, raw.data);
-      const parts = [`no data ${c.nodata}`, ...KINDS.filter(k => !k.frame).map(k => `${k.name.toLowerCase()} ${c[k.id]}`), `airglow ${raw.glow?.flagged ? 'yes (' + raw.glow.reasons.join(', ') + ')' : 'no'}`];
+      const parts = [`no data ${c.nodata}`, ...KINDS.filter(k => !k.frame).map(k => `${k.name.toLowerCase()} ${c[k.id]}`), `airglow ${raw.glow?.flagged ? 'yes (' + raw.glow.reasons.join(', ') + ')' : 'no'}${raw.glow?.nearHe ? ' · wavelength near 1.083 µm (information)' : ''}`];
       return { text: `${c.flagged} of ${V.n * V.n}`, title: parts.join(' · ') };
     },
     reset() { S.job?.abort(); S.job = null; S.done = 0; S.total = 0; },

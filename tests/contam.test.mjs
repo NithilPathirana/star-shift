@@ -39,7 +39,7 @@ test('airglow: header keywords or the 1.083 µm helium line in bands 1-2', () =>
   assert.equal(airglowOf({ HE_AIRGLOW_CONT: 'false', AURORA_CONT: 'false', DETECTOR: 2 }, 1.5).flagged, false);
   assert.equal(airglowOf({ AURORA_CONT: true, DETECTOR: 4 }, 3).flagged, true);
   const he = airglowOf({ HE_AIRGLOW_CONT: 'false', DETECTOR: 1 }, 1.09, 0.025);
-  assert.equal(he.nearHe, true); assert.deepEqual(he.reasons, ['near 1.083 µm']);
+  assert.equal(he.nearHe, true); assert.equal(he.flagged, false); assert.deepEqual(he.reasons, []); assert.deepEqual(he.info, ['near 1.083 µm']);
   assert.equal(airglowOf({ DETECTOR: 3 }, 1.083).nearHe, false); // band 3 cannot see it
   assert.equal(airglowOf({ DETECTOR: 1 }, 0.9).nearHe, false);
 });
@@ -76,7 +76,12 @@ function memCache() {
 
 test('relay: hdus=5 is a separate, allow-listed cutout variant with its own cache key', async () => {
   const log = [], cache = memCache();
-  const fetchFn = async (url) => { log.push(url); return new Response(fixture, { status: 200 }); };
+  // a 5-HDU file (PRIMARY + IMAGE + FLAGS + two more): the relay now refuses files that end
+  // before the HDUs it was asked for, instead of caching them as partial 200s
+  const first = 2880 * Math.ceil((parseHeader(fixture, 0).headerBytes) / 2880);
+  const five = new Uint8Array(fixture.length * 2 - first);
+  five.set(fixture); five.set(fixture.subarray(first), fixture.length);
+  const fetchFn = async (url) => { log.push(url); return new Response(five, { status: 200 }); };
   const u = 'https://relay.example/ibe/data/spherex/dr1/x/y.fits?center=269.4461,4.7707d&size=0.05';
   const a = await handle(new Request(u), { fetchFn, cache });
   const b = await handle(new Request(u + '&hdus=5'), { fetchFn, cache });
@@ -128,4 +133,13 @@ test('filter classifier: saturated core kept, only real hits within 2 px count, 
   assert.equal(classifyFrame({ flags: grid(), flagNames: FN2, n, cx, cy, glow: glow({ nearHe: true }) }).airglow, false); // near the line, header says clean
   assert.equal(classifyFrame({ flags: grid(), flagNames: FN2, n, cx, cy, glow: glow({ shuttle: true }) }).airglow, true);
   assert.deepEqual(visibleFrames([c, { hits: {} }], new Set(['airglow'])).length, 1);
+});
+
+test('airglow header values: T/F, true/false, 0/1 and fractions', async () => {
+  const { truthy } = await import('../web/core/contam.js');
+  for (const v of [true, 'T', 't', 'true', 'YES', 1, '1', 0.12, '0.12']) assert.equal(truthy(v), true, String(v));
+  for (const v of [false, 'F', 'false', 0, '0', '0.0', '', null, undefined, -1, 'no']) assert.equal(truthy(v), false, String(v));
+  assert.equal(airglowOf({ HE_AIRGLOW_CONT: 0, DETECTOR: 1 }, 1.083, 0.03).flagged, false); // near the line but header says clean
+  assert.equal(airglowOf({ HE_AIRGLOW_CONT: 0.12, DETECTOR: 3 }, 2.5).flagged, true);
+  assert.equal(airglowOf({ HE_AIRGLOW_CONT: 'F', AURORA_CONT: 1, DETECTOR: 2 }, 1.5).aurora, true);
 });
