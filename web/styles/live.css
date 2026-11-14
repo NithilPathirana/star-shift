@@ -84,3 +84,9 @@ html[data-motion=reduce] .rk, html[data-motion=reduce] .thin-rk { transition: no
 .serr .key{min-height:32px;padding:0 10px;font-size:.8125rem}
 .search { position: relative; }
 .rk-art { -webkit-mask: linear-gradient(90deg, transparent 0, #000 18%); mask: linear-gradient(90deg, transparent 0, #000 18%); }
+/* UI/UX review: ghost date pill below the track so it never covers the season label */
+.ghost b { bottom: auto !important; top: calc(100% + 10px); }
+/* UI/UX review: narrow band chips show their full name on hover/focus */
+.band:hover, .band:focus-within { z-index: 6; }
+.band:hover .bn, .band:focus-within .bn { overflow: visible; text-overflow: clip; max-width: none; position: relative; z-index: 6;
+  background: var(--c); color: var(--on); padding: 1px 7px; border-radius: 6px; box-shadow: 0 2px 8px -2px rgba(40,28,18,.45); white-space: nowrap; }
