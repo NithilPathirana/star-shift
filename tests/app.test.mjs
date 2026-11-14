@@ -178,3 +178,27 @@ test('display: stretch and hole filling', () => {
   const filled = fillHoles(Float32Array.from([1, NaN, 3, 4]), 2);
   assert.equal(filled[1], 4);
 });
+
+test('motion measured from synthetic moving-star frames', async () => {
+  const { measureMotion, tangentialVelocity } = await import('../web/app/data.js');
+  const { makeGrid, worldToGrid } = await import('../web/core/align.js');
+  const { propagate, epochYearToMjd } = await import('../web/core/motion.js');
+  const star = { ra: 150, dec: 20, pmra: -3000, pmdec: 6000, epoch: 2025.5 };
+  const grid = makeGrid(150, 20, 150);
+  const frames = [];
+  for (let k = 0; k < 24; k++) {
+    const mjd = epochYearToMjd(2025.4 + k * 0.05);
+    const p = propagate(star, mjd);
+    const [x, y] = worldToGrid(grid, p.ra, p.dec);
+    const data = new Float32Array(grid.n * grid.n);
+    for (let j = 0; j < grid.n; j++) for (let i = 0; i < grid.n; i++)
+      data[j * grid.n + i] = 10 + ((i * 7 + j * 13 + k) % 5) * 0.2 + 500 * Math.exp(-((i - x) ** 2 + (j - y) ** 2) / (2 * 1.1 ** 2));
+    frames.push({ n: grid.n, data, mjd, expected: [x, y] });
+  }
+  const m = measureMotion(frames, grid);
+  assert.ok(m.ok, JSON.stringify(m));
+  assert.ok(Math.abs(m.pmra + 3000) < 300 && Math.abs(m.pmdec - 6000) < 300, JSON.stringify(m));
+  assert.ok(Math.abs(tangentialVelocity(10393, 546.98) - 90.07) < 0.1); // Barnard's Star ~90 km/s
+  assert.equal(tangentialVelocity(100, 0), null);
+  assert.equal(measureMotion(frames.slice(0, 3), grid).ok, false);
+});

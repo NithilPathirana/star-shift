@@ -3,7 +3,7 @@
 
 import { parseQuery, QueryError, fromURL, toURL, formatRA, formatDec, validSetting } from './query.js';
 import { createStore, reducer, initialState } from './state.js';
-import { run, buildStacks, BANDS, resolveTarget } from './data.js';
+import { run, buildStacks, BANDS, resolveTarget, measureMotion, tangentialVelocity } from './data.js';
 import { SkyMap, CHANNEL_UM } from './skymap.js';
 import { staticDetails, coverageHTML, neighboursHTML, observerHTML, setObserver, parseLatLon } from './details.js';
 import { propagate } from '../core/motion.js';
@@ -175,6 +175,7 @@ function syncSettingsForm(settings) {
 // ---------- rendering ----------
 const canvas = $('sky');
 let lastDrawn = { item: undefined, key: '' };
+let motionMemo = { key: '', m: null };
 function showState(name) {
   for (const id of ['idle', 'loading', 'empty', 'error']) $('state-' + id).hidden = id !== name;
 }
@@ -253,6 +254,18 @@ function render(state, prev) {
   $('f-pos').textContent = t ? `${formatRA(posNow.ra)}  ${formatDec(posNow.dec)}` : '—';
   const pm = t ? Math.hypot(t.pmra || 0, t.pmdec || 0) : 0;
   $('f-motion').textContent = !t ? '—' : pm > 0 ? `${(pm / 1000).toFixed(pm > 1000 ? 2 : 3)}″ per year (${(pm / 1000 / 6.15).toFixed(2)} SPHEREx pixels)` : (t.source === 'coordinates' ? 'Fixed position' : 'Too small to see');
+  // motion measured from the frames themselves (pixel shift -> RA/Dec -> straight-line fit)
+  let meas = null;
+  if (state.plan?.grid && state.frames.length >= 6 && pm > 0) {
+    const key = state.requestId + ':' + state.frames.length;
+    if (motionMemo.key !== key) motionMemo = { key, m: measureMotion(state.frames, state.plan.grid) };
+    meas = motionMemo.m;
+  }
+  $('f-measured').textContent = !t || !(pm > 0) ? '—' : !meas ? (state.status === 'ready' ? 'Not enough frames' : 'Measuring when frames arrive…')
+    : meas.ok ? `${(meas.total / 1000).toFixed(2)} ± ${(meas.totalErr / 1000).toFixed(2)}″ per year (SPHEREx, ${meas.frames} frames)` : `Too faint to measure in these frames (${meas.frames} clear detections)`;
+  const vtCat = t ? tangentialVelocity(pm, t.plx) : null, vtMeas = meas?.ok && t ? tangentialVelocity(meas.total, t.plx) : null;
+  $('f-vt').textContent = vtCat ? `${vtCat.toFixed(1)} km/s (SIMBAD motion + parallax)` + (vtMeas ? ` · ${vtMeas.toFixed(0)} km/s from SPHEREx` : '') : '—';
+  $('f-rv').textContent = t && Number.isFinite(t.rv) ? `${t.rv > 0 ? '+' : ''}${t.rv.toFixed(1)} km/s (SIMBAD; ${t.rv < 0 ? 'coming towards us' : 'moving away'})` : '—';
   $('f-images').textContent = state.plan ? `${state.plan.total} (${fmtDate(state.plan.firstDate || new Date())} – ${fmtDate(state.plan.lastDate || new Date())})` : '—';
   const preset = t?.presetKey ? PRESETS.find(p => p.key === t.presetKey) : (state.query?.type === 'name' ? findPreset(state.query.name) : null);
   $('f-hint').hidden = !preset?.bandHint;

@@ -6,7 +6,9 @@
 import { listImages, fetchCutout, maskBadPixels, mapLimit } from '../core/irsa.js';
 import { resolveName } from '../core/resolve.js';
 import { propagate, mjdToDate } from '../core/motion.js';
-import { makeGrid, reproject, worldToGrid, stackFrames } from '../core/align.js';
+import { makeGrid, reproject, worldToGrid, gridToWorld, stackFrames, centroid, fitLine } from '../core/align.js';
+import { tanProject } from '../core/wcs.js';
+import { mjdToEpochYear } from '../core/motion.js';
 import { wavelengthAt } from '../core/wave.js';
 import { findPreset } from './presets.js';
 
@@ -150,4 +152,34 @@ export async function run(query, settings, { base, fetchFn = fetch, signal, tabl
     }
   });
   if (!signal?.aborted) emit({ type: 'DONE' });
+}
+
+// Measure the target's motion from the frames themselves: centroid near the predicted spot
+// in every frame with a clear detection (peak > 5 sigma), turn pixel positions into sky
+// offsets, and fit a straight line against time. Returns null when there's too little signal.
+export function measureMotion(frames, grid, { radius = 3.5, minSnr = 5, minFrames = 6 } = {}) {
+  const pts = [];
+  for (const f of frames) {
+    const start = f.expected || [grid.c, grid.c];
+    const c = centroid(f, start[0], start[1], radius);
+    if (!c || !(c.snr > minSnr) || Math.hypot(c.x - start[0], c.y - start[1]) > 2) continue;
+    const [ra, dec] = gridToWorld(grid, c.x, c.y);
+    const [xi, eta] = tanProject(ra, dec, grid.ra0, grid.dec0);
+    pts.push({ t: mjdToEpochYear(f.mjd), e: xi * 3600, n: eta * 3600 });
+  }
+  if (pts.length < minFrames) return { frames: pts.length, ok: false };
+  const ts = pts.map(p => p.t);
+  const span = Math.max(...ts) - Math.min(...ts);
+  if (span < 0.3) return { frames: pts.length, ok: false, span };
+  const fe = fitLine(ts, pts.map(p => p.e)), fn = fitLine(ts, pts.map(p => p.n));
+  const pmra = fe.b * 1000, pmdec = fn.b * 1000, se = fe.sigmaB * 1000, sn = fn.sigmaB * 1000;
+  const total = Math.hypot(pmra, pmdec);
+  const err = total > 0 ? Math.hypot(pmra * se, pmdec * sn) / total : Math.hypot(se, sn);
+  return { ok: true, frames: pts.length, span, pmra, pmdec, pmraErr: se, pmdecErr: sn, total, totalErr: err };
+}
+
+// Tangential velocity (km/s) = 4.74 × μ (arcsec/yr) × distance (pc) = 4.74 × μ / parallax (arcsec).
+export function tangentialVelocity(totalMasYr, plxMas) {
+  if (!(plxMas > 0) || !Number.isFinite(totalMasYr)) return null;
+  return 4.74047 * (totalMasYr / 1000) / (plxMas / 1000);
 }

@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><title>map test</title>
+<style>body{background:#000;color:#0f0}</style><div id="map" style="width:700px;height:500px"></div><pre id="log"></pre>
+<script type="module">
+import A from '../vendor/aladin-lite-3.8.2/aladin.js';
+const log = (m) => document.getElementById('log').textContent += m + '\n';
+await A.init;
+const aladin = A.aladin('#map', { survey: 'https://irsa.ipac.caltech.edu/data/hips/SPHEREx/spherex_allsky_cube', log: false, fov: 2, target: '269.4461 4.7707', showCooGrid: false, showLayersControl: false, showGotoControl: false, showShareControl: false, showFrame: false, showProjectionControl: false, showFullscreenControl: false, showSimbadPointerControl: false, showCooGridControl: false, showSettingsControl: false, showZoomControl: false, hipsList: [] });
+const hips = aladin.getBaseImageLayer();
+
+window.aladin = aladin; window.hips = hips; window.A = A;
+aladin.on('click', (e) => log('click ' + JSON.stringify(e)));
+setTimeout(() => { aladin.getBaseImageLayer().setSliceNumber(30); log('slice set'); }, 1500); setTimeout(() => log(performance.getEntriesByType('resource').filter(e => /Npix/.test(e.name)).map(e => e.name.split('/').pop() + ' ' + e.responseStatus).slice(-6).join(', ')), 9000);
+</script>

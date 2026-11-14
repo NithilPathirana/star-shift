@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><body style="background:#000;color:#0f0"><div id="map" style="width:300px;height:300px"></div><pre id="log"></pre>
+<script type="module">
+import A from '../vendor/aladin-lite-3.8.2/aladin.js';
+const log = (m) => document.getElementById('log').textContent += m + '\n';
+await A.init;
+const aladin = A.aladin('#map', { survey: 'https://irsa.ipac.caltech.edu/data/hips/SPHEREx/spherex_allsky_cube', log: false, fov: 1, target: '269.4461 4.7707', hipsList: [], showReticle: false, showFrame: false, showLayersControl: false, showGotoControl: false, showShareControl: false, showProjectionControl: false, showFullscreenControl: false, showSimbadPointerControl: false, showCooGridControl: false, showSettingsControl: false, showZoomControl: false });
+const seen = () => [...new Set(performance.getEntriesByType('resource').filter(e => /Npix/.test(e.name)).map(e => e.name.match(/Npix\d+(_\d+)?\.png/)[0].replace(/Npix\d+/, '')))].join(' ');
+setTimeout(() => { log('initial: ' + seen()); performance.clearResourceTimings(); aladin.getBaseImageLayer().setSliceNumber(30); }, 3000);
+setTimeout(() => { log('after 30: ' + seen()); performance.clearResourceTimings(); aladin.getBaseImageLayer().setSliceNumber(0); }, 7000);
+setTimeout(() => { log('after 0: ' + seen()); performance.clearResourceTimings(); aladin.getBaseImageLayer().setSliceNumber(101); }, 11000);
+setTimeout(() => { log('after 101: ' + seen()); }, 15000);
+</script>

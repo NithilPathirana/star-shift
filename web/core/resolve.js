@@ -25,7 +25,7 @@ export async function resolveName(name, { endpoint = SIMBAD_TAP, fetchFn = fetch
   if (!clean || clean.length > 80) throw new Error('Name missing or too long');
   // SIMBAD stores identifiers with single spaces; match case-insensitively via the
   // ident table, then fall back to an exact match.
-  const adql = `SELECT TOP 1 b.main_id, b.ra, b.dec, b.pmra, b.pmdec, b.plx_value, b.otype
+  const adql = `SELECT TOP 1 b.main_id, b.ra, b.dec, b.pmra, b.pmdec, b.plx_value, b.rvz_radvel, b.otype
     FROM basic AS b JOIN ident AS i ON i.oidref = b.oid
     WHERE i.id = ${adqlString(clean)}`.replace(/\s+/g, ' ');
   const rows = await tapCSV(endpoint, adql, fetchFn, signal);
@@ -35,7 +35,7 @@ export async function resolveName(name, { endpoint = SIMBAD_TAP, fetchFn = fetch
     name: r.main_id.replace(/^NAME /, ''),
     ra: num(r.ra), dec: num(r.dec),
     pmra: num(r.pmra) ?? 0, pmdec: num(r.pmdec) ?? 0,
-    plx: num(r.plx_value), epoch: 2000.0, otype: r.otype, source: 'SIMBAD',
+    plx: num(r.plx_value), rv: num(r.rvz_radvel), epoch: 2000.0, otype: r.otype, source: 'SIMBAD',
   };
 }
 
