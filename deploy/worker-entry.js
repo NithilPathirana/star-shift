@@ -1,7 +1,7 @@
 // AI-written (OpenAI Codex) for Star Shift, NASA Space Apps 2026.
 // Cloudflare Workers entry: static assets first, approved read-only relays second.
 
-import { handle as relayHandle } from '../proxy/worker.js';
+import { handle as relayHandle, SURVEY_PATHS } from '../proxy/worker.js';
 import { jplRoute } from '../proxy/jpl.js';
 
 const CORS = Object.freeze({
@@ -32,6 +32,7 @@ export function isRelayPath(pathname) {
     || pathname === '/gaia/tap/sync'
     || pathname.startsWith('/ibe/data/spherex/')
     || pathname.startsWith('/hips/spherex/')
+    || SURVEY_PATHS.some(re => re.test(pathname)) // 2MASS / AllWISE cutouts for the Telescopes view (Claude, lead)
     || JPL_PATHS.has(pathname);
 }
 

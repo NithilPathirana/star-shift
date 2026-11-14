@@ -132,3 +132,9 @@ test('JPL handling validates, adds CORS, and uses the Cache API', async () => {
   assert.equal(response.status, 400);
   assert.equal(calls.length, 1, 'invalid parameters must not reach JPL');
 });
+
+test('deploy entry routes the 2MASS / AllWISE survey cutouts to the relay', () => {
+  assert.equal(isRelayPath('/ibe/data/twomass/allsky/allsky/990214n/s001/image/ki0010044.fits.gz'), true);
+  assert.equal(isRelayPath('/ibe/data/wise/allwise/p3am_cdd/26/2692/2692p045_ac51/2692p045_ac51-w1-int-3.fits'), true);
+  assert.equal(isRelayPath('/ibe/data/twomass/other.fits'), false);
+});
