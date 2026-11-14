@@ -190,7 +190,7 @@ function draw() {
   } else if (mode === 'compare') {
     CX.drawStage(A, firstS(), V.n, opt(A)); cross(A, ex[0], ex[1]); $('capA').innerHTML = `<b>First season</b> · stacked · ${sRange(firstS())}`;
     CX.drawStage(B, lastS(), V.n, opt(B)); cross(B, ex[0], ex[1]); $('capB').innerHTML = `<b>Last season</b> · stacked · ${sRange(lastS())}`;
-    $('chip').innerHTML = CX.chipLead() + '<span>Green cross = position in the first season</span>'; info(lastS(), 'Right: last season');
+    $('chip').innerHTML = CX.chipLead() + '<span>Cross = where the star was in the first season</span>'; info(lastS(), 'Right: last season');
   } else {
     const f = side ? lastS() : firstS(); CX.drawStage(A, f, V.n, opt(A)); cross(A, ex[0], ex[1]);
     $('flag').textContent = (side ? 'Last season · ' : 'First season · ') + sRange(f);

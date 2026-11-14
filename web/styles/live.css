@@ -71,12 +71,12 @@ html[data-motion=reduce] .rk, html[data-motion=reduce] .thin-rk { transition: no
 .cur.snap{width:40px;height:40px;margin:-20px 0 0 -20px}
 .cur.snap svg{color:#C27A43}
 .cur.press svg{transform:scale(.85)}
-.cur-tag{position:absolute;left:calc(100% + 2px);top:calc(100% + 2px);font:500 .6875rem/1 var(--font-num);color:#EDE5DA;background:rgba(21,17,14,.82);padding:4px 7px;border-radius:6px;white-space:nowrap}
+.cur-tag{position:absolute;left:calc(100% + 2px);top:calc(100% + 2px);font:500 .75rem/1 var(--font-num);color:#EDE5DA;background:rgba(21,17,14,.82);padding:4px 7px;border-radius:6px;white-space:nowrap}
 .ripple{position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;border:1.5px solid #E3A86B;pointer-events:none;z-index:3;animation:ripple 420ms var(--ease-out) forwards}
 @keyframes ripple{from{transform:scale(1);opacity:.6}to{transform:scale(2.4);opacity:0}}
 /* 19: scrubber ghost tick */
 .ghost{position:absolute;top:3px;bottom:3px;width:2px;margin-left:-1px;background:rgba(138,71,25,.45);pointer-events:none;opacity:0;transition:opacity 120ms}
-.ghost b{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);font:500 .6875rem/1 var(--font-num);color:#EDE5DA;background:rgba(21,17,14,.88);padding:5px 8px;border-radius:6px;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.ghost b{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);font:500 .75rem/1 var(--font-num);color:#EDE5DA;background:rgba(21,17,14,.88);padding:5px 8px;border-radius:6px;white-space:nowrap;display:flex;align-items:center;gap:6px}
 .ghost b i{width:9px;height:9px;border-radius:2px;background:var(--rc,transparent)}
 @media (hover:hover) and (pointer:fine){.track:hover .ghost{opacity:1}.track:hover .thumb{transform:scale(1.06)}.track.grab .ghost{opacity:0}}
 .serr{position:absolute;left:0;top:calc(100% + 12px);z-index:25;display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:min(560px,calc(100vw - 2*var(--gap)));padding:10px 12px;border-radius:12px;background:rgba(247,243,237,.97);border:1px solid rgba(255,255,255,.7);box-shadow:var(--sh-contact),0 10px 24px -10px rgba(60,40,24,.4);font-size:.8125rem}
@@ -102,7 +102,7 @@ html[data-motion=reduce] .rk, html[data-motion=reduce] .thin-rk { transition: no
 
 /* Layers bar + flag legend (DESIGN.md 23, team feature B). Flag marks themselves are drawn on the canvas. */
 .lseg { width: 300px; }
-.lseg .seg-btn { font-size: .6875rem; letter-spacing: .04em; padding: 0 6px; }
+.lseg .seg-btn { font-size: .75rem; letter-spacing: .04em; padding: 0 6px; }
 .lseg .seg-btn:disabled { opacity: .38; cursor: not-allowed; }
 .lsep { width: 1px; align-self: stretch; margin: 4px 2px; background: rgba(84,62,42,.18); }
 .flags-split { display: inline-flex; }
@@ -125,7 +125,7 @@ html[data-motion=reduce] .screens.lfade canvas { animation: none; }
 .fl-row + .fl-row { border-top: 1px solid rgba(84,62,42,.09); }
 .fl-mk { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; background: var(--stage); color: #FFF6E8; }
 .fl-txt b { display: block; font-size: .8125rem; }
-.fl-txt small { display: block; font-size: .6875rem; color: var(--muted); line-height: 1.3; }
+.fl-txt small { display: block; font-size: .75rem; color: var(--muted); line-height: 1.3; }
 .fl-n { font-size: .75rem; color: var(--ink-2); white-space: nowrap; }
 .fl-empty { font-size: .8125rem; color: var(--muted); margin: 6px 0; }
 .fl-dust { font-size: .75rem; color: var(--muted); margin-top: 10px; }
@@ -176,7 +176,7 @@ html[data-motion=full] .gh-bar:not([hidden]) { animation: ghIn 180ms ease-out; }
 .mot-dial .md-head { fill: #FFF6E8; }
 .mot-dial .md-dot { fill: #E3A86B; }
 .mot-dial .num { font-size: .9375rem; color: var(--ink); }
-.mot-dial .quiet { font-size: .6875rem; margin: 0; line-height: 1.35; }
+.mot-dial .quiet { font-size: .75rem; margin: 0; line-height: 1.35; }
 .mot-cmp { font-size: .75rem; color: var(--ink-2); margin: 2px 0 6px; }
 .mot-src { margin-top: 6px; overflow-wrap: anywhere; }
 .mot-how { font-size: .75rem; color: var(--muted); margin-top: 4px; }
@@ -185,8 +185,8 @@ html[data-motion=full] .gh-bar:not([hidden]) { animation: ghIn 180ms ease-out; }
 .mot-how ul { margin: 4px 0 0; padding-left: 18px; }
 @media (max-width: 699px) { .mot-how summary { min-height: 44px; display: flex; align-items: center; } }
 /* flag filter: note + why each image is hidden */
-.fl-note { font-size: .6875rem; color: var(--muted); margin: 4px 0 0; line-height: 1.4; }
-.fl-why { list-style: none; margin: 4px 0 0; padding: 0; max-height: 132px; overflow-y: auto; font-size: .6875rem; color: var(--ink-2); }
+.fl-note { font-size: .75rem; color: var(--muted); margin: 4px 0 0; line-height: 1.4; }
+.fl-why { list-style: none; margin: 4px 0 0; padding: 0; max-height: 132px; overflow-y: auto; font-size: .75rem; color: var(--ink-2); }
 .fl-why li { padding: 2px 0; border-top: 1px solid rgba(84,62,42,.09); }
 .fl-why .num { color: var(--muted); margin-right: 6px; }
 /* flag legend: scrolls inside its own box (max height set in ui.js placeFlagsPop), hide section collapsed */
@@ -226,3 +226,32 @@ html[data-motion=reduce] .fl-sec summary::before { transition: none; }
 .pages-list .key[aria-current=page]{background:linear-gradient(180deg,#E3DACD,#EFE9E0);box-shadow:inset 0 1px 3px rgba(60,40,24,.26)}
 .mot-how .mot-how-h{margin:10px 0 4px;font-weight:600;font-size:.8125rem}
 @media (max-width:699px){#pagesPop{left:12px!important;right:12px!important;width:auto;max-width:none}}
+
+/* ===== Design review fixes, phone (< 700 px). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. ===== */
+/* Help and About in the Pages sheet, quieter than the pages */
+.pages-list .pg-util{color:var(--ink-2);font-weight:500}
+@media (max-width:699px){
+  /* 9. Help lives in the Pages sheet, so the keys fit on the logo row */
+  #helpBtn{display:none}
+  #help{left:12px!important;right:12px!important;width:auto;max-width:none}
+  /* 5. touch targets at least 44 px: icon keys, stage tools, FLAGS ▾, map pins (hit area only, the dot stays 8 px) */
+  .key.icon{width:44px;min-width:44px}
+  .tools .glass-btn{width:44px;height:44px}
+  .flags-split .flags-more{min-width:44px}
+  .pin{width:44px;height:44px;margin:-22px 0 0 -22px}
+  .screens{bottom:80px}
+  /* 10. the 30″ scale bar moves to the bottom right (above the tool row, clear of the pixels), so the stage chip keeps its date */
+  .scalebar{top:auto;bottom:62px;right:12px}
+  #stage:has(#ghostBar:not([hidden])) .scalebar{bottom:154px}
+  .chip{max-width:calc(100% - 24px);gap:6px;padding:0 10px;font-size:.75rem}
+  .mode-blink .chip{max-width:calc(100% - 150px)}
+}
+/* 10. the Layers row scrolls sideways on narrow docks: fade its right edge so the cut-off key reads as "more" */
+@container dock (max-width:520px) {
+  .layers .lseg{-webkit-mask:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+  .layers .lseg.at-end{-webkit-mask:none;mask:none}
+}
+/* tokens.css (loaded for the Lab notebook) sets a dark colour scheme; these pages are light, the notebook dialog stays dark */
+:root{color-scheme:light}
+.notebook-dialog{color-scheme:dark}
+
