@@ -14,3 +14,6 @@ evidence/prove_run.log
 evidence/display_*.json
 evidence/display_*.log
 evidence/prebake.log
+
+# Staged by deploy/prepare-assets.mjs from design/loader/v1.1 (attested watermarked copies); regenerate, do not commit
+web/loader/
