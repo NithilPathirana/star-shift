@@ -9,7 +9,7 @@ import { run, buildStacks, measureMotion, tangentialVelocity, resolveTarget } fr
 import { PRESETS, findPreset } from './presets.js';
 import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight } from './sky.js';
 import { SkyMap, simbadCone, otypeName, CHANNEL_UM } from './skymap.js';
-import { layersFor } from './bands.js';
+import { layersFor, DEFAULT_BANDS } from './bands.js';
 import { listImages } from '../core/irsa.js';
 import { propagate, separationArcsec, mjdToDate } from '../core/motion.js';
 import { gridToWorld } from '../core/align.js';
@@ -157,6 +157,7 @@ function draw() {
   if (mode === 'play' || V.stacks.length < 2) {
     const f = F[Math.min(P.i, F.length - 1)]; R.draw(A, f, V.n, opt(A)); info(f);
     const rg = rangeOf(f.um);
+    $('chip').title = rg?.tip ? `${rg.name}: ${rg.tip}` : '';
     $('chip').innerHTML = `${rg ? `<i class="sw" style="--rc:${rg.c}"></i><span>${esc(rg.name)}</span><span class="sep">·</span>` : ''}<span>λ ${f.um ? f.um.toFixed(2) : '?'} µm</span><span class="sep">·</span><span>D${f.det}</span><span class="sep">·</span><span>${R.fmtDate(f.date)}</span>`;
     A.setAttribute('aria-label', `SPHEREx infrared image of ${V.name}, ${R.fmtDate(f.date)}, ${f.um ? f.um.toFixed(2) + ' micrometres' : ''}`);
   } else if (mode === 'compare') {
@@ -274,6 +275,7 @@ function progress() {
   $('stLoading').classList.toggle('slow', slow && V.F.length < 8);
   $('retryTxt').textContent = slow ? `IRSA is slow. ${V.F.length} of ${V.planned} kept. Retrying automatically (${V.retries} retries so far).` : '';
   $('retryNow').hidden = true;
+  if (V.status === 'loading' && (V.target?.pmra || V.target?.pmdec)) $('d-meas').textContent = `measuring… (${V.F.length} of ${V.planned || '…'} images)`;
 }
 function load(query, label) {
   V.ctl?.abort(); const ctl = V.ctl = new AbortController();
@@ -309,8 +311,10 @@ function load(query, label) {
       showState(null);
       V.stacks = buildStacks(V.raws.slice().sort((a, b) => a.mjd - b.mjd)).map(stackToF);
       V.motion = (V.target?.pmra || V.target?.pmdec) ? measureMotion(V.raws.slice().sort((a, b) => a.mjd - b.mjd), V.grid) : null;
+      // only a final fit counts: all planned images tried and at least two observing seasons
+      if (V.motion?.ok && visits(V.F).length < 2) V.motion = { ok: false, frames: V.motion.frames, reason: 'one season only' };
       $('d-n').textContent = `${V.F.length} shown of ${V.total} · ${V.seasons.length} season${V.seasons.length === 1 ? '' : 's'}`;
-      $('d-meas').textContent = V.motion?.ok ? `${(V.motion.total / 1000).toFixed(2)} ± ${(V.motion.totalErr / 1000).toFixed(2)}″/yr (${V.motion.frames} images)` : V.motion ? 'too faint to measure' : '—';
+      $('d-meas').textContent = V.motion?.ok ? `${(V.motion.total / 1000).toFixed(2)} ± ${(V.motion.totalErr / 1000).toFixed(2)}″/yr (${V.motion.frames} images)` : V.motion ? (V.motion.reason === 'one season only' ? 'needs two seasons to measure' : 'too faint to measure') : '—';
       buildTimeline(); findOther(); onFrame(P.i); Snd.play('confirm');
       toast(V.failed ? `${V.F.length} images are in. ${V.failed} couldn't be fetched (IRSA busy); Retry later fills them.` : `All ${V.F.length} images are in.`);
       if (!set.motion && !P.playing) P.play();
@@ -426,7 +430,13 @@ function readout(ra, dec) { const t = `${R.fmtRA(ra)}  ${R.fmtDec(dec)}`; $('mdC
 $('mapWrap').addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; if (!skymap.aladin) return; const r = $('mapWrap').getBoundingClientRect(), w = skymap.toWorld(e.clientX - r.left, e.clientY - r.top); if (w) readout(w[0], w[1]); });
 function mapZoom(f) { if (!skymap.aladin) return; skymap.setFov(skymap.fov() / f); Snd.play('tick'); }
 function mapFit() { if (!skymap.aladin) return; skymap.setFov(60); Snd.play('click'); }
-function flyTo(ra, dec, fovDeg, done) { skymap.init(ra, dec, fovDeg).then(() => { skymap.goTo(ra, dec, fovDeg); placeOverlays(); done?.(); }); }
+function flyTo(ra, dec, fovDeg, done) {
+  skymap.init(ra, dec, fovDeg).then(() => {
+    try { skymap.goTo(ra, dec, fovDeg); } catch (err) { console.warn('sky map', err); }
+    setTimeout(() => { placeOverlays(); done?.(); }, 0);
+  }).catch(err => { console.warn('sky map', err); mapFailed(); done?.(); });
+}
+function mapFailed() { $('mapCredit').textContent = "The sky map couldn't start in this browser (WebGL). Search and the time-lapse still work."; }
 
 function select(ra, dec, t, fromUser) {
   if (!t) {
@@ -454,7 +464,7 @@ async function goTo(text) {
     const now = (tg.pmra || tg.pmdec) ? propagate(tg, NOW_MJD) : tg;
     const t = { key: 'q', name: tg.name, id: tg.otype ? otypeName(tg.otype) : 'SIMBAD object', ra: now.ra, dec: now.dec, simbad: tg };
     flyTo(t.ra, t.dec, 0.5, () => select(t.ra, t.dec, t, false));
-  } catch (err) { toast(err.message); Snd.play('error'); }
+  } catch (err) { toast(/recursive|wasm|unreachable/i.test(err.message) ? 'The sky map hiccuped. Try the search again.' : err.message); Snd.play('error'); }
 }
 function doSearch() { Snd.play('click'); goTo($('q').value); }
 document.querySelector('form.search').onsubmit = (e) => { e.preventDefault(); doSearch(); };
@@ -587,9 +597,9 @@ function renderObs() {
 const DOMN = [0.74, 5.01];
 const DETS = [[0.744, 1.116], [1.099, 1.651], [1.636, 2.421], [2.423, 3.822], [3.809, 4.420], [4.412, 5.002]]; // SPHEREx Explanatory Supplement v2.0
 const PALETTE = [['Copper', '#C27A43'], ['Sage', '#6F8A72'], ['Slate', '#5E7FA3'], ['Heather', '#9B6FA3'], ['Straw', '#D2B85A'], ['Brick', '#B5533F'], ['Moss', '#7A8B3A'], ['Clay', '#C98F6B'], ['Plum', '#7D4E6E'], ['Stone', '#8C8279']];
-// Placeholders until the team sends names and colours (swap this array).
-const DEFAULT_RANGES = [[0.74, 1.11], [1.11, 1.64], [1.64, 2.42], [2.42, 3.82], [3.82, 4.42], [4.42, 5.01]].map(([a, b], i) => ({ id: 'd' + i, name: `Default ${i + 1}`, min: a, max: b, c: PALETTE[i][1] }));
-const BKEY = 'tgi-bands-v1', MKEY = 'tgi-mapbands-v1';
+// Team defaults live in bands.js (DEFAULT_BANDS): names, ranges, colours and a short explanation each.
+const DEFAULT_RANGES = DEFAULT_BANDS.map(b => ({ id: b.id, name: b.name, min: b.min, max: b.max, c: b.color, tip: b.tip }));
+const BKEY = 'tgi-bands-v2', MKEY = 'tgi-mapbands-v1'; // v2: team default names (14 Nov)
 let ranges = (() => { try { return JSON.parse(localStorage.getItem(BKEY)) || null; } catch { return null; } })() || JSON.parse(JSON.stringify(DEFAULT_RANGES));
 let mapBands = (() => { try { return localStorage.getItem(MKEY) === 'on'; } catch { return false; } })();
 const saveRanges = () => { try { localStorage.setItem(BKEY, JSON.stringify(ranges)); } catch { /* private mode */ } };
@@ -619,13 +629,14 @@ function renderBands(focusId) {
   $('detRow').innerHTML = DETS.map(([a, b], i) => `<span class="det" style="left:${pct(a)}%;width:${pct(b) - pct(a)}%;${i % 2 ? 'top:0' : ''}" title="Detector ${i + 1}: ${a}–${b} µm">D${i + 1}</span>`).join('');
   let sc = ''; for (let v = 1; v <= 5; v += .25) { const maj = Math.abs(v - Math.round(v)) < 1e-9; sc += `<i class="${maj ? 'maj' : ''}" style="left:${pct(v)}%"></i>` + (maj ? `<span style="left:${pct(v)}%;${v === 5 ? 'transform:translateX(-100%)' : ''}">${v} µm</span>` : ''); }
   $('scaleRow').innerHTML = sc;
-  $('lanes').innerHTML = ranges.map(r => `<div class="lane"><div class="band" data-id="${r.id}" style="--c:${r.c};--on:${onColour(r.c)};left:${pct(r.min)}%;width:${Math.max(0, pct(r.max) - pct(r.min))}%" title="${esc(r.name)}">
+  $('lanes').innerHTML = ranges.map(r => `<div class="lane"><div class="band" data-id="${r.id}" style="--c:${r.c};--on:${onColour(r.c)};left:${pct(r.min)}%;width:${Math.max(0, pct(r.max) - pct(r.min))}%" title="${esc(r.name + (r.tip ? ': ' + r.tip : ''))}">
       <span class="h l" role="slider" tabindex="0" id="h-${r.id}-min" aria-label="${esc(r.name)} start" aria-valuemin="${DOMN[0]}" aria-valuemax="${DOMN[1]}" aria-valuenow="${r.min}" aria-valuetext="${r.min.toFixed(2)} micrometres"></span>
       <span class="bn">${esc(r.name)}</span>
       <span class="h r" role="slider" tabindex="0" id="h-${r.id}-max" aria-label="${esc(r.name)} end" aria-valuemin="${DOMN[0]}" aria-valuemax="${DOMN[1]}" aria-valuenow="${r.max}" aria-valuetext="${r.max.toFixed(2)} micrometres"></span></div></div>`).join('');
   $('rows').innerHTML = ranges.map(r => `<div class="rrow" data-id="${r.id}">
       <button class="swatch" style="--c:${r.c}" aria-label="Colour of ${esc(r.name)}: ${esc((PALETTE.find(p => p[1].toLowerCase() === r.c.toLowerCase()) || ['custom'])[0])}" aria-expanded="${openPal === r.id}"></button>
-      <label class="field well"><input class="rn" value="${esc(r.name)}" aria-label="Name" maxlength="32"></label>
+      <label class="field well" title="${esc(r.tip || '')}"><input class="rn" value="${esc(r.name)}" aria-label="Name" maxlength="32"></label>
+      ${r.tip ? `<div class="rtip">${esc(r.tip)}</div>` : ''}
       <label class="field well"><input class="rmin" type="number" step="0.01" min="${DOMN[0]}" max="${DOMN[1]}" value="${r.min.toFixed(2)}" aria-label="${esc(r.name)} from, micrometres"></label>
       <label class="field well"><input class="rmax" type="number" step="0.01" min="${DOMN[0]}" max="${DOMN[1]}" value="${r.max.toFixed(2)}" aria-label="${esc(r.name)} to, micrometres"></label>
       <button class="key icon rdel" aria-label="Delete ${esc(r.name)}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 9h5.6l.7-9"/></svg></button>
@@ -665,7 +676,7 @@ function bindBands() {
   });
   $('rows').querySelectorAll('.rrow').forEach(rowEl => {
     const r = ranges.find(x => x.id === rowEl.dataset.id), warn = rowEl.querySelector('.rwarn');
-    rowEl.querySelector('.rn').addEventListener('input', e => { r.name = e.target.value || 'Untitled'; saveRanges(); const b = $('lanes').querySelector(`[data-id="${r.id}"] .bn`); if (b) b.textContent = r.name; applyRanges(); });
+    rowEl.querySelector('.rn').addEventListener('input', e => { r.name = e.target.value || 'Untitled'; r.tip = ''; saveRanges(); const b = $('lanes').querySelector(`[data-id="${r.id}"] .bn`); if (b) b.textContent = r.name; applyRanges(); });
     rowEl.querySelector('.rn').addEventListener('change', () => commit());
     const num = (cls, key) => rowEl.querySelector(cls).addEventListener('change', e => {
       let v = parseFloat(String(e.target.value).replace(',', '.'));

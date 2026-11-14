@@ -5,20 +5,31 @@
 
 import { CHANNEL_UM } from './skymap.js';
 
-// Total SPHEREx range across its 6 detectors (IRSA live tables, 14 Nov 2026).
-export const RANGE = { min: 0.7455, max: 5.0096 };
+// Editor domain 0.74–5.01 µm: covers SPHEREx's 6 detectors (0.7455–5.0096 µm in IRSA's
+// tables; 0.744–5.002 µm in the Explanatory Supplement v2.0).
+export const RANGE = { min: 0.74, max: 5.01 };
 export const DETECTORS = [
   { d: 1, min: 0.7455, max: 1.1167, R: 39 }, { d: 2, min: 1.1033, max: 1.6499, R: 41 }, { d: 3, min: 1.6301, max: 2.4346, R: 41 },
   { d: 4, min: 2.4027, max: 3.8473, R: 35 }, { d: 5, min: 3.8113, max: 4.4300, R: 112 }, { d: 6, min: 4.4115, max: 5.0096, R: 128 },
 ];
-const KEY = 'spherex-viewer.bands.v1';
-export const MAX_BANDS = 6;
+const KEY = 'spherex-viewer.bands.v2';
+export const MAX_BANDS = 8;
 
-// Placeholder defaults (neutral); the team will send their own names and colours.
+// Team defaults (decided Sat 14 Nov 2026): short-to-long wavelength runs blue -> red, and
+// each name says what that range is good for. Users can edit or replace them.
 export const DEFAULT_BANDS = [
-  { id: 'd-short', name: 'Short (0.75–1.6 µm)', min: 0.75, max: 1.6, color: '#5b8cff', on: true },
-  { id: 'd-mid', name: 'Middle (1.6–3.8 µm)', min: 1.6, max: 3.8, color: '#4fd18b', on: true },
-  { id: 'd-long', name: 'Long (3.8–5.0 µm)', min: 3.8, max: 5.0, color: '#ff6a4d', on: true },
+  { id: 'd-starlight', name: 'Starlight', min: 0.74, max: 1.11, color: '#5b8cff', on: true,
+    tip: 'Shortest SPHEREx light, closest to what our eyes see: ordinary stars shine brightest here.' },
+  { id: 'd-coolstars', name: 'Cool Stars', min: 1.11, max: 1.64, color: '#3fc1c9', on: true,
+    tip: "Near-infrared where cool red dwarfs (like Barnard's Star) give off most of their light." },
+  { id: 'd-dust', name: 'Through the Dust', min: 1.64, max: 2.42, color: '#7bd389', on: true,
+    tip: 'Longer light slips through dusty clouds, so hidden and young stars show up here.' },
+  { id: 'd-waterice', name: 'Water Ice', min: 2.42, max: 3.82, color: '#f2c14e', on: true,
+    tip: 'Contains the 3.05 µm water-ice feature: frozen water on dust grains absorbs light here.' },
+  { id: 'd-co2ice', name: 'CO₂ Ice', min: 3.82, max: 4.42, color: '#f28c38', on: true,
+    tip: 'Contains the 4.27 µm carbon-dioxide-ice feature seen in cold molecular clouds.' },
+  { id: 'd-browndwarfs', name: 'Brown Dwarfs', min: 4.42, max: 5.01, color: '#e5484d', on: true,
+    tip: 'Longest SPHEREx light: very cold objects such as the brown dwarf WISE 0855 show up here.' },
 ];
 
 export class BandError extends Error {}

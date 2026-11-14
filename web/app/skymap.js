@@ -65,13 +65,18 @@ export class SkyMap {
         target: `${ra} ${dec}`, projection: 'TAN', cooFrame: 'ICRSd', backgroundColor: 'rgb(0,0,0)', reticleColor: '#ff6b5e', reticleSize: 18 });
       this.names = A.catalog({ name: 'Named objects (SIMBAD)', sourceSize: 14, shape: 'circle', color: 'rgba(138,184,255,0.85)' });
       this.aladin.addCatalog(this.names);
-      this.aladin.on('click', (e) => { if (e && !e.isDragging && Number.isFinite(e.ra)) this.onClick?.(e.ra, e.dec); });
-      this.aladin.on('objectHovered', (o) => { if (o?.data) this.onHover?.(o.data, o); });
-      this.aladin.on('objectHoveredStop', () => this.onHover?.(null));
+      // Aladin's WebAssembly core must not be called again from inside its own callbacks
+      // ('recursive use of an object' error), so every handler runs after the event returns.
+      const later = (fn) => setTimeout(() => { try { fn(); } catch (err) { console.warn('sky map', err); } }, 0);
+      this.aladin.on('click', (e) => { if (e && !e.isDragging && Number.isFinite(e.ra)) { const { ra, dec } = e; later(() => this.onClick?.(ra, dec)); } });
+      this.aladin.on('objectHovered', (o) => { if (o?.data) { const d = o.data; later(() => this.onHover?.(d)); } });
+      this.aladin.on('objectHoveredStop', () => later(() => this.onHover?.(null)));
       let t = null;
       const moved = () => { clearTimeout(t); t = setTimeout(() => { this.refreshNames(); this.onMove?.(this.center(), this.fov()); }, 350); };
-      this.aladin.on('positionChanged', () => { this.onView?.(); moved(); });
-      this.aladin.on('zoomChanged', () => { this.onView?.(); moved(); });
+      let viewRaf = 0;
+      const view = () => { if (!viewRaf) viewRaf = requestAnimationFrame(() => { viewRaf = 0; try { this.onView?.(); } catch (err) { console.warn('sky map', err); } }); };
+      this.aladin.on('positionChanged', () => { view(); moved(); });
+      this.aladin.on('zoomChanged', () => { view(); moved(); });
       moved();
       if (this.pendingBands) { const b = this.pendingBands; this.pendingBands = null; this.setBands(b); }
     })();

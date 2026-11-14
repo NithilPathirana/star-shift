@@ -12,3 +12,4 @@
 .quiet.err { color: var(--coral); }
 @media (max-width: 1099px) { .wl-rd { min-width: 0; } }
 @media (max-width: 699px) { .map-dock { flex-wrap: wrap; } .wl-rd { flex: 1 1 100%; order: 5; } .map-dock .rd { min-width: 0; } }
+.rtip { grid-column: 1 / -1; font-size: .75rem; line-height: 1.35; color: var(--muted); margin-top: -2px; }
