@@ -95,8 +95,11 @@ export function createTelescopes(ctx) {
   function sizePanels() {
     const box = root.getBoundingClientRect(), phone = innerWidth < 700;
     const head = root.querySelector('.tele-head')?.offsetHeight || 40;
+    // room left for captions and the note, measured from the last draw (captions wrap with width)
+    const capH = Math.max(0, ...[...panels.querySelectorAll('.tele-p')].map(f => f.offsetHeight - (f.querySelector('.tele-box')?.offsetHeight || 0))) || 104;
+    const noteH = ($('teleNote')?.offsetHeight || 18) + 10;
     const side = phone ? Math.floor(Math.min(box.width - 4, 420))
-      : Math.floor(Math.max(120, Math.min((box.width - 2 * 18) / 3, box.height - head - 132)));
+      : Math.floor(Math.max(120, Math.min((box.width - 2 * 18) / 3, box.height - head - 10 - capH - noteH)));
     return side;
   }
 
@@ -148,9 +151,11 @@ export function createTelescopes(ctx) {
   function fitPhone() {
     const wrap = root.closest('.stage-wrap'); if (!wrap) return;
     if (T.on && innerWidth < 700) {
-      const h = (root.querySelector('.tele-head')?.offsetHeight || 40) + panels.scrollHeight + (root.querySelector('.tele-note')?.offsetHeight || 16) + 80;
+      const pad = ($('tools')?.offsetHeight || 0) + 16; // the stage tool strip sits at the bottom on phone: keep text above it
+      root.style.paddingBottom = pad + 'px';
+      const h = (root.querySelector('.tele-head')?.offsetHeight || 40) + panels.scrollHeight + (root.querySelector('.tele-note')?.offsetHeight || 16) + 80 + pad;
       Object.assign(wrap.style, { aspectRatio: 'auto', maxHeight: 'none', height: h + 'px' });
-    } else Object.assign(wrap.style, { aspectRatio: '', maxHeight: '', height: '' });
+    } else { Object.assign(wrap.style, { aspectRatio: '', maxHeight: '', height: '' }); root.style.paddingBottom = ''; }
   }
 
   // Own pixels: no smoothing when a source pixel covers at least one device pixel. When it is
@@ -190,7 +195,8 @@ export function createTelescopes(ctx) {
   }
 
   const chip = (w) => `<span class="tele-chip">${w}</span>`;
-  const dateOf = (iso) => (iso ? String(iso).slice(0, 10) : '—');
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const dateOf = (iso) => { const m = /^(\d{4})-(\d\d)-(\d\d)/.exec(String(iso || '')); return m ? `${+m[3]} ${MON[+m[2] - 1]} ${m[1]}` : '—'; }; // the app's "25 Aug 2025"
   function caption(fig, id, f, pix, star) {
     const cap = fig.querySelector('.tele-cap'), sub = fig.querySelector('.tele-sub');
     const px = pix ? `${pix < 2 ? pix.toFixed(pix < 1.2 ? 1 : 3).replace(/0+$/, '').replace(/\.$/, '') : pix.toFixed(2)}″ pixels` : '';
@@ -202,12 +208,12 @@ export function createTelescopes(ctx) {
     }
     const r = T.res[id], d = r?.data, m = d?.meta;
     if (id === 'wise') {
-      const dates = m?.first && m?.last ? `${m.first} to ${m.last}` : '2010 (dates load with the image)';
+      const dates = m?.first && m?.last ? `${dateOf(m.first)} to ${dateOf(m.last)}` : '2010 (dates load with the image)';
       cap.innerHTML = `<b>AllWISE</b> ${chip('SPACE')} in orbit · ${dates} · W1 ${m?.um ? m.um.toFixed(2) : '3.4'} µm · ${px || '1.375″ pixels'}`;
-      sub.textContent = r?.state === 'ok' ? `One stacked image${m?.frames ? ` of ${m.frames} frames` : ''}, ${m?.first?.slice(0, 4) || '2010'}${star && m?.mid ? `. Ring at the middle frame, ${m.mid}` : ''}. Atlas image ${d.path.split('/').pop().replace('.fits', '')}.` : 'One stacked image, 2010.';
+      sub.textContent = r?.state === 'ok' ? `One stacked image${m?.frames ? ` of ${m.frames} frames` : ''}, ${m?.first?.slice(0, 4) || '2010'}${star && m?.mid ? `. Ring at the middle frame, ${dateOf(m.mid)}` : ''}. Atlas image ${d.path.split('/').pop().replace('.fits', '')}.` : 'One stacked image, 2010.';
     } else {
       const site = m?.site ? `${m.site}` : 'Mt Hopkins, Arizona (north) or Cerro Tololo, Chile (south)';
-      cap.innerHTML = `<b>2MASS</b> ${chip('GROUND')} ${esc(site)} · ${m?.date || '1997–2001'} · Ks 2.16 µm · ${px || '1″ pixels'}`;
+      cap.innerHTML = `<b>2MASS</b> ${chip('GROUND')} ${esc(site)} · ${m?.date ? dateOf(m.date) : '1997–2001'} · Ks 2.16 µm · ${px || '1″ pixels'}`;
       sub.textContent = r?.state === 'ok' ? `One image, ${m?.date?.slice(0, 4) || '—'}${m?.iso ? `, ${m.iso.slice(11, 16)} UT` : ''}. ${m?.hemi === 'north' ? 'The northern 2MASS telescope (the south used Cerro Tololo, Chile).' : m?.hemi === 'south' ? 'The southern 2MASS telescope (the north used Mt Hopkins, Arizona).' : ''} Atlas pixels 1″ (camera pixels 2″).` : '2MASS: two 1.3 m telescopes, 1997–2001; the site is read from the image.';
     }
   }

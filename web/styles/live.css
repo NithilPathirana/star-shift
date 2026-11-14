@@ -291,3 +291,7 @@ html[data-motion=full] .tele-wait { animation: tele-pulse 1.4s ease-in-out infin
   .tele-p { width: 100% !important; }
 }
 @media (max-width: 699px) { .tele { overflow: visible; } }
+/* telescopes, Design pass 2: captions flow before the note; no compass in this view (every panel says north up, east left) */
+.mode-telescopes .compass { display: none; }
+.tele { bottom: 14px; }
+.tele-panels { flex: none; }
