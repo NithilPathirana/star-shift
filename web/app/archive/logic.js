@@ -142,7 +142,7 @@ export function flagText(s) {
 // ---- sort / filter / page -----------------------------------------------------------------
 export const SORT_KEYS = {
   n: r => r.n, date: r => r.mjd, time: r => r.mjd, mjd: r => r.mjd, season: r => r.season, detector: r => r.detector,
-  wl: r => r.wlMin, band: r => r.wlMin, obsid: r => r.obsid, release: r => r.release,
+  wl: r => r.wlStar ?? r.wlMin, band: r => r.wlStar ?? r.wlMin, obsid: r => r.obsid, release: r => r.release,
   flags: r => (r.flags ? r.flags.flagged : null), status: r => r.status,
 };
 
@@ -193,9 +193,9 @@ export function toCSV(header, lines) {
 
 export function rowsToCSV(rows, seasons = []) {
   const header = ['n', 'date_utc', 'time_utc', 'mjd_start', 'mjd_end', 'season', 'detector', 'wavelength_min_um', 'wavelength_max_um', 'band',
-    'obs_id', 'release', 'flag_patch_pixels', 'flagged_pixels', 'cosmic_ray_pixels', 'overflow_pixels', 'scattered_light_pixels', 'other_flag_pixels', 'irsa_fits_url'];
+    'wavelength_at_star_um', 'obs_id', 'release', 'flag_patch_pixels', 'flagged_pixels', 'cosmic_ray_pixels', 'overflow_pixels', 'scattered_light_pixels', 'other_flag_pixels', 'irsa_fits_url'];
   const lines = rows.map(r => [r.n, r.date, r.time, r.mjd?.toFixed(6), r.mjdEnd?.toFixed(6), seasons[r.season]?.label ?? '', r.detector,
-    r.wlMin?.toFixed(4), r.wlMax?.toFixed(4), r.band ?? '', r.obsid, r.release,
+    r.wlMin?.toFixed(4), r.wlMax?.toFixed(4), r.band ?? '', r.wlStar?.toFixed(4) ?? '', r.obsid, r.release,
     r.flags?.total ?? '', r.flags?.flagged ?? '', r.flags?.cosmic ?? '', r.flags?.overflow ?? '', r.flags?.scatter ?? '', r.flags?.other ?? '', r.irsaUrl]);
   return toCSV(header, lines);
 }

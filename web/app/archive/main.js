@@ -4,12 +4,15 @@
 
 import { listImages, fetchCutout, maskBadPixels } from '../../core/irsa.js';
 import { makeGrid, reproject } from '../../core/align.js';
-import { cutoutSizeDeg, cutoutCenter } from '../data.js';
+import { wavelengthAt } from '../../core/wave.js';
+import { propagate } from '../../core/motion.js';
 import { DEFAULT_BANDS } from '../bands.js';
-import { toRows, seasonsOf, sortRows, filterRows, paginate, rowsToCSV, summarizeFlags, viewerUrl, FLAG_KINDS, flagText } from './logic.js';
-import { base, initShell, resolve, listPosition, targetLine, download, slug, esc } from './shell.js';
+import { toRows, seasonsOf, sortRows, filterRows, paginate, rowsToCSV, summarizeFlags, viewerUrl, FLAG_KINDS, flagText, bandAt } from './logic.js';
+import { base, initShell, resolve, listPosition, targetLine, download, slug, esc, cutoutSizeDeg, cutoutCenter } from './shell.js';
 
 const $ = (id) => document.getElementById(id);
+let tables = null;
+const tablesReady = fetch('core/data/spectral_wcs.json').then(r => r.json()).then(t => { tables = t; }).catch(() => {});
 const THUMB_N = 25, PIX = 6.15;
 const SEL_KEY = 'starshift.archive.selected';
 const S = {
@@ -64,7 +67,6 @@ function chipRow(el, key, options) {
   el.onclick = (e) => {
     const b = e.target.closest('button'); if (!b) return;
     S.filter[key] = b.dataset.v;
-    for (const x of el.children) x.setAttribute('aria-pressed', String(x === b));
     S.page = 0; apply();
   };
 }
@@ -82,10 +84,39 @@ function buildFilters() {
 }
 
 // ---- table -----------------------------------------------------------------------------------
+const FILTER_EL = { season: 'fSeason', band: 'fBand', detector: 'fDet', hasFlags: 'fFlags', release: 'fRel' };
+const FILTER_NAME = { season: 'Season', band: 'Band', detector: 'Detector', hasFlags: 'Flags', release: 'Release' };
 function apply() {
   S.view = sortRows(filterRows(S.rows, S.filter), S.sort.key, S.sort.dir);
+  for (const [k, id] of Object.entries(FILTER_EL)) for (const x of $(id).children) x.setAttribute('aria-pressed', String(x.dataset.v === String(S.filter[k])));
+  renderActive();
   render();
 }
+
+// Active filters as removable chips (shown beside the Filters key on phones).
+function renderActive() {
+  const on = Object.keys(FILTER_EL).filter(k => S.filter[k] !== 'all').map(k => {
+    const label = $(FILTER_EL[k]).querySelector(`[data-v="${CSS.escape(String(S.filter[k]))}"]`)?.textContent.replace(/\s+\d+$/, '').trim() ?? S.filter[k];
+    return `<button class="key chip-k" type="button" data-k="${k}" aria-label="Remove filter ${FILTER_NAME[k]}: ${esc(label)}">${FILTER_NAME[k]}: ${esc(label)} <span aria-hidden="true">×</span></button>`;
+  });
+  if (S.filter.text) on.push(`<button class="key chip-k" type="button" data-k="text" aria-label="Remove text filter">“${esc(S.filter.text)}” <span aria-hidden="true">×</span></button>`);
+  $('active').innerHTML = on.join('');
+  $('filtersBtn').textContent = on.length ? `Filters (${on.length})` : 'Filters';
+}
+$('active').onclick = (e) => {
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  if (b.dataset.k === 'text') { S.filter.text = ''; $('fText').value = ''; } else S.filter[b.dataset.k] = 'all';
+  S.page = 0; apply();
+};
+function sheet(open) {
+  $('filters').classList.toggle('open', open); $('filtersBtn').setAttribute('aria-expanded', String(open));
+  $('scrim').hidden = !open;
+  if (open) $('filtersDone').focus(); else $('filtersBtn').focus();
+}
+$('filtersBtn').onclick = () => sheet(true);
+$('filtersDone').onclick = () => sheet(false);
+$('scrim').onclick = () => sheet(false);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('filters').classList.contains('open')) sheet(false); });
 
 function render() {
   const pg = paginate(S.view, S.page, S.size);
@@ -117,14 +148,14 @@ function rowHtml(r) {
     : `<span class="dim" title="${r.status === 'failed' ? 'The cutout could not be downloaded' : 'Loads when the row is on screen'}">—</span>`;
   const st = r.status === 'failed' ? `<button class="linkbtn" data-act="retry">Failed · Retry</button>` : `<span class="st st-${r.status}">${STATUS[r.status]}</span>`;
   const main = `<tr class="arow${sel ? ' sel' : ''}" data-uri="${esc(r.uri)}" tabindex="0" title="Open this image in the viewer">
-    <td class="c-x"><button class="xbtn" data-act="expand" aria-expanded="${open}" aria-label="Details for image ${r.n}">${open ? '▾' : '▸'}</button></td>
+    <td class="c-x"><button class="key xbtn" data-act="expand" aria-expanded="${open}" aria-label="Details for image ${r.n}">${open ? '▾' : '▸'}</button></td>
     <td class="c-th"><canvas class="athumb${r.status === 'loaded' ? '' : ' empty'}" width="50" height="50" aria-label="Image ${r.n} thumbnail"></canvas></td>
     <td class="r num">${r.n}</td>
     <td class="num">${r.date}</td>
     <td class="num">${r.time}</td>
     <td>${s ? esc(s.label) : '—'}</td>
     <td class="r num">D${r.detector}</td>
-    <td><span class="wl"><i class="sw" style="background:${r.bandColor ?? 'transparent'}"></i><span class="num">${r.wlMin?.toFixed(2) ?? '—'}–${r.wlMax?.toFixed(2) ?? '—'} µm</span> <span class="dim">${esc(r.band ?? '')}</span></span></td>
+    <td>${wlCell(r)}</td>
     <td class="r num">${r.mjd.toFixed(4)}</td>
     <td class="num">${esc(r.obsid)}</td>
     <td>${r.release.toUpperCase()}</td>
@@ -133,6 +164,15 @@ function rowHtml(r) {
     <td class="links"><a href="${esc(r.irsaUrl)}" target="_blank" rel="noopener" title="${esc(r.irsaUrl)}">FITS ↗</a><a href="${esc(viewerUrl(S.target.ra, S.target.dec, r.mjd))}" title="Play in Star Shift">Play</a></td>
   </tr>`;
   return open ? main + detailHtml(r) : main;
+}
+
+// Before the image loads: the detector's range. After: the wavelength at the star's pixel (as the viewer shows it).
+function wlCell(r) {
+  if (Number.isFinite(r.wlStar)) {
+    const b = bandAt(r.wlStar);
+    return `<span class="wl" title="Wavelength at the star's pixel (detector D${r.detector} covers ${r.wlMin?.toFixed(2)}–${r.wlMax?.toFixed(2)} µm)"><i class="sw" style="background:${b?.color ?? 'transparent'}"></i><span class="num">λ ${r.wlStar.toFixed(3)} µm</span> <span class="dim">${esc(b?.name ?? '')}</span></span>`;
+  }
+  return `<span class="wl" title="Detector range; the wavelength at the star shows once the image loads"><i class="sw" style="background:${r.bandColor ?? 'transparent'}"></i><span class="num">${r.wlMin?.toFixed(2) ?? '—'}–${r.wlMax?.toFixed(2) ?? '—'} µm</span> <span class="dim">${esc(r.band ?? '')}</span></span>`;
 }
 
 function detailHtml(r) {
@@ -156,7 +196,12 @@ async function loadOne(r, signal) {
   const raw = await fetchCutout(r.uri, c0.ra, c0.dec, cutoutSizeDeg(THUMB_N * PIX / 60), { base, signal });
   const grid = makeGrid(c0.ra, c0.dec, THUMB_N * PIX, PIX);
   const f = reproject(maskBadPixels(raw), grid); // masked pixels -> NaN; flag words carried for every pixel
-  const out = { n: f.n, d: Array.from(f.data, v => (Number.isFinite(v) ? v : null)), flags: raw.flags ? f.flags : null, flagNames: raw.flagNames };
+  await tablesReady;
+  const pos = (S.target.pmra || S.target.pmdec) ? propagate(S.target, raw.mjd) : S.target;
+  const [px, py] = raw.wcs.worldToPix(pos.ra, pos.dec);
+  const tab = tables?.[String(raw.detector)];
+  const wl = tab ? wavelengthAt(raw.header, tab, px, py).wavelength : null;
+  const out = { n: f.n, d: Array.from(f.data, v => (Number.isFinite(v) ? v : null)), flags: raw.flags ? f.flags : null, flagNames: raw.flagNames, wl: Number.isFinite(wl) ? wl : null };
   out.summary = out.flags ? summarizeFlags(out.flags, out.flagNames) : null;
   S.cache.set(r.uri, out);
   return out;
@@ -180,7 +225,7 @@ async function fetchRow(r, signal) {
   setStatus(r, 'loading');
   try {
     const c = await loadOne(r, signal);
-    r.flags = c.summary; setStatus(r, 'loaded');
+    r.flags = c.summary; r.wlStar = c.wl; setStatus(r, 'loaded');
   } catch (e) {
     if (e.name === 'AbortError' || signal?.aborted) { setStatus(r, 'waiting'); return; }
     setStatus(r, 'failed');

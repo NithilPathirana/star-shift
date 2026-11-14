@@ -6,7 +6,6 @@
 import { listImages, fetchCutout, maskBadPixels } from '../../core/irsa.js';
 import { wavelengthAt } from '../../core/wave.js';
 import { propagate } from '../../core/motion.js';
-import { cutoutCenter } from '../data.js';
 import { DEFAULT_BANDS, DETECTORS } from '../bands.js';
 import { seasonsOf, seasonIndex, mjdToUtc, bandAt, viewerUrl } from '../archive/logic.js';
 import { IRSA } from '../../core/irsa.js';
@@ -14,10 +13,11 @@ import {
   X_RANGE, FEATURES, APERTURES, CUTOUT_DEG, PIXEL_ARCSEC, pickImages, aperturePhotometry, pixelSolidAngle, toMilliJy,
   apertureFlagged, whyNoPhotometry, niceTicks, logTicks, yRange, fmtValue, pointsToCSV,
 } from './logic.js';
-import { base, initShell, resolve, listPosition, targetLine, download, slug, esc } from '../archive/shell.js';
+import { base, initShell, resolve, listPosition, targetLine, download, slug, esc, cutoutCenter } from '../archive/shell.js';
 
 const $ = (id) => document.getElementById(id);
 const SHAPES = ['circle', 'square', 'triangle', 'diamond'];
+const SHORT = { 'd-starlight': 'Star', 'd-coolstars': 'Cool', 'd-dust': 'Dust', 'd-waterice': 'Water', 'd-co2ice': 'CO₂', 'd-browndwarfs': 'BD' };
 const S = {
   target: null, images: [], seasons: [], cuts: [], points: [], queue: [], queued: new Set(), done: 0, failed: 0, total: 0,
   aperture: APERTURES[1], season: 'all', log: false, ctrl: null, running: 0, hover: null,
@@ -120,6 +120,7 @@ function pointFrom(cut) {
 function remeasure() {
   S.points = [];
   for (const c of S.cuts) { const p = pointFrom(c); c.missing = !p; if (p) S.points.push(p); }
+  renderKey();
   progress(); draw();
 }
 
@@ -139,6 +140,7 @@ function progress() {
   $('more').disabled = !S.images.length || S.queued.size >= S.images.length;
   $('csv').disabled = !S.points.length;
   $('caption').innerHTML = caption();
+  renderKey();
   updateFill();
 }
 
@@ -146,6 +148,19 @@ function caption() {
   const a = S.aperture;
   return `<span class="tag comp">COMPUTED</span>Each dot: the sum of the pixel values (MJy/sr) whose centres lie within ${a.rAp} px (${(a.rAp * PIXEL_ARCSEC).toFixed(1)}″) of the star's position on that image's date, minus the median of a ${a.rIn}–${a.rOut} px background ring, times each pixel's solid angle (giving mJy). ` +
     `Pixels the archive marks as bad are left out and the sum is scaled up for them. Not done: no aperture (PSF) correction, no colour or cross-image calibration; error bars are not drawn (background scatter only, in the CSV). Wavelength = the image's own value at the star's pixel.`;
+}
+
+// Key directly under the chart: filled / hollow and one shape per season.
+function renderKey() {
+  const pts = visiblePoints();
+  const dot = (filled, shape = 'circle') => `<svg width="14" height="14" viewBox="-7 -7 14 14"><g fill="${filled ? '#EDE5DA' : '#15110E'}" stroke="#EDE5DA" stroke-width="1.4">${shapePath(shape, 0, 0, 4.5)}</g></svg>`;
+  const used = new Set(S.points.map(p => p.season));
+  const seasons = S.seasons.filter(s => used.has(s.i) && (S.season === 'all' || S.season === s.i));
+  $('key').innerHTML = `<span>${dot(true)} clean aperture</span><span>${dot(false)} flagged pixels in the aperture</span>` +
+    seasons.map(s => `<span>${dot(true, SHAPES[s.i % SHAPES.length])} ${esc(s.label)}</span>`).join('') +
+    '<span class="dim">Colour = band (wavelength)</span>';
+  const nFlag = pts.filter(p => p.flagged).length;
+  $('flagNote').hidden = !(pts.length >= 5 && nFlag / pts.length >= 0.9);
 }
 
 function renderApertures() {
@@ -170,7 +185,7 @@ function renderSeasons() {
 $('seasons').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   S.season = b.dataset.v === 'all' ? 'all' : Number(b.dataset.v);
-  renderSeasons(); draw();
+  renderSeasons(); renderKey(); draw();
 });
 function seasonImages() {
   return S.season === 'all' ? [] : S.images.filter(im => seasonIndex(im.mjdStart, S.seasons) === S.season);
@@ -222,7 +237,8 @@ function draw() {
   const svg = $('svg'), box = $('plot').getBoundingClientRect();
   const W = Math.max(320, box.width), H = Math.max(220, box.height);
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  const m = { l: 70, r: 20, t: 34, b: 62 };
+  const narrow = W < 600; // phone: shorter labels so band names don't collide
+  const m = { l: narrow ? 52 : 70, r: narrow ? 10 : 20, t: 34, b: 62 };
   const pw = W - m.l - m.r, ph = H - m.t - m.b;
   const pts = visiblePoints().filter(p => !S.log || p.mJy > 0);
   const yr = yRange(pts.map(p => p.mJy), S.log);
@@ -235,7 +251,7 @@ function draw() {
   for (const b of DEFAULT_BANDS) {
     const x0 = X(Math.max(b.min, X_RANGE.min)), x1 = X(Math.min(b.max, X_RANGE.max));
     s += `<rect x="${x0}" y="${m.t}" width="${x1 - x0}" height="${ph}" fill="${b.color}" opacity=".07"/>`;
-    s += `<text x="${(x0 + x1) / 2}" y="${m.t - 12}" fill="${b.color}" text-anchor="middle" font-family="Instrument Sans,system-ui,sans-serif" font-size="11" font-weight="600">${esc(b.name)}</text>`;
+    s += `<text x="${(x0 + x1) / 2}" y="${m.t - 12}" fill="${b.color}" text-anchor="middle" font-family="Instrument Sans,system-ui,sans-serif" font-size="${narrow ? 9 : 11}" font-weight="600">${esc(narrow ? SHORT[b.id] ?? b.name : b.name)}</text>`;
   }
   // grid + y axis
   const yt = S.log ? logTicks(yr.lo, yr.hi) : niceTicks(yr.lo, yr.hi, 6);
@@ -251,7 +267,8 @@ function draw() {
     if (major || pw > 520) s += `<text x="${x}" y="${m.t + ph + 16}" fill="${muted}" text-anchor="middle">${um.toFixed(major ? 0 : 1)}</text>`;
   }
   s += `<text x="${m.l + pw / 2}" y="${H - 6}" fill="${muted}" text-anchor="middle">Wavelength (µm)</text>`;
-  s += `<text transform="translate(16 ${m.t + ph / 2}) rotate(-90)" fill="${muted}" text-anchor="middle">Flux density (mJy)${S.log ? ', log' : ''}</text>`;
+  s += narrow ? `<text x="4" y="${m.t - 12}" fill="${muted}">mJy${S.log ? ' (log)' : ''}</text>`
+    : `<text transform="translate(16 ${m.t + ph / 2}) rotate(-90)" fill="${muted}" text-anchor="middle">Flux density (mJy)${S.log ? ', log' : ''}</text>`;
   // detector spans under the axis (they overlap a little at the edges)
   for (const d of DETECTORS) {
     const y = m.t + ph + 26 + (d.d % 2 ? 0 : 7);
@@ -262,7 +279,7 @@ function draw() {
   for (const f of FEATURES) {
     const x = X(f.um);
     s += `<line x1="${x}" x2="${x}" y1="${m.t}" y2="${m.t + ph}" stroke="#FFF6E8" stroke-opacity=".45" stroke-dasharray="4 4"/>`;
-    s += `<text x="${x + 5}" y="${m.t + 14}" fill="#FFF6E8" fill-opacity=".75">${esc(f.label)}</text>`;
+    s += `<text x="${x + 5}" y="${m.t + 14}" fill="#FFF6E8" fill-opacity=".75">${esc(narrow ? f.label.split(' ')[0] : f.label)}</text>`;
   }
   // points: band colour; hollow when flagged; shape = season
   const placed = [];
