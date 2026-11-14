@@ -16,8 +16,14 @@ Type any sky position (or a star name) and see every SPHEREx image of that spot,
   - `align.js` – puts every frame on one north-up sky grid and measures star positions.
   - `wave.js` + `data/spectral_wcs.json` – wavelength seen at each pixel (linear variable filters).
   - `resolve.js` – star names via SIMBAD (Harvard mirror); proper motions via Gaia DR3.
-- `proxy/worker.js` – tiny Cloudflare Worker that relays read-only requests to IRSA and Gaia,
-  which don't send CORS headers. No secrets, no storage.
+- `server/server.mjs` – local server: serves `web/` and relays read-only requests to IRSA and
+  Gaia (they don't send CORS headers) on http://127.0.0.1:8787. Cutouts are cached on disk in `.cache/`.
+- `proxy/worker.js` – the relay logic itself; the local server uses it, and the same file can run
+  as a Cloudflare Worker if the site is ever published. No secrets, no storage.
+
+## Run it (Windows)
+Double-click `start.vbs` (no console window; opens the browser). `stop.vbs` stops it.
+Needs Node.js 20+. Or run `node server/server.mjs` in a terminal.
 - `tests/` – `npm test` (offline, checked against Astropy reference values).
 - `tools/prove_targets.mjs` – live run on NASA's five test targets; results in `evidence/`.
 
