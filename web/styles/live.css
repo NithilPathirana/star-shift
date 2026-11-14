@@ -116,3 +116,7 @@ html[data-motion=reduce] .rk, html[data-motion=reduce] .thin-rk { transition: no
 .l2-hair{position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(255,235,210,.1)}
 .l2-hair b{display:block;height:100%;background:var(--ring);transform-origin:left;transform:scaleX(0);transition:transform 300ms var(--ease-out)}
 @media (max-width:699px){.l2-center{bottom:64px}}
+
+/* No rocket animation: progress line + count centred on the dark stage */
+.loader2 .l2-center { bottom: 50%; transform: translate(-50%, 50%); }
+.loader2 .l2-shade { display: none; }

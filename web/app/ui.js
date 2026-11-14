@@ -292,15 +292,9 @@ function rocketAt(frac) {
   $('l2Hair').style.transform = `scaleX(${frac})`; $('thinBar').style.transform = `scaleX(${frac})`;
 }
 /* loader v2 media + exit clip (DESIGN.md section 17; from design-v1.html) */
-function mountRocket() {
-  const box = $('l2Media'); if (!box) return; const base = 'loader/v2/';
-  const small = matchMedia('(max-width: 900px), (max-height: 560px)').matches || (navigator.connection && navigator.connection.saveData);
-  const res = small ? '720' : '1080';
-  if (set.motion) { box.innerHTML = `<img src="${base}rocket-hero-still-${res}.webp" alt="An astronaut riding a rocket through six ribbons of coloured light (still, AI-generated)">`; return; }
-  box.innerHTML = `<video autoplay loop muted playsinline poster="${base}rocket-hero-still-${res}.webp" aria-label="An astronaut riding a rocket through six ribbons of coloured light (animation, AI-generated)">
-    <source src="${base}rocket-loop-${res}.webm" type="video/webm"><source src="${base}rocket-loop-${res}.mp4" type="video/mp4"></video>`;
-  const v = box.querySelector('video'); v.muted = true; v.play().catch(() => {});
-}
+// Rocket animation removed (Nithil, Sat night): the loader is a clean progress line and count until
+// the Studio's code-based 'spectral scan' loader arrives. leaveLoader() then simply fades out.
+function mountRocket() { const box = $('l2Media'); if (box) box.innerHTML = ''; }
 /* exit: play the 1.5 s hand-off clip (rocket sweeps past, flame fills the frame warm-white), then fade into the viewer.
    Reduce motion, or a clip that fails to start within 400 ms, falls back to the plain cross-fade. */
 let leaving = false;
