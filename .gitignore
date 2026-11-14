@@ -13,3 +13,4 @@ evidence/prove_run.log
 .cache/
 evidence/display_*.json
 evidence/display_*.log
+evidence/prebake.log
