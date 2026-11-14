@@ -28,8 +28,9 @@ const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 const RAD = Math.PI / 180;
 
 let tables = null;
-fetch('core/data/spectral_wcs.json').then(r => r.json()).then(t => { tables = t; }).catch(() => {});
-loadConstellations().catch(() => {});
+// load() waits for the wavelength tables, so a deep link (?q=…&scene=viewer) never runs with tables = null
+const tablesReady = fetch('core/data/spectral_wcs.json').then(r => r.json()).then(t => { tables = t; }).catch(() => {});
+loadConstellations().then(() => { if (M.sel) renderCD(); }).catch(() => {}); // fill in the Constellation row once it can
 
 /* ---------- Clarity settings (remembered, default from the OS) ---------- */
 const KEY = 'tgi-clarity-v1';
@@ -393,7 +394,7 @@ function load(query, label) {
       showState('stError'); Snd.play('error');
     }
   };
-  run(query, SETTINGS, { base: BASE, signal: ctl.signal, tables, emit });
+  tablesReady.then(() => { if (!ctl.signal.aborted) run(query, SETTINGS, { base: BASE, signal: ctl.signal, tables, emit }); });
 }
 $('retry').onclick = () => { Snd.play('click'); if (V.query) load(V.query, V.name); };
 $('useLoaded').onclick = () => { showState(null); Snd.play('click'); };
