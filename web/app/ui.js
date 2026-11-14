@@ -243,7 +243,7 @@ function remeasure() {
   try { V.motion = V.grid && V.F.length ? measureMotion(V.F.map(f => f.raw), V.grid) : null; } catch { V.motion = null; }
   // only a final fit counts: all planned images tried and at least two observing seasons
   if (V.motion?.ok && visits(V.F).length < 2) V.motion = { ok: false, frames: V.motion.frames, reason: 'one season only' };
-  $('d-meas').textContent = V.motion?.ok ? `${(V.motion.total / 1000).toFixed(2)} ± ${(V.motion.totalErr / 1000).toFixed(2)}″/yr (${V.motion.frames} images)` : V.motion ? (V.motion.reason === 'one season only' ? 'needs two seasons to measure' : V.motion.reason === 'too few frames' ? 'too few images to measure' : 'too faint to measure') : '—';
+  $('d-meas').textContent = V.motion?.ok ? `${V.motion.significant === false ? `no significant motion (< ${(V.motion.upperLimit / 1000).toFixed(2)}″/yr)` : `${(V.motion.total / 1000).toFixed(2)} ± ${(V.motion.totalErr / 1000).toFixed(2)}″/yr`} (${V.FA.length > V.F.length ? 'flagged images hidden, ' : ''}${V.motion.frames} images)` : V.motion ? (V.motion.reason === 'one season only' ? 'needs two seasons to measure' : V.motion.reason === 'too few frames' ? 'too few images to measure' : 'too faint to measure') : '—';
   repaintMot?.();
 }
 // Re-apply the "hide images with…" filter, keeping the current image (or the nearest one in time).
@@ -660,10 +660,13 @@ function motionHTML(sel, t, cat, gaia, same, looking) {
   }
   // measured in these images (OBSERVED), once the patch has been played and the fit is final
   if (same && V.motion?.ok && firstS() && lastS() && V.stacks.length > 1) {
-    const m = V.motion.total / 1000, me = V.motion.totalErr / 1000;
-    h += row('Measured in these images (SPHEREx)', `${m.toFixed(2)} ± ${me.toFixed(2)}″/yr · from ${V.motion.frames} images`, 'obs');
-    if (k?.mu != null) h += `<p class="mot-cmp num">Catalogue ${k.arcsecYr.toFixed(2)}″/yr · measured here ${m.toFixed(1)} ± ${me.toFixed(1)}″/yr</p>`;
-    const vtm = tangentialVelocity(V.motion.total, plxFrom?.plx);
+    // data.js significance rule (also on the Proof page): under 3σ -> "no significant motion (< upper limit)"
+    const m = V.motion.total / 1000, me = V.motion.totalErr / 1000, sig = V.motion.significant !== false;
+    const val = sig ? `${m.toFixed(2)} ± ${me.toFixed(2)}″/yr` : `no significant motion (&lt; ${(V.motion.upperLimit / 1000).toFixed(2)}″/yr)`;
+    const nHid = V.FA.length - V.F.length, used = nHid > 0 ? `flagged images hidden, ${V.motion.frames} images` : `from ${V.motion.frames} images`;
+    h += row('Measured in these images (SPHEREx)', `${val} · ${used}`, 'obs');
+    if (k?.mu != null) h += `<p class="mot-cmp num">Catalogue ${k.arcsecYr.toFixed(2)}″/yr · measured here ${sig ? `${m.toFixed(1)} ± ${me.toFixed(1)}″/yr` : val}</p>`;
+    const vtm = sig ? tangentialVelocity(V.motion.total, plxFrom?.plx) : null;
     if (vtm) h += row('Speed across the sky, from the measured motion', `${vtm.toFixed(0)} km/s`, 'calc');
   } else if (!same && k?.mu != null) h += '<p class="quiet">Play this patch to measure the motion from the SPHEREx images.</p>';
   if (k?.mu != null) {

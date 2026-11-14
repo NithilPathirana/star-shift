@@ -6,7 +6,7 @@
 import { listImages, fetchCutout, fetchCutoutLayers, maskBadPixels, mapLimit } from '../core/irsa.js';
 import { airglowOf, kindMasks, countKinds } from '../core/contam.js';
 import { resolveName } from '../core/resolve.js';
-import { propagate, mjdToDate } from '../core/motion.js';
+import { propagate, mjdToDate, parallaxShift } from '../core/motion.js';
 import { makeGrid, reproject, worldToGrid, gridToWorld, stackFrames, centroid, fitLine } from '../core/align.js';
 import { tanProject } from '../core/wcs.js';
 import { mjdToEpochYear } from '../core/motion.js';
@@ -115,6 +115,8 @@ export async function loadFrame(im, target, grid, settings, { base, fetchFn = fe
     kind: 'frame', n: f.n, data: f.data, mjd: c.mjd, date: c.date, detector: c.detector, obsid: c.obsid,
     wavelengthUm: wl?.wavelength ?? null, bandwidthUm: wl?.bandwidth ?? null, maskedPixels: c.maskedPixels ?? 0,
     expected: moving ? worldToGrid(grid, pos.ra, pos.dec) : null, uri: im.uri, version: c.version,
+    // annual parallax [east, north] arcsec on this date (catalogue parallax), removed by measureMotion
+    plxShift: target.plx > 0 ? parallaxShift(pos.ra, pos.dec, target.plx, c.mjd) : null,
     // contamination (DESIGN.md 23): the FLAGS plane on the display grid, its bit names, kind masks/counts, airglow
     flags: f.flags, flagNames: c.flagNames, masks, counts: countKinds(f.flags, masks, f.data),
     glow: airglowOf({ ...c.header, DETECTOR: c.detector }, wl?.wavelength, wl?.bandwidth),
@@ -189,9 +191,17 @@ export async function run(query, settings, { base, fetchFn = fetch, signal, tabl
 //     grid centre (or near the catalogue prediction, when frames carry `expected`);
 //  2. track: walk the frames in time order, centroiding each one around the position
 //     predicted from the frames already measured (a 2 px gate drops misfits and other stars);
-//  3. fit east/north offsets against time (one 3-sigma clip pass) -> mas/yr with errors.
+//  3. fit east/north offsets against time -> mas/yr (fitTrack below): annual parallax removed
+//     first (frames carry `plxShift` from the catalogue parallax), each image weighted by how
+//     well images of its kind are measured, one outlier-clipping pass;
+//  4. systematic floor: the same tracking and fit on non-moving field stars in the same images
+//     (fieldFloor below); their scatter beyond their own error bars is the floor, which is
+//     added in quadrature to the statistical error.
 // Accepts any subset of frames, in any order (e.g. only those the contamination filter keeps).
-// Returns { ok, frames, span, pmra, pmdec, pmraErr, pmdecErr, total, totalErr, seeded, points }.
+// Returns { ok, frames, span, pmra, pmdec, pmraErr, pmdecErr, total, totalErr, seeded, points,
+//   statErr, sysErr, refStars, fit, significant, floor, upperLimit }. totalErr/pmraErr/pmdecErr
+//   include the systematic floor; statErr is the statistical part alone.
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 export function measureMotion(frames, grid, { radius = 3.5, minSnr = 5, minFrames = 6, gate = 2, searchRadius = 5, seedDays = 60 } = {}) {
   const fs = (frames || []).filter(f => f && f.data && Number.isFinite(f.mjd)).slice().sort((a, b) => a.mjd - b.mjd);
   if (fs.length < minFrames) return { frames: 0, ok: false, reason: 'too few frames' };
@@ -237,28 +247,184 @@ export function measureMotion(frames, grid, { radius = 3.5, minSnr = 5, minFrame
     const [sx, sy] = predict(t);
     const c = centroid(f, sx, sy, radius);
     if (!c || !(c.snr > minSnr) || Math.hypot(c.x - sx, c.y - sy) > gate) continue;
-    const [ra, dec] = gridToWorld(grid, c.x, c.y);
-    const [xi, eta] = tanProject(ra, dec, grid.ra0, grid.dec0);
-    acc.push({ t, mjd: f.mjd, x: c.x, y: c.y, e: xi * 3600, n: eta * 3600 });
+    acc.push(trackPoint(f, grid, c, t, f.plxShift));
   }
-  // 3. straight-line fit with one outlier-clipping pass
-  const fit = (pts) => {
+  // 3. weighted straight-line fit, parallax removed
+  if (acc.length < minFrames) return { frames: acc.length, ok: false, seeded };
+  const T = fitTrack(acc, minFrames);
+  const span = Math.max(...T.pts.map(p => p.t)) - Math.min(...T.pts.map(p => p.t));
+  if (span < 0.3) return { frames: T.pts.length, ok: false, span, seeded };
+  const { fe, fn } = T;
+  const pmra = fe.b * 1000, pmdec = fn.b * 1000, se = fe.sigmaB * 1000, sn = fn.sigmaB * 1000;
+  const total = Math.hypot(pmra, pmdec);
+  const proj = (a, b) => (total > 0 ? Math.hypot(pmra * a, pmdec * b) / total : Math.hypot(a, b));
+  // 4. systematic floor from field stars (per axis, mas/yr), never below the documented minimum
+  const field = fieldFloor(fs, grid, acc, { radius, minSnr, minFrames });
+  const sys = field.n >= 3 ? Math.max(SYS_FLOOR_MASYR, field.sys) : SYS_FLOOR_MASYR;
+  const totalErrFull = proj(Math.hypot(se, sys), Math.hypot(sn, sys));
+  return { ok: true, frames: T.pts.length, span, pmra, pmdec, pmraErr: Math.hypot(se, sys), pmdecErr: Math.hypot(sn, sys), total,
+    totalErr: totalErrFull, statErr: proj(se, sn), sysErr: sys,
+    refStars: field.n, fieldSys: field.sys,
+    // significance rule (shared by the viewer and the Proof page): a motion counts only when it
+    // is at least 3 × its full uncertainty (statistical + floor) AND at least MIN_MOTION_MASYR.
+    // Otherwise it is reported as "no significant motion (< upperLimit)", upperLimit = the larger
+    // of value + 2 × uncertainty (~98% bound) and MIN_MOTION_MASYR.
+    significant: total >= 3 * totalErrFull && total >= MIN_MOTION_MASYR,
+    floor: Math.max(3 * totalErrFull, MIN_MOTION_MASYR), upperLimit: Math.max(total + 2 * totalErrFull, MIN_MOTION_MASYR),
+    seeded, rejected: acc.length - T.pts.length,
+    points: T.pts.map(p => ({ mjd: p.mjd, x: p.x, y: p.y, e: p.e, n: p.n, w: p.w })),
+    fit: { ae: fe.a, be: fe.b, an: fn.a, bn: fn.b } };
+}
+
+// Systematic floor (mas/yr per axis). Estimated once from every field star that fieldFloor()
+// finds in the five proof targets' fields (tools/make_proof.mjs data, 14 Nov 2026: 120 images
+// each, 2.5′ field, all detectors): 5 stars = 10 fitted motions that should all be 0 give
+// χ² = 27.0 for 10 with their own error bars alone; Σ μ²/(σ² + s²) = 10 at s = 151 mas/yr.
+// One field rarely holds enough stars to measure its own floor, so this pooled value is the
+// minimum; a field with 3 or more usable field stars can raise it (never lower it).
+// See the method notes on web/proof.html.
+export const SYS_FLOOR_MASYR = 150;
+
+// Smallest motion we claim (mas/yr). The non-moving control, RW Aurigae (catalogue 0.02″/yr),
+// comes out at 0.51-0.60″/yr depending on which flagged images are hidden (0.57-0.65 with the
+// earlier, unweighted fit; make_proof.mjs 14 Nov 2026), rounded up to 0.7: a drift of its own
+// light centre (east-west, aperture-independent, not seen in the field stars of the same images),
+// i.e. an effect of a bright star the field-star floor does not cover. So a motion under 0.7″/yr
+// is reported as "no significant motion" even when it is over 3σ.
+export const MIN_MOTION_MASYR = 700;
+
+// One measured position: grid (x, y), sky offsets (arcsec east/north of the grid centre)
+// with annual parallax taken out, and the image's kind for weighting: detector + whether any
+// pixel within 2 px of the centre is blanked (saturated/masked core -> a much noisier centre).
+function trackPoint(f, grid, c, t, plx) {
+  const [ra, dec] = gridToWorld(grid, c.x, c.y);
+  const [xi, eta] = tanProject(ra, dec, grid.ra0, grid.dec0);
+  let masked = false;
+  for (let j = Math.floor(c.y - 2); j <= Math.ceil(c.y + 2) && !masked; j++) for (let i = Math.floor(c.x - 2); i <= Math.ceil(c.x + 2); i++) {
+    if (i >= 0 && j >= 0 && i < f.n && j < f.n && Math.hypot(i - c.x, j - c.y) <= 2 && !Number.isFinite(f.data[j * f.n + i])) { masked = true; break; }
+  }
+  return { t, mjd: f.mjd, x: c.x, y: c.y, e: xi * 3600 - (plx?.[0] ?? 0), n: eta * 3600 - (plx?.[1] ?? 0), kind: `${f.detector ?? ''}${masked ? 'm' : 'c'}`, masked };
+}
+
+// Weighted least-squares line y = a + b t (weights 1/σ²). sigmaB is scaled by the reduced
+// chi-square when the points scatter more than their weights say (never scaled down).
+function fitLineW(ts, ys, ws) {
+  const W = ws.reduce((a, w) => a + w, 0);
+  const mt = ts.reduce((a, t, k) => a + ws[k] * t, 0) / W, my = ys.reduce((a, y, k) => a + ws[k] * y, 0) / W;
+  let stt = 0, sty = 0;
+  for (let k = 0; k < ts.length; k++) { stt += ws[k] * (ts[k] - mt) ** 2; sty += ws[k] * (ts[k] - mt) * (ys[k] - my); }
+  const b = sty / stt, a = my - b * mt;
+  let chi = 0;
+  for (let k = 0; k < ts.length; k++) chi += ws[k] * (ys[k] - a - b * ts[k]) ** 2;
+  const red = chi / Math.max(1, ts.length - 2);
+  return { a, b, sigmaB: Math.sqrt(Math.max(1, red) / stt), red };
+}
+
+// Position noise (arcsec, per axis) of each point's kind of image: the RMS of that kind's
+// residuals about the line (east and north pooled). Images of one detector share a PSF size and
+// brightness; a blanked (saturated) core leaves only the wings, whose centre is several times
+// noisier. Kinds with fewer than 6 images borrow the RMS of all images with the same core
+// state, then of all images. 0.1″ minimum.
+const SIGMA_MIN = 0.1;
+function kindSigmas(pts, fe, fn) {
+  const res = pts.map(p => [p.e - fe.a - fe.b * p.t, p.n - fn.a - fn.b * p.t]);
+  const rms = (sel) => {
+    let ss = 0, m = 0;
+    pts.forEach((p, k) => { if (sel(p)) { ss += res[k][0] ** 2 + res[k][1] ** 2; m += 2; } });
+    return m ? Math.max(SIGMA_MIN, Math.sqrt(ss / m)) : null;
+  };
+  const memo = new Map();
+  const count = (sel) => pts.filter(sel).length;
+  return pts.map(p => {
+    if (!memo.has(p.kind)) {
+      const byKind = q => q.kind === p.kind, byCore = q => q.masked === p.masked;
+      memo.set(p.kind, count(byKind) >= 6 ? rms(byKind) : count(byCore) >= 6 ? rms(byCore) : rms(() => true));
+    }
+    return memo.get(p.kind);
+  });
+}
+
+// Fit east and north against time: unweighted first pass; points more than 3 × the overall
+// scatter from the line are dropped once (gross misfits only: cosmic rays, a wrong source);
+// then noise per kind of image -> weighted fit -> noise re-estimated about that line -> final
+// weighted fit.
+function fitTrack(acc, minFrames) {
+  const fit = (pts, ws) => {
     const ts = pts.map(p => p.t);
-    return { ts, fe: fitLine(ts, pts.map(p => p.e)), fn: fitLine(ts, pts.map(p => p.n)) };
+    return { fe: fitLineW(ts, pts.map(p => p.e), ws), fn: fitLineW(ts, pts.map(p => p.n), ws) };
   };
   let pts = acc;
-  if (pts.length < minFrames) return { frames: pts.length, ok: false, seeded };
-  let F = fit(pts);
-  const rms = Math.max(Math.hypot(F.fe.rms, F.fn.rms), 0.05);
-  const kept = pts.filter((p, k) => Math.hypot(p.e - F.fe.a - F.fe.b * F.ts[k], p.n - F.fn.a - F.fn.b * F.ts[k]) <= 3 * rms);
-  if (kept.length >= minFrames && kept.length < pts.length) { pts = kept; F = fit(pts); }
-  const span = Math.max(...F.ts) - Math.min(...F.ts);
-  if (span < 0.3) return { frames: pts.length, ok: false, span, seeded };
-  const pmra = F.fe.b * 1000, pmdec = F.fn.b * 1000, se = F.fe.sigmaB * 1000, sn = F.fn.sigmaB * 1000;
-  const total = Math.hypot(pmra, pmdec);
-  const err = total > 0 ? Math.hypot(pmra * se, pmdec * sn) / total : Math.hypot(se, sn);
-  return { ok: true, frames: pts.length, span, pmra, pmdec, pmraErr: se, pmdecErr: sn, total, totalErr: err,
-    seeded, rejected: acc.length - pts.length, points: pts.map(p => ({ mjd: p.mjd, x: p.x, y: p.y })) };
+  let F = fit(pts, pts.map(() => 1));
+  const scatter = (F0) => {
+    const r = pts.map(p => (p.e - F0.fe.a - F0.fe.b * p.t) ** 2 + (p.n - F0.fn.a - F0.fn.b * p.t) ** 2);
+    return Math.max(Math.sqrt(r.reduce((a, v) => a + v, 0) / Math.max(1, pts.length - 2)), 0.05);
+  };
+  const lim = 3 * scatter(F);
+  const kept = pts.filter(p => Math.hypot(p.e - F.fe.a - F.fe.b * p.t, p.n - F.fn.a - F.fn.b * p.t) <= lim);
+  if (kept.length >= minFrames && kept.length < pts.length) { pts = kept; F = fit(pts, pts.map(() => 1)); }
+  let sig = kindSigmas(pts, F.fe, F.fn);
+  F = fit(pts, sig.map(s => 1 / s ** 2));
+  sig = kindSigmas(pts, F.fe, F.fn);
+  F = fit(pts, sig.map(s => 1 / s ** 2));
+  return { ...F, pts: pts.map((p, k) => ({ ...p, w: 1 / sig[k] ** 2 })) };
+}
+
+// Systematic floor from field stars: sources in the median stack of all the images, away
+// from the target's track, are measured like the target (same centroid code, weighting and fit,
+// a 1.5 px gate around their fixed position; assumed not to move: field stars' own motions are ~0.01″/yr). Each gives
+// two fitted motions μ (east, north) with errors σ that should scatter around 0; the floor s
+// solves Σ μ²/(σ² + s²) = number of motions (0 if they already scatter no more than σ says).
+// Returns { n: field stars used, sys: s in mas/yr per axis or null if none, motions: [μ, σ] pairs }.
+export function fieldFloor(fs, grid, track, { radius, minSnr, minFrames, maxStars = 8 }) {
+  const st = stackFrames(fs), n = st.n;
+  const vals = Array.from(st.data).filter(Number.isFinite).sort((a, b) => a - b);
+  if (vals.length < 20) return { n: 0, sys: null, motions: [] };
+  const med = vals[vals.length >> 1];
+  const mad = 1.4826 * vals.map(v => Math.abs(v - med)).sort((a, b) => a - b)[vals.length >> 1];
+  // field stars are fainter: a 2.5 px aperture (all of it inside the grid) keeps their noise down
+  const r = Math.min(radius, 2.5), edge = Math.floor(r), clear = radius + r + 1;
+  const peaks = [];
+  for (let j = edge; j < n - edge; j++) for (let i = edge; i < n - edge; i++) {
+    const v = st.data[j * n + i];
+    if (!(v > med + 8 * mad)) continue;
+    let top = true;
+    for (let dj = -1; dj <= 1 && top; dj++) for (let di = -1; di <= 1; di++) if ((di || dj) && !(st.data[(j + dj) * n + i + di] < v)) { top = false; break; }
+    if (top && track.every(p => Math.hypot(i - p.x, j - p.y) > clear)) peaks.push({ i, j, v });
+  }
+  peaks.sort((a, b) => b.v - a.v);
+  const mus = [];
+  for (const p of peaks.slice(0, maxStars)) {
+    const pts = [];
+    for (const f of fs) {
+      const c = centroid(f, p.i, p.j, r);
+      if (!c || !(c.snr > minSnr) || Math.hypot(c.x - p.i, c.y - p.j) > 1.5) continue;
+      pts.push(trackPoint(f, grid, c, mjdToEpochYear(f.mjd), null));
+    }
+    if (pts.length < Math.max(minFrames, 10)) continue;
+    const ts = pts.map(q => q.t);
+    if (Math.max(...ts) - Math.min(...ts) < 0.3) continue;
+    const T = fitTrack(pts, minFrames);
+    mus.push([T.fe.b * 1000, T.fe.sigmaB * 1000], [T.fn.b * 1000, T.fn.sigmaB * 1000]);
+  }
+  if (!mus.length) return { n: 0, sys: null, motions: [] };
+  const chi = (s) => mus.reduce((a, [m, e]) => a + m * m / (e * e + s * s), 0);
+  let sys = 0;
+  if (chi(0) > mus.length) {
+    let lo = 0, hi = 1e5;
+    for (let it = 0; it < 60; it++) { const mid = (lo + hi) / 2; if (chi(mid) > mus.length) lo = mid; else hi = mid; }
+    sys = (lo + hi) / 2;
+  }
+  return { n: mus.length / 2, sys, motions: mus };
+}
+
+// One wording for a measured motion, used by the viewer and the Proof page (arcsec/yr):
+// "10.32 ± 0.27″/yr" when significant, else "no significant motion (< 0.86″/yr)".
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+export function motionSummary(m) {
+  if (!m?.ok) return null;
+  return m.significant
+    ? { significant: true, text: `${(m.total / 1000).toFixed(2)} ± ${(m.totalErr / 1000).toFixed(2)}″/yr` }
+    : { significant: false, text: `no significant motion (< ${(m.upperLimit / 1000).toFixed(2)}″/yr)` };
 }
 
 // Tangential velocity (km/s) = 4.74 × μ (arcsec/yr) × distance (pc) = 4.74 × μ / parallax (arcsec).

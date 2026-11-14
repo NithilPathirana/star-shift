@@ -3,7 +3,9 @@
 //
 // Linear motion on the sky as a 3-D unit vector (no radial velocity / perspective
 // acceleration: for Barnard's Star that term is ~0.0012"/yr^2, far below a 6.15" pixel).
-// Annual parallax is not applied: it is <0.55" here (<0.1 SPHEREx pixel).
+// Annual parallax is not applied by propagate() (it is <0.55", <0.1 SPHEREx pixel), but
+// measureMotion removes it before fitting (parallaxShift below): with ~6-monthly seasons it
+// alternates sign between seasons and leaks into a straight-line fit.
 
 const D2R = Math.PI / 180;
 const R2D = 180 / Math.PI;
@@ -37,6 +39,30 @@ export function propagate(star, mjd) {
   let ra = Math.atan2(r[1], r[0]) * R2D;
   if (ra < 0) ra += 360;
   return { ra, dec };
+}
+
+// Earth's barycentric position (AU, equatorial J2000) at an MJD: low-precision solar
+// coordinates (Astronomical Almanac, ~0.01 deg; Earth = minus the Sun's geocentric vector).
+// Good to ~0.5% of the parallax, i.e. <3 mas for Barnard's Star. SPHEREx is in low Earth
+// orbit (the X_SC/Y_SC/Z_SC header keys are geocentric, ~7000 km = 5e-5 AU), so its own
+// offset from Earth's centre changes a parallax by <0.03 mas and is ignored.
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+export function earthBarycentric(mjd) {
+  const n = mjd + 2400000.5 - 2451545.0;
+  const L = (280.460 + 0.9856474 * n) * D2R, g = (357.528 + 0.9856003 * n) * D2R;
+  const lam = L + (1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * D2R;
+  const R = 1.00014 - 0.01671 * Math.cos(g) - 0.00014 * Math.cos(2 * g);
+  const eps = (23.439 - 0.0000004 * n) * D2R;
+  return [-R * Math.cos(lam), -R * Math.sin(lam) * Math.cos(eps), -R * Math.sin(lam) * Math.sin(eps)];
+}
+
+// Annual parallax displacement [east, north] in arcsec of a star with parallax plxMas (mas)
+// seen on date mjd: the star appears shifted away from Earth's position, by plx × the part
+// of Earth's barycentric vector perpendicular to the line of sight.
+export function parallaxShift(ra, dec, plxMas, mjd) {
+  if (!(plxMas > 0)) return [0, 0];
+  const [X, Y, Z] = earthBarycentric(mjd), a = ra * D2R, d = dec * D2R, p = plxMas / 1000;
+  return [p * (X * Math.sin(a) - Y * Math.cos(a)), p * (X * Math.cos(a) * Math.sin(d) + Y * Math.sin(a) * Math.sin(d) - Z * Math.cos(d))];
 }
 
 // Angular separation in arcsec (Vincenty formula, stable for tiny angles).

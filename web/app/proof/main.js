@@ -34,7 +34,8 @@ function measuredCell(t, target) {
   if (t.type === 'motion') {
     if (!m || t.verdict === 'NOT MEASURABLE') return DASH('Not measurable: see the limits column');
     const ss = m.seasons.length;
-    return `<span class="num pf-big">${arcs(m.value)} ± ${arcs(m.err)}″/yr</span><small class="num">${m.frames} images · ${ss} season${ss === 1 ? '' : 's'} · ${m.span} yr · ${esc(m.bands)}</small>`;
+    const val = m.significant === false ? `no significant motion (&lt; ${arcs(m.upperLimit)}″/yr)` : `${arcs(m.value)} ± ${arcs(m.err)}″/yr`;
+    return `<span class="num pf-big">${val}</span><small class="num">${m.frames} images · ${ss} season${ss === 1 ? '' : 's'} · ${m.span} yr · ${esc(m.bands)}</small>`;
   }
   if (!m) return DASH('Not measurable: see the limits column');
   return m.groups.map(g => g.ok
@@ -113,7 +114,10 @@ function facts(t, target) {
   const li = [];
   if (t.type === 'motion') {
     const v = t.variants, f = (x) => (x.ok ? `${arcs(x.total)} ± ${arcs(x.totalErr)}″/yr (${x.frames} images)` : `no fit (${esc(x.reason || 'no steady track')})`);
-    if (t.fitAnyway) li.push(`The fit still gives ${arcs(t.fitAnyway.value)} ± ${arcs(t.fitAnyway.err)}″/yr from ${t.fitAnyway.frames} images, for a star the catalogue says moves ${arcs(t.expected.value, 3)}″/yr. This shows the floor of the method, not a motion.`);
+    if (t.fitAnyway) li.push(t.fitAnyway.significant === false
+      ? `No significant motion (&lt; ${arcs(t.fitAnyway.upperLimit)}″/yr): the fit gives ${arcs(t.fitAnyway.value)} ± ${arcs(t.fitAnyway.err)}″/yr from ${t.fitAnyway.frames} images, for a star the catalogue says moves ${arcs(t.expected.value, 3)}″/yr.`
+      : `The fit gives ${arcs(t.fitAnyway.value)} ± ${arcs(t.fitAnyway.err)}″/yr from ${t.fitAnyway.frames} images, for a star the catalogue says moves ${arcs(t.expected.value, 3)}″/yr. That is not a real motion (see the limits column).`);
+    if (t.measured?.statErr != null) li.push(`Uncertainty: ± ${arcs(t.measured.statErr)}″/yr from the scatter of the image positions and ± ${arcs(t.measured.sysErr)}″/yr systematic floor (measured on field stars, which should not move), combined as ± ${arcs(t.measured.err)}″/yr.`);
     if (t.measured) li.push(`Direction of motion: measured ${t.measured.pa}°, catalogue ${t.expected.pa}° (east of north).`);
     if (t.measured) li.push(`Seasons used: ${t.measured.seasons.map(s => `${s.from} to ${s.to} (${s.n})`).join(' · ')}.`);
     li.push(`All detectors: ${f(v.all)} · detectors 1–4: ${f(v.short)} · detectors 5–6: ${f(v.long)} · every flagged image hidden: ${f(v.filtersOn)}.`);
@@ -171,14 +175,17 @@ function render(d) {
   }).join(', ')).join(' · ') + `. Computed ${when.toISOString().slice(0, 16).replace('T', ' ')} UTC, field ${d.settings.fovArcmin}′, up to ${d.settings.maxImages} images per object, flag filter: ${d.settings.flagFilter}.`;
 
   // "What this does not show": the limits that apply to every row, with the numbers from this run.
-  const rw = d.targets.find(t => t.key === 'rw-aur')?.tests[0].fitAnyway;
+  const rw = d.targets.find(t => t.key === 'rw-aur')?.tests[0].fitAnyway, rwAll = d.targets.find(t => t.key === 'rw-aur')?.tests[0].variants;
   const rd = d.targets.find(t => t.key === 'r-dra');
   const spans = d.targets.map(t => t.tests[0].measured?.span).filter(Number.isFinite);
   const seas = d.targets.map(t => t.images.seasons.length);
   $('notList').innerHTML = [
     `Pixels are 6.15″ wide. The fast stars here move only 1 to 2 pixels over the dates we have, so each position is a fraction of a pixel.`,
-    `The images cover about ${Math.min(...spans).toFixed(1)} to ${Math.max(...spans).toFixed(1)} years in ${Math.min(...seas)} to ${Math.max(...seas)} seasons. The motion is fitted as a straight line; the yearly parallax wobble (up to 0.55″ for Barnard's Star) is not modelled.`,
-    rw ? `The error bars are statistical only. RW Aurigae, which hardly moves, comes out at ${arcs(rw.value)} ± ${arcs(rw.err)}″/yr, so there is an extra error of about half an arcsecond per year that the bars leave out.` : null,
+    `The images cover about ${Math.min(...spans).toFixed(1)} to ${Math.max(...spans).toFixed(1)} years in ${Math.min(...seas)} to ${Math.max(...seas)} seasons. The motion is fitted as a straight line after taking out the yearly parallax wobble (up to 0.55″ for Barnard's Star), using the catalogue parallax.`,
+    `Error bars include a systematic floor of ${arcs(d.settings.sysFloorMasYr ?? 150)}″/yr in each direction, measured on field stars that should not move. It covers shifts common to the whole image, not every effect of a very bright or saturated centre.`,
+    rw ? (rw.significant === false
+      ? `A motion under 3 times its error bar, or under ${arcs(d.settings.minMotionMasYr ?? 700, 1)}″/yr, is shown as "no significant motion". The 0.7″/yr line comes from RW Aurigae, which hardly moves but gives ${arcs(rw.value)} ± ${arcs(rw.err)}″/yr here${rwAll?.filtersOn?.ok ? ` and ${arcs(rwAll.filtersOn.total)}″/yr with every flagged image hidden` : ''}: a drift of its own light that the field stars do not show.`
+      : `RW Aurigae, which hardly moves, comes out at ${arcs(rw.value)} ± ${arcs(rw.err)}″/yr, more than its error bar allows, so motions below about half an arcsecond per year are not claimed.`) : null,
     `No calibration across images beyond the archive's own: brightness is compared only between images from the same detector at the same wavelength, and catalogue amplitudes measured in visible light cannot be compared with these infrared changes.`,
     rd ? `Very bright stars saturate. R Draconis has its centre masked in ${rd.images.saturatedCore} of ${rd.images.loaded} images, so neither its motion nor its brightness can be read.` : null,
     `These are ${d.settings.maxImages} images per object spread evenly in time, as the viewer loads them, not every image in the archive.`,
