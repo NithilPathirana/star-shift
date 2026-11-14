@@ -90,3 +90,17 @@ https://star-shift.<your-workers-subdomain>.workers.dev
 ```
 
 Open that exact URL in a private Edge window before submitting it. Do not paste a localhost address, the Cloudflare dashboard URL, or the source repository URL into **Final Project**.
+
+## Local Workers test before deploying (no login, no deploy)
+
+Checked on Sun 15 Nov 2026 by the Coding lead (Claude): wrangler 4 in local mode, no login prompt.
+
+```bash
+WRANGLER_SEND_METRICS=false CI=1 npx --yes wrangler@4 dev --port 8797 --ip 127.0.0.1 --show-interactive-dev-session=false
+node deploy/smoke-test.mjs http://127.0.0.1:8797
+```
+
+- Pick a free port: something else may already listen on 8790 (another session's Python file server did), and then the smoke test silently tests the wrong server.
+- Result: 17/17 checks passed (all 8 pages, JPL relay + CORS, the 5 targets' SIA lists, a SPHEREx cutout + CORS, and `_build` blocked with 404).
+- `html_handling = "auto-trailing-slash"` answers `/archive.html?q=…` with a 307 to `/archive?q=…`; the query string is kept, so shared links still work.
+- Run `node deploy/prepare-assets.mjs` first (it stages the attested loader media into `web/loader/`).
