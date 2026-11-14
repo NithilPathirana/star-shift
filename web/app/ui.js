@@ -5,7 +5,8 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 
 import { parseQuery, QueryError, DEFAULT_SETTINGS } from './query.js';
-import { run, buildStacks, measureMotion, tangentialVelocity, resolveTarget } from './data.js';
+import { run, buildStacks, measureMotion, resolveTarget } from './data.js';
+import { kinematics, tangentialVelocity, toLSR } from './kinematics.js';
 import { PRESETS, findPreset } from './presets.js';
 import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight } from './sky.js';
 import { simbadCone, otypeName, CHANNEL_UM } from './skymap.js';
@@ -590,6 +591,79 @@ const row = (label, value, tag) => `<div class="cd-row"><span class="cd-l">${lab
 const sgn = v => (v < 0 ? '−' : '+') + Math.abs(v).toFixed(4) + '°';
 let cdCtl = null;
 function catalogueOf(t) { return t?.preset?.target || t?.simbad || null; }
+
+/* ---------- Motion panel (DESIGN.md 27): one row per quantity, unit, source tag ---------- */
+const nf = (v, d) => Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+const fx = (v, d) => (v < 0 ? '−' : '') + nf(v, d);
+const fsg = (v, d) => (v < 0 ? '−' : '+') + nf(v, d);
+const pm = (e, d = 2) => (Number.isFinite(e) && e > 0 ? ` ± ${nf(e, Math.min(4, Math.max(d, -Math.floor(Math.log10(e)))))}` : '');
+const fYears = y => y < 10 ? y.toPrecision(2) : Math.round(y).toLocaleString('en-US');
+function motionDial(pa) { // 64 px, north up, east left, fixed-length arrow
+  const r = pa * Math.PI / 180, dx = -Math.sin(r), dy = -Math.cos(r), L = 17, x = 32 + dx * L, y = 32 + dy * L;
+  const hx = -dy, hy = dx, b = 6, bx = x - dx * b, by = y - dy * b;
+  return `<div class="mot-dial well" role="img" aria-label="Moves towards position angle ${pa.toFixed(1)} degrees, east of north">
+    <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" class="md-ring"/>
+    <text x="32" y="10" class="md-lab">N</text><text x="7" y="35" class="md-lab">E</text>
+    <line x1="32" y1="32" x2="${(x - dx * 2).toFixed(2)}" y2="${(y - dy * 2).toFixed(2)}" class="md-arrow"/>
+    <path d="M${x.toFixed(2)} ${y.toFixed(2)}L${(bx + hx * 4).toFixed(2)} ${(by + hy * 4).toFixed(2)}L${(bx - hx * 4).toFixed(2)} ${(by - hy * 4).toFixed(2)}Z" class="md-head"/>
+    <circle cx="32" cy="32" r="2" class="md-dot"/></svg>
+    <span class="md-txt"><span class="num">${pa.toFixed(1)}°</span><span class="quiet">Direction of motion, east of north (north up, east left). The arrow length is fixed; the numbers give the size.</span></span></div>`;
+}
+// sel: { ra, dec }; cat: built-in or SIMBAD record; gaia: Gaia DR3 match (or null); same: this patch was played.
+function motionHTML(sel, t, cat, gaia, same, looking) {
+  const preset = !!t?.preset;
+  const pmFrom = gaia || (cat && (cat.pmra || cat.pmdec) ? cat : null);
+  const plxFrom = gaia && gaia.plx > 0 ? gaia : (cat?.plx > 0 ? cat : null);
+  const rvFrom = gaia && Number.isFinite(gaia.rv) ? gaia : (cat && Number.isFinite(cat.rv) ? cat : null);
+  const srcName = r => r === gaia ? 'Gaia DR3' : preset ? 'SIMBAD (built-in)' : 'SIMBAD';
+  const k = pmFrom ? kinematics({ ra: sel.ra, dec: sel.dec, pmra: pmFrom.pmra, pmdec: pmFrom.pmdec, pmraErr: pmFrom.pmraErr, pmdecErr: pmFrom.pmdecErr,
+    plx: plxFrom?.plx, plxErr: plxFrom?.plxErr, rv: rvFrom?.rv }) : null;
+  let h = '';
+  if (!k || k.mu == null) {
+    h += looking ? '<p class="quiet">Looking up the motion in Gaia DR3…</p>' : '<p class="quiet">No catalogued motion for this object.</p>';
+  } else {
+    h += motionDial(k.pa) +
+      row('Proper motion, total and direction', `${nf(k.mu, 1)}${pm(k.muErr)} mas/yr · ${k.pa.toFixed(1)}°`, 'cat') +
+      row('Proper motion, east · north', `${fsg(pmFrom.pmra, 1)}${pm(pmFrom.pmraErr)} · ${fsg(pmFrom.pmdec, 1)}${pm(pmFrom.pmdecErr)} mas/yr`, 'cat') +
+      row('Angular speed across the sky', `${k.arcsecYr.toFixed(k.arcsecYr < 0.1 ? 4 : 2)}″/yr · 1 pixel every ${fYears(k.yrPerPix)} years`, 'calc');
+    if (k.dist) {
+      h += row('Parallax', `${nf(plxFrom.plx, 3)}${pm(plxFrom.plxErr, 3)} mas`, 'cat') +
+        row('Distance (1000 / parallax)', `${k.dist.pc < 100 ? k.dist.pc.toFixed(3) : nf(k.dist.pc, 0)} pc · ${k.dist.ly < 100 ? k.dist.ly.toFixed(2) : nf(k.dist.ly, 0)} ly`, 'calc');
+      if (k.dist.weak) h += `<p class="quiet err">Parallax is only ${k.dist.snr.toFixed(1)}× its error (under 5×), so this distance and the speeds below are unreliable.</p>`;
+    }
+    if (k.vt != null) h += row('Speed across the sky', `${k.vt.toFixed(1)}${pm(k.vtErr, 1)} km/s`, 'calc');
+    if (k.vr != null) h += row('Radial velocity', `${fsg(k.vr, 1)}${pm(rvFrom === gaia ? gaia.rvErr : null, 1)} km/s · ${k.vr < 0 ? 'towards us' : 'away from us'}`, 'cat');
+    if (k.vtot != null) h += row('Speed through space', `${k.vtot.toFixed(1)} km/s`, 'calc');
+    if (k.uvw) {
+      const L = toLSR(k.uvw);
+      h += row('Galactic U, V, W (relative to the Sun)', `${fx(k.uvw.U, 1)}, ${fx(k.uvw.V, 1)}, ${fx(k.uvw.W, 1)} km/s`, 'calc') +
+        row('Galactic U, V, W (local standard of rest)', `${fx(L.U, 1)}, ${fx(L.V, 1)}, ${fx(L.W, 1)} km/s`, 'calc');
+    }
+  }
+  // measured in these images (OBSERVED), once the patch has been played and the fit is final
+  if (same && V.motion?.ok && firstS() && lastS() && V.stacks.length > 1) {
+    const m = V.motion.total / 1000, me = V.motion.totalErr / 1000;
+    h += row('Measured in these images (SPHEREx)', `${m.toFixed(2)} ± ${me.toFixed(2)}″/yr`, 'obs');
+    if (k?.mu != null) h += `<p class="mot-cmp num">Catalogue ${k.arcsecYr.toFixed(2)}″/yr · measured here ${m.toFixed(1)} ± ${me.toFixed(1)}″/yr</p>`;
+    const vtm = tangentialVelocity(V.motion.total, plxFrom?.plx);
+    if (vtm) h += row('Speed across the sky, from the measured motion', `${vtm.toFixed(0)} km/s`, 'calc');
+  } else if (!same && k?.mu != null) h += '<p class="quiet">Play this patch to measure the motion from the SPHEREx images.</p>';
+  if (k?.mu != null) {
+    const parts = [`motion: ${srcName(pmFrom)}${gaia ? ` ${esc(gaia.source.replace('Gaia DR3 ', ''))}` : ''}`];
+    if (plxFrom) parts.push(`parallax: ${srcName(plxFrom)}`);
+    if (rvFrom) parts.push(`radial velocity: ${srcName(rvFrom)}`);
+    h += `<p class="quiet mot-src">Catalogue values · ${parts.join(' · ')}${gaia && !cat ? ' (brightest Gaia star within 8″ of this point, epoch 2016)' : ''}.</p>` +
+      `<details class="mot-how"><summary>How these are worked out</summary><ul>
+        <li>Total proper motion μ = √(μα*² + μδ²); direction = position angle east of north.</li>
+        <li>Pixel time: one SPHEREx pixel is 6.2″.</li>
+        <li>Distance = 1000 / parallax (pc); not trusted when parallax &lt; 5× its error.</li>
+        <li>Speed across the sky = 4.74047 × μ / parallax (km/s).</li>
+        <li>Speed through space = √(across² + radial²).</li>
+        <li>U, V, W: Johnson &amp; Soderblom (1987), U towards the Galactic centre, V along rotation, W to the north Galactic pole. The first row is relative to the Sun with no solar-motion correction; the second adds the Sun's motion (11.1, 12.24, 7.25 km/s, Schönrich et al. 2010).</li>
+      </ul></details>`;
+  }
+  return h;
+}
 function renderCD() {
   const s = M.sel; if (!s) return; const t = s.t, cat = catalogueOf(t);
   cdCtl?.abort(); const ctl = cdCtl = new AbortController();
@@ -610,19 +684,12 @@ function renderCD() {
     $('cdCov').innerHTML = row('SPHEREx images', `${imgs.length.toLocaleString()} images`, 'obs') + row('Date span', `${d(imgs[0].mjdStart)} → ${d(imgs[imgs.length - 1].mjdStart)}`, 'obs') +
       row('Detectors', dets.map(x => 'D' + x).join(', ') + ` · ${Math.min(...imgs.map(i => i.bandMinUm || 9)).toFixed(2)}–${Math.max(...imgs.map(i => i.bandMaxUm || 0)).toFixed(2)} µm`, 'obs');
   }).catch(() => { if (!ctl.signal.aborted) $('cdCov').innerHTML = '<p class="quiet err">IRSA did not answer in 20 s. Click the spot again to retry.</p>'; });
-  // motion: measured only after the patch has been played
-  const same = V.motion && V.target && t && cat && Math.abs(V.target.ra - cat.ra) < 1e-6;
-  let mot = '';
-  if (same && V.motion.ok) {
-    const fs = firstS(), ls = lastS();
-    if (fs && ls && V.stacks.length > 1) mot += row('Measured motion (SPHEREx)', `${(V.motion.total / 1000).toFixed(2)} ± ${(V.motion.totalErr / 1000).toFixed(2)}″ per year`, 'calc');
-    const vt = tangentialVelocity(V.motion.total, cat.plx);
-    if (vt) mot += row('Speed across the sky', `${vt.toFixed(0)} km/s (SPHEREx motion + SIMBAD parallax)`, 'calc');
-  }
-  if (cat && (cat.pmra || cat.pmdec)) mot += row('Catalogue proper motion', `${(Math.hypot(cat.pmra, cat.pmdec) / 1000).toFixed(2)}″ per year`, 'cat');
-  if (cat && Number.isFinite(cat.rv)) mot += row('Radial velocity', `${cat.rv > 0 ? '+' : ''}${cat.rv.toFixed(1)} km/s (${cat.rv < 0 ? 'towards us' : 'away from us'})`, 'cat');
-  if (!same && cat && (cat.pmra || cat.pmdec)) mot += '<p class="quiet">Play this patch to measure the motion from the SPHEREx images.</p>';
-  $('cdMot').innerHTML = mot || '<p class="quiet">No measured motion here.</p>';
+  // motion (DESIGN.md 27): catalogue now (SIMBAD / built-in), Gaia DR3 when the Ghost's match arrives
+  const same = !!(V.motion && V.target && t && cat && Math.abs(V.target.ra - cat.ra) < 1e-6);
+  const paintMot = (gaia, looking) => { if (!ctl.signal.aborted) $('cdMot').innerHTML = motionHTML(s, t, cat, gaia, same, looking); };
+  const pending = !t?.preset && GH.G.mStar;
+  paintMot(null, !!pending);
+  if (pending) pending.then(st => paintMot(st?.gaia ? st : null, false), () => paintMot(null, false));
   // nearby catalogued objects (SIMBAD), 3 rows, clickable
   $('cdNear').innerHTML = '<p class="quiet">Asking SIMBAD…</p>';
   simbadCone(s.ra, s.dec, 3 / 60, { limit: 400, signal: ctl.signal, timeoutMs: 12000 }).then(rows => {

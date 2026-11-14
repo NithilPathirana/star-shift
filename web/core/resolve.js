@@ -41,7 +41,8 @@ export async function resolveName(name, { endpoint = SIMBAD_TAP, fetchFn = fetch
 
 // Gaia DR3 sources within radiusArcsec of (ra, dec) at epoch 2016.0, brightest first.
 export async function gaiaCone(ra, dec, radiusArcsec, { endpoint = GAIA_TAP, fetchFn = fetch, signal, top = 50 } = {}) {
-  const adql = `SELECT TOP ${top | 0} source_id, ra, dec, pmra, pmdec, parallax, phot_g_mean_mag
+  const adql = `SELECT TOP ${top | 0} source_id, ra, dec, pmra, pmdec, parallax, phot_g_mean_mag,
+    parallax_error, pmra_error, pmdec_error, radial_velocity, radial_velocity_error
     FROM gaiadr3.gaia_source
     WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', ${+ra}, ${+dec}, ${+radiusArcsec / 3600}))
     ORDER BY phot_g_mean_mag`.replace(/\s+/g, ' ');
@@ -50,5 +51,7 @@ export async function gaiaCone(ra, dec, radiusArcsec, { endpoint = GAIA_TAP, fet
     id: 'Gaia DR3 ' + r.source_id, ra: num(r.ra), dec: num(r.dec),
     pmra: num(r.pmra) ?? 0, pmdec: num(r.pmdec) ?? 0, plx: num(r.parallax),
     g: num(r.phot_g_mean_mag), epoch: 2016.0, source: 'Gaia DR3',
+    plxErr: num(r.parallax_error), pmraErr: num(r.pmra_error), pmdecErr: num(r.pmdec_error),
+    rv: num(r.radial_velocity), rvErr: num(r.radial_velocity_error),
   }));
 }

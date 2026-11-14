@@ -164,3 +164,23 @@ html[data-motion=full] .gh-bar:not([hidden]) { animation: ghIn 180ms ease-out; }
 @media (max-width: 699px) { .gh-bar { width: calc(100% - 24px); bottom: 64px; flex-wrap: wrap; border-radius: 16px; } .gh-read { order: -1; flex: 1 1 100%; text-align: center; } }
 .gh-bar { background: rgba(21,17,14,.88); border: 1px solid rgba(255,246,232,.16); box-shadow: 0 6px 18px rgba(0,0,0,.35); }
 .gh-bar .gh-end { color: #CBBFB0; }
+
+/* Motion panel (team feature K, DESIGN.md 27) */
+.mot-dial { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 12px; margin: 2px 0 6px; }
+.mot-dial svg { flex: none; }
+.mot-dial .md-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mot-dial svg { display: block; }
+.mot-dial .md-ring { fill: var(--stage); stroke: rgba(255,246,232,.22); stroke-width: 1; }
+.mot-dial .md-lab { fill: var(--stage-muted); font: 600 8px var(--font-num); text-anchor: middle; }
+.mot-dial .md-arrow { stroke: #FFF6E8; stroke-width: 2; stroke-linecap: round; }
+.mot-dial .md-head { fill: #FFF6E8; }
+.mot-dial .md-dot { fill: #E3A86B; }
+.mot-dial .num { font-size: .9375rem; color: var(--ink); }
+.mot-dial .quiet { font-size: .6875rem; margin: 0; line-height: 1.35; }
+.mot-cmp { font-size: .75rem; color: var(--ink-2); margin: 2px 0 6px; }
+.mot-src { margin-top: 6px; overflow-wrap: anywhere; }
+.mot-how { font-size: .75rem; color: var(--muted); margin-top: 4px; }
+.mot-how summary { cursor: pointer; color: var(--copper); min-height: 24px; }
+.mot-how summary:focus-visible { outline: 2px solid var(--copper-key); outline-offset: 2px; border-radius: 4px; }
+.mot-how ul { margin: 4px 0 0; padding-left: 18px; }
+@media (max-width: 699px) { .mot-how summary { min-height: 44px; display: flex; align-items: center; } }

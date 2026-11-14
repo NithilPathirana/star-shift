@@ -31,7 +31,8 @@ export function createGhost(ctx) {
         const r = named ? 5 : 8;
         const rows = await gaiaCone(want.ra, want.dec, r, { endpoint, top: 20, signal: AbortSignal.timeout(15000) });
         const g = pickGaia(rows, want, r, named ? 'nearest' : 'brightest');
-        if (g) out = { ra: g.ra, dec: g.dec, pmra: g.pmra, pmdec: g.pmdec, epoch: 2016, source: g.id, g: g.g };
+        if (g) out = { ra: g.ra, dec: g.dec, pmra: g.pmra, pmdec: g.pmdec, epoch: 2016, source: g.id, g: g.g,
+          plx: g.plx, plxErr: g.plxErr, pmraErr: g.pmraErr, pmdecErr: g.pmdecErr, rv: g.rv, rvErr: g.rvErr, gaia: true }; // extra fields: Motion panel (27)
       } catch { /* Gaia not answering: fall back below */ }
       if (!out && hasMotion(cat)) out = { ...cat, source: 'SIMBAD' };
     }
@@ -157,7 +158,7 @@ export function createGhost(ctx) {
     renderCD(); placeMap();
     if (!sel) return;
     const cat = t?.preset ? { preset: { ...t.preset.target, presetKey: t.preset.key } } : t?.simbad || null;
-    const s = await resolveStar(cat, sel.ra, sel.dec, k);
+    const s = await (G.mStar = resolveStar(cat, sel.ra, sel.dec, k)); // G.mStar: shared with the Motion panel
     if (G.mKey !== k) return;
     G.mapStar = s; if (!G.star) setRange(s); else { const r = $('cdGhRange'); if (r) { const { half, step } = ghostRange(s || {}); r.min = -half; r.max = half; r.step = step; r.value = Math.max(-half, Math.min(half, G.years)); } }
     applyPending(false); renderCD(); placeMap();
