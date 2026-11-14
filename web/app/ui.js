@@ -238,11 +238,20 @@ const CX = createContam({ $, R, V, P, esc, set, Snd, base: BASE, tables: () => t
   closePop: () => closePop(), hideTip: () => hideTip(),
   tipAt: (html, x, y) => { clearTimeout(tipT); $('tip').innerHTML = html; placeTip({ left: x - 10, right: x + 10, top: y - 10, height: 20 }); } });
 function restack() { V.stacks = V.F.length ? buildStacks(V.F.map(f => f.raw).sort((a, b) => a.mjd - b.mjd)).map(stackToF) : []; }
+// Measure the motion from the images the flag filter keeps (also with no catalogue motion, e.g. a
+// coordinate search). Runs when loading finishes and again whenever the filter changes.
+function remeasure() {
+  try { V.motion = V.grid && V.F.length ? measureMotion(V.F.map(f => f.raw), V.grid) : null; } catch { V.motion = null; }
+  // only a final fit counts: all planned images tried and at least two observing seasons
+  if (V.motion?.ok && visits(V.F).length < 2) V.motion = { ok: false, frames: V.motion.frames, reason: 'one season only' };
+  $('d-meas').textContent = V.motion?.ok ? `${(V.motion.total / 1000).toFixed(2)} ± ${(V.motion.totalErr / 1000).toFixed(2)}″/yr (${V.motion.frames} images)` : V.motion ? (V.motion.reason === 'one season only' ? 'needs two seasons to measure' : V.motion.reason === 'too few frames' ? 'too few images to measure' : 'too faint to measure') : '—';
+  repaintMot?.();
+}
 // Re-apply the "hide images with…" filter, keeping the current image (or the nearest one in time).
 function refilter() {
   const cur = V.F[P.i]; V.F = CX.filter(V.FA);
   if (cur && V.F.length) { let b = 0; V.F.forEach((f, k) => { if (Math.abs(f.mjd - cur.mjd) < Math.abs(V.F[b].mjd - cur.mjd)) b = k; }); P.i = b; } else P.i = 0;
-  if (V.status === 'ready') { restack(); if (mode !== 'play' && V.stacks.length < 2) setMode('play'); }
+  if (V.status === 'ready') { restack(); remeasure(); if (mode !== 'play' && V.stacks.length < 2) setMode('play'); }
   if (!V.F.length && V.FA.length) toast('Every image is hidden by the flag filter. Untick a box under FLAGS to bring them back.');
   buildTimeline(); // sets V.seasons for the count below
   $('d-n').textContent = `${V.F.length} shown of ${V.total}${V.FA.length > V.F.length ? ` · ${V.FA.length - V.F.length} hidden by flags` : ''} · ${V.seasons.length} season${V.seasons.length === 1 ? '' : 's'}`;
@@ -336,7 +345,7 @@ function progress() {
   rocketAt(done / N);
   const slow = V.retries > 0 && V.status === 'loading';
   V.scan?.slow(slow ? `IRSA is slow. ${V.F.length} of ${V.planned} kept. Retrying ${V.retries} image${V.retries === 1 ? '' : 's'}` : null);
-  if (V.status === 'loading' && (V.target?.pmra || V.target?.pmdec)) $('d-meas').textContent = `measuring… (${V.F.length} of ${V.planned || '…'} images)`;
+  if (V.status === 'loading') $('d-meas').textContent = `measuring… (${V.F.length} of ${V.planned || '…'} images)`;
 }
 function load(query, label) {
   V.ctl?.abort(); const ctl = V.ctl = new AbortController();
@@ -378,10 +387,7 @@ function load(query, label) {
       if (!V.FA.length) { V.status = 'error'; $('errTxt').textContent = 'No images arrived. The archive is often busy; Retry asks again.'; $('useLoaded').hidden = true; showState('stError'); Snd.play('error'); return; }
       showState(null);
       restack(); // seasons stacked from the images the flag filter keeps
-      V.motion = (V.target?.pmra || V.target?.pmdec) ? measureMotion(V.raws.slice().sort((a, b) => a.mjd - b.mjd), V.grid) : null;
-      // only a final fit counts: all planned images tried and at least two observing seasons
-      if (V.motion?.ok && visits(V.F).length < 2) V.motion = { ok: false, frames: V.motion.frames, reason: 'one season only' };
-      $('d-meas').textContent = V.motion?.ok ? `${(V.motion.total / 1000).toFixed(2)} ± ${(V.motion.totalErr / 1000).toFixed(2)}″/yr (${V.motion.frames} images)` : V.motion ? (V.motion.reason === 'one season only' ? 'needs two seasons to measure' : 'too faint to measure') : '—';
+      remeasure();
       buildTimeline(); findOther(); // buildTimeline sets V.seasons for the count below
       $('d-n').textContent = `${V.F.length} shown of ${V.total}${V.FA.length > V.F.length ? ` · ${V.FA.length - V.F.length} hidden by flags` : ''} · ${V.seasons.length} season${V.seasons.length === 1 ? '' : 's'}`;
       onFrame(P.i); Snd.play('confirm');
@@ -592,7 +598,7 @@ const CP = '<svg class="cp" width="13" height="13" viewBox="0 0 16 16" fill="non
 const TAGS = { obs: ['t-obs', 'Observed'], calc: ['t-calc', 'Computed'], cat: ['t-cat', 'Catalogue'] };
 const row = (label, value, tag) => `<div class="cd-row"><span class="cd-l">${label}</span><span class="cd-t"><span class="t-mini ${TAGS[tag][0]}">${TAGS[tag][1]}</span></span><span class="cd-v">${value}</span><button class="key cd-c" aria-label="Copy ${label}">${CP}</button></div>`;
 const sgn = v => (v < 0 ? '−' : '+') + Math.abs(v).toFixed(4) + '°';
-let cdCtl = null;
+let cdCtl = null, repaintMot = null;
 function catalogueOf(t) { return t?.preset?.target || t?.simbad || null; }
 
 /* ---------- Motion panel (DESIGN.md 27): one row per quantity, unit, source tag ---------- */
@@ -688,11 +694,14 @@ function renderCD() {
       row('Detectors', dets.map(x => 'D' + x).join(', ') + ` · ${Math.min(...imgs.map(i => i.bandMinUm || 9)).toFixed(2)}–${Math.max(...imgs.map(i => i.bandMaxUm || 0)).toFixed(2)} µm`, 'obs');
   }).catch(() => { if (!ctl.signal.aborted) $('cdCov').innerHTML = '<p class="quiet err">IRSA did not answer in 20 s. Click the spot again to retry.</p>'; });
   // motion (DESIGN.md 27): catalogue now (SIMBAD / built-in), Gaia DR3 when the Ghost's match arrives
-  const same = !!(V.motion && V.target && t && cat && Math.abs(V.target.ra - cat.ra) < 1e-6);
-  const paintMot = (gaia, looking) => { if (!ctl.signal.aborted) $('cdMot').innerHTML = motionHTML(s, t, cat, gaia, same, looking); };
-  const pending = !t?.preset && GH.G.mStar;
-  paintMot(null, !!pending);
-  if (pending) pending.then(st => paintMot(st?.gaia ? st : null, false), () => paintMot(null, false));
+  const pending = !t?.preset && GH.G.mStar, ms = { gaia: null, looking: !!pending };
+  const paintMot = repaintMot = () => { // also called by remeasure() when the measured motion changes
+    if (ctl.signal.aborted) return;
+    const same = !!(V.motion && V.target && Math.abs(V.target.ra - (cat?.ra ?? s.ra)) < 1e-6 && Math.abs(V.target.dec - (cat?.dec ?? s.dec)) < 1e-6);
+    $('cdMot').innerHTML = motionHTML(s, t, cat, ms.gaia, same, ms.looking);
+  };
+  paintMot();
+  if (pending) pending.then(st => { ms.gaia = st?.gaia ? st : null; ms.looking = false; paintMot(); }, () => { ms.looking = false; paintMot(); });
   // nearby catalogued objects (SIMBAD), 3 rows, clickable
   $('cdNear').innerHTML = '<p class="quiet">Asking SIMBAD…</p>';
   simbadCone(s.ra, s.dec, 3 / 60, { limit: 400, signal: ctl.signal, timeoutMs: 12000 }).then(rows => {
