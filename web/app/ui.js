@@ -479,7 +479,9 @@ function flyTo(ra, dec, fovDeg, done) {
     setTimeout(() => { placeOverlays(); done?.(); }, 0);
   }).catch(err => { console.warn('sky map', err); mapFailed(); done?.(); });
 }
-function mapFailed() { $('mapCredit').textContent = "The sky map couldn't start in this browser (WebGL). Search and the time-lapse still work."; }
+function mapFailed() { $('stMap').hidden = false; Snd.play('error'); }
+$('mapOpenFilm').onclick = () => { $('stMap').hidden = true; if (!M.sel) { const t = TARGETS[0]; M.sel = { ra: t.ra, dec: t.dec, t }; } playPatch(); };
+$('mapRetry').onclick = () => location.reload();
 
 function select(ra, dec, t, fromUser) {
   if (!t) {
@@ -500,14 +502,14 @@ async function goTo(text) {
   if (scene !== 'map') toMap(true);
   if (q.type === 'coords') { flyTo(q.ra, q.dec, Math.min(skymap.aladin ? skymap.fov() : 1, 1), () => select(q.ra, q.dec, null, false)); return; }
   const preset = findPreset(q.name);
-  if (preset) { const t = TARGETS.find(x => x.key === preset.key); flyTo(t.ra, t.dec, 0.5, () => select(t.ra, t.dec, t, false)); return; }
+  if (preset) { const t = TARGETS.find(x => x.key === preset.key); flyTo(t.ra, t.dec, 2, () => select(t.ra, t.dec, t, false)); return; }
   toast(`Looking up “${q.name}” in SIMBAD…`);
   try {
     const tg = await resolveTarget(q);
     const now = (tg.pmra || tg.pmdec) ? propagate(tg, NOW_MJD) : tg;
     const t = { key: 'q', name: tg.name, id: tg.otype ? otypeName(tg.otype) : 'SIMBAD object', ra: now.ra, dec: now.dec, simbad: tg };
-    flyTo(t.ra, t.dec, 0.5, () => select(t.ra, t.dec, t, false));
-  } catch (err) { toast(/recursive|wasm|unreachable/i.test(err.message) ? 'The sky map hiccuped. Try the search again.' : err.message); Snd.play('error'); }
+    flyTo(t.ra, t.dec, 2, () => select(t.ra, t.dec, t, false));
+  } catch (err) { toast(/recursive|wasm|unreachable|aliasing/i.test(err.message) ? "The sky map couldn't move there. Try again, or open the time-lapse." : err.message); Snd.play('error'); }
 }
 function doSearch() { Snd.play('click'); goTo($('q').value); }
 document.querySelector('form.search').onsubmit = (e) => { e.preventDefault(); doSearch(); };
@@ -679,10 +681,10 @@ function renderBands(focusId) {
   $('rows').innerHTML = ranges.map(r => `<div class="rrow" data-id="${r.id}">
       <button class="swatch" style="--c:${r.c}" aria-label="Colour of ${esc(r.name)}: ${esc((PALETTE.find(p => p[1].toLowerCase() === r.c.toLowerCase()) || ['custom'])[0])}" aria-expanded="${openPal === r.id}"></button>
       <label class="field well" title="${esc(r.tip || '')}"><input class="rn" value="${esc(r.name)}" aria-label="Name" maxlength="32"></label>
-      ${r.tip ? `<div class="rtip">${esc(r.tip)}</div>` : ''}
       <label class="field well"><input class="rmin" type="number" step="0.01" min="${DOMN[0]}" max="${DOMN[1]}" value="${r.min.toFixed(2)}" aria-label="${esc(r.name)} from, micrometres"></label>
       <label class="field well"><input class="rmax" type="number" step="0.01" min="${DOMN[0]}" max="${DOMN[1]}" value="${r.max.toFixed(2)}" aria-label="${esc(r.name)} to, micrometres"></label>
       <button class="key icon rdel" aria-label="Delete ${esc(r.name)}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 9h5.6l.7-9"/></svg></button>
+      ${r.tip ? `<p>${esc(r.tip)}</p>` : ''}
       <div class="rwarn" role="status">${warnings(r).join(' ')}</div>
       ${openPal === r.id ? `<div class="palette well">${PALETTE.map(([nm, c]) => `<button style="--c:${c}" data-c="${c}" aria-label="${nm}" aria-pressed="${c.toLowerCase() === r.c.toLowerCase()}" title="${nm}"></button>`).join('')}
         <label class="field well"><input class="hex" value="${r.c}" aria-label="Hex colour" maxlength="7"></label></div>` : ''}
@@ -841,7 +843,7 @@ function init() {
   applySettings(); buildTimeline(); layout();
   const qp = new URLSearchParams(location.search);
   const first = TARGETS[0];
-  skymap.init(first.ra, first.dec, 2).then(() => {
+  skymap.init(first.ra, first.dec, 10).catch(() => { mapFailed(); }).then(() => { if (!skymap.aladin) return;
     setWl(+$('wl').value); applyMapBands(); placeOverlays(); setTimeout(placeOverlays, 800);
     if (qp.get('q') || (qp.get('ra') && qp.get('dec'))) {
       const text = qp.get('q') || `${qp.get('ra')} ${qp.get('dec')}`; $('q').value = text;

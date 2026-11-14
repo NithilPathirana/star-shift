@@ -42,6 +42,10 @@ export async function simbadCone(ra, dec, radiusDeg, { limit = 200, fetchFn = fe
     .slice(0, limit);
 }
 
+// Base map drawn in warm grey through the relay's palette tint (raised black point, gentle
+// gamma), so faint noise doesn't read as harsh black/white diamonds (DESIGN review, 14 Nov).
+const BASE_TINT = 'd9cdbd';
+
 const HIDE = { showReticle: true, showZoomControl: false, showFullscreenControl: false, showLayersControl: false, showGotoControl: false,
   showShareControl: false, showFrame: false, showCooGrid: false, showCooGridControl: false, showProjectionControl: false,
   showSimbadPointerControl: false, showSettingsControl: false, showCooLocation: false, showFov: false, showContextMenu: false, showStatusBar: false };
@@ -61,7 +65,7 @@ export class SkyMap {
       const { default: A } = await import('../vendor/aladin-lite-3.8.2/aladin.js');
       await A.init;
       this.A = A;
-      this.aladin = A.aladin(this.el, { ...HIDE, survey: this.surveyURL(this.channel), log: false, hipsList: [], fov: fovDeg,
+      this.aladin = A.aladin(this.el, { ...HIDE, survey: this.surveyURL(this.channel, BASE_TINT), log: false, hipsList: [], fov: fovDeg,
         target: `${ra} ${dec}`, projection: 'TAN', cooFrame: 'ICRSd', backgroundColor: 'rgb(0,0,0)', reticleColor: '#ff6b5e', reticleSize: 18 });
       this.names = A.catalog({ name: 'Named objects (SIMBAD)', sourceSize: 14, shape: 'circle', color: 'rgba(138,184,255,0.85)' });
       this.aladin.addCatalog(this.names);
@@ -101,7 +105,7 @@ export class SkyMap {
   setChannel(ch) {
     this.channel = ch;
     if (!this.aladin) return;
-    const base = this.aladin.newImageSurvey(this.surveyURL(ch), { name: `SPHEREx ${CHANNEL_UM[ch]} µm`, opacity: this.bandLayers.length ? 0 : 1 });
+    const base = this.aladin.newImageSurvey(this.surveyURL(ch, BASE_TINT), { name: `SPHEREx ${CHANNEL_UM[ch]} µm`, opacity: this.bandLayers.length ? 0 : 1 });
     this.aladin.setBaseImageLayer(base);
     base.setOpacity?.(this.bandLayers.length ? 0 : 1);
   }

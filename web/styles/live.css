@@ -12,7 +12,6 @@
 .quiet.err { color: var(--coral); }
 @media (max-width: 1099px) { .wl-rd { min-width: 0; } }
 @media (max-width: 699px) { .map-dock { flex-wrap: wrap; } .wl-rd { flex: 1 1 100%; order: 5; } .map-dock .rd { min-width: 0; } }
-.rtip { grid-column: 1 / -1; font-size: .75rem; line-height: 1.35; color: var(--muted); margin-top: -2px; }
 
 /* Loader: the 3D rocket-rider render (design/loader/, served at /loader/), DESIGN.md section 17 */
 .rk-track { position: relative; width: min(560px, 100%); height: 180px; margin: 10px auto 0; }
@@ -41,3 +40,29 @@ html[data-motion=reduce] .rk, html[data-motion=reduce] .thin-rk { transition: no
 .sky-cursor .sc-label { position: absolute; left: 20px; top: 14px; white-space: nowrap; font: 500 .75rem/1.2 var(--font-num); color: #EDE5DA; background: rgba(21,17,14,.78); padding: 3px 7px; border-radius: 7px; border: 1px solid rgba(255,235,210,.16); }
 html[data-motion=reduce] .sky-cursor { transition: none; }
 @media (hover:none), (pointer:coarse) { .sky-cursor { display: none; } }
+
+/* Design review fixes (Sat 14 Nov) */
+.rrow > p { grid-column: 2 / -1; margin: -2px 0 4px; font-size: .75rem; line-height: 1.35; color: var(--muted); }
+.map-read, .map-ph { background: rgba(21,17,14,.82) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+.map-read { padding-left: 12px !important; padding-right: 12px !important; }
+.sel span { text-shadow: 0 1px 2px #000; background: rgba(21,17,14,.72); padding: 1px 6px; border-radius: 6px; }
+.inspector a, .inspector a:visited, .credit a, .credit a:visited { color: var(--copper); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+#stMap { z-index: 4; }
+/* map-colour slider styled as E's scrubber: recessed 6 px track, 18x26 skeuo cap with a copper index line */
+#wl { -webkit-appearance: none; appearance: none; height: 26px; background: transparent; accent-color: var(--copper); cursor: pointer; }
+#wl::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(180deg, var(--well-top), var(--well-bot)); box-shadow: inset 0 1px 2px rgba(60,40,24,.28), 0 1px 0 rgba(255,255,255,.8); }
+#wl::-moz-range-track { height: 6px; border-radius: 3px; background: linear-gradient(180deg, var(--well-top), var(--well-bot)); box-shadow: inset 0 1px 2px rgba(60,40,24,.28), 0 1px 0 rgba(255,255,255,.8); }
+#wl::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 26px; margin-top: -10px; border-radius: 6px; border: 1px solid var(--edge);
+  background: linear-gradient(90deg, transparent 8px, var(--copper) 8px, var(--copper) 10px, transparent 10px), linear-gradient(180deg, #FCFAF6, #E7E0D5);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(60,40,24,.18), 0 3px 6px -1px rgba(60,40,24,.22); transition: transform 140ms var(--ease-out); }
+#wl::-moz-range-thumb { width: 18px; height: 26px; border-radius: 6px; border: 1px solid var(--edge);
+  background: linear-gradient(90deg, transparent 8px, var(--copper) 8px, var(--copper) 10px, transparent 10px), linear-gradient(180deg, #FCFAF6, #E7E0D5);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(60,40,24,.18), 0 3px 6px -1px rgba(60,40,24,.22); }
+#wl:active::-webkit-slider-thumb { transform: scale(1.14); }
+#wl:focus-visible { outline: 2.5px solid var(--focus); outline-offset: 3px; border-radius: 6px; }
+/* rocket v2 at 2x (300x200) where space allows, never below 240x160 */
+@media (min-height: 760px) and (min-width: 700px) {
+  .rk-track { height: 220px; }
+  .rk { width: 300px; height: 200px; margin-left: -150px; }
+  .rk-art, .rk-art video, .rk-art img { width: 300px; height: 200px; }
+}

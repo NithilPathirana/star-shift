@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SPHEREx Sky Viewer</title>
-<meta name="description" content="Type a star name or sky coordinates and watch NASA SPHEREx infrared images of that spot change over time.">
+<title>[Tool name] · the infrared sky over time</title>
+<meta name="description" content="Type a star name or sky coordinates and watch infrared images of that spot (NASA SPHEREx data via IRSA) change over time.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -60,6 +60,7 @@
         <div id="pins"></div>
         <div class="sel" id="sel"><span>Selected patch</span></div>
         <div class="reticle" aria-hidden="true"></div>
+        <div class="state" id="stMap" hidden role="alert"><div><h2>Sky map couldn't load</h2><p>The time-lapse still works.</p><div class="row"><button class="key primary" id="mapOpenFilm">Open time-lapse</button><button class="key" id="mapRetry">Try the map again</button></div></div></div>
         <div class="sky-cursor" id="skyCursor" aria-hidden="true"><svg width="44" height="44" viewBox="0 0 44 44" fill="none" stroke="#E3A86B" stroke-width="1.5"><circle cx="22" cy="22" r="9" stroke-dasharray="3 2.4"/><path d="M22 2v9M22 33v9M2 22h9M33 22h9"/></svg><span class="sc-label" id="scLabel"></span></div>
         <div class="map-read num" id="mapRead"></div>
         <p class="map-ph" id="mapCredit">SPHEREx DR1 all-sky map (IRSA HiPS) at <span id="mapWl">1.63 µm</span>. Rings: named objects from SIMBAD.</p>
