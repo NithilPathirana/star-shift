@@ -14,11 +14,14 @@
 @media (max-width: 699px) { .map-dock { flex-wrap: wrap; } .wl-rd { flex: 1 1 100%; order: 5; } .map-dock .rd { min-width: 0; } }
 .rtip { grid-column: 1 / -1; font-size: .75rem; line-height: 1.35; color: var(--muted); margin-top: -2px; }
 
-/* Loader: no cartoon until the 3D rocket-rider render arrives (design/loader/); a clean progress line only */
-.rk, .thin-rk, .rk-slot { display: none !important; }
-.rk-track { height: 28px; }
-.rk-rail, .rk-fill { bottom: 10px; height: 4px; border-radius: 2px; }
-.loading-thin { height: 3px; }
+/* Loader: the 3D rocket-rider render (design/loader/, served at /loader/), DESIGN.md section 17 */
+.rk-track { position: relative; width: min(560px, 100%); height: 180px; margin: 10px auto 0; }
+.rk { position: absolute; left: 0; bottom: 4px; width: 240px; height: 160px; margin-left: -120px; transition: transform 260ms var(--ease-out); }
+.rk-art, .rk-art video, .rk-art img { display: block; width: 240px; height: 160px; }
+.thin-rk { position: absolute; bottom: -4px; left: 0; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--ring); box-shadow: 0 0 0 3px rgba(21,17,14,.9); transition: transform 260ms var(--ease-out); }
+.loading-thin { overflow: visible; }
+.rk-slot { text-align: center; font-size: .75rem; color: var(--stage-muted); margin-top: 6px; }
+html[data-motion=reduce] .rk, html[data-motion=reduce] .thin-rk { transition: none; }
 
 /* Cursor + hover motion (DESIGN.md §3/§7, emil-design-eng): clearly visible, fine pointers only,
    off with Reduce motion. JS sets --gx/--gy (glare), --mx/--my (magnetic) and moves .sky-cursor. */

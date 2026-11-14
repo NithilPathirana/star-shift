@@ -265,6 +265,15 @@ function rocketAt(frac) {
   const tr = $('rk').parentElement.clientWidth; $('rk').style.transform = `translateX(${frac * tr}px)`; $('rkFill').style.transform = `scaleX(${frac})`;
   const th = $('thin').clientWidth; $('thinRk').style.transform = `translateX(${frac * th}px)`; $('thinBar').style.transform = `scaleX(${frac})`;
 }
+function mountRocket() {
+  const box = $('rkArt'); if (!box) return; const base = 'loader/';
+  if (set.motion) { box.innerHTML = `<img src="${base}rocket-loader-still.webp" alt="Person riding a rocket (still, AI-generated)" width="480" height="320">`; return; }
+  const probe = document.createElement('video'), safari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if (!safari && probe.canPlayType('video/webm; codecs="vp9"')) {
+    box.innerHTML = `<video autoplay loop muted playsinline poster="${base}rocket-loader-still.webp" width="480" height="320" aria-label="Person riding a rocket (animation, AI-generated)"><source src="${base}rocket-loader.webm" type="video/webm"></video>`;
+    const vid = box.querySelector('video'); vid.muted = true; vid.play().catch(() => {});
+  } else box.innerHTML = `<img src="${base}rocket-loader.webp" alt="Person riding a rocket (animation, AI-generated)" width="480" height="320">`;
+}
 function showState(id) { ['stLoading', 'stError', 'stEmpty'].forEach(x => { $(x).hidden = x !== id; }); }
 let arriveCount = 0;
 function progress() {
@@ -273,6 +282,8 @@ function progress() {
   rocketAt(done / N);
   const slow = V.retries > 0 && V.status === 'loading';
   $('stLoading').classList.toggle('slow', slow && V.F.length < 8);
+  $('rk').classList.toggle('paused', slow);
+  const vid = document.querySelector('#rkArt video'); if (vid) { if (slow && !vid.paused) vid.pause(); else if (!slow && vid.paused && !$('stLoading').hidden) vid.play().catch(() => {}); }
   $('retryTxt').textContent = slow ? `IRSA is slow. ${V.F.length} of ${V.planned} kept. Retrying automatically (${V.retries} retries so far).` : '';
   $('retryNow').hidden = true;
   if (V.status === 'loading' && (V.target?.pmra || V.target?.pmdec)) $('d-meas').textContent = `measuring… (${V.F.length} of ${V.planned || '…'} images)`;
@@ -282,7 +293,7 @@ function load(query, label) {
   P.pause(); clearInterval(bt); if (mode !== 'play') { mode = 'play'; $('stage').className = 'stage mode-play'; segSelect($('viewSeg'), b => b.dataset.mode === 'play'); }
   Object.assign(V, { query, target: null, grid: null, raws: [], F: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, status: 'loading', motion: null, seasons: [], name: label || 'this patch' });
   P.i = 0; shown = -1; arriveCount = 0;
-  $('lTitle').textContent = `Finding images of ${V.name}`; $('arrive').innerHTML = '';
+  $('lTitle').textContent = `Finding images of ${V.name}`; $('arrive').innerHTML = ''; mountRocket();
   showState('stLoading'); $('thin').hidden = true; buildTimeline(); progress(); draw(); onFrame(0);
   const emit = (e) => {
     if (ctl.signal.aborted) return;

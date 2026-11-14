@@ -14,6 +14,7 @@ import { handle } from '../proxy/worker.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const WEB = join(ROOT, 'web');
+const LOADER = join(ROOT, 'design', 'loader'); // Design Studio's rocket loader renders (updated in place)
 const CACHE_DIR = join(ROOT, '.cache', 'relay');
 const PORT = Number(process.argv[2] || process.env.PORT) || 8787;
 const HOST = '127.0.0.1';
@@ -22,7 +23,7 @@ const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png',
   '.jpg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif', '.ico': 'image/x-icon', '.woff2': 'font/woff2',
-  '.fits': 'application/fits', '.txt': 'text/plain; charset=utf-8',
+  '.fits': 'application/fits', '.txt': 'text/plain; charset=utf-8', '.webm': 'video/webm',
 };
 
 // Disk cache with the Cache API shape the relay expects (match/put). SPHEREx cutouts never
@@ -54,9 +55,14 @@ const RELAY = /^\/(TAP\/sync|gaia\/tap\/sync|ibe\/data\/spherex\/|hips\/spherex\
 
 async function serveStatic(path, res) {
   let rel = decodeURIComponent(path);
+  let base = WEB;
+  if (rel.startsWith('/loader/')) { // only the loader media, nothing else from design/
+    if (!/^\/loader\/[\w.-]+\.(webm|webp|png)$/.test(rel)) { res.writeHead(404).end('Not found'); return; }
+    base = LOADER; rel = rel.slice('/loader'.length);
+  }
   if (rel.endsWith('/')) rel += 'index.html';
-  const full = normalize(join(WEB, rel));
-  if (!full.startsWith(WEB + sep) && full !== WEB) { res.writeHead(403).end('Forbidden'); return; }
+  const full = normalize(join(base, rel));
+  if (!full.startsWith(base + sep) && full !== base) { res.writeHead(403).end('Forbidden'); return; }
   try {
     const st = await stat(full);
     if (st.isDirectory()) { res.writeHead(301, { Location: path + '/' }).end(); return; }
