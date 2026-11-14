@@ -128,7 +128,7 @@ function buildTimeline() {
   track.innerHTML = V.seasons.map(v => `<div class="season" style="left:calc(${pos(F[v.from].mjd)}% - 8px);width:calc(${pos(F[v.to].mjd) - pos(F[v.from].mjd)}% + 16px)"></div>`).join('') +
     F.map(f => `<i class="tick" style="left:${pos(f.mjd)}%"></i>`).join('') +
     pending.map(m => `<i class="tick pending" style="left:${pos(m)}%"></i>`).join('') +
-    hidden.map(f => `<i class="tick hid" style="left:${pos(f.mjd)}%" title="Hidden by the flag filter"></i>`).join('') + '<span class="key thumb" id="thumb"></span>';
+    hidden.map(f => `<i class="tick hid" style="left:${pos(f.mjd)}%" title="Hidden: ${esc(CX.whyHidden(f) || 'flag filter')}"></i>`).join('') + '<span class="key thumb" id="thumb"></span>';
   $('tlLabels').innerHTML = V.seasons.map(v => `<span style="left:${(pos(F[v.from].mjd) + pos(F[v.to].mjd)) / 2}%">${seasonName(v)}</span>`).join('');
   ticks = [...track.querySelectorAll('.tick:not(.pending):not(.hid)')];
   const g = document.createElement('span'); g.className = 'ghost'; g.innerHTML = '<b></b>'; track.appendChild(g);
@@ -243,8 +243,9 @@ function refilter() {
   if (cur && V.F.length) { let b = 0; V.F.forEach((f, k) => { if (Math.abs(f.mjd - cur.mjd) < Math.abs(V.F[b].mjd - cur.mjd)) b = k; }); P.i = b; } else P.i = 0;
   if (V.status === 'ready') { restack(); if (mode !== 'play' && V.stacks.length < 2) setMode('play'); }
   if (!V.F.length && V.FA.length) toast('Every image is hidden by the flag filter. Untick a box under FLAGS to bring them back.');
+  buildTimeline(); // sets V.seasons for the count below
   $('d-n').textContent = `${V.F.length} shown of ${V.total}${V.FA.length > V.F.length ? ` · ${V.FA.length - V.F.length} hidden by flags` : ''} · ${V.seasons.length} season${V.seasons.length === 1 ? '' : 's'}`;
-  buildTimeline(); onFrame(P.i);
+  onFrame(P.i);
 }
 function step(d) { if (mode !== 'play') setMode('play'); P.pause(); const before = seasonOf(P.i); P.set(P.i + d, true); Snd.play(seasonOf(P.i) !== before ? 'season' : 'scrub'); }
 
@@ -379,9 +380,10 @@ function load(query, label) {
       V.motion = (V.target?.pmra || V.target?.pmdec) ? measureMotion(V.raws.slice().sort((a, b) => a.mjd - b.mjd), V.grid) : null;
       // only a final fit counts: all planned images tried and at least two observing seasons
       if (V.motion?.ok && visits(V.F).length < 2) V.motion = { ok: false, frames: V.motion.frames, reason: 'one season only' };
-      $('d-n').textContent = `${V.F.length} shown of ${V.total}${V.FA.length > V.F.length ? ` · ${V.FA.length - V.F.length} hidden by flags` : ''} · ${V.seasons.length} season${V.seasons.length === 1 ? '' : 's'}`;
       $('d-meas').textContent = V.motion?.ok ? `${(V.motion.total / 1000).toFixed(2)} ± ${(V.motion.totalErr / 1000).toFixed(2)}″/yr (${V.motion.frames} images)` : V.motion ? (V.motion.reason === 'one season only' ? 'needs two seasons to measure' : 'too faint to measure') : '—';
-      buildTimeline(); findOther(); onFrame(P.i); Snd.play('confirm');
+      buildTimeline(); findOther(); // buildTimeline sets V.seasons for the count below
+      $('d-n').textContent = `${V.F.length} shown of ${V.total}${V.FA.length > V.F.length ? ` · ${V.FA.length - V.F.length} hidden by flags` : ''} · ${V.seasons.length} season${V.seasons.length === 1 ? '' : 's'}`;
+      onFrame(P.i); Snd.play('confirm');
       toast(V.failed ? `${V.F.length} images are in. ${V.failed} couldn't be fetched (IRSA busy); Retry later fills them.` : `All ${V.F.length} images are in.`);
       setTimeout(() => { if (!set.motion && !P.playing) P.play(); }, leaveWait);
     } else if (e.type === 'ERROR' || e.type === 'NOT_FOUND') {

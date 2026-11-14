@@ -4,13 +4,13 @@
 // legend + "hide images" filter (team feature B, DESIGN.md section 23). ui.js owns the
 // flip-book; this module only draws on its canvas and keeps its own small state.
 
-import { KINDS, pixelKinds, flagNamesOf, countKinds, visibleFrames, frameHas, layerRange } from '../core/contam.js';
+import { KINDS, pixelKinds, flagNamesOf, countKinds, visibleFrames, frameHas, layerRange, classifyFrame, hideReason, HIDE_KINDS, HIDE_IDS, bitsNamed, CORE_PX } from '../core/contam.js';
 import { mapLimit } from '../core/irsa.js';
 import { stackFrames } from '../core/align.js';
 import { loadLayers, waveMap, seasons } from './data.js';
 
 const IVORY = '#FFF6E8', UNDER = 'rgba(11,9,7,.8)';
-export const NEAR_PX = 3; // "touches the star": within 3 grid pixels (18″) of the predicted position
+export const NEAR_PX = CORE_PX; // "touches the star": within 2 grid pixels (~12″) of the predicted position
 export const LAYERS = {
   image: { label: 'IMAGE', tip: 'The picture itself', tag: 'obs' },
   variance: { label: 'VARIANCE', tip: 'How uncertain each pixel is', tag: 'obs' },
@@ -39,10 +39,13 @@ export function createContam(ctx) {
   const persist = () => { try { localStorage.setItem(SKEY, JSON.stringify({ show: S.show, hide: [...S.hide] })); } catch { /* private mode */ } };
 
   /* ----- per-frame summaries ----- */
-  const near = raw => raw._near || (raw._near = countKinds(raw.flags, raw.masks, raw.data,
-    { n: V.n, cx: (raw.expected || [V.grid.c])[0], cy: (raw.expected || [0, V.grid.c])[1], r: NEAR_PX }));
-  const summary = f => ({ counts: f.raw ? near(f.raw) : null, glow: f.raw?.glow });
-  const filter = FA => visibleFrames(FA, S.hide, summary);
+  // classifyFrame (core/contam.js): real hits within CORE_PX of the star, saturated core, airglow
+  const cls = raw => raw._cls || (raw._cls = classifyFrame({ flags: raw.flags, flagNames: raw.flagNames, n: V.n,
+    cx: (raw.expected || [V.grid.c])[0], cy: (raw.expected || [0, V.grid.c])[1], glow: raw.glow }));
+  const summary = f => (f.raw ? cls(f.raw) : { hits: {} });
+  const hideSet = () => new Set([...S.hide].filter(id => HIDE_IDS.includes(id)));
+  const filter = FA => visibleFrames(FA, hideSet(), summary);
+  const whyHidden = f => (f?.raw ? hideReason(cls(f.raw), hideSet()) : null);
 
   /* ----- layers ----- */
   function stackLayer(s) {
@@ -203,8 +206,13 @@ export function createContam(ctx) {
       <div class="fl-row"><span class="fl-mk">${icon(k.id)}</span><span class="fl-txt"><b>${esc(k.name)}</b><small>${esc(k.meaning)}</small></span>
       <span class="fl-n num">${val(k)}</span><button class="switch well" role="switch" aria-checked="${!!S.show[k.id]}" data-show="${k.id}" aria-label="Show ${esc(k.name)} marks"><i></i></button></div>`).join('');
     const nAff = id => V.FA.filter(x => frameHas(summary(x), id)).length;
-    $('flHide').innerHTML = kinds.map(k => `<label class="fl-hide"><input type="checkbox" data-hide="${k.id}" ${S.hide.has(k.id) ? 'checked' : ''}> ${esc(k.name)} <span class="num">${nAff(k.id)} of ${V.FA.length}</span></label>`).join('')
-      + (S.hide.size ? `<p class="fl-hidden num">${V.FA.length - V.F.length} image${V.FA.length - V.F.length === 1 ? '' : 's'} hidden</p>` : '');
+    const hk = HIDE_KINDS.filter(k => V.FA.some(f => k.frame ? (f.raw.glow?.known || f.raw.glow?.nearHe) : bitsNamed(f.raw.flagNames, k.bits)));
+    const hid = V.FA.filter(f => !V.F.includes(f)), sat = V.FA.filter(f => summary(f).saturated).length;
+    const d = f => R.fmtDate(f.date);
+    $('flHide').innerHTML = hk.map(k => `<label class="fl-hide"><input type="checkbox" data-hide="${k.id}" ${S.hide.has(k.id) ? 'checked' : ''}> ${esc(k.name)} <span class="num">${nAff(k.id)} of ${V.FA.length}</span></label>`).join('')
+      + `<p class="fl-note">Counts only hits within ${CORE_PX} pixels of the star.${sat ? ` ${sat} image${sat === 1 ? ' has' : 's have'} a saturated core (the star filled its own pixels): shown, not hidden.` : ''}</p>`
+      + (hideSet().size ? `<p class="fl-hidden num">${hid.length} image${hid.length === 1 ? '' : 's'} hidden</p>` : '')
+      + (hid.length ? `<ul class="fl-why">${hid.map(f => `<li title="${esc(whyHidden(f) || '')}"><span class="num">${d(f)}</span> ${esc(whyHidden(f) || '')}</li>`).join('')}</ul>` : '');
     $('flRows').querySelectorAll('[data-show]').forEach(b => { b.onclick = () => { const id = b.dataset.show; S.show[id] = !S.show[id]; persist(); ctx.Snd.play('click'); ctx.redraw(); renderPop(); }; });
     $('flHide').querySelectorAll('[data-hide]').forEach(cb => { cb.onchange = () => { const id = cb.dataset.hide; cb.checked ? S.hide.add(id) : S.hide.delete(id); persist(); ctx.Snd.play('click'); ctx.refilter(); renderPop(); }; });
   }
@@ -225,7 +233,7 @@ export function createContam(ctx) {
   cvA.addEventListener('pointerleave', () => ctx.hideTip());
 
   return {
-    S, filter, drawStage, chipLead, info, renderPop, ensureLayers, setLayer,
+    S, filter, whyHidden, drawStage, chipLead, info, renderPop, ensureLayers, setLayer,
     flaggedText(f) { // "Flagged pixels 23 of 625" + breakdown for the title
       const raw = f?.raw; if (!raw) return null;
       const c = countKinds(raw.flags, raw.masks, raw.data);

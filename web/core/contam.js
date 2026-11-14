@@ -83,8 +83,75 @@ export function airglowOf(header, um, bwUm) {
   return { he, aurora, shuttle, nearHe, ampl, flagged: reasons.length > 0, reasons, known: 'HE_AIRGLOW_CONT' in h };
 }
 
-// Does a frame summary { counts, glow } show this kind?
+// ---- "Hide images where these touch the star" (DESIGN.md 23) ----
+// Only real contamination close to the star counts. SOURCE and FULLSAMPLE are information.
+// A bright star fills its own core pixels (OVERFLOW, BLOOM): that is a "saturated core",
+// shown as information and never hidden.
+export const CORE_PX = 2; // grid pixels (~12″) around the predicted position
+export const HIDE_KINDS = [
+  { id: 'cosmic', name: 'Signal jump', bits: ['TRANSIENT', 'SNOWBALL', 'HALO'] },
+  { id: 'persist', name: 'Afterglow (persistence)', bits: ['PERSIST'] },
+  { id: 'scatter', name: 'Scattered light', bits: ['GHOST', 'GHOST_FPA', 'GHOST_EXT'] },
+  { id: 'streak', name: 'Streak', bits: ['STREAK'] },
+  { id: 'airglow', name: 'Airglow', frame: true },
+];
+export const HIDE_IDS = HIDE_KINDS.map(k => k.id);
+
+// OR of the bits whose header name is in `names`.
+export function bitsNamed(flagNames, names) {
+  let m = 0;
+  for (const [bit, d] of Object.entries(flagNames || {})) if (names.includes(d.name)) m |= Number(bit);
+  return m;
+}
+
+// Classify one image for the filter. flags: FLAGS words on the n×n display grid;
+// (cx, cy): the star's predicted grid position; glow: airglowOf(...).
+// Returns { hits: { id: nearest distance in px }, saturated, airglow, reasons: [text], hidden-by ids in `hits` }.
+export function classifyFrame({ flags, flagNames, n, cx, cy, glow }, r = CORE_PX) {
+  const hits = {}, masks = HIDE_KINDS.filter(k => k.bits).map(k => [k.id, bitsNamed(flagNames, k.bits)]);
+  // Saturated core: OVERFLOW or BLOOM on the star's own pixels. On those same pixels the
+  // pipeline also sets TRANSIENT (the sample-up-the-ramp jump as the pixel fills): measured on
+  // Barnard's Star, 118 of 120 images carry OVERFLOW+BLOOM+TRANSIENT on the core. So TRANSIENT
+  // on an OVERFLOW/BLOOM pixel is the star itself and does not count; TRANSIENT elsewhere does.
+  const SAT = bitsNamed(flagNames, ['OVERFLOW', 'BLOOM']), TRANS = bitsNamed(flagNames, ['TRANSIENT']);
+  let saturated = false;
+  if (flags && n) {
+    const x0 = Math.max(0, Math.floor(cx - r)), x1 = Math.min(n - 1, Math.ceil(cx + r));
+    const y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(n - 1, Math.ceil(cy + r));
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const d = Math.hypot(x - cx, y - cy); if (d > r) continue;
+      let w = flags[y * n + x]; if (!w) continue;
+      if (SAT && (w & SAT)) { saturated = true; w &= ~TRANS; }
+      for (const [id, m] of masks) if (m && (w & m) && !(hits[id] <= d)) hits[id] = d;
+    }
+  }
+  // Airglow: aurora / shuttle glow count for the whole image. Helium airglow is one emission line
+  // (1.083 µm), so it only touches the star when the star sits at that wavelength (nearHe).
+  const g = glow || {}, why = [];
+  if ('he' in g) {
+    if (g.he && g.nearHe) why.push('helium line at the star\'s wavelength');
+    if (g.aurora) why.push('aurora');
+    if (g.shuttle) why.push('spacecraft glow');
+  } else if (g.flagged) why.push(...(g.reasons || []));
+  const airglow = why.length > 0;
+  if (airglow) hits.airglow = 0;
+  const airText = `Airglow${why.length ? ` (${why.join(', ')})` : ''}`;
+  const reasons = HIDE_KINDS.filter(k => hits[k.id] != null).map(k => k.frame ? airText : `${k.name} ${hits[k.id].toFixed(1)} px from the star`);
+  return { hits, saturated, airglow, airText, reasons };
+}
+
+// Why a classified image is hidden, given the kinds being hidden (null = not hidden).
+export function hideReason(cls, hide) {
+  if (!cls) return null;
+  const ids = HIDE_KINDS.filter(k => hide.has(k.id) && cls.hits?.[k.id] != null);
+  if (!ids.length) return null;
+  return ids.map(k => k.frame ? cls.airText : `${k.name} ${cls.hits[k.id].toFixed(1)} px from the star`).join(' · ');
+}
+
+// Does a frame summary show this kind? Summary is a classifyFrame result ({ hits }) or the
+// older { counts, glow } shape.
 export function frameHas(fr, id) {
+  if (fr?.hits) return fr.hits[id] != null;
   if (id === 'airglow') return !!fr?.glow?.flagged;
   return (fr?.counts?.[id] || 0) > 0;
 }

@@ -95,3 +95,37 @@ test('fetchCutoutLayers asks the relay for hdus=5 (and never sends it to IRSA di
   assert.ok(seen[0].endsWith('&hdus=5'));
   assert.ok(!seen[1].includes('hdus'));
 });
+
+test('filter classifier: saturated core kept, only real hits within 2 px count, with reasons', async () => {
+  const { classifyFrame, hideReason, HIDE_KINDS } = await import('../web/core/contam.js');
+  const FN2 = { ...FN, 1024: { name: 'PERSIST' }, 2048: { name: 'STREAK' } };
+  const n = 9, cx = 4, cy = 4, at = (x, y) => y * n + x;
+  const grid = () => new Uint32Array(n * n);
+  // bright star: OVERFLOW + BLOOM on the core, SOURCE + FULLSAMPLE everywhere -> nothing counts, saturated core
+  let f = grid(); f.fill(2097152 | 4096); f[at(4, 4)] |= 2 | 67108864; f[at(5, 4)] |= 2;
+  let c = classifyFrame({ flags: f, flagNames: FN2, n, cx, cy, glow: { flagged: false } });
+  assert.equal(c.saturated, true); assert.deepEqual(c.hits, {}); assert.equal(hideReason(c, new Set(HIDE_KINDS.map(k => k.id))), null);
+  // the real Barnard's Star pattern: OVERFLOW+BLOOM+TRANSIENT on the core = the star itself
+  f = grid(); f[at(4, 4)] = 2 | 67108864 | 1; f[at(4, 5)] = 67108864 | 1;
+  c = classifyFrame({ flags: f, flagNames: FN2, n, cx, cy });
+  assert.equal(c.saturated, true); assert.deepEqual(c.hits, {});
+  // TRANSIENT on a pixel the star did not fill is a signal jump (even next to a saturated core)
+  f[at(5, 5)] = 1;
+  c = classifyFrame({ flags: f, flagNames: FN2, n, cx, cy });
+  assert.equal(c.saturated, true); assert.ok(Math.abs(c.hits.cosmic - Math.SQRT2) < 1e-9);
+  assert.equal(hideReason(c, new Set(['cosmic'])), 'Signal jump 1.4 px from the star');
+  assert.equal(hideReason(c, new Set(['scatter'])), null);
+  // hits further than 2 px are ignored; PERSIST, GHOST, STREAK inside count
+  f = grid(); f[at(7, 4)] = 1; f[at(4, 6)] = 1024; f[at(3, 4)] = 4194304; f[at(4, 3)] = 2048;
+  c = classifyFrame({ flags: f, flagNames: FN2, n, cx, cy });
+  assert.equal(c.hits.cosmic, undefined); assert.equal(c.hits.persist, 2); assert.equal(c.hits.scatter, 1); assert.equal(c.hits.streak, 1);
+  // helium airglow only touches the star at 1.083 µm; aurora / spacecraft glow are image-wide
+  const glow = (o) => ({ he: false, aurora: false, shuttle: false, nearHe: false, ...o });
+  c = classifyFrame({ flags: grid(), flagNames: FN2, n, cx, cy, glow: glow({ he: true }) });
+  assert.equal(c.airglow, false);
+  c = classifyFrame({ flags: grid(), flagNames: FN2, n, cx, cy, glow: glow({ he: true, nearHe: true }) });
+  assert.equal(hideReason(c, new Set(['airglow'])), 'Airglow (helium line at the star\'s wavelength)');
+  assert.equal(classifyFrame({ flags: grid(), flagNames: FN2, n, cx, cy, glow: glow({ nearHe: true }) }).airglow, false); // near the line, header says clean
+  assert.equal(classifyFrame({ flags: grid(), flagNames: FN2, n, cx, cy, glow: glow({ shuttle: true }) }).airglow, true);
+  assert.deepEqual(visibleFrames([c, { hits: {} }], new Set(['airglow'])).length, 1);
+});
