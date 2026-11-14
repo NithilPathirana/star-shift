@@ -289,28 +289,44 @@ function setCoordText(ra, dec) { $('coordTxt').textContent = `${R.fmtRA(ra)}  ${
 
 /* ---------- loading the time-lapse (real progress drives the rocket) ---------- */
 function rocketAt(frac) {
-  const tr = $('rk').parentElement.clientWidth; $('rk').style.transform = `translateX(${frac * tr}px)`; $('rkFill').style.transform = `scaleX(${frac})`;
-  const th = $('thin').clientWidth; $('thinRk').style.transform = `translateX(${frac * th}px)`; $('thinBar').style.transform = `scaleX(${frac})`;
+  $('l2Hair').style.transform = `scaleX(${frac})`; $('thinBar').style.transform = `scaleX(${frac})`;
 }
+/* loader v2 media + exit clip (DESIGN.md section 17; from design-v1.html) */
 function mountRocket() {
-  const box = $('rkArt'); if (!box) return; const base = 'loader/';
-  if (set.motion) { box.innerHTML = `<img src="${base}rocket-loader-still.webp" alt="Person riding a rocket (still, AI-generated)" width="480" height="320">`; return; }
-  const probe = document.createElement('video'), safari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  if (!safari && probe.canPlayType('video/webm; codecs="vp9"')) {
-    box.innerHTML = `<video autoplay loop muted playsinline poster="${base}rocket-loader-still.webp" width="480" height="320" aria-label="Person riding a rocket (animation, AI-generated)"><source src="${base}rocket-loader.webm" type="video/webm"></video>`;
-    const vid = box.querySelector('video'); vid.muted = true; vid.play().catch(() => {});
-  } else box.innerHTML = `<img src="${base}rocket-loader.webp" alt="Person riding a rocket (animation, AI-generated)" width="480" height="320">`;
+  const box = $('l2Media'); if (!box) return; const base = 'loader/v2/';
+  const small = matchMedia('(max-width: 900px), (max-height: 560px)').matches || (navigator.connection && navigator.connection.saveData);
+  const res = small ? '720' : '1080';
+  if (set.motion) { box.innerHTML = `<img src="${base}rocket-hero-still-${res}.webp" alt="An astronaut riding a rocket through six ribbons of coloured light (still, AI-generated)">`; return; }
+  box.innerHTML = `<video autoplay loop muted playsinline poster="${base}rocket-hero-still-${res}.webp" aria-label="An astronaut riding a rocket through six ribbons of coloured light (animation, AI-generated)">
+    <source src="${base}rocket-loop-${res}.webm" type="video/webm"><source src="${base}rocket-loop-${res}.mp4" type="video/mp4"></video>`;
+  const v = box.querySelector('video'); v.muted = true; v.play().catch(() => {});
 }
-function showState(id) { ['stLoading', 'stError', 'stEmpty'].forEach(x => { $(x).hidden = x !== id; }); }
+/* exit: play the 1.5 s hand-off clip (rocket sweeps past, flame fills the frame warm-white), then fade into the viewer.
+   Reduce motion, or a clip that fails to start within 400 ms, falls back to the plain cross-fade. */
+let leaving = false;
+function leaveLoader() {
+  const L = $('stLoading'); if (L.hidden || leaving) return; leaving = true;
+  const done = () => { L.classList.add('leaving'); setTimeout(() => { L.hidden = true; L.classList.remove('leaving', 'can-start', 'exiting'); const v = L.querySelector('video'); if (v) v.pause(); leaving = false; }, set.motion ? 0 : 400); };
+  const loop = L.querySelector('#l2Media video'); if (set.motion || !loop) return done();
+  const res = loop.currentSrc.includes('-720') ? '720' : '1080', base = 'loader/v2/';
+  const ex = document.createElement('video'); ex.muted = true; ex.playsInline = true; ex.preload = 'auto'; ex.className = 'l2-exit';
+  ex.innerHTML = `<source src="${base}rocket-exit-${res}.webm" type="video/webm"><source src="${base}rocket-exit-${res}.mp4" type="video/mp4">`;
+  let finished = false; const finish = () => { if (finished) return; finished = true; done(); setTimeout(() => ex.remove(), 450); };
+  ex.addEventListener('ended', finish); ex.addEventListener('error', finish);
+  const guard = setTimeout(() => { if (ex.currentTime === 0) finish(); }, 400);       // never trap the user behind a clip that won't play
+  ex.addEventListener('playing', () => { clearTimeout(guard); L.classList.add('exiting'); setTimeout(finish, 1700); });
+  $('l2Media').appendChild(ex); ex.play().catch(finish);
+}
+
+function showState(id) { ['stLoading', 'stError', 'stEmpty'].forEach(x => { $(x).hidden = x !== id; }); if (id !== 'stLoading') document.querySelector('#l2Media video')?.pause(); }
 let arriveCount = 0;
 function progress() {
   const done = V.F.length + V.failed, N = Math.max(1, V.planned);
-  $('lcount').innerHTML = `<b>${V.F.length}</b> of ${V.planned || '…'} images loaded`;
+  $('lcount').innerHTML = `<b>${V.F.length}</b> of ${V.planned || '…'} loaded`;
   rocketAt(done / N);
   const slow = V.retries > 0 && V.status === 'loading';
-  $('stLoading').classList.toggle('slow', slow && V.F.length < 8);
-  $('rk').classList.toggle('paused', slow);
-  const vid = document.querySelector('#rkArt video'); if (vid) { if (slow && !vid.paused) vid.pause(); else if (!slow && vid.paused && !$('stLoading').hidden) vid.play().catch(() => {}); }
+  $('stLoading').classList.toggle('slow', slow);
+  const vid = document.querySelector('#l2Media video'); if (vid) { if (slow && !vid.paused) vid.pause(); else if (!slow && vid.paused && !$('stLoading').hidden) vid.play().catch(() => {}); }
   $('retryTxt').textContent = slow ? `IRSA is slow. ${V.F.length} of ${V.planned} kept. Retrying automatically (${V.retries} retries so far).` : '';
   $('retryNow').hidden = true;
   if (V.status === 'loading' && (V.target?.pmra || V.target?.pmdec)) $('d-meas').textContent = `measuring… (${V.F.length} of ${V.planned || '…'} images)`;
@@ -320,7 +336,7 @@ function load(query, label) {
   P.pause(); clearInterval(bt); if (mode !== 'play') { mode = 'play'; $('stage').className = 'stage mode-play'; segSelect($('viewSeg'), b => b.dataset.mode === 'play'); }
   Object.assign(V, { query, target: null, grid: null, raws: [], F: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, status: 'loading', motion: null, seasons: [], name: label || 'this patch' });
   P.i = 0; shown = -1; arriveCount = 0;
-  $('lTitle').textContent = `Finding images of ${V.name}`; $('arrive').innerHTML = ''; mountRocket();
+  $('lTitle').textContent = `Finding images of ${V.name}`; $('stLoading').classList.remove('slow', 'can-start', 'leaving', 'exiting'); mountRocket();
   showState('stLoading'); $('thin').hidden = true; buildTimeline(); progress(); draw(); onFrame(0);
   const emit = (e) => {
     if (ctl.signal.aborted) return;
@@ -329,7 +345,6 @@ function load(query, label) {
       V.grid = e.plan.grid; V.n = V.grid.n; V.planned = e.plan.planned; V.plannedMjds = e.plan.mjds || [];
       V.total = e.plan.total;
       if (!V.planned) { V.status = 'empty'; showState('stEmpty'); return; }
-      $('arrive').innerHTML = Array.from({ length: Math.min(V.planned, 120) }, () => '<span></span>').join('');
       $('tName').textContent = V.name; $('ra').textContent = R.fmtRA(V.grid.ra0); $('dec').textContent = R.fmtDec(V.grid.dec0); setCoordText(V.grid.ra0, V.grid.dec0);
       $('d-field').textContent = `${Math.round(V.n * V.grid.scale)}″ · north up`;
       layout(); buildTimeline(); progress();
@@ -337,14 +352,12 @@ function load(query, label) {
       const f = toF(e.frame); V.raws.push(e.frame);
       let k = V.F.findIndex(x => x.mjd > f.mjd); if (k < 0) k = V.F.length; V.F.splice(k, 0, f);
       if (k <= P.i && V.F.length > 1) P.i++;
-      const slot = $('arrive').children[arriveCount++];
-      if (slot) { const c = document.createElement('canvas'); R.draw(c, f, V.n, { ramp: set.ramp, cell: 3, stretch: set.str, hatch: set.hatch }); slot.appendChild(c); }
-      if (V.F.length === 8 && !$('stLoading').hidden) { showState(null); $('thin').hidden = false; if (!set.motion) P.play(); }
+      if (V.F.length === 8 && !$('stLoading').hidden) $('stLoading').classList.add('can-start'); // 'Start watching' appears
       progress(); rebuildSoon();
     } else if (e.type === 'FRAME_FAILED') { V.failed++; progress(); }
     else if (e.type === 'RETRY_WAIT') { V.retries++; progress(); }
     else if (e.type === 'DONE') {
-      V.status = 'ready'; $('thin').hidden = true;
+      V.status = 'ready'; $('thin').hidden = true; leaveLoader();
       if (!V.F.length) { V.status = 'error'; $('errTxt').textContent = 'No images arrived. The archive is often busy; Retry asks again.'; $('useLoaded').hidden = true; showState('stError'); Snd.play('error'); return; }
       showState(null);
       V.stacks = buildStacks(V.raws.slice().sort((a, b) => a.mjd - b.mjd)).map(stackToF);
@@ -368,6 +381,7 @@ function load(query, label) {
 $('retry').onclick = () => { Snd.play('click'); if (V.query) load(V.query, V.name); };
 $('useLoaded').onclick = () => { showState(null); Snd.play('click'); };
 $('retryNow').onclick = () => { Snd.play('click'); if (V.query) load(V.query, V.name); };
+$('l2Start').onclick = () => { Snd.play('click'); $('thin').hidden = false; leaveLoader(); if (!set.motion) P.play(); };
 
 /* ---------- popovers + sheets ---------- */
 let openPop = null;

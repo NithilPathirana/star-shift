@@ -80,17 +80,18 @@
       </div>
       <svg class="compass" width="40" height="40" viewBox="0 0 44 44" aria-label="North up, east left"><path d="M34 34V10M34 34H10" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M34 6l-3 6h6zM6 34l6-3v6z" fill="currentColor"/><text x="38" y="12" fill="currentColor" font-size="11">N</text><text x="4" y="28" fill="currentColor" font-size="11">E</text></svg>
       <div class="scalebar num"><i id="sbar"></i>30″</div>
-      <div class="loading-thin" id="thin" hidden><i id="thinBar"></i><div class="thin-rk" id="thinRk" aria-hidden="true"></div></div>
+      <div class="loading-thin" id="thin" hidden><i id="thinBar"></i></div>
 
-      <div class="state" id="stLoading" hidden aria-live="polite">
-        <div style="width:100%"><h2 id="lTitle">Finding images</h2>
-          <p>Asking the NASA archive (IRSA). It can be slow; you can play the images as soon as a few arrive.</p>
-          <div class="rk-track" aria-hidden="true"><div class="rk-rail"></div><div class="rk-fill" id="rkFill"></div>
-            <div class="rk" id="rk"><div id="rkArt" class="rk-art"></div></div></div>
-          <div class="rk-count" id="lcount"><b>0</b> images loaded</div>
-          <div class="retry-bar" id="retryBar"><span id="retryTxt">IRSA is slow. Trying again in 5 s</span><button class="key" id="retryNow">Retry now</button></div>
-          <div class="arrive" id="arrive"></div>
-          <p class="rk-slot">Animation: AI-generated (made by Claude in Blender)</p></div>
+      <div class="state loader2" id="stLoading" hidden>
+        <div class="l2-media" id="l2Media"></div>
+        <div class="l2-shade"></div>
+        <div class="l2-center">
+          <div class="l2-pill" id="retryBar" role="status"><span id="retryTxt">IRSA is slow. Retrying automatically.</span><button class="key" id="retryNow">Retry now</button></div>
+          <button class="key primary l2-start" id="l2Start">Start watching</button>
+          <p class="l2-line" aria-live="polite"><span id="lTitle">Finding images</span> · <span id="lcount"><b>0</b> loaded</span></p>
+        </div>
+        <p class="l2-caption">Animation: AI-generated (made by Claude in Blender) · Background: NASA SPHEREx all-sky map (IRSA)</p>
+        <i class="l2-hair" aria-hidden="true"><b id="l2Hair"></b></i>
       </div>
       <div class="state error" id="stError" hidden role="alert">
         <div><h2>The NASA archive (IRSA) isn't answering</h2>
