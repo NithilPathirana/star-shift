@@ -8,6 +8,10 @@ import { draw } from './render.js';
 import { OBSERVATORIES, NASA_CENTRES, DEFAULT_PLACE, ALL_PRESETS, parsePlace, fmtLat, fmtLon } from './places.js';
 import { smallBodies, onProvidersChanged } from './extras.js';
 import { initAir, updateAir } from './atmo-ui.js';
+import './jpl-small.js'; // registers the JPL Horizons provider for Ceres, Pallas, Juno and Vesta
+import { answer as tonightAnswer } from './tonight.js';
+import { findPreset } from '../presets.js';
+import { resolveName } from '../../core/resolve.js';
 
 const $ = (id) => document.getElementById(id);
 const root = document.documentElement;
@@ -203,7 +207,7 @@ function renderSel() {
   let o = '';
   if (sel.kind === 'moon') o += row('Distance', `${Math.round(sel.distAU * 149597870.7).toLocaleString('en-GB')} km`);
   else if (isBody) o += row('Distance', Number.isFinite(sel.distAU) ? `${sel.distAU.toFixed(3)} AU` : dash('Not given by the source'));
-  else if (sel.kind === 'star') o += row('Distance', dash('Not in this star list (positions and brightness only)'));
+  else if (sel.kind === 'star') o += row('Distance', dash(sel.fromQuery ? 'Not looked up on this page' : 'Not in this star list (positions and brightness only)'));
   if (sel.kind === 'point') o += row('Brightness', dash('A spot on the sky, not an object'));
   else if (Number.isFinite(sel.mag)) o += row('Brightness', `mag ${sel.mag.toFixed(sel.kind === 'star' ? 2 : 1)}`);
   else o += row('Brightness', dash('Not given by the source'));
@@ -215,9 +219,57 @@ function renderSel() {
     play.hidden = true; why.hidden = false; why.textContent = 'The time-lapse holds one fixed patch of sky, so it cannot follow objects in our Solar System.';
   } else {
     play.hidden = false; why.hidden = true;
-    play.href = `index.html?ra=${sel.ra.toFixed(5)}&dec=${sel.dec.toFixed(5)}&scene=viewer`;
+    play.href = sel.fromQuery && sel.query ? `index.html?q=${encodeURIComponent(sel.query)}&scene=viewer` : `index.html?ra=${sel.ra.toFixed(5)}&dec=${sel.dec.toFixed(5)}&scene=viewer`;
   }
+  renderAnswer();
   S.dirty = true;
+}
+/* ---------- "Can I see it tonight?" answer card (top of the details panel) ---------- */
+let ansKey = '', ansMsg = null;
+function showAnswer(head, detail, verdict) {
+  const el = $('answer'); el.hidden = !head; if (!head) return;
+  el.dataset.verdict = verdict || ''; $('ansHead').textContent = head; $('ansDetail').textContent = detail || '';
+}
+function renderAnswer() {
+  const sel = S.sel;
+  if (!sel) { if (ansMsg) showAnswer(ansMsg.head, ansMsg.detail, 'msg'); else showAnswer(null); return; }
+  if (sel.kind === 'sun') { showAnswer(null); return; }
+  const t = curTime(), key = `${sel.key || sel.name}|${sel.ra}|${sel.dec}|${S.place.id}|${S.place.lat}|${S.place.lon}|${Math.floor(t.getTime() / 300000)}`;
+  if (key === ansKey) return; ansKey = key;
+  const body = sel.kind === 'moon' || sel.kind === 'planet';
+  const altFn = body ? (d) => bodies(d, obs).find(b => b.key === sel.key)?.alt : (d) => starAltAz(sel.ra, sel.dec, d, obs).alt;
+  try {
+    const a = tonightAnswer({ altFn, date: t, obs, place: S.place.id === 'me' ? 'your location' : S.place.name, fmt: (d) => fmtLocal(d, false), stepMin: body ? 6 : 3 });
+    showAnswer(a.head, a.detail + (S.place.tz ? '' : ' Times are local solar time.'), a.verdict);
+  } catch { showAnswer('Could not work out tonight for this place', '', 'msg'); }
+}
+// Opened with an object (?q=<name> or ?ra=&dec=): find it, select it and turn the sky to it.
+async function openFromQuery() {
+  const q = (qp.get('q') || '').trim(), ra = Number(qp.get('ra')), dec = Number(qp.get('dec'));
+  let t = null;
+  if (q) {
+    const body = S.bodies.find(b => b.name.toLowerCase() === q.toLowerCase());
+    if (body) { select(body); face(S.sel); return; }
+    const p = findPreset(q);
+    if (p) t = { name: p.target.name, ra: p.target.ra, dec: p.target.dec };
+    else {
+      ansMsg = { head: `Looking up “${q}”…`, detail: 'Asking SIMBAD for its position.' }; renderAnswer();
+      try { const r = await resolveName(q, { signal: AbortSignal.timeout(15000) }); if (r && Number.isFinite(r.ra)) t = { name: r.name, ra: r.ra, dec: r.dec }; } catch { /* below */ }
+      if (!t) { ansMsg = { head: `We couldn't find “${q}”`, detail: 'SIMBAD did not know this name or did not answer. Pick an object on the sky instead.' }; if (!S.sel) renderAnswer(); return; }
+    }
+  } else if (qp.has('ra') && qp.has('dec') && Number.isFinite(ra) && Number.isFinite(dec) && Math.abs(dec) <= 90) {
+    t = { name: `RA ${(((ra % 360) + 360) % 360).toFixed(3)}°, Dec ${dec >= 0 ? '+' : '−'}${Math.abs(dec).toFixed(3)}°`, ra: ((ra % 360) + 360) % 360, dec };
+  }
+  if (!t) return;
+  ansMsg = null;
+  if (S.sel) return; // the user already picked something while we were looking it up
+  select({ kind: 'star', key: 'q:' + t.ra.toFixed(5) + ',' + t.dec.toFixed(5), name: t.name, ra: t.ra, dec: t.dec, mag: null, fromQuery: true, query: q || null });
+  face(S.sel);
+  if (innerWidth < 700) toggleInsp(true); // phone: the answer lives in the details sheet, so open it once
+}
+function face(o) { // turn the view to the object; below the horizon, face its direction just above the ground
+  if (!o || !Number.isFinite(o.az)) return;
+  S.view.az = o.az; S.view.alt = clampAlt(Math.max(8, Math.min(75, o.alt))); S.dirty = true;
 }
 function select(obj) { if (obj) Object.assign(obj, selAltAz(obj, curTime())); S.sel = obj; renderSel(); updateAir({ place: S.place, sel: S.sel, time: curTime() }, true); if (obj) announce(`${obj.name} selected`); }
 
@@ -446,5 +498,6 @@ initAir($('air'));
 layout(); S.view.fov = defaultFov(); setFov(S.view.fov);
 setPlace(S.place); showTab(curTab);
 requestAnimationFrame(frame);
+openFromQuery();
 loadStars().then(() => recompute()).catch(() => { $('cap').textContent = 'The star list could not be loaded. The Sun, Moon and planets are still shown.'; });
 window.__sky = { S, curTime }; // debugging hook (read-only use)

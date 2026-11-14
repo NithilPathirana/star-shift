@@ -176,3 +176,24 @@ form.pl-tab .note{grid-column:1/-1}
   .air-band{cursor:pointer}
 }
 .air-scale span:last-of-type{transform:translateX(-85%)}
+
+/* ---------- answer card, h1, touch targets (Design review, Sat night). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. ---------- */
+h1.pl-title{margin:0;line-height:inherit}
+.pl-answer{margin:0 0 14px;padding:10px 12px;border-radius:12px;display:grid;gap:4px}
+.pl-ans-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.pl-ans-h{margin:0;font-weight:600;font-size:.9375rem;line-height:1.35;color:var(--ink)}
+.pl-ans-d{margin:0;font-size:.8125rem;color:var(--ink-2)}
+.pl-ans-top .tag{flex:none;margin-top:2px}
+.pl-answer[data-verdict=yes]{box-shadow:inset 3px 0 0 var(--sage),inset 0 1px 2px rgba(60,40,24,.18)}
+.pl-answer[data-verdict=msg] .tag{display:none}
+.air-you{font-size:.75rem}
+.air-band sup{font-size:.75rem}
+.air-scale span{font-size:.75rem}
+@media (max-width:699px){
+  .pl-tools .glass-btn{width:44px;height:44px}
+  .pl-place{height:52px}
+  .pl-place-btn{height:44px}
+  .pl-date .pl-date-in{height:44px}
+  .air-band{min-height:44px}
+}
+@media (max-width:699px){.pl-day{top:66px}}

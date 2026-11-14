@@ -26,7 +26,7 @@
 
   <header class="topbar glass hero" id="topbar">
     <img class="logo-slot top-logo" src="brand/star-shift-symbol-small.svg" alt="" width="28" height="28"><span class="ai-mark top-ai" title="Logo: AI-generated" aria-label="Logo: AI-generated" role="note">AI</span><span class="name">Star Shift</span>
-    <span class="pl-title">Can I see it tonight?</span>
+    <h1 class="pl-title">Can I see it tonight?</h1>
     <div class="pl-clock" aria-live="off">
       <span><small>Local</small> <b class="num" id="tLocal">—</b></span>
       <span><small>UTC</small> <b class="num" id="tUtc">—</b></span>
@@ -35,7 +35,7 @@
     <div class="top-actions">
       <button class="key pl-pages-key" id="pagesBtn" aria-haspopup="dialog" aria-expanded="false">Pages</button>
       <button class="key only-sheet" id="infoBtn" aria-controls="insp" aria-expanded="false">Info</button>
-      <button class="key" id="clarityBtn" aria-haspopup="dialog" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="7"/><path d="M10 3v14" /><path d="M10 3a7 7 0 0 1 0 14z" fill="currentColor"/></svg><span class="clar-l">Clarity</span></button>
+      <button class="key" id="clarityBtn" aria-haspopup="dialog" aria-expanded="false" aria-label="Clarity settings"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="7"/><path d="M10 3v14" /><path d="M10 3a7 7 0 0 1 0 14z" fill="currentColor"/></svg><span class="clar-l">Clarity</span></button>
     </div>
   </header>
 
@@ -62,6 +62,7 @@
   <aside class="inspector glass" id="insp" aria-label="Details">
     <button class="key icon sheet-close" id="inspClose" aria-label="Close details"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 5l10 10M15 5L5 15"/></svg></button>
     <section class="insp-sec" id="selSec">
+      <div class="pl-answer well" id="answer" role="status" hidden><div class="pl-ans-top"><p class="pl-ans-h" id="ansHead"></p><span class="tag tag-calc">COMPUTED</span></div><p class="pl-ans-d" id="ansDetail"></p></div>
       <p class="pl-kicker" id="selKind">Pick something</p>
       <h2 class="target" id="selName">Click a planet, a star or any spot</h2>
       <p class="note" id="selHint">Drag to look around. The wheel or pinch zooms.</p>
@@ -86,7 +87,7 @@
       <a class="key pl-air-link" href="#air">What gets through the air ↓</a>
     </section>
     <section class="insp-sec">
-      <p class="credit">Sun, Moon and planets: computed in your browser with Astronomy Engine by Don Cross (MIT licence). Stars: Hipparcos (ESA), new reduction (van Leeuwen 2007), via the ESA Gaia archive. Asteroids and comets: from JPL when a JPL feed is connected. Logo: AI-generated with ChatGPT; small-size version and favicon redrawn as SVG by Claude.</p>
+      <p class="credit">Sun, Moon and planets: computed in your browser with Astronomy Engine by Don Cross (MIT licence). Stars: Hipparcos (ESA), new reduction (van Leeuwen 2007), via the ESA Gaia archive. Asteroids: Ceres, Pallas, Juno and Vesta from JPL Horizons (NASA/JPL), asked only for the date, never your place; shown when JPL answers. Comets are not shown. Logo: AI-generated with ChatGPT; small-size version and favicon redrawn as SVG by Claude.</p>
     </section>
   </aside>
 
