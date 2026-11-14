@@ -403,6 +403,38 @@ function refraction() {
   });
 }
 
+/* ---------- cursor motion: sky crosshair that follows the pointer, magnetic controls ---------- */
+const fine = mq('(hover: hover) and (pointer: fine)');
+(() => {
+  const cur = $('skyCursor'), lab = $('scLabel'), wrap = () => $('mapWrap');
+  let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0, inside = false;
+  const loop = () => {
+    const k = set.motion ? 1 : 0.32; cx += (tx - cx) * k; cy += (ty - cy) * k;
+    cur.style.transform = `translate(${cx}px, ${cy}px)`;
+    raf = (Math.abs(tx - cx) + Math.abs(ty - cy) > 0.3) ? requestAnimationFrame(loop) : 0;
+  };
+  document.addEventListener('pointermove', e => {
+    if (!fine || scene !== 'map') return;
+    const w = wrap(), r = w.getBoundingClientRect();
+    const isIn = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom && !(e.target instanceof Element && e.target.closest('.tools, .map-read, .inspector, .pin'));
+    if (isIn !== inside) { inside = isIn; cur.classList.toggle('on', isIn); if (isIn) { cx = tx; cy = ty; } }
+    if (!isIn) return;
+    const host = w.parentElement.getBoundingClientRect();
+    tx = e.clientX - host.left; ty = e.clientY - host.top;
+    if (skymap.aladin) { const p = skymap.toWorld(e.clientX - r.left, e.clientY - r.top); if (p) lab.textContent = `${R.fmtRA(p[0])}  ${R.fmtDec(p[1])}`; }
+    if (!raf) raf = requestAnimationFrame(loop);
+  }, { passive: true });
+  // magnetic pull: controls lean up to 3 px towards the pointer, then spring back
+  if (fine) document.querySelectorAll('.key, .knob, .glass-btn').forEach(el => {
+    el.addEventListener('pointermove', e => {
+      if (set.motion) return;
+      const r = el.getBoundingClientRect(), dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2), dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+      el.style.setProperty('--mx', (dx * 3).toFixed(2) + 'px'); el.style.setProperty('--my', (dy * 2).toFixed(2) + 'px');
+    });
+    el.addEventListener('pointerleave', () => { el.style.removeProperty('--mx'); el.style.removeProperty('--my'); });
+  });
+})();
+
 /* ======================= SKY MAP (map scene) ======================= */
 let scene = 'map';
 const app = $('app');

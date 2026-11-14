@@ -13,3 +13,28 @@
 @media (max-width: 1099px) { .wl-rd { min-width: 0; } }
 @media (max-width: 699px) { .map-dock { flex-wrap: wrap; } .wl-rd { flex: 1 1 100%; order: 5; } .map-dock .rd { min-width: 0; } }
 .rtip { grid-column: 1 / -1; font-size: .75rem; line-height: 1.35; color: var(--muted); margin-top: -2px; }
+
+/* Loader: no cartoon until the 3D rocket-rider render arrives (design/loader/); a clean progress line only */
+.rk, .thin-rk, .rk-slot { display: none !important; }
+.rk-track { height: 28px; }
+.rk-rail, .rk-fill { bottom: 10px; height: 4px; border-radius: 2px; }
+.loading-thin { height: 3px; }
+
+/* Cursor + hover motion (DESIGN.md §3/§7, emil-design-eng): clearly visible, fine pointers only,
+   off with Reduce motion. JS sets --gx/--gy (glare), --mx/--my (magnetic) and moves .sky-cursor. */
+@media (hover:hover) and (pointer:fine) {
+  html[data-motion=full] .glass::after { background: radial-gradient(320px circle at var(--gx,50%) var(--gy,50%), rgba(255,255,255,.22), rgba(255,255,255,.06) 40%, rgba(255,255,255,0) 72%) !important; }
+  html[data-motion=full] .key, html[data-motion=full] .knob, html[data-motion=full] .glass-btn, html[data-motion=full] .pick {
+    transform: translate(var(--mx,0px), var(--my,0px)); transition: transform 180ms cubic-bezier(.23,1,.32,1), box-shadow 180ms cubic-bezier(.23,1,.32,1), background 140ms ease; }
+  html[data-motion=full] .key:hover, html[data-motion=full] .pick:hover { transform: translate(var(--mx,0px), calc(var(--my,0px) - 2px)); box-shadow: 0 1px 1px rgba(60,40,24,.12), 0 6px 12px -3px rgba(60,40,24,.22), 0 16px 26px -12px rgba(60,40,24,.28); }
+  html[data-motion=full] .knob:hover { transform: translate(var(--mx,0px), calc(var(--my,0px) - 2px)) scale(1.03); }
+  html[data-motion=full] .key:active, html[data-motion=full] .pick:active, html[data-motion=full] .glass-btn:active { transform: translate(var(--mx,0px), calc(var(--my,0px) + 1px)) scale(.96); transition-duration: 90ms; }
+  html[data-motion=full] .knob:active { transform: translate(var(--mx,0px), calc(var(--my,0px) + 1px)) scale(.95); transition-duration: 90ms; }
+  html[data-motion=full] .glass-btn:hover { transform: translate(var(--mx,0px), var(--my,0px)) scale(1.06); }
+}
+.sky-cursor { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; z-index: 3; opacity: 0; transition: opacity 160ms ease; }
+.sky-cursor.on { opacity: 1; }
+.sky-cursor svg { position: absolute; left: -22px; top: -22px; }
+.sky-cursor .sc-label { position: absolute; left: 20px; top: 14px; white-space: nowrap; font: 500 .75rem/1.2 var(--font-num); color: #EDE5DA; background: rgba(21,17,14,.78); padding: 3px 7px; border-radius: 7px; border: 1px solid rgba(255,235,210,.16); }
+html[data-motion=reduce] .sky-cursor { transition: none; }
+@media (hover:none), (pointer:coarse) { .sky-cursor { display: none; } }
