@@ -1,0 +1,156 @@
+<!doctype html>
+<!-- AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. -->
+<html lang="en" data-motion="full" data-glass="glass" data-contrast="normal" data-text="normal">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sky now · Star Shift</title>
+<link rel="icon" type="image/svg+xml" href="brand/favicon.svg">
+<meta name="description" content="The sky from a place on Earth at a chosen time: Sun, Moon, planets and the Hipparcos stars, computed in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/e.css">
+<link rel="stylesheet" href="styles/planetarium.css">
+</head>
+<body>
+<div class="app pl-app" id="app">
+  <nav class="rail" aria-label="Pages">
+    <img class="logo-slot" src="brand/star-shift-symbol-small.svg" alt="" width="40" height="40">
+    <a class="nav-btn" href="index.html"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><circle cx="10" cy="10" r="2.5"/></svg>Viewer</a>
+    <a class="nav-btn" href="planetarium.html" aria-current="page"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 14.5h15"/><path d="M4 14.5a6 6 0 0 1 12 0"/><path d="M6 6.5l.01 0M10 4l.01 0M14 6.5l.01 0" stroke-linecap="round" stroke-width="2.2"/></svg>Sky now</a>
+  </nav>
+
+  <header class="topbar glass hero" id="topbar">
+    <img class="logo-slot top-logo" src="brand/star-shift-symbol-small.svg" alt="" width="28" height="28"><span class="name">Star Shift</span>
+    <span class="pl-title">Sky now</span>
+    <div class="pl-clock" aria-live="off">
+      <span><small>Local</small> <b class="num" id="tLocal">—</b></span>
+      <span><small>UTC</small> <b class="num" id="tUtc">—</b></span>
+      <span class="pl-lst"><small>Sidereal</small> <b class="num" id="tLst">—</b></span>
+    </div>
+    <div class="top-actions">
+      <button class="key pl-pages-key" id="pagesBtn" aria-haspopup="dialog" aria-expanded="false">Pages</button>
+      <button class="key only-sheet" id="infoBtn" aria-controls="insp" aria-expanded="false">Info</button>
+      <button class="key" id="clarityBtn" aria-haspopup="dialog" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="7"/><path d="M10 3v14" /><path d="M10 3a7 7 0 0 1 0 14z" fill="currentColor"/></svg><span class="clar-l">Clarity</span></button>
+    </div>
+  </header>
+
+  <section class="stage-wrap">
+    <div class="stage pl-stage" id="stage">
+      <canvas id="sky" tabindex="0" aria-label="The sky from the chosen place. Drag or use the arrow keys to look around, the wheel or + and − to zoom, click or Enter to pick." role="img"></canvas>
+      <div class="pl-place glass" id="placeBar">
+        <span class="pl-from">From:</span>
+        <button class="pl-place-btn" id="placeBtn" aria-haspopup="dialog" aria-expanded="false"><span id="placeName">Colombo</span> <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4.5l3 3 3-3"/></svg></button>
+      </div>
+      <div class="pl-day" id="dayChip" role="status" hidden>Daytime here: the stars are in these positions but cannot be seen</div>
+      <div class="tools glass pl-tools" role="toolbar" aria-label="View" aria-orientation="vertical">
+        <button class="glass-btn" id="zin" aria-label="Zoom in"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="9" r="5.5"/><path d="M13 13l4 4M9 6.5v5M6.5 9h5"/></svg></button>
+        <button class="glass-btn" id="zout" aria-label="Zoom out"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="9" r="5.5"/><path d="M13 13l4 4M6.5 9h5"/></svg></button>
+        <button class="glass-btn" id="zreset" aria-label="Reset the view"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2.5 14.5h15"/><path d="M5 14.5a5 5 0 0 1 10 0"/></svg></button>
+        <div class="zoomlvl num" id="fovOut">90°</div>
+      </div>
+      <div class="pl-tip" id="tip" role="tooltip" hidden></div>
+      <p class="pl-cap" id="cap">Marks are not to scale</p>
+      <div class="sr-only" id="live" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <aside class="inspector glass" id="insp" aria-label="Details">
+    <button class="key icon sheet-close" id="inspClose" aria-label="Close details"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 5l10 10M15 5L5 15"/></svg></button>
+    <section class="insp-sec" id="selSec">
+      <p class="pl-kicker" id="selKind">Pick something</p>
+      <h2 class="target" id="selName">Click a planet, a star or any spot</h2>
+      <p class="note" id="selHint">Drag to look around. The wheel or pinch zooms.</p>
+      <dl id="selRows" hidden></dl>
+      <a class="key primary pl-play" id="playPatch" href="index.html" hidden>Play this patch over time</a>
+      <p class="note pl-why" id="playWhy" hidden></p>
+    </section>
+    <section class="insp-sec">
+      <div class="ih"><h3>Show</h3></div>
+      <div class="opt"><span>Alt-az grid</span><button class="switch well" role="switch" id="swGrid" aria-checked="true" aria-label="Alt-az grid"><i></i></button></div>
+      <div class="opt"><span>Names</span><button class="switch well" role="switch" id="swNames" aria-checked="true" aria-label="Names"><i></i></button></div>
+      <div class="opt"><span>Show below the horizon</span><button class="switch well" role="switch" id="swBelow" aria-checked="false" aria-label="Show below the horizon"><i></i></button></div>
+    </section>
+    <section class="insp-sec">
+      <div class="ih"><h3>Place</h3></div>
+      <dl>
+        <dt>Latitude</dt><dd id="plLat">—</dd>
+        <dt>Longitude</dt><dd id="plLon">—</dd>
+        <dt>Time zone</dt><dd id="plTz">—</dd>
+      </dl>
+      <p class="pl-lock note"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="9" width="12" height="8.5" rx="2"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9"/></svg>Your location stays in your browser. It is never sent or saved anywhere.</p>
+    </section>
+    <section class="insp-sec">
+      <p class="credit">Sun, Moon and planets: computed in your browser with Astronomy Engine by Don Cross (MIT licence). Stars: Hipparcos (ESA), new reduction (van Leeuwen 2007), via the ESA Gaia archive. Asteroids and comets: from JPL when a JPL feed is connected.</p>
+    </section>
+  </aside>
+
+  <footer class="dock glass pl-dock" id="dock">
+    <div class="transport">
+      <button class="key" id="nowBtn">Now</button>
+      <button class="knob" id="playBtn" aria-label="Play time forward" aria-pressed="false">
+        <svg class="i-play" width="20" height="20" viewBox="0 0 20 20"><path d="M6 4l10 6-10 6z" fill="currentColor"/></svg>
+        <svg class="i-pause" width="20" height="20" viewBox="0 0 20 20"><path d="M5.5 4h3v12h-3zM11.5 4h3v12h-3z" fill="currentColor"/></svg>
+      </button>
+    </div>
+    <div class="pl-slider">
+      <div class="tl-head"><span id="offOut" class="num">Now</span><span>±12 hours</span></div>
+      <input type="range" id="tSlider" min="-720" max="720" step="5" value="0" aria-label="Hours before or after the chosen date" aria-valuetext="Now">
+      <div class="pl-ticks num" aria-hidden="true"><span>−12 h</span><span>−6 h</span><span>0</span><span>+6 h</span><span>+12 h</span></div>
+    </div>
+    <div class="group pl-date">
+      <label class="group-l" for="tDate">Date and time</label>
+      <input type="datetime-local" id="tDate" class="field well num pl-date-in" step="60">
+    </div>
+    <div class="group pl-speed">
+      <span class="group-l">Speed</span>
+      <div class="seg well" role="group" aria-label="Play speed" id="speedSeg"><span class="seg-thumb"></span>
+        <button class="seg-btn" data-rate="60" aria-pressed="false">1 min/s</button><button class="seg-btn" data-rate="600" aria-pressed="true">10 min/s</button><button class="seg-btn" data-rate="3600" aria-pressed="false">1 h/s</button>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<div class="pop glass pl-place-pop" id="placePop" role="dialog" aria-label="Choose a place" hidden>
+  <h2>See the sky from</h2>
+  <div class="seg well pl-tabs" role="tablist" aria-label="Place lists" id="placeTabs"><span class="seg-thumb"></span>
+    <button class="seg-btn" role="tab" data-tab="me" aria-selected="false" aria-pressed="false">My location</button>
+    <button class="seg-btn" role="tab" data-tab="obs" aria-selected="true" aria-pressed="true">Observatories</button>
+    <button class="seg-btn" role="tab" data-tab="nasa" aria-selected="false" aria-pressed="false">NASA centres</button>
+    <button class="seg-btn" role="tab" data-tab="coord" aria-selected="false" aria-pressed="false">Coordinates</button>
+  </div>
+  <div class="pl-tab" data-panel="me" role="tabpanel" hidden>
+    <p class="note">Uses your browser's location once, rounded to 0.001°.</p>
+    <button class="key primary" id="geoBtn">Use my location</button>
+    <p class="note pl-state" id="geoState" role="status"></p>
+  </div>
+  <ul class="pl-list" data-panel="obs" role="tabpanel" id="obsList"></ul>
+  <ul class="pl-list" data-panel="nasa" role="tabpanel" id="nasaList" hidden></ul>
+  <form class="pl-tab" data-panel="coord" role="tabpanel" id="coordForm" hidden>
+    <label class="field well"><input id="coordIn" aria-label="Latitude, longitude or a city" placeholder="6.93, 79.86 or Colombo" autocomplete="off"></label>
+    <button class="key primary" type="submit">Go</button>
+    <p class="note pl-state pl-err" id="coordErr" role="alert" hidden></p>
+    <p class="note">Degrees, north and east positive. City names come from a short built-in list; nothing is looked up online.</p>
+  </form>
+  <p class="foot pl-lock"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="9" width="12" height="8.5" rx="2"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9"/></svg>Your location stays in your browser. It is never sent or saved anywhere.</p>
+</div>
+
+<div class="pop glass" id="clarity" role="dialog" aria-label="Clarity and accessibility" hidden>
+  <h2>Clarity</h2>
+  <h3>Comfort</h3>
+  <div class="opt"><span>Reduce motion<small>Time never runs by itself; the view jumps</small></span><button class="switch well" role="switch" data-set="motion" aria-checked="false" aria-label="Reduce motion"><i></i></button></div>
+  <div class="opt"><span>Reduce transparency<small>Glass becomes solid</small></span><button class="switch well" role="switch" data-set="glass" aria-checked="false" aria-label="Reduce transparency"><i></i></button></div>
+  <div class="opt"><span>Increase contrast</span><button class="switch well" role="switch" data-set="contrast" aria-checked="false" aria-label="Increase contrast"><i></i></button></div>
+  <div class="opt"><span>Larger text</span><button class="switch well" role="switch" data-set="text" aria-checked="false" aria-label="Larger text"><i></i></button></div>
+  <p class="foot">Shared with the Viewer. Choices are remembered on this device.</p>
+</div>
+
+<div class="pop glass" id="pagesPop" role="dialog" aria-label="Pages" hidden>
+  <h2>Pages</h2>
+  <nav class="pl-pages"><a class="key" href="index.html">Viewer</a><a class="key" href="planetarium.html" aria-current="page">Sky now</a></nav>
+</div>
+
+<script type="module" src="app/planet/main.js"></script>
+</body>
+</html>
