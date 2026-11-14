@@ -9,7 +9,7 @@ import { gaiaCone, SIMBAD_TAP } from '../../core/resolve.js';
 import { parseCSV } from '../../core/irsa.js';
 import { prebakedFetch } from '../../core/prebaked.js'; // the five demo targets answer from web/prebaked/ (Claude)
 import {
-  GAIA_RADIUS_ARCSEC, SIMBAD_RADIUS_ARCSEC, JPL_TIMEOUT_MS, gaiaStars, simbadStars, simbadConeADQL, decideStar,
+  GAIA_RADIUS_ARCSEC, SIMBAD_RADIUS_ARCSEC, JPL_TIMEOUT_MS, FIELD_REACH_ARCSEC, FIELD_HALF_WIDTH_DEG, gaiaStars, simbadStars, simbadConeADQL, decideStar,
   sbIdentPath, parseSbIdent, decideAsteroid,
 } from './logic.js';
 
@@ -19,8 +19,8 @@ export function timeoutSignal(signal, ms) {
   return signal && AbortSignal.any ? AbortSignal.any([signal, t]) : (signal || t);
 }
 
-export async function fetchSimbadCone(ra, dec, { fetchFn = prebakedFetch, signal, endpoint = SIMBAD_TAP, radius = SIMBAD_RADIUS_ARCSEC } = {}) {
-  const url = `${endpoint}?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=${encodeURIComponent(simbadConeADQL(ra, dec, radius))}`;
+export async function fetchSimbadCone(ra, dec, { fetchFn = prebakedFetch, signal, endpoint = SIMBAD_TAP, radius = SIMBAD_RADIUS_ARCSEC, top = 400 } = {}) {
+  const url = `${endpoint}?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=${encodeURIComponent(simbadConeADQL(ra, dec, radius, top))}`;
   const res = await fetchFn(url, { signal });
   if (!res.ok) throw new Error(`SIMBAD HTTP ${res.status}`);
   const text = await res.text();
@@ -28,24 +28,37 @@ export async function fetchSimbadCone(ra, dec, { fetchFn = prebakedFetch, signal
   return parseCSV(text);
 }
 
-// at: { ra, dec } of the ring; epochs: [{ mjd, label }] of the blinked seasons.
-export async function runStarCheck({ at, epochs, base, fetchFn = prebakedFetch, signal, timeoutMs = 25000 }) {
+// ---- field level: asked once per field (and season), as soon as the field loads, then matched
+// locally for every click. One request per field means the five demo fields answer from
+// web/prebaked/ wherever a judge clicks.
+
+// Gaia DR3 + SIMBAD around the patch centre, wide enough for any ring in the patch.
+export async function fetchFieldStars({ centre, base, fetchFn = prebakedFetch, signal, timeoutMs = 25000 }) {
   const [g, s] = await Promise.allSettled([
-    gaiaCone(at.ra, at.dec, GAIA_RADIUS_ARCSEC, { endpoint: `${base}/gaia/tap/sync`, fetchFn, top: 400, signal: timeoutSignal(signal, timeoutMs) }),
-    fetchSimbadCone(at.ra, at.dec, { fetchFn, signal: timeoutSignal(signal, timeoutMs) }),
+    gaiaCone(centre.ra, centre.dec, GAIA_RADIUS_ARCSEC + FIELD_REACH_ARCSEC, { endpoint: `${base}/gaia/tap/sync`, fetchFn, top: 1000, signal: timeoutSignal(signal, timeoutMs) }),
+    fetchSimbadCone(centre.ra, centre.dec, { fetchFn, radius: SIMBAD_RADIUS_ARCSEC + FIELD_REACH_ARCSEC, top: 800, signal: timeoutSignal(signal, timeoutMs) }),
   ]);
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-  const gaia = g.status === 'fulfilled' ? { ok: true, stars: gaiaStars(g.value) } : { ok: false, error: String(g.reason?.message || g.reason) };
-  const simbad = s.status === 'fulfilled' ? { ok: true, stars: simbadStars(s.value) } : { ok: false, error: String(s.reason?.message || s.reason) };
+  return {
+    gaia: g.status === 'fulfilled' ? { ok: true, stars: gaiaStars(g.value) } : { ok: false, error: String(g.reason?.message || g.reason) },
+    simbad: s.status === 'fulfilled' ? { ok: true, stars: simbadStars(s.value) } : { ok: false, error: String(s.reason?.message || s.reason) },
+  };
+}
+// The star check for one ring, from the field's catalogue answer.
+export function starCheckAt({ gaia, simbad }, at, epochs) {
   return { ...decideStar({ gaia, simbad }, at, epochs), gaia: { ok: gaia.ok, n: gaia.stars?.length ?? 0, error: gaia.error }, simbad: { ok: simbad.ok, n: simbad.stars?.length ?? 0, error: simbad.error } };
 }
 
+// at: { ra, dec } of the ring; epochs: [{ mjd, label }] of the blinked seasons. (Per-click form, kept for tools.)
+export async function runStarCheck({ at, epochs, base, fetchFn = prebakedFetch, signal, timeoutMs = 25000 }) {
+  return starCheckAt(await fetchFieldStars({ centre: at, base, fetchFn, signal, timeoutMs }), at, epochs);
+}
 // One sb_ident request; on a non-404 failure with the MPC 500 observer, ask again with the
 // geocentric state vector (as the Asteroid Spotter does).
-async function askJpl({ at, season, base, fetchFn, signal, timeoutMs }) {
+async function askJpl({ at, season, base, fetchFn, signal, timeoutMs, halfWidthDeg }) {
   const budget = timeoutSignal(signal, timeoutMs); // one budget for both observer tries
   const one = async (observer) => {
-    const res = await fetchFn(base + sbIdentPath({ ra: at.ra, dec: at.dec, utc: season.utc, observer }), { signal: budget });
+    const res = await fetchFn(base + sbIdentPath({ ra: at.ra, dec: at.dec, utc: season.utc, observer, halfWidthDeg }), { signal: budget });
     if (!res.ok) { res.body?.cancel?.().catch(() => {}); return { ok: false, status: res.status }; }
     let json; try { json = await res.json(); } catch { return { ok: false, error: 'an unreadable answer' }; }
     if (!json?.signature) return { ok: false, error: json?.message || 'an unexpected answer' };
@@ -62,9 +75,16 @@ async function askJpl({ at, season, base, fetchFn, signal, timeoutMs }) {
   }
 }
 
-// seasons: [{ label, mjd, utc }] (the blinked seasons' middle images).
-export async function runAsteroidCheck({ at, seasons, base, fetchFn = prebakedFetch, signal, timeoutMs = JPL_TIMEOUT_MS }) {
-  const results = await Promise.all(seasons.map(season => askJpl({ at, season, base, fetchFn, signal, timeoutMs })));
+// One sb_ident answer per blinked season for the whole patch. seasons: [{ label, mjd, utc }] (each
+// season's middle image). Returns [{ label, mjd, utc, ok, rows, observer, status, error }].
+export async function fetchFieldAsteroids({ centre, seasons, base, fetchFn = prebakedFetch, signal, timeoutMs = JPL_TIMEOUT_MS }) {
+  const results = await Promise.all(seasons.map(season => askJpl({ at: centre, season, base, fetchFn, signal, timeoutMs, halfWidthDeg: FIELD_HALF_WIDTH_DEG })));
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-  return { ...decideAsteroid(results), results };
+  return results;
+}
+export const asteroidCheckAt = (results, at) => ({ ...decideAsteroid(results, at), results });
+
+// Per-click form (centre = the ring), kept for tools and tests.
+export async function runAsteroidCheck({ at, seasons, base, fetchFn = prebakedFetch, signal, timeoutMs = JPL_TIMEOUT_MS }) {
+  return asteroidCheckAt(await fetchFieldAsteroids({ centre: at, seasons, base, fetchFn, signal, timeoutMs }), at);
 }

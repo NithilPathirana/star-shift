@@ -13,9 +13,9 @@
 //  - viewer: the SIA (or TAP fallback) image list and the trimmed 3-HDU cutouts the app fetches,
 //    plus the "Other source" SIMBAD cone (brightest other source in the first-season stack);
 //    the Ghost and Motion panel use the built-in preset values, so they need no Gaia call;
-//  - Spot a mover: the same image list and cutouts, and for one click (the target's predicted
-//    spot in the latest season, rounded to 0.01 px like a real click) the Gaia + SIMBAD cones
-//    and the JPL sb_ident answers for both blinked seasons;
+//  - Spot a mover: the same image list and cutouts, and the field-level lookups the page starts
+//    when a field loads (Gaia + SIMBAD around the patch centre, JPL sb_ident for the whole patch
+//    in each blinked season), so any click in the patch is answered from these files;
 //  - Asteroid page (neo.html): its default field and dates (6 sb_ident requests).
 // The `hdus=5` cutouts (VARIANCE/ZODI) are fetched only when a user opens those layers: not saved.
 // JPL is asked politely: the relay's cached copy (any age) first; only if there is none, one live
@@ -36,8 +36,8 @@ import { PRESETS } from '../web/app/presets.js';
 import { DEFAULT_SETTINGS } from '../web/app/query.js';
 import { listImages, decodeCutout } from '../web/core/irsa.js';
 import { simbadCone } from '../web/app/skymap.js';
-import { runStarCheck, runAsteroidCheck } from '../web/app/spot/checks.js';
-import { LOAD_SETTINGS } from '../web/app/spot/logic.js';
+import { fetchFieldStars, fetchFieldAsteroids } from '../web/app/spot/checks.js';
+import { LOAD_SETTINGS, fieldCentre } from '../web/app/spot/logic.js';
 import { buildSbIdentParams, DEFAULT_DATES } from '../web/app/neo/sb-ident.js';
 import { propagate } from '../web/core/motion.js';
 import { gridToWorld, worldToGrid } from '../web/core/align.js';
@@ -171,27 +171,25 @@ async function otherSource(frames, grid, rec) {
   return { px: [bx, by] };
 }
 
-// Spot a mover (spot/main.js loadField + runChecks) for one click on the target's latest-season spot.
+// Spot a mover (spot/main.js fieldStars + fieldAsteroids): the field-level lookups the page starts
+// as soon as a field loads, so ANY click in the five demo fields is answered from these files:
+// Gaia + SIMBAD around the patch centre, and JPL sb_ident for the whole patch at the real UTC of
+// each blinked season's middle image. (Matching a ring against them happens in the page.)
 async function spot(p, frames, grid, rec) {
-  const target = { ...p.target, presetKey: p.key };
   const stacks = buildStacks(frames), groups = seasons(frames);
   if (stacks.length < 2) return { skipped: 'one season only' };
   const pick = (i) => { const fs = groups[i].frames; let b = fs[0]; for (const f of fs) if (Math.abs(f.mjd - stacks[i].mjd) < Math.abs(b.mjd - stacks[i].mjd)) b = f; return b; };
-  const A = 0, B = stacks.length - 1;
-  const now = propagate(target, stacks[B].mjd);
-  const [gx, gy] = worldToGrid(grid, now.ra, now.dec);
-  const x = +gx.toFixed(2), y = +gy.toFixed(2); // spot/main.js rounds clicks to 0.01 px
-  const [ra, dec] = gridToWorld(grid, x, y);
-  const at = { ra, dec };
-  const epochs = [{ mjd: stacks[A].mjd, label: 'First season' }, { mjd: stacks[B].mjd, label: 'Latest season' }];
-  const sc = await runStarCheck({ at, epochs, base: BASE, fetchFn: rec }).catch(e => ({ status: 'failed', text: e.message }));
-  const ac = await runAsteroidCheck({ at, base: BASE, fetchFn: rec, timeoutMs: 2 * JPL_MS,
-    seasons: [A, B].map((i, k) => { const f = pick(i); return { label: epochs[k].label, mjd: f.mjd, utc: f.date, obsid: f.obsid }; }) })
-    .catch(e => ({ status: 'failed', text: e.message, results: [] }));
+  const centre = fieldCentre(grid);
+  const blink = [0, stacks.length - 1].map((i, k) => { const f = pick(i); return { label: k ? 'Latest season' : 'First season', mjd: f.mjd, utc: f.date, obsid: f.obsid }; });
+  const cat = await fetchFieldStars({ centre, base: BASE, fetchFn: rec }).catch(e => ({ gaia: { ok: false, error: e.message }, simbad: { ok: false, error: e.message } }));
+  // one request per season, as the page does (each season is its own lookup there)
+  const jpl = [];
+  for (const season of blink) jpl.push(...await fetchFieldAsteroids({ centre, seasons: [season], base: BASE, fetchFn: rec, timeoutMs: 2 * JPL_MS })
+    .catch(e => [{ ...season, ok: false, error: e.message }]));
   return {
-    click: { x, y, ra: +ra.toFixed(7), dec: +dec.toFixed(7), note: "the target's predicted spot in the latest season; a click at exactly this grid position (0.01 px) is answered from these files" },
-    starCheck: { status: sc.status, gaia: sc.gaia?.ok ?? false, simbad: sc.simbad?.ok ?? false },
-    asteroidCheck: { status: ac.status, seasons: (ac.results || []).map(r => ({ label: r.label, utc: r.utc, ok: !!r.ok, observer: r.observer || null, error: r.ok ? null : (r.error || (r.status ? 'HTTP ' + r.status : 'no answer')) })) },
+    field: { centre, note: 'field-level requests: any click in this patch is answered from these files' },
+    starCheck: { gaia: cat.gaia.ok, simbad: cat.simbad.ok },
+    asteroidCheck: { seasons: jpl.map(r => ({ label: r.label, utc: r.utc, ok: !!r.ok, objects: r.ok ? r.rows.length : null, observer: r.observer || null, error: r.ok ? null : (r.error || (r.status ? 'HTTP ' + r.status : 'no answer')) })) },
   };
 }
 

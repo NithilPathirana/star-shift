@@ -1,6 +1,6 @@
 {
  "about": "Star Shift prebaked answers for the five NASA demo targets (tools/export_prebaked.mjs; read by web/core/prebaked.js). Keys are request paths as the app builds them, relative to the page origin (the relay); SIMBAD keys are full URLs. Exact matches only; anything else goes live.",
- "generated": "2026-11-14T22:44:26.662Z",
+ "generated": "2026-11-14T23:13:48.353Z",
  "settings": {
   "fov": 2.5,
   "max": 120,
@@ -18,25 +18,24 @@
     2
    ],
    "spot": {
-    "click": {
-     "x": 12.06,
-     "y": 11.21,
-     "ra": 269.4461263,
-     "dec": 4.7700524,
-     "note": "the target's predicted spot in the latest season; a click at exactly this grid position (0.01 px) is answered from these files"
+    "field": {
+     "centre": {
+      "ra": 269.446229,
+      "dec": 4.768703
+     },
+     "note": "field-level requests: any click in this patch is answered from these files"
     },
     "starCheck": {
-     "status": "explained",
      "gaia": true,
      "simbad": true
     },
     "asteroidCheck": {
-     "status": "clear",
      "seasons": [
       {
        "label": "First season",
        "utc": "2025-08-29T15:45:41.306",
        "ok": true,
+       "objects": 0,
        "observer": "mpc-500",
        "error": null
       },
@@ -44,18 +43,19 @@
        "label": "Latest season",
        "utc": "2026-08-23T23:02:11.249",
        "ok": true,
+       "objects": 0,
        "observer": "mpc-500",
        "error": null
       }
      ]
     }
    },
-   "files": 130,
-   "mib": 8.15,
+   "files": 132,
+   "mib": 8.25,
    "kinds": {
     "gaia": 1,
     "cutout": 120,
-    "jpl-sb_ident": 2,
+    "jpl-sb_ident": 4,
     "sia": 4,
     "simbad": 3
    }
@@ -70,25 +70,24 @@
     12
    ],
    "spot": {
-    "click": {
-     "x": 11.54,
-     "y": 12.28,
-     "ra": 331.0981685,
-     "dec": -56.8011494,
-     "note": "the target's predicted spot in the latest season; a click at exactly this grid position (0.01 px) is answered from these files"
+    "field": {
+     "centre": {
+      "ra": 331.096733,
+      "dec": -56.800671
+     },
+     "note": "field-level requests: any click in this patch is answered from these files"
     },
     "starCheck": {
-     "status": "explained",
      "gaia": true,
      "simbad": true
     },
     "asteroidCheck": {
-     "status": "clear",
      "seasons": [
       {
        "label": "First season",
        "utc": "2025-05-07T05:17:22.096",
        "ok": true,
+       "objects": 0,
        "observer": "mpc-500",
        "error": null
       },
@@ -96,18 +95,19 @@
        "label": "Latest season",
        "utc": "2026-09-27T19:01:58.964",
        "ok": true,
+       "objects": 0,
        "observer": "mpc-500",
        "error": null
       }
      ]
     }
    },
-   "files": 130,
-   "mib": 8.55,
+   "files": 132,
+   "mib": 8.56,
    "kinds": {
     "gaia": 1,
     "cutout": 120,
-    "jpl-sb_ident": 2,
+    "jpl-sb_ident": 4,
     "sia": 4,
     "simbad": 3
    }
@@ -122,44 +122,44 @@
     5
    ],
    "spot": {
-    "click": {
-     "x": 12.63,
-     "y": 11.95,
-     "ra": 133.7590136,
-     "dec": -7.2421242,
-     "note": "the target's predicted spot in the latest season; a click at exactly this grid position (0.01 px) is answered from these files"
+    "field": {
+     "centre": {
+      "ra": 133.760098,
+      "dec": -7.24221
+     },
+     "note": "field-level requests: any click in this patch is answered from these files"
     },
     "starCheck": {
-     "status": "explained",
      "gaia": true,
      "simbad": true
     },
     "asteroidCheck": {
-     "status": "failed",
      "seasons": [
       {
        "label": "First season",
        "utc": "2025-05-06T02:40:54.280",
        "ok": true,
+       "objects": 0,
        "observer": "mpc-500",
        "error": null
       },
       {
        "label": "Latest season",
        "utc": "2026-05-01T15:44:24.553",
-       "ok": false,
-       "observer": null,
-       "error": "HTTP 504"
+       "ok": true,
+       "objects": 0,
+       "observer": "mpc-500",
+       "error": null
       }
      ]
     }
    },
-   "files": 129,
-   "mib": 7.69,
+   "files": 132,
+   "mib": 7.71,
    "kinds": {
     "gaia": 1,
     "cutout": 120,
-    "jpl-sb_ident": 1,
+    "jpl-sb_ident": 4,
     "sia": 4,
     "simbad": 3
    }
@@ -174,25 +174,24 @@
     7
    ],
    "spot": {
-    "click": {
-     "x": 12,
-     "y": 12,
-     "ra": 76.956587,
-     "dec": 30.4012903,
-     "note": "the target's predicted spot in the latest season; a click at exactly this grid position (0.01 px) is answered from these files"
+    "field": {
+     "centre": {
+      "ra": 76.956587,
+      "dec": 30.40129
+     },
+     "note": "field-level requests: any click in this patch is answered from these files"
     },
     "starCheck": {
-     "status": "explained",
      "gaia": true,
      "simbad": true
     },
     "asteroidCheck": {
-     "status": "clear",
      "seasons": [
       {
        "label": "First season",
        "utc": "2025-09-09T21:53:12.705",
        "ok": true,
+       "objects": 0,
        "observer": "mpc-500",
        "error": null
       },
@@ -200,18 +199,19 @@
        "label": "Latest season",
        "utc": "2026-09-11T21:02:28.959",
        "ok": true,
+       "objects": 1,
        "observer": "mpc-500",
        "error": null
       }
      ]
     }
    },
-   "files": 131,
-   "mib": 8.01,
+   "files": 133,
+   "mib": 8.06,
    "kinds": {
     "gaia": 1,
     "cutout": 120,
-    "jpl-sb_ident": 3,
+    "jpl-sb_ident": 5,
     "sia": 4,
     "simbad": 3
    }
@@ -226,25 +226,24 @@
     12
    ],
    "spot": {
-    "click": {
-     "x": 12,
-     "y": 12,
-     "ra": 248.1672337,
-     "dec": 66.7550238,
-     "note": "the target's predicted spot in the latest season; a click at exactly this grid position (0.01 px) is answered from these files"
+    "field": {
+     "centre": {
+      "ra": 248.167234,
+      "dec": 66.755024
+     },
+     "note": "field-level requests: any click in this patch is answered from these files"
     },
     "starCheck": {
-     "status": "explained",
      "gaia": true,
      "simbad": true
     },
     "asteroidCheck": {
-     "status": "clear",
      "seasons": [
       {
        "label": "First season",
        "utc": "2025-06-22T15:34:52.014",
        "ok": true,
+       "objects": 0,
        "observer": "mpc-500",
        "error": null
       },
@@ -252,18 +251,19 @@
        "label": "Latest season",
        "utc": "2026-06-08T13:55:44.836",
        "ok": true,
+       "objects": 0,
        "observer": "mpc-500",
        "error": null
       }
      ]
     }
    },
-   "files": 132,
-   "mib": 8.8,
+   "files": 134,
+   "mib": 8.81,
    "kinds": {
     "gaia": 1,
     "cutout": 120,
-    "jpl-sb_ident": 4,
+    "jpl-sb_ident": 6,
     "sia": 4,
     "simbad": 3
    }
@@ -327,57 +327,44 @@
   "files": 6
  },
  "jpl": {
-  "asked": 17,
-  "answered": 15,
-  "notAnswered": [
-   {
-    "owner": "wise-0855",
-    "key": "/jpl/sb_ident?obs-time=2026-05-01_15%3A44%3A24&fov-ra-center=08-55-02.16&fov-dec-center=M07-14-31.65&fov-ra-hwidth=0.03&fov-dec-hwidth=0.03&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500",
-    "status": 504,
-    "error": null
-   },
-   {
-    "owner": "wise-0855",
-    "key": "/jpl/sb_ident?obs-time=2026-05-01_15%3A44%3A24&fov-ra-center=08-55-02.16&fov-dec-center=M07-14-31.65&fov-ra-hwidth=0.03&fov-dec-hwidth=0.03&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&xobs=0%2C0%2C0%2C0%2C0%2C0",
-    "status": 504,
-    "error": null
-   }
-  ],
-  "note": "Requests JPL did not answer go live on the page (the Spot verdict never waits for JPL)."
+  "asked": 16,
+  "answered": 16,
+  "notAnswered": [],
+  "note": "All JPL requests answered."
  },
  "totals": {
-  "files": 659,
-  "mib": 41.2
+  "files": 670,
+  "mib": 41.39
  },
  "entries": {
-  "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20400%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.7590135926%2C%20-7.2421242017%2C%200.0416666667))%20ORDER%20BY%20phot_g_mean_mag": {
-   "file": "wise-0855/cddfd40f1db507c8.csv",
-   "size": 6377,
-   "fetched": "2026-11-14T22:23:21.357Z",
+  "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.760098%2C%20-7.24221%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
+   "file": "wise-0855/8bd59c81382079d7.csv",
+   "size": 23096,
+   "fetched": "2026-11-14T22:56:26.364Z",
    "kind": "gaia"
   },
-  "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20400%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.1672337120%2C%2066.7550237510%2C%200.0416666667))%20ORDER%20BY%20phot_g_mean_mag": {
-   "file": "r-dra/c91349ab559237cf.csv",
-   "size": 5001,
-   "fetched": "2026-11-14T17:31:27.383Z",
+  "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.167234%2C%2066.755024%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
+   "file": "r-dra/e32fc63220175be9.csv",
+   "size": 14778,
+   "fetched": "2026-11-14T23:05:34.218Z",
    "kind": "gaia"
   },
-  "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20400%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20269.4461263310%2C%204.7700524226%2C%200.0416666667))%20ORDER%20BY%20phot_g_mean_mag": {
-   "file": "barnard/18c22dda64e4992a.csv",
-   "size": 62866,
-   "fetched": "2026-11-14T22:16:19.326Z",
+  "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20269.446229%2C%204.768703%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
+   "file": "barnard/55bb61544dbc2872.csv",
+   "size": 158315,
+   "fetched": "2026-11-14T22:50:48.582Z",
    "kind": "gaia"
   },
-  "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20400%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20331.0981685251%2C%20-56.8011493593%2C%200.0416666667))%20ORDER%20BY%20phot_g_mean_mag": {
-   "file": "eps-indi-b/ac61f5e72d109a35.csv",
-   "size": 6425,
-   "fetched": "2026-11-14T22:19:54.571Z",
+  "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20331.096733%2C%20-56.800671%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
+   "file": "eps-indi-b/9bf0122d6dcddfbd.csv",
+   "size": 20010,
+   "fetched": "2026-11-14T22:53:37.900Z",
    "kind": "gaia"
   },
-  "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20400%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%2076.9565870132%2C%2030.4012902846%2C%200.0416666667))%20ORDER%20BY%20phot_g_mean_mag": {
-   "file": "rw-aur/650c85055a04fdfd.csv",
-   "size": 25988,
-   "fetched": "2026-11-14T22:26:47.605Z",
+  "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%2076.956587%2C%2030.40129%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
+   "file": "rw-aur/81d94606721bf36e.csv",
+   "size": 82494,
+   "fetched": "2026-11-14T23:00:43.635Z",
    "kind": "gaia"
   },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/1/level2_2025W17_4B_0468_1D1_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800180d&size=0.0641": {
@@ -3986,6 +3973,24 @@
    "fetched": "2026-11-14T22:24:46.803Z",
    "kind": "jpl-sb_ident"
   },
+  "/jpl/sb_ident?obs-time=2025-05-06_02%3A40%3A54&fov-ra-center=08-55-02.42&fov-dec-center=M07-14-31.96&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
+   "file": "wise-0855/d9cbec3d932059a0.json",
+   "size": 560,
+   "fetched": "2026-11-14T23:09:37.290Z",
+   "kind": "jpl-sb_ident"
+  },
+  "/jpl/sb_ident?obs-time=2025-05-06_02%3A40%3A54&fov-ra-center=08-55-02.42&fov-dec-center=M07-14-31.96&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&xobs=0%2C0%2C0%2C0%2C0%2C0": {
+   "file": "wise-0855/1f94e97ba6116bf7.json",
+   "size": 568,
+   "fetched": "2026-11-14T22:59:13.116Z",
+   "kind": "jpl-sb_ident"
+  },
+  "/jpl/sb_ident?obs-time=2025-05-07_05%3A17%3A22&fov-ra-center=22-04-23.22&fov-dec-center=M56-48-02.42&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
+   "file": "eps-indi-b/9e3b450a5d8f5af1.json",
+   "size": 560,
+   "fetched": "2026-11-14T22:54:49.518Z",
+   "kind": "jpl-sb_ident"
+  },
   "/jpl/sb_ident?obs-time=2025-05-07_05%3A17%3A22&fov-ra-center=22-04-23.56&fov-dec-center=M56-48-04.14&fov-ra-hwidth=0.03&fov-dec-hwidth=0.03&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
    "file": "eps-indi-b/0fccef77620643dc.json",
    "size": 558,
@@ -4002,6 +4007,12 @@
    "file": "r-dra/51b82e87b7c7cf06.json",
    "size": 565,
    "fetched": "2026-11-14T22:33:05.972Z",
+   "kind": "jpl-sb_ident"
+  },
+  "/jpl/sb_ident?obs-time=2025-06-22_15%3A34%3A52&fov-ra-center=16-32-40.14&fov-dec-center=66-45-18.09&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
+   "file": "r-dra/1439539608a2ee84.json",
+   "size": 559,
+   "fetched": "2026-11-14T23:06:38.071Z",
    "kind": "jpl-sb_ident"
   },
   "/jpl/sb_ident?obs-time=2025-08-15_12%3A00%3A00&fov-ra-center=17-57-47.06&fov-dec-center=04-46-14.52&fov-ra-hwidth=0.25&fov-dec-hwidth=0.25&sb-kind=a&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
@@ -4022,6 +4033,18 @@
    "fetched": "2026-11-14T22:36:04.710Z",
    "kind": "jpl-sb_ident"
   },
+  "/jpl/sb_ident?obs-time=2025-08-29_15%3A45%3A41&fov-ra-center=17-57-47.09&fov-dec-center=04-46-07.33&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
+   "file": "barnard/15bdfa4eda34e41e.json",
+   "size": 559,
+   "fetched": "2026-11-14T22:52:24.508Z",
+   "kind": "jpl-sb_ident"
+  },
+  "/jpl/sb_ident?obs-time=2025-09-09_21%3A53%3A12&fov-ra-center=05-07-49.58&fov-dec-center=30-24-04.64&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
+   "file": "rw-aur/f9f84d481cd8023f.json",
+   "size": 559,
+   "fetched": "2026-11-14T23:02:07.360Z",
+   "kind": "jpl-sb_ident"
+  },
   "/jpl/sb_ident?obs-time=2025-09-09_21%3A53%3A12&fov-ra-center=05-07-49.58&fov-dec-center=30-24-04.65&fov-ra-hwidth=0.03&fov-dec-hwidth=0.03&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
    "file": "rw-aur/8a901af87f3684b0.json",
    "size": 557,
@@ -4040,6 +4063,12 @@
    "fetched": "2026-11-14T22:10:54.419Z",
    "kind": "jpl-sb_ident"
   },
+  "/jpl/sb_ident?obs-time=2026-05-01_15%3A44%3A24&fov-ra-center=08-55-02.42&fov-dec-center=M07-14-31.96&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
+   "file": "wise-0855/0c4a9aac340908fc.json",
+   "size": 560,
+   "fetched": "2026-11-14T23:00:39.092Z",
+   "kind": "jpl-sb_ident"
+  },
   "/jpl/sb_ident?obs-time=2026-06-08_13%3A55%3A44&fov-ra-center=16-32-40.14&fov-dec-center=66-45-18.09&fov-ra-hwidth=0.03&fov-dec-hwidth=0.03&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
    "file": "r-dra/897c9bd4c95e6829.json",
    "size": 557,
@@ -4050,6 +4079,12 @@
    "file": "r-dra/b39719912a641d30.json",
    "size": 565,
    "fetched": "2026-11-14T22:33:06.998Z",
+   "kind": "jpl-sb_ident"
+  },
+  "/jpl/sb_ident?obs-time=2026-06-08_13%3A55%3A44&fov-ra-center=16-32-40.14&fov-dec-center=66-45-18.09&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
+   "file": "r-dra/aab3b0e186deb131.json",
+   "size": 559,
+   "fetched": "2026-11-14T23:07:50.569Z",
    "kind": "jpl-sb_ident"
   },
   "/jpl/sb_ident?obs-time=2026-08-15_12%3A00%3A00&fov-ra-center=17-57-47.06&fov-dec-center=04-46-14.52&fov-ra-hwidth=0.25&fov-dec-hwidth=0.25&sb-kind=a&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
@@ -4070,6 +4105,18 @@
    "fetched": "2026-11-14T22:36:09.629Z",
    "kind": "jpl-sb_ident"
   },
+  "/jpl/sb_ident?obs-time=2026-08-23_23%3A02%3A11&fov-ra-center=17-57-47.09&fov-dec-center=04-46-07.33&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
+   "file": "barnard/a8c4ddc64ec1ffdb.json",
+   "size": 559,
+   "fetched": "2026-11-14T22:53:31.571Z",
+   "kind": "jpl-sb_ident"
+  },
+  "/jpl/sb_ident?obs-time=2026-09-11_21%3A02%3A28&fov-ra-center=05-07-49.58&fov-dec-center=30-24-04.64&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
+   "file": "rw-aur/811c59851b0b56e0.json",
+   "size": 902,
+   "fetched": "2026-11-14T23:11:38.355Z",
+   "kind": "jpl-sb_ident"
+  },
   "/jpl/sb_ident?obs-time=2026-09-11_21%3A02%3A28&fov-ra-center=05-07-49.58&fov-dec-center=30-24-04.65&fov-ra-hwidth=0.03&fov-dec-hwidth=0.03&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
    "file": "rw-aur/78fd75b1fe9932a1.json",
    "size": 900,
@@ -4080,6 +4127,12 @@
    "file": "rw-aur/0c4ec5a9655deda4.json",
    "size": 908,
    "fetched": "2026-11-14T22:30:05.754Z",
+   "kind": "jpl-sb_ident"
+  },
+  "/jpl/sb_ident?obs-time=2026-09-27_19%3A01%3A58&fov-ra-center=22-04-23.22&fov-dec-center=M56-48-02.42&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
+   "file": "eps-indi-b/9afedabcd8c8d11f.json",
+   "size": 560,
+   "fetched": "2026-11-14T22:56:21.976Z",
    "kind": "jpl-sb_ident"
   },
   "/jpl/sb_ident?obs-time=2026-09-27_19%3A01%3A58&fov-ra-center=22-04-23.56&fov-dec-center=M56-48-04.14&fov-ra-hwidth=0.03&fov-dec-hwidth=0.03&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
@@ -4211,91 +4264,91 @@
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.7549324191%2C%20-7.2302512574%2C%200.0041666667))": {
    "file": "wise-0855/d9be2233b913b45e.csv",
    "size": 27,
-   "fetched": "2026-11-14T22:37:46.280Z",
+   "fetched": "2026-11-14T23:13:41.486Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.7577786034%2C%20-7.2420186009%2C%200.05))": {
    "file": "wise-0855/87f236ac2a22fa70.csv",
    "size": 140,
-   "fetched": "2026-11-14T22:37:43.767Z",
+   "fetched": "2026-11-14T23:13:39.823Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.1455907916%2C%2066.7550222687%2C%200.0041666667))": {
    "file": "r-dra/a92621898e5a76aa.csv",
    "size": 27,
-   "fetched": "2026-11-14T22:42:45.973Z",
+   "fetched": "2026-11-14T23:13:45.887Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.1672203826%2C%2066.7550253180%2C%200.05))": {
    "file": "r-dra/e1d2fd21a3b0a655.csv",
    "size": 154,
-   "fetched": "2026-11-14T22:42:43.554Z",
+   "fetched": "2026-11-14T23:13:44.379Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20269.4393719471%2C%204.7857861380%2C%200.0041666667))": {
    "file": "barnard/58702f1f91eff02b.csv",
    "size": 27,
-   "fetched": "2026-11-14T22:34:41.022Z",
+   "fetched": "2026-11-14T23:13:36.516Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20269.4460727235%2C%204.7707183640%2C%200.05))": {
    "file": "barnard/b1bd072e9d41cf79.csv",
    "size": 140,
-   "fetched": "2026-11-14T22:34:38.693Z",
+   "fetched": "2026-11-14T23:13:34.154Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20331.0624140088%2C%20-56.8006663248%2C%200.0041666667))": {
    "file": "eps-indi-b/28952fa4d898926e.csv",
    "size": 27,
-   "fetched": "2026-11-14T22:36:12.064Z",
+   "fetched": "2026-11-14T23:13:39.209Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20331.0984339339%2C%20-56.8012468832%2C%200.05))": {
    "file": "eps-indi-b/f4ba24bd5efca4fc.csv",
    "size": 152,
-   "fetched": "2026-11-14T22:36:09.669Z",
+   "fetched": "2026-11-14T23:13:37.695Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%2076.9328168821%2C%2030.4098297987%2C%200.0041666667))": {
    "file": "rw-aur/9be9aac2abc36881.csv",
    "size": 27,
-   "fetched": "2026-11-14T22:41:09.682Z",
+   "fetched": "2026-11-14T23:13:43.745Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%2076.9565886091%2C%2030.4012864140%2C%200.05))": {
    "file": "rw-aur/fe6d6a6c89a6fded.csv",
    "size": 392,
-   "fetched": "2026-11-14T22:41:07.512Z",
+   "fetched": "2026-11-14T23:13:42.093Z",
    "kind": "simbad"
   },
-  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20400%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.759014%2C%20-7.242124%2C%200.083333))%20%3D%201": {
-   "file": "wise-0855/f1484363ec8a94f6.csv",
-   "size": 336,
-   "fetched": "2026-11-14T22:37:46.601Z",
+  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20800%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.760098%2C%20-7.242210%2C%200.113889))%20%3D%201": {
+   "file": "wise-0855/3d2e29dbaf7c4549.csv",
+   "size": 714,
+   "fetched": "2026-11-14T23:13:41.782Z",
    "kind": "simbad"
   },
-  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20400%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.167234%2C%2066.755024%2C%200.083333))%20%3D%201": {
-   "file": "r-dra/ecbe022dc9f54e40.csv",
-   "size": 255,
-   "fetched": "2026-11-14T22:42:46.279Z",
+  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20800%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.167234%2C%2066.755024%2C%200.113889))%20%3D%201": {
+   "file": "r-dra/fb13e86308a8967d.csv",
+   "size": 402,
+   "fetched": "2026-11-14T23:13:46.181Z",
    "kind": "simbad"
   },
-  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20400%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20269.446126%2C%204.770052%2C%200.083333))%20%3D%201": {
-   "file": "barnard/95c47e747ee679ef.csv",
-   "size": 1399,
-   "fetched": "2026-11-14T22:34:41.347Z",
+  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20800%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20269.446229%2C%204.768703%2C%200.113889))%20%3D%201": {
+   "file": "barnard/891d14fc67baa48c.csv",
+   "size": 2288,
+   "fetched": "2026-11-14T23:13:36.820Z",
    "kind": "simbad"
   },
-  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20400%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20331.098169%2C%20-56.801149%2C%200.083333))%20%3D%201": {
-   "file": "eps-indi-b/9bef85a51c9ff9ac.csv",
-   "size": 532,
-   "fetched": "2026-11-14T22:36:12.398Z",
+  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20800%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20331.096733%2C%20-56.800671%2C%200.113889))%20%3D%201": {
+   "file": "eps-indi-b/9d351464356d82bf.csv",
+   "size": 691,
+   "fetched": "2026-11-14T23:13:39.516Z",
    "kind": "simbad"
   },
-  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20400%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%2076.956587%2C%2030.401290%2C%200.083333))%20%3D%201": {
-   "file": "rw-aur/dbd0c4493cd14174.csv",
-   "size": 1109,
-   "fetched": "2026-11-14T22:41:09.990Z",
+  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20800%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%2076.956587%2C%2030.401290%2C%200.113889))%20%3D%201": {
+   "file": "rw-aur/f821b3b48f0313fe.csv",
+   "size": 1711,
+   "fetched": "2026-11-14T23:13:44.056Z",
    "kind": "simbad"
   }
  }

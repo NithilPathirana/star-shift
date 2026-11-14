@@ -17,9 +17,9 @@ import { notebookAdd, openNotebook } from '../notebook/notebook.js';
 import {
   LOAD_SETTINGS, MAX_SUSPECTS, QUICK, fieldByKey, pickSurprise, nearestField, fmtDay, seasonRange, fmtPos,
   ARTEFACT_KINDS, flagsAtSpot, evaluateFlags, decideSeasons, seasonPresence, STATE_WORD, checkTitle,
-  initChecklist, checklistStep, decideVerdict, summaryText, REPORT_LINKS, ASTEROID_HALF_WIDTH_DEG, offsetText,
+  initChecklist, checklistStep, decideVerdict, summaryText, REPORT_LINKS, ASTEROID_HALF_WIDTH_DEG, offsetText, fieldCentre, passDistance,
 } from './logic.js';
-import { runStarCheck, runAsteroidCheck } from './checks.js';
+import { fetchFieldStars, starCheckAt, fetchFieldAsteroids, asteroidCheckAt } from './checks.js';
 
 const $ = (id) => document.getElementById(id);
 const R = window.MockRender;
@@ -133,6 +133,7 @@ async function loadField(f) {
     F: { d: Array.from(s.data, v => (Number.isFinite(v) ? v : null)) },
     frames: S.seasonFrames[i].frames }));
   S.ready = true; progress(); showState(null);
+  fieldStars(); fieldAsteroids(); // ask the catalogues and JPL for the whole patch now, before any click
   if (S.failed) toast(`${S.loaded} images are in. ${S.failed} couldn't be fetched (IRSA busy).`);
   S.show = 0; startBlink(); layout(); steps();
 }
@@ -252,7 +253,6 @@ function runChecks(s, retryId) {
   s.check = retryId ? checklistStep(s.check, { type: 'retry', id: retryId }) : checklistStep(s.check, { type: 'start' });
   const ids = retryId ? [retryId] : ['flags', 'star', 'asteroid', 'seasons'];
   s.gen = s.gen || {}; const my = {}; for (const id of ids) my[id] = s.gen[id] = {};
-  if (ids.includes('asteroid')) s.astStart = Date.now();
   const [A, B] = blinked();
   const at = { ra: s.ra, dec: s.dec };
   const epochs = [{ mjd: A.mjd, label: 'First season' }, { mjd: B.mjd, label: 'Latest season' }];
@@ -273,14 +273,42 @@ function runChecks(s, retryId) {
   update(s);
   if (my.flags) setTimeout(() => settle('flags', evaluateFlags([A, B].map((st, i) => ({ label: epochs[i].label, frames: st.frames })), s.x, s.y)), reduce() ? 0 : 150);
   if (my.star) {
-    runStarCheck({ at, epochs, base: BASE }).catch(e => ({ status: 'failed', text: `The star catalogues did not answer (${e.message}).`, near: [] }))
+    fieldStars(retryId === 'star').p.then(cat => starCheckAt(cat, at, epochs))
+      .catch(e => ({ status: 'failed', text: `The star catalogues did not answer (${e.message}).`, near: [] }))
       .then(res => { settle('star', res); if (my.seasons) settle('seasons', seasonsNow()); }); // seasons uses a known mover's predicted places
   } else if (my.seasons) setTimeout(() => settle('seasons', seasonsNow()), 0);
   if (my.asteroid) {
-    runAsteroidCheck({ at, base: BASE, seasons: [A, B].map((st, i) => { const f = middleImage(st); return { label: epochs[i].label, mjd: f.mjd, utc: f.date, obsid: f.obsid }; }) })
+    const fa = fieldAsteroids(retryId === 'asteroid'); s.astStart = fa.t0;
+    fa.p.then(results => asteroidCheckAt(results, at))
       .catch(e => ({ status: 'failed', text: `Could not ask JPL (${e.message}).`, results: [] }))
       .then(res => settle('asteroid', res));
   }
+}
+// Field-level lookups (lead, for the prebaked demo): Gaia + SIMBAD once per patch, JPL once per patch
+// and season, started when the field loads and matched locally for every ring. Kept in memory; a
+// lookup that failed is dropped when it settles, so the next ring (or Retry) asks again.
+const FIELD = new Map(); // key -> { t0, p }
+function fieldLookup(key, make, force) {
+  if (force) FIELD.delete(key);
+  let e = FIELD.get(key);
+  if (!e) { e = { t0: Date.now(), p: make() }; FIELD.set(key, e); e.p.then(r => { if (r?.failed && FIELD.get(key) === e) FIELD.delete(key); }, () => FIELD.delete(key)); }
+  return e;
+}
+function fieldStars(force) {
+  const c = fieldCentre(S.grid);
+  return fieldLookup(`stars|${c.ra},${c.dec}`, () => fetchFieldStars({ centre: c, base: BASE })
+    .catch(e => ({ gaia: { ok: false, error: e.message }, simbad: { ok: false, error: e.message } }))
+    .then(r => Object.assign(r, { failed: !r.gaia.ok || !r.simbad.ok })), force);
+}
+function fieldAsteroids(force) {
+  const c = fieldCentre(S.grid);
+  const parts = blinked().map((st, i) => {
+    const f = middleImage(st), season = { label: i ? 'Latest season' : 'First season', mjd: f.mjd, utc: f.date, obsid: f.obsid };
+    return fieldLookup(`jpl|${c.ra},${c.dec}|${season.utc}`, () => fetchFieldAsteroids({ centre: c, seasons: [season], base: BASE })
+      .then(r => Object.assign(r[0], { failed: !r[0].ok }))
+      .catch(e => ({ ...season, ok: false, error: e.message, failed: true })), force);
+  });
+  return { t0: Math.min(...parts.map(e => e.t0)), p: Promise.all(parts.map(e => e.p)) };
 }
 function update(s) {
   const before = s.verdict?.kind;
@@ -348,13 +376,14 @@ function evidence(id, d, s) {
       <p class="sm-evn">${esc(src)}. Each entry is moved in a straight line with its catalogued proper motion to the middle of each season (no parallax wobble). It explains the ring when it lands within 9.2″ (1.5 pixels).${d.mover ? ' On the image, a dashed ivory ring marks where the catalogue puts it in the season shown.' : ''}</p>`;
   }
   if (id === 'asteroid') {
-    const res = d.results || [];
-    return `<p class="sm-evh">${tagged('JPL', 'cat')} Small-Body Identification, a ${(ASTEROID_HALF_WIDTH_DEG * 7200).toFixed(0)}″ box around the ring</p>
+    const res = d.results || [], ring = { ra: s.ra, dec: s.dec };
+    const nearest = (rows) => rows.map(o => ({ o, d: passDistance(o, ring) })).sort((a, b) => a.d - b.d).slice(0, 3);
+    return `<p class="sm-evh">${tagged('JPL', 'cat')} Small-Body Identification for the whole patch (a ${(ASTEROID_HALF_WIDTH_DEG * 7200).toFixed(0)}″ box), distances from your ring</p>
       <ul class="sm-evl">${res.map(r => `<li><b>${esc(r.label)}</b>, image at <span class="num">${esc(String(r.utc).slice(0, 16).replace('T', ' '))}</span> UTC: ${r.ok
-        ? (r.rows.length ? `${r.rows.length} known object${r.rows.length === 1 ? '' : 's'}; nearest ${r.rows.slice(0, 3).map(o => `${esc(o.name)} <span class="num">${Number.isFinite(o.dist) ? fmtArc(o.dist) : '—'}</span>${o.vmag != null ? ` (V <span class="num">${o.vmag}</span>)` : ''}`).join(', ')}` : 'no known objects in the box')
+        ? (r.rows.length ? `${r.rows.length} known object${r.rows.length === 1 ? '' : 's'} in the patch; nearest to your ring ${nearest(r.rows).map(({ o, d }) => `${esc(o.name)} <span class="num">${Number.isFinite(d) ? fmtArc(d) : '—'}</span>${o.vmag != null ? ` (V <span class="num">${o.vmag}</span>)` : ''}`).join(', ')}` : 'no known objects in the patch')
         + (r.observer ? ` <small>(observer given as ${r.observer === 'mpc-500' ? 'MPC code 500' : 'a geocentric state vector'})</small>` : '')
         : `no answer${r.status ? ` (HTTP <span class="num">${r.status}</span>)` : r.error ? ` (${esc(r.error)})` : ''}`}</li>`).join('')}</ul>
-      <p class="sm-evn">Observer: the Earth's centre (SPHEREx is 700 km up; that shifts a main-belt asteroid by under 2″). An object explains the ring within 15″ of it.</p>`;
+      <p class="sm-evn">Observer: the Earth's centre (SPHEREx is 700 km up; that shifts a main-belt asteroid by under 2″). Asked once per patch and season; an object explains the ring when its predicted path (within an hour of the image) passes within 12″ (2 pixels).</p>`;
   }
   if (id === 'seasons') {
     return `<p class="sm-evh">${tagged('OBSERVED', 'obs')} Each season's stacked picture at the ring (9 × 9 pixels)</p>

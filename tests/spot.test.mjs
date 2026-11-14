@@ -131,11 +131,11 @@ test('star check: clear only when both catalogues answered', () => {
 
 // ---------- check c: JPL sb_ident
 test('sb_ident request: only names the relay allows, the image\'s real UTC time, both kinds', () => {
-  const p = L.sbIdentParams({ ra: 269.4486, dec: -4.7397, utc: '2025-08-15T20:46:08.896' });
+  const p = L.sbIdentParams({ ra: 269.4486, dec: -4.7397, utc: '2025-08-15T20:46:08.896', halfWidthDeg: 0.03 });
   for (const k of p.keys()) assert.ok(L.SB_IDENT_ALLOWED.includes(k), k);
   assert.equal(p.get('obs-time'), '2025-08-15_20:46:08');
   assert.equal(p.get('fov-ra-center'), '17-57-47.66'); assert.equal(p.get('fov-dec-center'), 'M04-44-22.92');
-  assert.equal(p.get('fov-ra-hwidth'), '0.03'); assert.equal(p.get('mpc-code'), '500'); assert.equal(p.has('sb-kind'), false);
+  assert.equal(p.get('fov-ra-hwidth'), '0.03'); assert.equal(L.sbIdentParams({ ra: 1, dec: 1, utc: '2025-08-15T00:00:00', halfWidthDeg: L.FIELD_HALF_WIDTH_DEG }).get('fov-dec-hwidth'), '0.035'); assert.equal(p.get('mpc-code'), '500'); assert.equal(p.has('sb-kind'), false);
   const g = L.sbIdentParams({ ra: 269.4486, dec: 4.7397, utc: '2025-08-15T20:46:08', observer: 'geocentric-state' });
   assert.equal(g.get('xobs'), '0,0,0,0,0,0'); assert.equal(g.has('mpc-code'), false);
   assert.ok(L.sbIdentPath({ ra: 1, dec: 1, utc: '2026-01-01T00:00:00' }).startsWith('/jpl/sb_ident?'));
@@ -143,22 +143,39 @@ test('sb_ident request: only names the relay allows, the image\'s real UTC time,
 });
 const SB = { signature: { version: '1.1' }, fields_second: ['Object name', 'Astrometric RA (hh:mm:ss)', "Astrometric Dec (dd mm'ss\")", 'Dist. from center RA (")', 'Dist. from center Dec (")', 'Dist. from center Norm (")', 'Visual magnitude (V)', 'RA rate ("/h)', 'Dec rate ("/h)'],
   data_second_pass: [['541093 (2018 RJ4)', '17:57:46.10', "+04 45'54.2\"", '-14.4', '-20.3', '84.9', '19.4', '1', '2'], ['2P/Encke', '17:57:48.02', "-04 46'31.8\"", '9', '8', '12.0', null, '1', '1']] };
-test('sb_ident answers parse and match within 15″', () => {
+test('sb_ident answers parse; objects match the ring locally within 12″, along an hour of track', () => {
   const rows = L.parseSbIdent(SB);
   assert.equal(rows[0].name, '2P/Encke'); assert.equal(rows[0].dist, 12); assert.ok(rows[0].dec < 0); assert.equal(rows[0].vmag, null);
-  assert.ok(Math.abs(rows[1].ra - 269.44208) < 1e-4);
-  const v = L.decideAsteroid([{ label: 'First season', mjd: 60900, utc: '2025-08-15T20:46:08', ok: true, rows }]);
+  assert.ok(Math.abs(rows[1].ra - 269.44208) < 1e-4); assert.equal(rows[1].raRate, 1); assert.equal(rows[1].decRate, 2);
+  const enc = rows[0], near = { ra: enc.ra + 8 / 3600 / Math.cos(enc.dec * Math.PI / 180), dec: enc.dec }; // 8″ east of Encke
+  const v = L.decideAsteroid([{ label: 'First season', mjd: 60900, utc: '2025-08-15T20:46:08', ok: true, rows }], near);
   assert.equal(v.status, 'explained'); assert.equal(v.hit.name, '2P/Encke'); assert.ok(L.isComet('2P/Encke'));
-  assert.equal(L.decideAsteroid([{ ok: true, rows: rows.slice(1) }]).status, 'clear');
-  const nf = L.decideAsteroid([{ ok: false, status: 404 }, { ok: true, rows: [] }]);
+  const far = { ra: near.ra + 10 / 3600, dec: near.dec };
+  assert.equal(L.decideAsteroid([{ ok: true, rows }], far).status, 'clear', '~18″ away is not a match');
+  // a fast object: 30″ north of the ring now, moving 40″/h south, passes over the ring within the hour
+  const fast = { name: '1 Fast', ra: 100, dec: 10 + 30 / 3600, raRate: 0, decRate: -40, err: 0 };
+  assert.ok(L.passDistance(fast, { ra: 100, dec: 10 }) < 0.01);
+  assert.equal(L.passDistance({ ...fast, decRate: -10 }, { ra: 100, dec: 10 }).toFixed(1), '20.0', 'capped at one hour of track');
+  const nf = L.decideAsteroid([{ ok: false, status: 404 }, { ok: true, rows: [] }], far);
   assert.equal(nf.status, 'failed'); assert.match(nf.text, /HTTP 404/);
 });
-
 const res = (status, body) => ({ ok: status === 200, status, json: async () => body, text: async () => (typeof body === 'string' ? body : JSON.stringify(body)), body: null });
+test('field-level lookups: one JPL request per season for the whole patch serves every click', async () => {
+  const { fetchFieldAsteroids, asteroidCheckAt } = await import('../web/app/spot/checks.js');
+  const seen = [];
+  const results = await fetchFieldAsteroids({ centre: { ra: 269.446, dec: 4.77 }, base: '', fetchFn: async (u) => { seen.push(u); return res(200, SB); },
+    seasons: [{ label: 'First season', mjd: 1, utc: '2025-08-15T20:46:08' }, { label: 'Latest season', mjd: 2, utc: '2026-08-23T23:02:00' }] });
+  assert.equal(seen.length, 2); assert.match(seen[0], /fov-ra-center=17-57-47\.04&fov-dec-center=04-46-12\.00&fov-ra-hwidth=0\.035/);
+  const rows = results[0].rows, onIt = { ra: rows[1].ra, dec: rows[1].dec };
+  assert.equal(asteroidCheckAt(results, onIt).status, 'explained');
+  assert.equal(asteroidCheckAt(results, { ra: 269.43, dec: 4.75 }).status, 'clear');
+  assert.equal(seen.length, 2, 'no new requests per click');
+  assert.deepEqual(L.fieldCentre({ ra0: 269.44612345678, dec0: 4.7701234567 }), { ra: 269.446123, dec: 4.770123 });
+});
 test('asteroid check: MPC 500 refused -> retried with the geocentric state; 404 -> could not check', async () => {
   const seen = [];
   const fetchFn = async (url) => { seen.push(url); return url.includes('mpc-code=500') ? res(400, { message: 'bad' }) : res(200, SB); };
-  const r = await runAsteroidCheck({ at: { ra: 269.4486, dec: 4.7397 }, base: 'http://x', fetchFn,
+  const r = await runAsteroidCheck({ at: { ra: 269.44208, dec: 4.76506 }, base: 'http://x', fetchFn,
     seasons: [{ label: 'First season', mjd: 60902.86, utc: '2025-08-15T20:46:08.896' }] });
   assert.equal(seen.length, 2); assert.match(seen[0], /^http:\/\/x\/jpl\/sb_ident\?obs-time=2025-08-15_20%3A46%3A08&/); assert.match(seen[1], /xobs=0%2C0/);
   assert.equal(r.status, 'explained');

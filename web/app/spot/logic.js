@@ -205,8 +205,16 @@ export function simbadConeADQL(ra, dec, radiusArcsec = SIMBAD_RADIUS_ARCSEC, top
 // The relay route /jpl/sb_ident (Codex's proxy/jpl.js) accepts only these query names.
 export const SB_IDENT_ALLOWED = ['mpc-code', 'lat', 'lon', 'alt', 'dxy', 'dz', 'xobs', 'xobs-hel', 'obs-time', 'vmag-lim', 'fov-ra-lim', 'fov-dec-lim',
   'fov-ra-center', 'fov-dec-center', 'fov-ra-hwidth', 'fov-dec-hwidth', 'two-pass', 'mag-required', 'suppress-first-pass', 'req-elem', 'sb-group', 'sb-kind'];
-export const ASTEROID_MATCH_ARCSEC = 15;  // 2.4 pixels: our click, the season stack and the observer offset (below)
-export const ASTEROID_HALF_WIDTH_DEG = 0.03; // 108″ box around the ring: shows the nearest objects as evidence
+export const ASTEROID_MATCH_ARCSEC = 12;  // 2 pixels: our click, the season stack and the observer offset (below)
+// One request per FIELD and season (not per click), so the five demo fields answer from web/prebaked/
+// for any click: a box centred on the patch, half-width 126″ (the 25 × 6.15″ patch reaches 109″
+// from its centre at the corners, plus a margin).
+export const FIELD_HALF_WIDTH_DEG = 0.035;
+export const ASTEROID_HALF_WIDTH_DEG = FIELD_HALF_WIDTH_DEG;
+export const FIELD_REACH_ARCSEC = 110; // centre to corner of the patch
+// The patch centre used for the field-level catalogue and JPL requests, rounded so the request (and
+// the prebaked key) is the same in Node and every browser.
+export const fieldCentre = (grid) => ({ ra: +grid.ra0.toFixed(6), dec: +grid.dec0.toFixed(6) });
 export const JPL_TIMEOUT_MS = 90000; // whole JPL budget per season (both observer tries); sb_ident took 50-75 s (lead, 14 Nov 2026)
 
 // '2025-08-15T20:46:08.896' (an image's DATE-AVG) -> '2025-08-15_20:46:08' (JPL obs-time, full UTC)
@@ -239,7 +247,7 @@ function sexa(s, hours) {
   const v = (Number(m[2]) + Number(m[3]) / 60 + Number(m[4]) / 3600) * (hours ? 15 : 1);
   return m[1] === '-' ? -v : v;
 }
-// sb_ident JSON -> [{ name, ra, dec, dist (″ from the box centre), err (″), vmag }]
+// sb_ident JSON -> [{ name, ra, dec, dist (″ from the box centre), err (″), vmag, raRate, decRate (″/h) }]
 export function parseSbIdent(json) {
   const second = Array.isArray(json?.data_second_pass);
   const fields = second ? json.fields_second : json?.fields_first;
@@ -253,19 +261,43 @@ export function parseSbIdent(json) {
     ra: sexa(r[iRa], true), dec: sexa(r[iDec], false),
     dist: fnum(r[iD]), vmag: fnum(r[iV]),
     err: iE >= 0 ? Math.max(fnum(r[iE]) ?? 0, iE2 >= 0 ? fnum(r[iE2]) ?? 0 : 0) : null,
+    raRate: rate(fields, r, /^RA rate/i), decRate: rate(fields, r, /^Dec rate/i),
   })).sort((a, b) => (a.dist ?? Infinity) - (b.dist ?? Infinity));
+}
+// A rate column in ″/h whatever unit JPL labels it with (″/h with xobs; deg/s or deg/d otherwise).
+function rate(fields, r, re) {
+  const i = fields.findIndex(f => re.test(f)); if (i < 0) return null;
+  const v = fnum(r[i]); if (v == null) return null;
+  const f = fields[i];
+  if (/deg\s*\/\s*s/i.test(f)) return v * 3600 * 3600;
+  if (/deg\s*\/\s*d/i.test(f)) return v * 3600 / 24;
+  return v;
 }
 export const isComet = (name) => /^(\d+[PCDXI]\/|[PCDXI]\/)/.test(String(name).trim());
 
-// An object matches when its predicted place, allowing for its own stated error (at most 30″), is within the radius.
-export const asteroidHit = (row, radius = ASTEROID_MATCH_ARCSEC) =>
-  Number.isFinite(row.dist) && row.dist - Math.min(row.err ?? 0, 30) <= radius;
+// How far an object's predicted path passes from the ring (″): its place at the middle image's time,
+// and, when JPL gives its rates, anywhere along its track within ±1 h of that time (allowing for
+// the rate and for when in the image set it was caught; the stack itself spans weeks, so a longer
+// track would explain any spot it crosses).
+export const TRACK_HOURS = 1;
+export function passDistance(row, at) {
+  if (!Number.isFinite(row.ra) || !Number.isFinite(row.dec)) return Number.isFinite(row.dist) && !at ? row.dist : Infinity;
+  const o = offsetEN({ ra: row.ra, dec: row.dec }, at); // ring relative to the object, ″ east / north
+  const ve = Number.isFinite(row.raRate) ? row.raRate : 0, vn = Number.isFinite(row.decRate) ? row.decRate : 0; // ″/h
+  const v2 = ve * ve + vn * vn;
+  let t = v2 ? (o.e * ve + o.n * vn) / v2 : 0;
+  t = Math.max(-TRACK_HOURS, Math.min(TRACK_HOURS, t));
+  return Math.hypot(o.e - ve * t, o.n - vn * t);
+}
+// An object matches when its path, allowing for its own stated error (at most 30″), is within the radius.
+export const asteroidHit = (row, at, radius = ASTEROID_MATCH_ARCSEC) => passDistance(row, at) - Math.min(row.err ?? 0, 30) <= radius;
 
-// results: [{ label, mjd, ok, rows, error, status }] one per blinked season.
-export function decideAsteroid(results) {
+// results: [{ label, mjd, ok, rows, error, status }] one per blinked season (field-level answers);
+// at: the ring. Matched locally, so one answer serves every click in the field.
+export function decideAsteroid(results, at) {
   for (const r of results) {
-    const hit = r.ok ? r.rows.find(row => asteroidHit(row)) : null;
-    if (hit) return { status: 'explained', hit, season: r, text: `JPL predicts ${hit.name} ${fmtArc(hit.dist)} from your ring on ${fmtDay(r.mjd)}${r.utc ? `, ${r.utc.slice(11, 16)} UTC` : ''}.` };
+    const hit = r.ok ? r.rows.find(row => asteroidHit(row, at)) : null;
+    if (hit) return { status: 'explained', hit, season: r, text: `JPL predicts ${hit.name} ${fmtArc(passDistance(hit, at))} from your ring on ${fmtDay(r.mjd)}${r.utc ? `, ${r.utc.slice(11, 16)} UTC` : ''}.` };
   }
   const bad = results.filter(r => !r.ok);
   if (bad.length) {
