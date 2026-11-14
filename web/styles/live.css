@@ -245,6 +245,8 @@ html[data-motion=reduce] .fl-sec summary::before { transition: none; }
   #stage:has(#ghostBar:not([hidden])) .scalebar{bottom:154px}
   .chip{max-width:calc(100% - 24px);gap:6px;padding:0 10px;font-size:.75rem}
   .mode-blink .chip{max-width:calc(100% - 150px)}
+  /* the star and "Other source" hotspots: a 44 px touch area centred on the drawn one (Design review round 2) */
+  .hit::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);transform:translate(-50%,-50%);border-radius:50%}
 }
 /* 10. the Layers row scrolls sideways on narrow docks: fade its right edge so the cut-off key reads as "more" */
 @container dock (max-width:520px) {

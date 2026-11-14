@@ -314,6 +314,9 @@ html[data-motion=reduce] .pf-open svg{transition:none}
   .pf-more{position:static;min-height:44px;min-width:44px;padding:0 4px}
   .key.icon,.chip-k{min-width:44px}
   .key.icon{width:44px}
+  /* Archive cards: FITS and Play become 44 px keys (Design review round 2) */
+  .atable tr.arow .links{display:flex;gap:6px;flex-wrap:wrap}
+  .atable tr.arow .links a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;margin:0;padding:0 12px;border-radius:var(--r-key);border:1px solid var(--edge);background:linear-gradient(180deg,#FCFAF6,#ECE5DB);box-shadow:inset 0 1px 0 #fff,var(--sh-contact);text-decoration:none}
   .pf-method summary{display:inline-flex;align-items:center;min-height:44px;min-width:44px}
 }
 /* Archive on desktop: header on one line, filters in two rows (Season + Band; Detector + Flags + Release + search) */
