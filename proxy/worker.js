@@ -39,28 +39,41 @@ function upstreamFor(url) {
   if (CUTOUT_PATH.test(p) && !p.includes('..')) {
     const center = url.searchParams.get('center') || '';
     const size = Number(url.searchParams.get('size'));
-    if (!/^-?[\d.]+,-?[\d.]+d?$/.test(center) || !(size >= 0.01 && size <= 0.25)) return { error: 'Bad center/size' };
+    if (!/^-?[\d.]+,-?[\d.]+d?$/.test(center) || !(size >= 0.01 && size <= 0.5)) return { error: 'Bad center/size' };
     return { target: `${IRSA}${p}?center=${center}&size=${size}`, kind: 'cutout', ttl: 30 * 86400 };
   }
   return { error: 'Not found', status: 404 };
 }
 
-export async function handle(request, { fetchFn = fetch, cache = globalThis.caches?.default } = {}) {
+// Options: tapTtl overrides how long TAP answers are cached; staleIfError serves an
+// expired cached copy when the archive is down or we're offline (local server uses both).
+export async function handle(request, { fetchFn = fetch, cache = globalThis.caches?.default, tapTtl, staleIfError = false } = {}) {
   if (request.method === 'OPTIONS') return reply(null, 204);
   if (request.method !== 'GET') return reply('Method not allowed', 405);
   const url = new URL(request.url);
   if (url.pathname === '/' || url.pathname === '/health') return reply('ok', 200, { 'Content-Type': 'text/plain' });
   const up = upstreamFor(url);
   if (up.error) return reply(up.error, up.status || 400, { 'Content-Type': 'text/plain' });
+  if (up.kind === 'tap' && tapTtl) up.ttl = tapTtl;
 
   const cacheKey = new Request(up.target);
   if (cache) {
     const hit = await cache.match(cacheKey);
     if (hit) return hit;
   }
-  const res = await fetchFn(up.target, { headers: { 'User-Agent': 'spherex-relay (NASA Space Apps 2026 project)' } });
+  const stale = async () => (staleIfError && cache ? cache.match(cacheKey, { ignoreExpiry: true }) : undefined);
+  let res;
+  try {
+    res = await fetchFn(up.target, { headers: { 'User-Agent': 'spherex-relay (NASA Space Apps 2026 project)' } });
+  } catch (e) {
+    const old = await stale();
+    if (old) return old;
+    return reply('Archive unreachable (offline?)', 504, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' });
+  }
   if (!res.ok) {
     res.body?.cancel().catch(() => {});
+    const old = await stale();
+    if (old) return old;
     // Pass "busy" codes through so the browser retries (IRSA cutouts often return 503).
     const status = [429, 503].includes(res.status) ? res.status : 502;
     return reply(`Upstream HTTP ${res.status}`, status, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' });

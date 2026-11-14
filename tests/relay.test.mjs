@@ -56,7 +56,7 @@ test('relay refuses anything else', async () => {
     `/TAP/sync?QUERY=${encodeURIComponent('SELECT * FROM wise.allwise_p3as_psd')}`,
     `/gaia/tap/sync?QUERY=${encodeURIComponent('SELECT * FROM gaiadr3.gaia_source')}`,
     `/gaia/tap/sync?QUERY=${encodeURIComponent('SELECT TOP 99999 * FROM gaiadr3.gaia_source WHERE 1=CONTAINS(a,b)')}`,
-    '/ibe/data/spherex/x.fits?center=1,2&size=0.3',
+    '/ibe/data/spherex/x.fits?center=1,2&size=0.6',
     '/ibe/data/spherex/x%2e%2e/y.fits?center=1,2&size=0.1',
     '/https://example.com/',
   ];
@@ -75,4 +75,23 @@ test('stream reader rejects oversized input', async () => {
   const { readHDUsFromStream } = await import('../web/core/fits.js');
   const big = new ReadableStream({ pull(c) { c.enqueue(new Uint8Array(1 << 20).fill(32)); } });
   await assert.rejects(readHDUsFromStream(big, 3, 4 << 20), /too large/);
+});
+
+test('stale cached copy is served when the archive fails (local server mode)', async () => {
+  const store = new Map();
+  const cache = {
+    async match(req, { ignoreExpiry = false } = {}) { const e = store.get(req.url); return e && (ignoreExpiry || !e.expired) ? new Response(e.body, { headers: e.headers }) : undefined; },
+    async put(req, res) { store.set(req.url, { body: await res.text(), headers: Object.fromEntries(res.headers), expired: false }); },
+  };
+  const q = encodeURIComponent('SELECT TOP 1 * FROM spherex.plane');
+  const url = `${R}/TAP/sync?QUERY=${q}`;
+  let r = await handle(new Request(url), { cache, fetchFn: async () => new Response('fresh'), staleIfError: true });
+  assert.equal(await r.text(), 'fresh');
+  for (const v of store.values()) v.expired = true;
+  r = await handle(new Request(url), { cache, fetchFn: async () => new Response('busy', { status: 503 }), staleIfError: true });
+  assert.equal(await r.text(), 'fresh');
+  r = await handle(new Request(url), { cache, fetchFn: async () => { throw new TypeError('offline'); }, staleIfError: true });
+  assert.equal(await r.text(), 'fresh');
+  r = await handle(new Request(url), { cache: null, fetchFn: async () => { throw new TypeError('offline'); } });
+  assert.equal(r.status, 504);
 });
