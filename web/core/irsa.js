@@ -78,12 +78,18 @@ export function cutoutUrl(uri, ra, dec, sizeDeg, base = IRSA) {
 }
 
 // Download a cutout but keep only PRIMARY, IMAGE and FLAGS (stops the download early).
-export async function fetchCutout(uri, ra, dec, sizeDeg, { base = IRSA, fetchFn = fetch, signal } = {}) {
+// IRSA's cutout service returns HTTP 503 now and then (seen often on 14 Nov 2026), so retry.
+export async function fetchCutout(uri, ra, dec, sizeDeg,
+  { base = IRSA, fetchFn = fetch, signal, retries = 5, backoffMs = 1500 } = {}) {
   const url = cutoutUrl(uri, ra, dec, sizeDeg, base);
-  const res = await fetchFn(url, { signal });
-  if (!res.ok) throw new Error(`HTTP ${res.status} for cutout`);
-  const bytes = await readHDUsFromStream(res.body, 3);
-  return decodeCutout(bytes);
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetchFn(url, { signal });
+    if (res.ok) return decodeCutout(await readHDUsFromStream(res.body, 3));
+    res.body?.cancel?.().catch(() => {});
+    const retryable = res.status === 503 || res.status === 502 || res.status === 429;
+    if (!retryable || attempt >= retries) throw new Error(`HTTP ${res.status} for cutout`);
+    await new Promise(r => setTimeout(r, backoffMs * (attempt + 1)));
+  }
 }
 
 export function decodeCutout(bytes) {

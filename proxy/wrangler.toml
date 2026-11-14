@@ -1,0 +1,4 @@
+# Cloudflare Worker relay for IRSA/Gaia (see worker.js). No secrets here.
+name = "spherex-relay"
+main = "worker.js"
+compatibility_date = "2026-11-01"

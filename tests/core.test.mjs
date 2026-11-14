@@ -169,3 +169,14 @@ test('mapLimit keeps order and survives failures', async () => {
   assert.equal(maxLive, 2);
   assert.deepEqual(r.map(x => x.ok ? x.value : 'err'), [10, 20, 'err', 40, 50]);
 });
+
+test('fetchCutout retries on 503 then succeeds; gives up on 404', async () => {
+  const { fetchCutout } = await import('../web/core/irsa.js');
+  let calls = 0;
+  const flaky = async () => (++calls < 3 ? new Response('busy', { status: 503 }) : new Response(bytes));
+  const c = await fetchCutout('ibe/data/spherex/dr1/a.fits', 1, 2, 0.05, { fetchFn: flaky, backoffMs: 1 });
+  assert.equal(calls, 3);
+  assert.equal(c.image.nx, 29);
+  const gone = async () => new Response('no', { status: 404 });
+  await assert.rejects(fetchCutout('ibe/data/spherex/dr1/a.fits', 1, 2, 0.05, { fetchFn: gone, backoffMs: 1 }), /404/);
+});
