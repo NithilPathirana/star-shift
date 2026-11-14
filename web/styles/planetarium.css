@@ -197,3 +197,6 @@ h1.pl-title{margin:0;line-height:inherit}
   .air-band{min-height:44px}
 }
 @media (max-width:699px){.pl-day{top:66px}}
+
+/* Lab notebook dialog colour schemes (nav parity with the other pages) */
+:root{color-scheme:light}.notebook-dialog{color-scheme:dark}
