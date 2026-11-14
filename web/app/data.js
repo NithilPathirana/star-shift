@@ -4,6 +4,7 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 
 import { listImages, fetchCutout, fetchCutoutLayers, maskBadPixels, mapLimit } from '../core/irsa.js';
+import { prebakedFetch } from '../core/prebaked.js'; // the five demo targets answer from web/prebaked/ (Claude)
 import { airglowOf, kindMasks, countKinds } from '../core/contam.js';
 import { resolveName } from '../core/resolve.js';
 import { propagate, mjdToDate, parallaxShift } from '../core/motion.js';
@@ -60,7 +61,7 @@ export function buildStacks(frames) {
   });
 }
 
-export async function resolveTarget(query, { fetchFn = fetch, signal } = {}) {
+export async function resolveTarget(query, { fetchFn = prebakedFetch, signal } = {}) {
   if (query.type === 'coords') return { name: null, ra: query.ra, dec: query.dec, pmra: 0, pmdec: 0, epoch: 2000, source: 'coordinates' };
   const preset = findPreset(query.name);
   if (preset) return { ...preset.target, presetKey: preset.key };
@@ -78,7 +79,7 @@ export async function resolveTarget(query, { fetchFn = fetch, signal } = {}) {
 }
 
 // Images to load for these settings (time-sorted). `all` = every image covering the spot.
-export async function planImages(target, settings, { base, fetchFn = fetch, signal } = {}) {
+export async function planImages(target, settings, { base, fetchFn = prebakedFetch, signal } = {}) {
   const mid = (target.pmra || target.pmdec) ? propagate(target, 61000) : target; // ~2025.9, inside the survey
   const all = await listImages(mid.ra, mid.dec, { base, fetchFn, signal });
   const byBand = settings.band === 'all' ? all : all.filter(im => String(im.detector) === String(settings.band));
@@ -94,7 +95,7 @@ export function gridFor(target, chosen, fovArcmin) {
 }
 
 // Download, clean and align one image. Returns a frame object for the viewer.
-export async function loadFrame(im, target, grid, settings, { base, fetchFn = fetch, signal, tables, onRetry } = {}) {
+export async function loadFrame(im, target, grid, settings, { base, fetchFn = prebakedFetch, signal, tables, onRetry } = {}) {
   const c0 = cutoutCenter(target, im.mjdStart);
   const countingFetch = async (url, opts) => {
     const res = await fetchFn(url, opts);
@@ -127,7 +128,7 @@ export async function loadFrame(im, target, grid, settings, { base, fetchFn = fe
 
 // VARIANCE + ZODI for one frame, fetched only when the user asks for those layers
 // (5-HDU cutout variant, cached separately by the relay). Returns grid arrays or null.
-export async function loadLayers(frame, grid, { base, fetchFn = fetch, signal } = {}) {
+export async function loadLayers(frame, grid, { base, fetchFn = prebakedFetch, signal } = {}) {
   const c = await fetchCutoutLayers(frame.uri, frame.cut.ra, frame.cut.dec, frame.cut.size, { base, fetchFn, signal });
   const on = (img) => (img ? reproject({ wcs: c.wcs, image: img, flags: null }, grid).data : null);
   return { variance: on(c.variance), zodi: on(c.zodi), units: c.units };
@@ -147,7 +148,7 @@ export function waveMap(frame, grid, tables) {
 }
 
 // Whole pipeline with events: RESOLVED, PLANNED, FRAME, FRAME_FAILED, RETRY_WAIT, DONE, ERROR, NOT_FOUND.
-export async function run(query, settings, { base, fetchFn = fetch, signal, tables, emit, concurrency = 10 }) {
+export async function run(query, settings, { base, fetchFn = prebakedFetch, signal, tables, emit, concurrency = 10 }) {
   let target;
   try {
     target = await resolveTarget(query, { fetchFn, signal });

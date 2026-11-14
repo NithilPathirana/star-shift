@@ -6,6 +6,7 @@
 // Gaia DR3: ESA archive TAP (no CORS -> goes through our relay in the browser). Epoch 2016.0.
 
 import { parseCSV } from './irsa.js';
+import { prebakedFetch } from './prebaked.js'; // the five demo targets answer from web/prebaked/ (Claude)
 
 export const SIMBAD_TAP = 'https://simbad.harvard.edu/simbad/sim-tap/sync';
 export const GAIA_TAP = 'https://gea.esac.esa.int/tap-server/tap/sync';
@@ -20,7 +21,7 @@ async function tapCSV(endpoint, adql, fetchFn, signal) {
   return parseCSV(await res.text());
 }
 
-export async function resolveName(name, { endpoint = SIMBAD_TAP, fetchFn = fetch, signal } = {}) {
+export async function resolveName(name, { endpoint = SIMBAD_TAP, fetchFn = prebakedFetch, signal } = {}) {
   const clean = String(name).trim().replace(/\s+/g, ' ');
   if (!clean || clean.length > 80) throw new Error('Name missing or too long');
   // SIMBAD stores identifiers with single spaces; match case-insensitively via the
@@ -40,7 +41,7 @@ export async function resolveName(name, { endpoint = SIMBAD_TAP, fetchFn = fetch
 }
 
 // Gaia DR3 sources within radiusArcsec of (ra, dec) at epoch 2016.0, brightest first.
-export async function gaiaCone(ra, dec, radiusArcsec, { endpoint = GAIA_TAP, fetchFn = fetch, signal, top = 50 } = {}) {
+export async function gaiaCone(ra, dec, radiusArcsec, { endpoint = GAIA_TAP, fetchFn = prebakedFetch, signal, top = 50 } = {}) {
   const adql = `SELECT TOP ${top | 0} source_id, ra, dec, pmra, pmdec, parallax, phot_g_mean_mag,
     parallax_error, pmra_error, pmdec_error, radial_velocity, radial_velocity_error
     FROM gaiadr3.gaia_source

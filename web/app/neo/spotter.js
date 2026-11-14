@@ -2,6 +2,7 @@
 import {
   DEFAULT_DATES, buildSbIdentParams, observationDates, parseSbIdent,
 } from './sb-ident.js';
+import { prebakedFetch } from '../../core/prebaked.js'; // the five demo targets answer from web/prebaked/ (Claude)
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -53,11 +54,11 @@ function coordinateToDegrees(value, isRa) {
 
 async function fetchIdentification(date, kind) {
   const base = { ...view, date, kind };
-  const first = await fetch(`/jpl/sb_ident?${buildSbIdentParams(base)}`);
+  const first = await prebakedFetch(`/jpl/sb_ident?${buildSbIdentParams(base)}`);
   if (first.ok) return { rows: parseSbIdent(await first.json(), { date, kind }), retried: false };
 
   // JPL's current docs reject MPC 500 even though the product brief requests it.
-  const retry = await fetch(`/jpl/sb_ident?${buildSbIdentParams({ ...base, observer: 'geocentric-state' })}`);
+  const retry = await prebakedFetch(`/jpl/sb_ident?${buildSbIdentParams({ ...base, observer: 'geocentric-state' })}`);
   if (!retry.ok) throw new Error(`${date} ${kind === 'a' ? 'asteroids' : 'comets'}: MPC 500 returned HTTP ${first.status}; geocentric retry returned HTTP ${retry.status}`);
   return { rows: parseSbIdent(await retry.json(), { date, kind }), retried: true };
 }

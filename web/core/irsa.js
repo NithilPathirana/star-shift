@@ -6,6 +6,7 @@
 
 import { readHDUsFromStream, scanHDUs, readImage } from './fits.js';
 import { TanSip } from './wcs.js';
+import { prebakedFetch } from './prebaked.js'; // the five demo targets answer from web/prebaked/ (Claude)
 
 export const IRSA = 'https://irsa.ipac.caltech.edu';
 
@@ -37,7 +38,7 @@ async function getText(url, fetchFn, signal) {
   return res.text();
 }
 
-export async function tap(adql, { base = IRSA, fetchFn = fetch, signal } = {}) {
+export async function tap(adql, { base = IRSA, fetchFn = prebakedFetch, signal } = {}) {
   const url = `${base}/TAP/sync?FORMAT=csv&QUERY=${encodeURIComponent(adql)}`;
   const text = await getText(url, fetchFn, signal);
   if (text.trimStart().startsWith('<')) throw new Error('TAP error: ' + text.slice(0, 300));
@@ -63,7 +64,7 @@ export function parseVOTable(xml) {
 // Barnard's Star: 239 + 119 = 358 = TAP) but answers in ~2.5 s, while IRSA TAP took 18-48 s on
 // 14 Nov 2026. Both collections are asked in parallel.
 export const SIA_COLLECTIONS = ['spherex_dr1', 'spherex_qr3'];
-export async function listImagesSIA(ra, dec, { base = IRSA, fetchFn = fetch, signal } = {}) {
+export async function listImagesSIA(ra, dec, { base = IRSA, fetchFn = prebakedFetch, signal } = {}) {
   const lists = await Promise.all(SIA_COLLECTIONS.map(async (c) => {
     const url = `${base}/SIA?COLLECTION=${c}&POS=circle+${(+ra).toFixed(6)}+${(+dec).toFixed(6)}+0.0005&RESPONSEFORMAT=VOTABLE`;
     const res = await fetchFn(url, { signal });
@@ -141,7 +142,7 @@ function sleep(ms, signal) {
 // Download a cutout but keep only PRIMARY, IMAGE and FLAGS (stops the download early).
 // IRSA's cutout service returns HTTP 503 now and then (seen often on 14 Nov 2026), so retry.
 export async function fetchCutout(uri, ra, dec, sizeDeg,
-  { base = IRSA, fetchFn = fetch, signal, retries = 5, backoffMs = 1500 } = {}) {
+  { base = IRSA, fetchFn = prebakedFetch, signal, retries = 5, backoffMs = 1500 } = {}) {
   const url = cutoutUrl(uri, ra, dec, sizeDeg, base);
   for (let attempt = 0; ; attempt++) {
     const res = await fetchFn(url, { signal });
@@ -163,7 +164,7 @@ export async function fetchCutout(uri, ra, dec, sizeDeg,
 // Same cutout with VARIANCE and ZODI too (5 HDUs; still stops before the huge EPSF table).
 // Asked for only when the user opens the VARIANCE or ZODI layer; the relay caches it separately.
 export async function fetchCutoutLayers(uri, ra, dec, sizeDeg,
-  { base = IRSA, fetchFn = fetch, signal, retries = 3, backoffMs = 1500 } = {}) {
+  { base = IRSA, fetchFn = prebakedFetch, signal, retries = 3, backoffMs = 1500 } = {}) {
   const url = cutoutUrl(uri, ra, dec, sizeDeg, base) + (base === IRSA ? '' : '&hdus=5');
   for (let attempt = 0; ; attempt++) {
     const res = await fetchFn(url, { signal });

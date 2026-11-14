@@ -7,6 +7,7 @@
 
 import { gaiaCone, SIMBAD_TAP } from '../../core/resolve.js';
 import { parseCSV } from '../../core/irsa.js';
+import { prebakedFetch } from '../../core/prebaked.js'; // the five demo targets answer from web/prebaked/ (Claude)
 import {
   GAIA_RADIUS_ARCSEC, SIMBAD_RADIUS_ARCSEC, JPL_TIMEOUT_MS, gaiaStars, simbadStars, simbadConeADQL, decideStar,
   sbIdentPath, parseSbIdent, decideAsteroid,
@@ -18,7 +19,7 @@ export function timeoutSignal(signal, ms) {
   return signal && AbortSignal.any ? AbortSignal.any([signal, t]) : (signal || t);
 }
 
-export async function fetchSimbadCone(ra, dec, { fetchFn = fetch, signal, endpoint = SIMBAD_TAP, radius = SIMBAD_RADIUS_ARCSEC } = {}) {
+export async function fetchSimbadCone(ra, dec, { fetchFn = prebakedFetch, signal, endpoint = SIMBAD_TAP, radius = SIMBAD_RADIUS_ARCSEC } = {}) {
   const url = `${endpoint}?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=${encodeURIComponent(simbadConeADQL(ra, dec, radius))}`;
   const res = await fetchFn(url, { signal });
   if (!res.ok) throw new Error(`SIMBAD HTTP ${res.status}`);
@@ -28,7 +29,7 @@ export async function fetchSimbadCone(ra, dec, { fetchFn = fetch, signal, endpoi
 }
 
 // at: { ra, dec } of the ring; epochs: [{ mjd, label }] of the blinked seasons.
-export async function runStarCheck({ at, epochs, base, fetchFn = fetch, signal, timeoutMs = 25000 }) {
+export async function runStarCheck({ at, epochs, base, fetchFn = prebakedFetch, signal, timeoutMs = 25000 }) {
   const [g, s] = await Promise.allSettled([
     gaiaCone(at.ra, at.dec, GAIA_RADIUS_ARCSEC, { endpoint: `${base}/gaia/tap/sync`, fetchFn, top: 400, signal: timeoutSignal(signal, timeoutMs) }),
     fetchSimbadCone(at.ra, at.dec, { fetchFn, signal: timeoutSignal(signal, timeoutMs) }),
@@ -62,7 +63,7 @@ async function askJpl({ at, season, base, fetchFn, signal, timeoutMs }) {
 }
 
 // seasons: [{ label, mjd, utc }] (the blinked seasons' middle images).
-export async function runAsteroidCheck({ at, seasons, base, fetchFn = fetch, signal, timeoutMs = JPL_TIMEOUT_MS }) {
+export async function runAsteroidCheck({ at, seasons, base, fetchFn = prebakedFetch, signal, timeoutMs = JPL_TIMEOUT_MS }) {
   const results = await Promise.all(seasons.map(season => askJpl({ at, season, base, fetchFn, signal, timeoutMs })));
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
   return { ...decideAsteroid(results), results };

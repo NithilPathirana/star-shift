@@ -147,6 +147,7 @@ async function auditWeb() {
   const files = await filesUnder(WEB);
   let total = 0;
   let largest = { path: '', size: 0 };
+  const prebaked = { files: 0, bytes: 0 }; // web/prebaked/: the five targets' saved answers (Claude)
   for (const path of files) {
     const rel = relative(WEB, path).split(sep).join('/');
     if (FORBIDDEN_PART.test(rel)) throw new Error(`Forbidden public asset found: web/${rel}`);
@@ -154,6 +155,7 @@ async function auditWeb() {
     if (size > LIMITS.perFileBytes) {
       throw new Error(`Asset exceeds Cloudflare's 25 MiB per-file limit: web/${rel} (${size} bytes)`);
     }
+    if (rel.startsWith('prebaked/')) { prebaked.files++; prebaked.bytes += size; }
     total += size;
     if (size > largest.size) largest = { path: rel, size };
   }
@@ -165,6 +167,9 @@ async function auditWeb() {
   }
   console.log(`Assets: ${files.length}/${LIMITS.files} files, ${(total / 1048576).toFixed(2)} MiB total.`);
   console.log(`Largest: web/${largest.path} (${(largest.size / 1048576).toFixed(2)} MiB / 25 MiB).`);
+  console.log(prebaked.files
+    ? `Prebaked targets: ${prebaked.files} files, ${(prebaked.bytes / 1048576).toFixed(2)} MiB (web/prebaked/, included above).`
+    : 'Prebaked targets: web/prebaked/ is empty; run node tools/export_prebaked.mjs so the five targets load without IRSA.');
 }
 
 try {
