@@ -168,6 +168,13 @@ function updateSel(t) {
 }
 // Rows carry no tags; each group heading shows its source tag once (DESIGN.md section 25).
 function row(label, value) { return `<dt>${label}</dt><dd>${value}</dd>`; }
+// Distance from a catalogue parallax in milliarcseconds: 1000 / plx parsecs, 3.26156 light-years per parsec.
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+function fmtDistance(plxMas) {
+  const ly = (1000 / plxMas) * 3.26156;
+  const txt = ly < 100 ? ly.toPrecision(3) : Math.round(ly).toLocaleString('en-GB');
+  return `${txt} light-years`;
+}
 const group = (title, tag, body) => `<div class="ih pl-grp"><h3>${title}</h3>${tag || ''}</div><dl class="pl-dl">${body}</dl>`;
 function fmtRA(deg) { // 00h 34m 15.3s
   let s = ((deg % 360) + 360) % 360 / 15 * 3600; s = Math.round(s * 10) / 10; if (s >= 86400) s -= 86400;
@@ -207,6 +214,7 @@ function renderSel() {
   let o = '';
   if (sel.kind === 'moon') o += row('Distance', `${Math.round(sel.distAU * 149597870.7).toLocaleString('en-GB')} km`);
   else if (isBody) o += row('Distance', Number.isFinite(sel.distAU) ? `${sel.distAU.toFixed(3)} AU` : dash('Not given by the source'));
+  else if (sel.kind === 'star' && sel.plx > 0) o += row('Distance', fmtDistance(sel.plx)); // built-in target: catalogue parallax (presets.js)
   else if (sel.kind === 'star') o += row('Distance', dash(sel.fromQuery ? 'Not looked up on this page' : 'Not in this star list (positions and brightness only)'));
   if (sel.kind === 'point') o += row('Brightness', dash('A spot on the sky, not an object'));
   else if (Number.isFinite(sel.mag)) o += row('Brightness', `mag ${sel.mag.toFixed(sel.kind === 'star' ? 2 : 1)}`);
@@ -251,7 +259,7 @@ async function openFromQuery() {
     const body = S.bodies.find(b => b.name.toLowerCase() === q.toLowerCase());
     if (body) { select(body); face(S.sel); return; }
     const p = findPreset(q);
-    if (p) t = { name: p.target.name, ra: p.target.ra, dec: p.target.dec };
+    if (p) t = { name: p.target.name, ra: p.target.ra, dec: p.target.dec, plx: p.target.plx };
     else {
       ansMsg = { head: `Looking up “${q}”…`, detail: 'Asking SIMBAD for its position.' }; renderAnswer();
       try { const r = await resolveName(q, { signal: AbortSignal.timeout(15000) }); if (r && Number.isFinite(r.ra)) t = { name: r.name, ra: r.ra, dec: r.dec }; } catch { /* below */ }
@@ -263,7 +271,7 @@ async function openFromQuery() {
   if (!t) return;
   ansMsg = null;
   if (S.sel) return; // the user already picked something while we were looking it up
-  select({ kind: 'star', key: 'q:' + t.ra.toFixed(5) + ',' + t.dec.toFixed(5), name: t.name, ra: t.ra, dec: t.dec, mag: null, fromQuery: true, query: q || null });
+  select({ kind: 'star', key: 'q:' + t.ra.toFixed(5) + ',' + t.dec.toFixed(5), name: t.name, ra: t.ra, dec: t.dec, mag: null, fromQuery: true, query: q || null, plx: t.plx ?? null });
   face(S.sel);
   if (innerWidth < 700) toggleInsp(true); // phone: the answer lives in the details sheet, so open it once
 }
@@ -421,7 +429,30 @@ $('clarityBtn').onclick = toggler('clarity', 'clarityBtn');
 $('pagesBtn').onclick = toggler('pagesPop', 'pagesBtn');
 document.addEventListener('click', (e) => { if (openPop && !openPop.pop.contains(e.target)) closePop(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (openPop) closePop(true); else if ($('insp').classList.contains('open')) toggleInsp(false); } });
-function toggleInsp(on) { $('insp').classList.toggle('open', on); $('infoBtn').setAttribute('aria-expanded', on); if (on) $('inspClose').focus(); }
+function toggleInsp(on) { $('insp').classList.toggle('open', on); $('infoBtn').setAttribute('aria-expanded', on); placeInsp(); if (on) $('inspClose').focus(); }
+// Phone: the details sheet must never cover the dock's Now and Play keys. While it is open it fills the
+// gap between the top bar and the dock (over the sky); when the dock is scrolled near the top it sits
+// below the dock instead; otherwise (dock off screen) it is the usual bottom sheet.
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+const MIN_SHEET = 220;
+function placeInsp() {
+  const el = $('insp'), st = el.style;
+  if (innerWidth >= 700 || !el.classList.contains('open')) { st.top = st.bottom = st.maxHeight = st.height = ''; return; }
+  const d = $('dock').getBoundingClientRect(), bar = document.querySelector('.topbar')?.getBoundingClientRect();
+  const top = Math.max(8, bar && bar.bottom > 0 ? bar.bottom + 8 : 8);
+  let box = null;
+  if (d.top - 8 - top >= MIN_SHEET) box = [top, Math.min(d.top, innerHeight) - 8]; // between the top bar and the dock
+  else if (d.bottom > 0 && innerHeight - 8 - (d.bottom + 8) >= MIN_SHEET) box = [d.bottom + 8, innerHeight - 8]; // below the dock
+  else if (d.bottom > 0 && d.top < innerHeight) { // short screen: keep at least the Now / Play row clear
+    const t = document.querySelector('.pl-dock .transport').getBoundingClientRect();
+    if (t.top - 8 - top >= 120) box = [top, t.top - 8];
+    else if (innerHeight - 8 - (t.bottom + 8) >= 120) box = [t.bottom + 8, innerHeight - 8];
+  }
+  if (!box) { st.top = st.bottom = st.maxHeight = st.height = ''; return; } // dock off screen: plain bottom sheet
+  st.top = box[0] + 'px'; st.bottom = 'auto'; st.height = 'auto'; st.maxHeight = (box[1] - box[0]) + 'px';
+}
+addEventListener('scroll', () => { if ($('insp').classList.contains('open')) placeInsp(); }, { passive: true });
+addEventListener('resize', placeInsp);
 $('infoBtn').onclick = (e) => { e.stopPropagation(); toggleInsp(!$('insp').classList.contains('open')); };
 $('inspClose').onclick = () => { toggleInsp(false); $('infoBtn').focus(); };
 

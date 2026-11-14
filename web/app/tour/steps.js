@@ -35,7 +35,7 @@ export const STEPS = [
     title: 'Watch it move',
     // when the tour opened the time-lapse itself, bodyFor() puts "We've opened <name> for you." in front
     body: 'Play flips through every photo in date order, and the timeline groups them into observing seasons about six months apart; drag it, or use ← and → to step.' },
-  { id: 'blink', scene: 'viewer', targets: ['#viewSeg'], prefer: ['above', 'below'],
+  { id: 'blink', scene: 'viewer', targets: ['#viewSeg'], prefer: ['above', 'below'], avoid: ['#speedSeg', '#layerSeg', '.tl'],
     title: 'Blink to catch the shift',
     body: 'Blink flips between the first and the last season, so anything that moved jumps back and forth. Compare puts the two side by side.' },
   { id: 'flags', scene: 'viewer', targets: ['.flags-split'], prefer: ['above', 'left'],
@@ -44,14 +44,15 @@ export const STEPS = [
     body: 'Hatched squares have no data. Outlines and small marks are pixels the archive flagged. FLAGS shows or hides them, and the arrow beside it opens the legend.' },
   { id: 'bands', scene: 'viewer', targets: ['#bandTool'], prefer: ['right', 'above', 'below'],
     title: 'Six colour bands',
-    body: 'SPHEREx sees from 0.74 to 5 µm, split here into six colour bands that tint the timeline and the wavelength chip. Open this key to rename, recolour or resize them.' },
+    body: 'SPHEREx sees from 0.74 to 5.01 µm, split here into six colour bands that tint the timeline and the wavelength chip. Open this key to rename, recolour or resize them.' },
   // the project's twist: only when a link to spot.html is on screen (rail), or, on phones, in the Pages sheet
   { id: 'spot', scene: 'any', targets: ['.rail a[href$="spot.html"]'], prefer: ['right', 'below', 'above'],
     title: 'Spot a mover',
     body: 'Your turn: blink a patch, click anything that moves, and the app checks it against flags, known stars and known asteroids. Then save what you found to your notebook.',
     alt: { targets: ['#pagesBtn'], requires: '#pagesPop a[href$="spot.html"]', prefer: ['below', 'left'],
       body: 'Your turn: under Pages, Spot lets you blink a patch, click anything that moves, and the app checks it against flags, known stars and known asteroids. Then save what you found to your notebook.' } },
-  { id: 'notebook', scene: 'any', when: 'notebook', targets: ['[data-tour="notebook"]', '#nbAdd', '.nb-add'], prefer: ['below', 'left', 'above'],
+  // scene 'viewer': its + keys live in the viewer's details, so it is counted from the start (stable "k of n")
+  { id: 'notebook', scene: 'viewer', when: 'notebook', targets: ['[data-tour="notebook"]', '#nbAdd', '.nb-add'], prefer: ['below', 'left', 'above'],
     title: 'Your notebook',
     body: 'The + saves what you found, with its date and position, so you can come back to it later.' },
 ];

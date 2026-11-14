@@ -133,3 +133,12 @@ test('unionRect: spans several targets, ignores empty ones', () => {
     { left: 10, top: 5, width: 50, height: 25 });
   assert.equal(unionRect([]), null);
 });
+
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+test('steps: the notebook step is a viewer step, so it is counted from the start ("k of n" stays put)', () => {
+  const nb = STEPS.find(s => s.id === 'notebook');
+  assert.equal(nb.scene, 'viewer');
+});
+test('steps: the bands step gives the full range, 0.74 to 5.01 µm', () => {
+  assert.match(STEPS.find(s => s.id === 'bands').body, /0\.74 to 5\.01 µm/);
+});

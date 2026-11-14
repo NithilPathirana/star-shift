@@ -206,3 +206,10 @@ h1.pl-title{margin:0;line-height:inherit}
 .air-bands{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px 10px}
 .air-band{align-items:flex-start;flex-wrap:wrap;column-gap:5px;row-gap:0}
 .air-band i{margin-top:3px}
+
+/* details sheet (tablet and phone): the close key stays on top and the answer card leaves room for it,
+   so the sheet can always be closed. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+@media (max-width:1099px){
+  .pl-app .sheet-close{z-index:6}
+  .pl-app .inspector .pl-answer{margin-right:44px}
+}

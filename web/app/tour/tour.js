@@ -30,7 +30,23 @@ const variant = step => pickVariant(step, selShown, selExists); // own targets, 
 function targetRect(step) {
   const v = variant(step); if (!v || !v.targets) return null;
   const r = unionRect(els(v.targets).filter(shown).map(e => e.getBoundingClientRect()));
-  return r && { left: r.left - PAD, top: r.top - PAD, width: r.width + 2 * PAD, height: r.height + 2 * PAD };
+  return r && keepClear({ left: r.left - PAD, top: r.top - PAD, width: r.width + 2 * PAD, height: r.height + 2 * PAD }, r, step.avoid);
+}
+// The padded outline never runs into a neighbouring control listed in step.avoid (e.g. the Speed keys
+// right under the View keys): the padding on that side is trimmed to leave a 4 px gap (2 px ring + 2).
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+function keepClear(p, raw, avoid) {
+  if (!avoid) return p;
+  let L = p.left, T = p.top, R = p.left + p.width, B = p.top + p.height;
+  const rawR = raw.left + raw.width, rawB = raw.top + raw.height, G = 4;
+  for (const a of els(avoid).filter(shown).map(e => e.getBoundingClientRect())) {
+    if (a.right <= L || a.left >= R || a.bottom <= T || a.top >= B) continue; // no overlap
+    if (a.top >= rawB) B = Math.min(B, Math.max(rawB, a.top - G));
+    else if (a.bottom <= raw.top) T = Math.max(T, Math.min(raw.top, a.bottom + G));
+    else if (a.left >= rawR) R = Math.min(R, Math.max(rawR, a.left - G));
+    else if (a.right <= raw.left) L = Math.max(L, Math.min(raw.left, a.right + G));
+  }
+  return { left: L, top: T, width: R - L, height: B - T };
 }
 const inViewer = () => $('app')?.dataset.scene === 'viewer';
 function available(step) {
@@ -142,8 +158,8 @@ function scrollAboveSheet(step) {
 
 function render(step, mode) {
   run.cur = step; run.mode = mode; run.last = null; run.scrolledFor = null;
-  const list = run.list, i = list.findIndex(s => s.id === step.id);
-  card.querySelector('#tourCount').textContent = mode === 'step' ? counterText(i, list.length) : '';
+  const list = run.list, [i, n] = mode === 'step' ? planPos(step.id) : [-1, 0];
+  card.querySelector('#tourCount').textContent = mode === 'step' ? counterText(i, n) : '';
   card.querySelector('#tourCount').hidden = mode !== 'step';
   card.querySelector('#tourTitle').textContent = step.title;
   const body = bodyFor(step, (step.targets && variant(step)?.body) || step.body, { openedName: run.opened ? (app()?.V?.name || "Barnard's Star") : null });
@@ -154,7 +170,7 @@ function render(step, mode) {
   next.textContent = step.next || 'Next';
   skip.hidden = mode === 'outro';
   layer.classList.toggle('waiting', mode === 'waiting');
-  live.textContent = `${mode === 'step' ? counterText(i, list.length) + '. ' : ''}${step.title}. ${body}`;
+  live.textContent = `${mode === 'step' ? counterText(i, n) + '. ' : ''}${step.title}. ${body}`;
   // fade + 8 px rise (180 ms, ease-out); instant with Reduce motion
   hole.classList.toggle('moving', !reduce());
   clearTimeout(run.moveT); run.moveT = setTimeout(() => hole.classList.remove('moving'), 260);
@@ -173,6 +189,7 @@ async function show(step, dir) {
   }
   run.list = steps();
   if (!run.list.some(s => s.id === step.id)) { // missing or hidden here (e.g. phone layout): skip it quietly
+    dropFromPlan(step.id);
     const nxt = neighbour(STEPS, run.list, step.id, dir || 1);
     if (nxt) return show(nxt, dir || 1);
     return dir < 0 ? render(INTRO, 'intro') : render(OUTRO, 'outro');
@@ -188,9 +205,26 @@ function go(dir) {
   if (cur.id === 'play') leavePlay();
   run.list = steps();
   const nxt = neighbour(STEPS, run.list, cur.id, dir);
+  dropSkipped(cur.id, nxt ? nxt.id : dir > 0 ? 'outro' : 'intro');
   if (nxt) return show(nxt, dir);
   if (dir > 0) return render(OUTRO, 'outro');
   if (cur.id !== 'intro') render(INTRO, 'intro');
+}
+
+// The counter ("2 of 7") counts a plan made once at the start, so the total never jumps while the tour
+// runs. It only shrinks when a planned step really has to be skipped; a step shown is never removed.
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+const order = id => STEPS.findIndex(s => s.id === id);
+function planPos(id) {
+  run.seen.add(id);
+  if (!run.plan.includes(id)) run.plan = STEPS.map(s => s.id).filter(x => x === id || run.plan.includes(x));
+  return [run.plan.indexOf(id), run.plan.length];
+}
+function dropFromPlan(id) { if (!run.seen.has(id)) run.plan = run.plan.filter(x => x !== id); }
+function dropSkipped(fromId, toId) {
+  const pos = id => id === 'intro' ? -1 : id === 'outro' ? STEPS.length : order(id);
+  const lo = Math.min(pos(fromId), pos(toId)), hi = Math.max(pos(fromId), pos(toId));
+  for (const id of [...run.plan]) if (pos(id) > lo && pos(id) < hi) dropFromPlan(id);
 }
 
 // leaving step 2: pause the time-lapse the tour opened (once), with the app's own pause key, so later
@@ -211,6 +245,7 @@ export function start(returnTo) {
   if (run) return;
   remember(getStore(), 'started');
   run = { returnTo: returnTo || document.activeElement, list: steps(), dead: false };
+  run.plan = run.list.map(s => s.id); run.seen = new Set();
   document.documentElement.dataset.tour = 'on';
   layer.hidden = false; card.hidden = false;
   void layer.offsetWidth; layer.classList.add('on'); // reflow first so the 180 ms fade still runs
