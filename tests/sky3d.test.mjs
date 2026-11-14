@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { pixToVec, vecToPix, nestToXYF, xyfToNest, tileUV, allskyRect, tilePath, parent, children } from '../web/app/sky3d/healpix.js';
-import { radecToVec, vecToRadec, frame, project, unproject, chooseOrder, visibleTiles, pickStar, starColor, starSize, starBright, magLimit, detailRamp, easeInOut, slerpRadec, panned, imageryAlpha, starAlpha, vfov, gridStep, dot } from '../web/app/sky3d/view.js';
+import { radecToVec, vecToRadec, frame, project, unproject, chooseOrder, visibleTiles, pickStar, starColor, starSize, starBright, magLimit, detailRamp, easeInOut, slerpRadec, panned, imageryAlpha, starAlpha, vfov, gridStep, dot, pickNearest, namesQuery } from '../web/app/sky3d/view.js';
 import { propagate, NAMES } from '../tools/make_stars.mjs';
 
 // Made with astropy_healpix.healpix_to_lonlat / lonlat_to_healpix (order='nested').
@@ -48,7 +48,7 @@ test('HiPS tile orientation: column = dy, row from top = dx (real SPHEREx tiles)
   assert.equal(tilePath(5, 12345), 'Norder5/Dir10000/Npix12345.png');
 });
 
-test('projection: centre, north up, east left, round trip, behind camera', () => {
+test('stereographic projection: centre, north up, east left, round trip, behind, conformal', () => {
   const view = { ra: 88.79, dec: 7.41, fov: 30, w: 1000, h: 600 };
   const c = project(view, radecToVec(88.79, 7.41));
   assert.ok(Math.abs(c[0] - 500) < 1e-6 && Math.abs(c[1] - 300) < 1e-6);
@@ -62,6 +62,11 @@ test('projection: centre, north up, east left, round trip, behind camera', () =>
   const l = vecToRadec(unproject(view, 0, 300)), r = vecToRadec(unproject(view, 1000, 300));
   assert.ok(Math.abs(angDeg(l, r) - 30) < 1e-6, 'fov is the angle across the width');
   assert.ok(Math.abs(vfov(30, 1000, 1000) - 30) < 1e-9);
+  // conformal: a small circle 40° off-centre on a tall phone stays round (perspective would stretch it ~1.7x)
+  const ph = { ra: 0, dec: 0, fov: 60, w: 390, h: 844 }, c0 = [0, 40], d = 0.2;
+  const pc = project(ph, radecToVec(...c0)), pn = project(ph, radecToVec(0, 40 + d)), pe = project(ph, radecToVec(d / Math.cos(40 * Math.PI / 180), 40));
+  const rn = Math.hypot(pn[0] - pc[0], pn[1] - pc[1]), re = Math.hypot(pe[0] - pc[0], pe[1] - pc[1]);
+  assert.ok(Math.abs(rn / re - 1) < 0.01, 'round: ' + rn / re);
   const f = frame(10, 89.999); // still a valid frame near the pole
   assert.ok(Math.abs(dot(f.right, f.up)) < 1e-9 && Math.abs(dot(f.f, f.up)) < 1e-9);
 });
@@ -95,6 +100,15 @@ test('star picking finds the nearest bright star, and nothing when far', () => {
   assert.equal(pickStar({ x, mag }, radecToVec(88.8, 7.41), 0.2 * Math.PI / 180), 0);
   assert.equal(pickStar({ x, mag }, radecToVec(88.9, 7.45), 0.02 * Math.PI / 180), 1);
   assert.equal(pickStar({ x, mag }, radecToVec(200, -40), 1 * Math.PI / 180), -1);
+});
+
+test('SIMBAD hover helpers: nearest object within the radius; names only below 1.5°', () => {
+  const vecs = [radecToVec(10, 10), radecToVec(10.01, 10), radecToVec(50, 0)];
+  assert.equal(pickNearest(vecs, radecToVec(10.009, 10), 0.005 * Math.PI / 180).i, 1);
+  assert.equal(pickNearest(vecs, radecToVec(20, 10), 0.01 * Math.PI / 180), null);
+  assert.equal(namesQuery(2), null);
+  assert.deepEqual(namesQuery(1), { radius: 0.75, limit: 80 });
+  assert.deepEqual(namesQuery(0.1), { radius: Math.min(1.1, 0.1 * 0.75), limit: 60 });
 });
 
 test('star look follows DESIGN.md section 18 (colour stops, size, brightness)', () => {

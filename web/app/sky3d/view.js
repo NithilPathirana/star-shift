@@ -35,27 +35,29 @@ export function frame(ra, dec) {
   return { f, right: [-e[0], -e[1], -e[2]], up: n };
 }
 
-// view = { ra, dec, fov (deg across width), w, h (CSS px) }
+// Stereographic projection from the centre of the sphere (conformal, like Stellarium): shapes
+// stay true at wide fields and on tall phone screens, where a perspective camera stretches the
+// edges. view = { ra, dec, fov (deg across the width), w, h (CSS px) }.
+const halfR = (fov) => 2 * Math.tan((fov * D2R) / 4); // projected radius of the half-width angle
+export const BEHIND = -0.2; // cos of the angle from the centre beyond which a point counts as behind
 export function project(view, v, fr = frame(view.ra, view.dec)) {
   const z = dot(v, fr.f);
-  if (z <= 1e-9) return null;
-  const s = (view.w / 2) / Math.tan((view.fov * D2R) / 2);
-  return [view.w / 2 + (dot(v, fr.right) / z) * s, view.h / 2 - (dot(v, fr.up) / z) * s];
+  if (z <= BEHIND) return null;
+  const k = 2 / (1 + z), s = (view.w / 2) / halfR(view.fov);
+  return [view.w / 2 + dot(v, fr.right) * k * s, view.h / 2 - dot(v, fr.up) * k * s];
 }
 export function unproject(view, x, y, fr = frame(view.ra, view.dec)) {
-  const s = (view.w / 2) / Math.tan((view.fov * D2R) / 2);
-  const cx = (x - view.w / 2) / s, cy = -(y - view.h / 2) / s;
-  const v = [fr.f[0] + cx * fr.right[0] + cy * fr.up[0], fr.f[1] + cx * fr.right[1] + cy * fr.up[1], fr.f[2] + cx * fr.right[2] + cy * fr.up[2]];
-  const l = Math.hypot(v[0], v[1], v[2]);
-  return [v[0] / l, v[1] / l, v[2] / l];
+  const s = (view.w / 2) / halfR(view.fov);
+  const X = (x - view.w / 2) / s, Y = -(y - view.h / 2) / s, r2 = X * X + Y * Y, q = 4 / (4 + r2), cz = (4 - r2) / (4 + r2);
+  const cx = X * q, cy = Y * q;
+  return [cz * fr.f[0] + cx * fr.right[0] + cy * fr.up[0], cz * fr.f[1] + cx * fr.right[1] + cy * fr.up[1], cz * fr.f[2] + cx * fr.right[2] + cy * fr.up[2]];
 }
-// Vertical field of view (deg) for three.js' PerspectiveCamera.
-export function vfov(fovW, w, h) { return 2 * Math.atan(Math.tan((fovW * D2R) / 2) * (h / Math.max(1, w))) * R2D; }
+// Shader scale: clip-space x, y = (camera x, y) * 2 / (1 + z) * clipScale.
+export function clipScale(view) { const t = halfR(view.fov); return [1 / t, (view.w / Math.max(1, view.h)) / t]; }
+// Angle (deg) across the height for a FOV across the width.
+export function vfov(fovW, w, h) { return 4 * Math.atan(Math.tan((fovW * D2R) / 4) * (h / Math.max(1, w))) * R2D; }
 // Angle (rad) from the view centre to the farthest screen corner.
-export function viewRadius(view) {
-  const t = Math.tan((view.fov * D2R) / 2);
-  return Math.atan(t * Math.hypot(1, view.h / Math.max(1, view.w)));
-}
+export function viewRadius(view) { return 2 * Math.atan(Math.tan((view.fov * D2R) / 4) * Math.hypot(1, view.h / Math.max(1, view.w))); }
 export const pxPerDeg = (view) => view.w / view.fov;
 
 // Tile level: the coarsest HiPS order whose 512-px tiles are at least as sharp as the screen.
@@ -125,6 +127,20 @@ export function pickStar(stars, v, maxRad, maxMag = Infinity) {
   }
   return best;
 }
+
+// Nearest of a few objects (e.g. SIMBAD names) to direction v within maxRad: { i, ang } or null.
+export function pickNearest(vecs, v, maxRad) {
+  let best = null;
+  for (let i = 0; i < vecs.length; i++) {
+    const c = Math.min(1, dot(vecs[i], v));
+    const ang = Math.acos(c);
+    if (ang <= maxRad && (!best || ang < best.ang)) best = { i, ang };
+  }
+  return best;
+}
+// Cone radius (deg) and row limit for on-demand SIMBAD names, or null when the view is too wide.
+export const NAMES_MAX_FOV = 1.5;
+export function namesQuery(fov) { return fov > NAMES_MAX_FOV ? null : { radius: Math.min(1.1, fov * 0.75), limit: fov < 0.3 ? 60 : 80 }; }
 
 // Great-circle interpolation of the view centre, t in [0, 1].
 export function slerpRadec(a, b, t) {

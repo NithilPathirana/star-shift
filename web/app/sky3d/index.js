@@ -7,9 +7,10 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 
 import * as THREE from '../../vendor/three-0.186.1/three.module.js';
+import { simbadCone, otypeName } from '../skymap.js';
 import { pixToVec, tileUV, allskyRect, tilePath, parent, children, npix } from './healpix.js';
 import {
-  radecToVec, vecToRadec, frame, project, unproject, vfov, viewRadius, chooseOrder, visibleTiles,
+  radecToVec, vecToRadec, frame, project, unproject, vfov, clipScale, pickNearest, namesQuery, viewRadius, chooseOrder, visibleTiles,
   imageryAlpha, starAlpha, detailRamp, magLimit, starColor, pickStar, slerpRadec, easeInOut, panned,
   gridStep, wrap360, wrap180, clampDec, clampFov, MAX_FOV, GESTURE_MIN_FOV,
 } from './view.js';
@@ -17,6 +18,11 @@ import {
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
 const BG = 0x0E0B09; // DESIGN.md --stage
 const MW_TINT = [0xE9 / 255, 0xD8 / 255, 0xC2 / 255], DETAIL_TINT = [1.0, 0.965, 0.92]; // warm grey
+// The SPHEREx HiPS tiles are 8-bit with coarse low levels (0, 35, 58, ...), and the sky background
+// sits right at the 0/35 step, so tiles whose zodiacal background differs slightly come out mostly 0
+// or mostly 35: straight-edged light/dark patches. When zoomed in, the base layer's black point moves
+// to the first level so both read as the same dark sky (at wide views the faint Milky Way keeps it).
+const SKY_FLOOR = 36 / 255;
 const STARS_URL = new URL('../data/stars.json', import.meta.url);
 export const CREDIT = 'Stars: Hipparcos (ESA), new reduction (van Leeuwen 2007), via the ESA Gaia archive. Imagery: NASA/SPHEREx DR1 (Caltech/IPAC).';
 
@@ -27,23 +33,49 @@ const MAX_INFLIGHT = 6, UPLOADS_PER_FRAME = 3, TILE_FADE_MS = 260, MOVE_SETTLE_M
 const SEG = { 3: 8, 4: 6, 5: 4 };
 
 // ---------- shaders (GLSL3 through three's ShaderMaterial; raw display values, no colour management)
-const TILE_VS = `out vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
-const TILE_FS = `out vec4 outColor; uniform sampler2D map; uniform float alpha; uniform float nearest; uniform vec2 texSize; in vec2 vUv;
+// Stereographic projection in the vertex shader (see view.js project()); uRot rows = right, up, forward.
+const STEREO = `uniform mat3 uRot; uniform vec2 uClip;
+vec4 stereo(vec3 p) { vec3 c = uRot * p; float k = 2.0 / max(1.0 + c.z, 1e-3); return vec4(c.xy * k * uClip, c.z < -0.2 ? 2.0 : 0.0, 1.0); }
+`;
+const TILE_VS = STEREO + `out vec2 vUv; void main() { vUv = uv; gl_Position = stereo(position); }`;
+// Saturated or blank pixels (palette 0 / transparent) inside bright stars would show as black
+// holes. A ~0 pixel that has bright pixels (> 0.3) as its first non-blank neighbour in at least 5
+// of 8 directions (searched out to 34 texels in 512 px tiles, 2 in the 64 px Allsky thumbnails)
+// takes the brightest of them instead.
+const TILE_FS = `out vec4 outColor; uniform sampler2D map; uniform float alpha; uniform float nearest; uniform vec2 texSize; uniform int fillSteps; in vec2 vUv;
+float lum(vec4 t) { return t.a < 0.5 ? 0.0 : (t.r + t.g + t.b) / 3.0; }
+const vec2 DIRS[8] = vec2[8](vec2(1, 0), vec2(-1, 0), vec2(0, 1), vec2(0, -1), vec2(0.7071, 0.7071), vec2(-0.7071, 0.7071), vec2(0.7071, -0.7071), vec2(-0.7071, -0.7071));
+const float RADII[8] = float[8](1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 21.0, 34.0);
+vec4 fillCore(vec2 base) {
+  int hits = 0; vec3 best = vec3(0.0);
+  for (int d = 0; d < 8; d++) {
+    for (int i = 0; i < fillSteps; i++) {
+      vec4 t = textureLod(map, (base + DIRS[d] * RADII[i]) / texSize, 0.0);
+      float l = lum(t);
+      if (l > 0.02) { if (l > 0.3) { hits++; best = max(best, t.rgb); } break; }
+    }
+  }
+  return hits >= 5 ? vec4(best, 1.0) : vec4(0.0);
+}
 void main() {
-  vec3 c = nearest > 0.5 ? textureLod(map, (floor(vUv * texSize) + 0.5) / texSize, 0.0).rgb : texture(map, vUv).rgb;
+  vec2 base = floor(vUv * texSize) + 0.5;
+  vec4 c0 = textureLod(map, base / texSize, 0.0);
+  if (lum(c0) <= 0.02) { vec4 f = fillCore(base); if (f.a > 0.5) { outColor = vec4(f.rgb, alpha); return; } }
+  // Linear filtering must not pull a bright texel towards a neighbouring blank core (dark dots).
+  vec3 c = nearest > 0.5 ? c0.rgb : (lum(c0) > 0.3 && fillSteps > 2 ? max(texture(map, vUv).rgb, c0.rgb) : texture(map, vUv).rgb);
   outColor = vec4(c, alpha);
 }`;
 const COMP_VS = `out vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
-const COMP_FS = `out vec4 outColor; uniform sampler2D tex; uniform float alpha; uniform vec3 tint; uniform float sat; in vec2 vUv;
+const COMP_FS = `out vec4 outColor; uniform sampler2D tex; uniform float alpha; uniform vec3 tint; uniform float sat; uniform float bp; in vec2 vUv;
 void main() {
-  vec3 c = texture(tex, vUv).rgb;
+  vec3 c = max(texture(tex, vUv).rgb - bp, 0.0) / (1.0 - bp);
   float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
   outColor = vec4(mix(vec3(l), c, sat) * tint, alpha);
 }`;
-const STAR_VS = `uniform float uScale; uniform float uAlpha; uniform float uMagLim;
+const STAR_VS = STEREO + `uniform float uScale; uniform float uAlpha; uniform float uMagLim;
 in vec3 aColor; in float aMag; out vec3 vColor; out float vA; out float vSpan;
 void main() {
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  gl_Position = stereo(position);
   float core = clamp(1.2 + (6.5 - aMag) * 0.85, 1.2, 7.0) * uScale;
   float bright = clamp(pow(pow(10.0, -0.4 * aMag) / pow(10.0, 0.6), 0.35), 0.25, 1.0);
   float fade = clamp(1.0 - (aMag - uMagLim) / 0.4, 0.0, 1.0);
@@ -61,7 +93,7 @@ void main() {
   if (a < 0.003) discard;
   outColor = vec4(vColor, a);
 }`;
-const GRID_VS = `in float aEq; out float vEq; void main() { vEq = aEq; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+const GRID_VS = STEREO + `in float aEq; out float vEq; void main() { vEq = aEq; gl_Position = stereo(position); }`;
 const GRID_FS = `out vec4 outColor; in float vEq; void main() { outColor = vec4(1.0, 0.922, 0.824, vEq > 0.5 ? 0.20 : 0.08); }`;
 
 const mat = (vs, fs, uniforms, extra = {}) => new THREE.ShaderMaterial({
@@ -118,7 +150,7 @@ async function loadTexture(url, signal) {
   const tex = new THREE.Texture(bmp);
   tex.flipY = false; tex.colorSpace = THREE.NoColorSpace;
   tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.minFilter = THREE.LinearMipmapLinearFilter; tex.magFilter = THREE.LinearFilter; tex.generateMipmaps = true;
+  tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter; tex.generateMipmaps = false; // tiles are chosen near 1:1; mips would mix blank cores into stars
   tex.needsUpdate = true;
   return tex;
 }
@@ -171,7 +203,7 @@ export class Sky3D {
   }
   setGrid(on) { this.gridOn = !!on; this.gridKey = ''; if (this.renderer) { this._syncGrid(); this._kick(); } }
   destroy() {
-    cancelAnimationFrame(this.raf); this.ro?.disconnect(); this.abort?.abort();
+    cancelAnimationFrame(this.raf); this.ro?.disconnect(); this.abort?.abort(); this.namesAbort?.abort();
     for (const e of this.tiles?.values() || []) this._dropTile(e);
     for (const l of this.layers?.values() || []) freeTexture(l.tex);
     this.renderer?.dispose(); this.canvas?.remove(); this.aladin = null;
@@ -200,10 +232,11 @@ export class Sky3D {
     canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this._message('The 3D sky paused because the graphics driver reset. It comes back by itself.'); });
     canvas.addEventListener('webglcontextrestored', () => { this.msgEl?.remove(); this.msgEl = null; this._kick(); });
 
-    this.camera = new THREE.PerspectiveCamera(60, 1, 0.01, 10);
+    this.camera = new THREE.Camera(); // unused by our shaders (they project stereographically)
+    this.U = { uRot: { value: new THREE.Matrix3() }, uClip: { value: new THREE.Vector2(1, 1) } };
     this.rt = new THREE.WebGLRenderTarget(4, 4, { depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
     this.tileScene = new THREE.Scene();
-    this.compMat = mat(COMP_VS, COMP_FS, { tex: { value: this.rt.texture }, alpha: { value: 1 }, tint: { value: new THREE.Vector3(1, 1, 1) }, sat: { value: 1 } });
+    this.compMat = mat(COMP_VS, COMP_FS, { tex: { value: this.rt.texture }, alpha: { value: 1 }, tint: { value: new THREE.Vector3(1, 1, 1) }, sat: { value: 1 }, bp: { value: 0 } });
     const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.compMat); quad.frustumCulled = false;
     this.compScene = new THREE.Scene(); this.compScene.add(quad);
     this.fgScene = new THREE.Scene();
@@ -239,7 +272,7 @@ export class Sky3D {
     g.setAttribute('position', new THREE.BufferAttribute(x, 3));
     g.setAttribute('aColor', new THREE.BufferAttribute(col, 3));
     g.setAttribute('aMag', new THREE.BufferAttribute(mag, 1));
-    this.starMat = mat(STAR_VS, STAR_FS, { uScale: { value: 1 }, uAlpha: { value: 1 }, uMagLim: { value: 6.9 } }, { blending: THREE.AdditiveBlending });
+    this.starMat = mat(STAR_VS, STAR_FS, { ...this.U, uScale: { value: 1 }, uAlpha: { value: 1 }, uMagLim: { value: 6.9 } }, { blending: THREE.AdditiveBlending });
     const pts = new THREE.Points(g, this.starMat); pts.frustumCulled = false; pts.renderOrder = 10;
     this.fgScene.add(pts);
   }
@@ -353,16 +386,45 @@ export class Sky3D {
       this.v.ra = wrap360(this.v.ra + wrap180(a[0] - b[0])); this.v.dec = clampDec(this.v.dec + (a[1] - b[1]));
     }
   }
+  // Hover: the nearest Hipparcos star or (below 1.5° FOV) SIMBAD-named object within 9 px.
   _hover(xy) {
-    if (!this.stars) return;
-    const view = this._view(), dir = unproject(view, xy[0], xy[1]);
-    const i = pickStar(this.stars, dir, (9 * view.fov / view.w) * D2R, magLimit(view.fov) + 0.2);
-    const hip = i >= 0 ? this.stars.rows[i][0] : null;
-    if (hip === this.hovered) return;
-    this.hovered = hip;
-    if (i < 0) { this.onHover?.(null); return; }
-    const r = this.stars.rows[i];
-    this.onHover?.({ name: this.stars.names[r[0]] || `HIP ${r[0]}`, type: `Star · V ${r[3].toFixed(1)}`, ra: r[1], dec: r[2], hip: r[0], source: 'Hipparcos' });
+    const view = this._view(), dir = unproject(view, xy[0], xy[1]), maxRad = (9 * view.fov / view.w) * D2R;
+    let hit = null;
+    if (this.stars) {
+      const i = pickStar(this.stars, dir, maxRad, magLimit(view.fov) + 0.2);
+      if (i >= 0) {
+        const r = this.stars.rows[i], v = this.stars.x;
+        const ang = Math.acos(Math.min(1, v[3 * i] * dir[0] + v[3 * i + 1] * dir[1] + v[3 * i + 2] * dir[2]));
+        hit = { key: 'H' + r[0], ang, data: { name: this.stars.names[r[0]] || `HIP ${r[0]}`, type: `Star · V ${r[3].toFixed(1)}`, ra: r[1], dec: r[2], hip: r[0], source: 'Hipparcos' } };
+      }
+    }
+    if (this.names?.length && view.fov <= 1.5) {
+      const n = pickNearest(this.nameVecs, dir, maxRad);
+      if (n && (!hit || n.ang < hit.ang * 0.8)) {
+        const o = this.names[n.i];
+        hit = { key: 'S' + o.name, ang: n.ang, data: { name: o.name, type: otypeName(o.otype), ra: o.ra, dec: o.dec, otype: o.otype, source: 'SIMBAD' } };
+      }
+    }
+    const key = hit ? hit.key : null;
+    if (key === this.hovered) return;
+    this.hovered = key;
+    this.onHover?.(hit ? hit.data : null);
+  }
+  // SIMBAD names for the view, fetched after movement settles; stale requests are cancelled.
+  async _refreshNames() {
+    const q = namesQuery(this.v.fov);
+    if (!q) { this.namesAbort?.abort(); this.names = null; this.nameVecs = null; this.namesKey = ''; return; }
+    const { ra, dec } = this.v;
+    const key = `${ra.toFixed(2)},${dec.toFixed(2)},${q.radius.toFixed(2)}`;
+    if (key === this.namesKey) return;
+    this.namesKey = key;
+    this.namesAbort?.abort();
+    const ac = this.namesAbort = new AbortController();
+    try {
+      const rows = await simbadCone(ra, dec, q.radius, { limit: q.limit, signal: ac.signal, timeoutMs: 12000 });
+      if (ac.signal.aborted || this.namesKey !== key) return;
+      this.names = rows; this.nameVecs = rows.map(o => radecToVec(o.ra, o.dec));
+    } catch (err) { if (this.namesKey === key) this.namesKey = ''; /* names are optional */ }
   }
 
   // ---------------- per-frame ----------------
@@ -411,6 +473,7 @@ export class Sky3D {
     const h = ra / 15, hh = Math.floor(h), mm = Math.floor((h - hh) * 60);
     const f = fov >= 1 ? `${fov.toFixed(fov >= 10 ? 0 : 1)}°` : fov * 60 >= 1 ? `${(fov * 60).toFixed(1)}′` : `${(fov * 3600).toFixed(0)}″`;
     this.canvas?.setAttribute('aria-label', `Sky. Centre RA ${hh}h ${String(mm).padStart(2, '0')}m, Dec ${dec >= 0 ? '+' : '−'}${Math.abs(dec).toFixed(0)}°. Field of view ${f}.`);
+    this._refreshNames();
     try { this.onMove?.(this.center(), this.fov()); } catch (err) { console.warn('sky3d onMove', err); }
   }
 
@@ -426,9 +489,8 @@ export class Sky3D {
       this.layers.set(url, l);
       loadTexture(`${url}/Norder3/Allsky.png`, this.abort.signal).then((tex) => {
         if (!this.allskyGeo) this.allskyGeo = allskyGeometry(tex.image.width, tex.image.height);
-        tex.generateMipmaps = false; tex.minFilter = THREE.LinearFilter;
         l.tex = tex; l.state = 'ready';
-        l.mesh = new THREE.Mesh(this.allskyGeo, mat(TILE_VS, TILE_FS, { map: { value: tex }, alpha: { value: 1 }, nearest: { value: 0 }, texSize: { value: new THREE.Vector2(tex.image.width, tex.image.height) } }));
+        l.mesh = new THREE.Mesh(this.allskyGeo, mat(TILE_VS, TILE_FS, { ...this.U, fillSteps: { value: 2 }, map: { value: tex }, alpha: { value: 1 }, nearest: { value: 0 }, texSize: { value: new THREE.Vector2(tex.image.width, tex.image.height) } }));
         l.mesh.frustumCulled = false; l.mesh.renderOrder = -1;
         this._trimLayers(); this._kick();
       }).catch((err) => { l.state = 'failed'; if (err?.name !== 'AbortError') console.warn('sky3d: allsky failed', url, err); });
@@ -489,7 +551,7 @@ export class Sky3D {
       this.renderer.initTexture(e.tex);
       let g = this.geos.get(`${e.order}/${e.n}`);
       if (!g) { g = tileGeometry(e.order, e.n); this.geos.set(`${e.order}/${e.n}`, g); }
-      e.mesh = new THREE.Mesh(g, mat(TILE_VS, TILE_FS, { map: { value: e.tex }, alpha: { value: 0 }, nearest: { value: 0 }, texSize: { value: new THREE.Vector2(e.tex.image.width, e.tex.image.height) } }));
+      e.mesh = new THREE.Mesh(g, mat(TILE_VS, TILE_FS, { ...this.U, fillSteps: { value: 8 }, map: { value: e.tex }, alpha: { value: 0 }, nearest: { value: 0 }, texSize: { value: new THREE.Vector2(e.tex.image.width, e.tex.image.height) } }));
       e.mesh.frustumCulled = false; e.mesh.renderOrder = e.order;
       e.state = 'ready'; e.born = now;
     }
@@ -502,9 +564,8 @@ export class Sky3D {
     const r = this.renderer, cam = this.camera, v = this.v;
     this.uploadsLeft = UPLOADS_PER_FRAME; this.lastRender = now;
     const fr = frame(v.ra, v.dec);
-    const X = new THREE.Vector3(...fr.right), Y = new THREE.Vector3(...fr.up), Z = new THREE.Vector3(-fr.f[0], -fr.f[1], -fr.f[2]);
-    cam.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(X, Y, Z));
-    cam.fov = vfov(v.fov, this.w, this.h); cam.aspect = this.w / this.h; cam.updateProjectionMatrix(); cam.updateMatrixWorld();
+    this.U.uRot.value.set(...fr.right, ...fr.up, ...fr.f); // rows (Matrix3.set is row-major)
+    this.U.uClip.value.set(...clipScale(this._view()));
 
     r.setRenderTarget(null); r.setClearColor(BG, 1); r.clear();
     let busy = false;
@@ -539,10 +600,11 @@ export class Sky3D {
       r.setRenderTarget(this.rt); r.setClearColor(0x000000, 1); r.clear(); r.render(sc, cam);
       r.setRenderTarget(null);
       const u = this.compMat.uniforms;
-      if (L.additive) { this.compMat.blending = THREE.AdditiveBlending; u.alpha.value = L.w * a; u.tint.value.set(1, 1, 1); u.sat.value = 1; }
+      if (L.additive) { this.compMat.blending = THREE.AdditiveBlending; u.alpha.value = L.w * a; u.tint.value.set(1, 1, 1); u.sat.value = 1; u.bp.value = 0; }
       else {
         this.compMat.blending = THREE.NormalBlending; u.alpha.value = a;
         u.tint.value.set(...MW_TINT.map((t, i) => t + (DETAIL_TINT[i] - t) * ramp)); u.sat.value = 0.6 + 0.4 * ramp;
+        u.bp.value = SKY_FLOOR * ramp; // see SKY_FLOOR
       }
       r.render(this.compScene, cam);
     }
@@ -585,7 +647,7 @@ export class Sky3D {
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     g.setAttribute('aEq', new THREE.Float32BufferAttribute(eq, 1));
     if (!this.gridMesh) {
-      this.gridMesh = new THREE.LineSegments(g, mat(GRID_VS, GRID_FS, {}));
+      this.gridMesh = new THREE.LineSegments(g, mat(GRID_VS, GRID_FS, { ...this.U }));
       this.gridMesh.frustumCulled = false; this.gridMesh.renderOrder = 5; this.fgScene.add(this.gridMesh);
     } else { this.gridMesh.geometry.dispose(); this.gridMesh.geometry = g; }
   }
