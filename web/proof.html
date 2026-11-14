@@ -1,0 +1,108 @@
+<!doctype html>
+<!-- AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. -->
+<html lang="en" data-motion="full" data-glass="glass" data-contrast="normal" data-text="normal">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Star Shift · How we know</title>
+<link rel="icon" type="image/svg+xml" href="brand/favicon.svg">
+<meta name="description" content="For five well-known objects, what the catalogues expect compared with what Star Shift measures in the SPHEREx images, with honest limits.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/e.css">
+<link rel="stylesheet" href="styles/pages.css">
+</head>
+<body>
+<div class="page" data-page="proof">
+  <nav class="rail" aria-label="Pages">
+    <img class="logo-slot" src="brand/star-shift-symbol-small.svg" alt="" width="40" height="40">
+    <a class="nav-btn" href="index.html"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><circle cx="10" cy="10" r="2.5"/></svg>Viewer</a>
+    <a class="nav-btn" href="archive.html"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M3 7.5h14M3 12h14M8 3v14"/></svg>Archive</a>
+    <a class="nav-btn" href="spectral.html"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 16.5h15M3.5 13l3-5 3 3 3-6 4 7" stroke-linejoin="round"/></svg>Spectrum</a>
+    <a class="nav-btn" href="proof.html" aria-current="page"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 3v14M6 17h8M4 6h12"/><path d="M4 6l-2 5h4zM16 6l-2 5h4z" stroke-linejoin="round"/></svg>Proof</a>
+    <a class="nav-btn nav-demote" href="planetarium.html" title="Can I see it tonight?" aria-label="Can I see it tonight?"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 14.5h15"/><path d="M4 14.5a6 6 0 0 1 12 0"/></svg>Tonight?</a>
+  </nav>
+
+  <header class="topbar glass">
+    <img class="logo-slot top-logo" src="brand/star-shift-symbol-small.svg" alt="" width="28" height="28"><span class="name">Star Shift</span>
+    <div class="top-actions">
+      <button class="key pg-pages-key" id="pagesBtn" type="button" aria-haspopup="dialog" aria-expanded="false">Pages</button>
+      <button class="key" id="clarityBtn" type="button" aria-haspopup="dialog" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="7"/><path d="M10 3v14" /><path d="M10 3a7 7 0 0 1 0 14z" fill="currentColor"/></svg><span class="clar-l">Clarity</span></button>
+    </div>
+  </header>
+
+  <main class="pg-main pf-main" id="main">
+    <section class="pg-head pf-head">
+      <div>
+        <h1>How we know</h1>
+        <p class="pf-lede">For five well-known objects, we compare what the catalogues say should happen with what we measure in the SPHEREx images.</p>
+      </div>
+    </section>
+
+    <section class="well pf-rules" aria-labelledby="rulesH">
+      <h2 id="rulesH">How each verdict is decided</h2>
+      <div class="pf-rule-cols" id="rules"></div>
+    </section>
+
+    <section class="well table-well pf-well" aria-label="Expected compared with measured, per object">
+      <table class="atable pf-table">
+        <thead><tr>
+          <th scope="col">Object</th>
+          <th scope="col">Expected <span class="tag cat">CATALOGUE</span></th>
+          <th scope="col">Measured here <span class="tag obs">OBSERVED</span></th>
+          <th scope="col">Difference <span class="tag comp">COMPUTED</span></th>
+          <th scope="col">Verdict</th>
+          <th scope="col">Honest limits</th>
+        </tr></thead>
+        <tbody id="rows"><tr><td colspan="6" class="empty">Loading the measurements…</td></tr></tbody>
+      </table>
+    </section>
+    <p class="pf-under num" id="under"></p>
+
+    <div class="pf-cols">
+      <section class="well pf-panel" aria-labelledby="methodH">
+        <h2 id="methodH">Method</h2>
+        <ol class="pf-method">
+          <li><b>Lining up the images.</b> Each SPHEREx image is cut out around the object and redrawn on one north-up grid of 6.15″ pixels, using the image's own sky coordinates.
+            <details><summary>more</summary><p>The cutout is centred on where the catalogue says the object is on that image's date. The field is 2.5′ (25 × 25 pixels). We use 120 images spread evenly in time, the viewer's default.</p></details></li>
+          <li><b>Finding the star's centre.</b> In each image we take the brightness-weighted centre of the light within 3.5 pixels (21″), after taking away the sky level measured in a ring around it.
+            <details><summary>more</summary><p>The first season's images are stacked to find the starting point near the catalogue position. After that, each image is searched where the earlier images say the star should be. An image counts only when the star's peak is more than 5 times the noise and within 2 pixels of that prediction.</p></details></li>
+          <li><b>Fitting the motion or the brightness change.</b> A straight line through the east and north positions against time gives the motion per year. For brightness, each image is compared with first-season images from the same detector at the same wavelength.
+            <details><summary>more</summary><p>The east and north slopes combine as μ = √(μ<sub>E</sub>² + μ<sub>N</sub>²); its uncertainty comes from the scatter about the two lines. Points more than 3 times the scatter from the line are dropped once. Brightness is the light within 15″ of the catalogue position; a change is Δm = −2.5 log₁₀(F / F<sub>first season</sub>), measured separately below and above 3.8 µm.</p></details></li>
+          <li><b>Leaving out flagged pixels.</b> Pixels the archive marks as bad (saturated, hot, sudden jumps, afterglow) are blanked before measuring. Whole images are kept, as in the viewer's default.
+            <details><summary>more</summary><p>Each row's evidence also shows the result when every image with a flag near the star is hidden. For brightness, an image is left out if any pixel within 15″ of the star is blanked, because a blanked centre would make the star look fainter.</p></details></li>
+        </ol>
+      </section>
+      <section class="well pf-panel" aria-labelledby="notH">
+        <h2 id="notH">What this does not show</h2>
+        <ul class="pf-not" id="notList"></ul>
+      </section>
+    </div>
+
+    <footer class="pg-foot pf-foot">
+      <p><b>Data and catalogues.</b> SPHEREx images: NASA SPHEREx, from the NASA/IPAC Infrared Science Archive (IRSA): Quick Release 2, DOI 10.26131/IRSA652, and Quick Release 3, DOI 10.26131/IRSA662.
+        SIMBAD astronomical database, CDS, Strasbourg (Wenger et al. 2000, DOI 10.1051/aas:2000332).
+        Gaia DR3, ESA Gaia mission and DPAC (Gaia Collaboration, Vallenari et al. 2023, DOI 10.1051/0004-6361/202243940), used through SIMBAD for proper motions and the variability period, and directly for the neighbour check near WISE 0855−0714.
+        WISE 0855−0714 motion: Kirkpatrick et al. 2021 (DOI 10.3847/1538-4365/abd107). RW Aurigae motion: Hipparcos, van Leeuwen 2007 (DOI 10.1051/0004-6361:20078357).</p>
+      <p>Numbers computed by <span class="num">tools/make_proof.mjs</span> with the app's own pipeline. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.</p>
+    </footer>
+  </main>
+</div>
+<div class="pop glass" id="clarity" role="dialog" aria-label="Clarity and accessibility" hidden>
+  <h2>Clarity</h2>
+  <h3>Comfort</h3>
+  <div class="opt"><span>Reduce motion<small>No sliding or shimmering</small></span><button class="switch well" role="switch" data-set="motion" aria-checked="false" aria-label="Reduce motion"><i></i></button></div>
+  <div class="opt"><span>Reduce transparency<small>Glass becomes solid</small></span><button class="switch well" role="switch" data-set="glass" aria-checked="false" aria-label="Reduce transparency"><i></i></button></div>
+  <div class="opt"><span>Increase contrast</span><button class="switch well" role="switch" data-set="contrast" aria-checked="false" aria-label="Increase contrast"><i></i></button></div>
+  <div class="opt"><span>Larger text</span><button class="switch well" role="switch" data-set="text" aria-checked="false" aria-label="Larger text"><i></i></button></div>
+  <p class="foot">Shared with the Viewer. Choices are remembered on this device.</p>
+</div>
+
+<div class="pop glass" id="pagesPop" role="dialog" aria-label="Pages" hidden>
+  <h2>Pages</h2>
+  <nav class="pg-pages"><a class="key" href="index.html">Viewer</a><a class="key" href="archive.html">Archive</a><a class="key" href="spectral.html">Spectrum</a><a class="key" href="proof.html" aria-current="page">Proof</a><a class="key" href="planetarium.html">Can I see it tonight?</a></nav>
+</div>
+<script type="module" src="app/proof/main.js"></script>
+</body>
+</html>

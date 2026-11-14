@@ -177,3 +177,108 @@ html[data-motion=full] .skel i{animation:pg-shimmer 1.4s linear infinite}
   .page .topbar{flex-wrap:wrap;row-gap:8px}
   .page .search{order:5;flex:1 1 100%;min-width:0}
 }
+
+/* proof */
+/* "How we know" page (DESIGN.md 32). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+.pf-main{max-width:1500px}
+.pf-lede{margin-top:6px;font-size:1.125rem;line-height:1.45;color:var(--ink-2);max-width:62ch}
+.pf-rules,.pf-panel{border-radius:var(--r-glass);padding:14px 18px;background:linear-gradient(180deg,#EFE9E0,#F4EFE8)}
+.pf-rules h2,.pf-panel h2{font-size:.875rem;font-weight:700;margin-bottom:8px}
+.pf-rule-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 28px}
+.pf-rule-cols h3{font-size:.75rem;font-weight:600;color:var(--muted);margin-bottom:6px}
+.pf-rule{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:baseline;font-size:.8125rem;color:var(--ink-2)}
+.pf-rule dd{text-align:left;font-family:var(--font-ui);color:var(--ink-2)}
+.pf-rule-note{grid-column:1 / -1;font-size:.75rem;color:var(--muted)}
+/* verdict chips: wording + outline style, never colour alone */
+.pf-chip{display:inline-block;padding:3px 8px;border-radius:6px;font:700 .6875rem/1.3 var(--font-ui);letter-spacing:.05em;white-space:nowrap;background:transparent}
+.pf-chip.v-agree{color:var(--sage);border:1.5px solid var(--sage)}
+.pf-chip.v-limit{color:var(--copper);border:1.5px solid var(--copper)}
+.pf-chip.v-differ{color:var(--ink);border:3px double var(--ink-2);padding:2px 7px}
+.pf-chip.v-none{color:var(--muted);border:1.5px dashed var(--muted)}
+.pf-well{max-height:none}
+.pf-table td{white-space:normal;vertical-align:top;padding:10px 10px;height:auto}
+.pf-table th .tag{margin-left:4px}
+.pf-table small{display:block;margin-top:2px;font-size:.6875rem;line-height:1.35;color:var(--muted)}
+.pf-group + .pf-group tr:first-child td{border-top:1px solid var(--edge-strong)}
+.pf-row{cursor:pointer;transition:background var(--t-press)}
+@media (hover:hover) and (pointer:fine){.pf-row:hover{background:rgba(255,255,255,.5)}}
+.pf-obj{min-width:150px}
+.pf-row.pf-on td:first-child{box-shadow:inset 3px 0 0 var(--copper)}
+.pf-open{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0;background:none;border:0;font:inherit;color:var(--ink);cursor:pointer;text-align:left}
+.pf-open svg{flex:none;color:var(--copper);transition:transform var(--t-toggle) var(--ease-out)}
+.pf-open[aria-expanded=true] svg{transform:rotate(90deg)}
+.pf-open:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+html[data-motion=reduce] .pf-open svg{transition:none}
+.pf-big{font-size:.875rem;white-space:nowrap}
+.pf-line{display:block;white-space:nowrap}
+.pf-line + small{margin-bottom:6px}
+.pf-txt{display:block;min-width:150px}
+.pf-exp,.pf-meas{min-width:170px}
+.pf-diff{min-width:90px}
+.pf-lim{min-width:240px;max-width:46ch;font-size:.78rem;line-height:1.45;color:var(--ink-2)}
+.pf-drow td{padding:4px 10px 14px}
+.pf-ev{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:var(--s4);align-items:start}
+.pf-stage{border-radius:16px;background:var(--stage);color:var(--stage-text);padding:10px 12px 8px}
+.pf-cap{font-size:.75rem;color:var(--stage-muted);margin-bottom:2px}
+.pf-svg{display:block;width:100%;height:auto;font-family:var(--font-num);font-size:11px}
+.pf-svg text{fill:var(--stage-muted)}
+.pf-grid{stroke:rgba(255,235,210,.08);stroke-width:1}
+.pf-zero{stroke:rgba(255,235,210,.3);stroke-width:1}
+.pf-pt{fill:none;stroke:#FFF6E8;stroke-width:1.2}
+.pf-fit{stroke:#E3A86B;stroke-width:2}
+.pf-cat{stroke:#9DB8A0;stroke-width:1.6;stroke-dasharray:6 5}
+.pf-mean{fill:none;stroke-width:1.6}
+.pf-mean-0{stroke:#FFF6E8}.pf-mean-1{stroke:#E3A86B;stroke-dasharray:5 4}
+.pf-err{stroke-width:1.6;stroke-dasharray:none}
+.pf-mean-pt{fill:#15110E;stroke-width:2;stroke-dasharray:none}
+.pf-key{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.6875rem;color:var(--stage-muted);margin-top:4px}
+.pf-key span{display:inline-flex;align-items:center;gap:6px}
+.pf-key i{display:inline-block;flex:none}
+.pf-k-pt,.pf-k-c{width:8px;height:8px;border-radius:50%;border:1.4px solid #FFF6E8}
+.pf-k-s{width:8px;height:8px;border:1.4px solid #E3A86B}
+.pf-k-fit{width:18px;height:2px;background:#E3A86B}
+.pf-k-cat{width:18px;border-top:2px dashed #9DB8A0}
+.pf-stage .tag.obs{color:#B9D3BC;background:rgba(157,184,160,.16)}
+.pf-stage .tag.comp{color:#F0C08E;background:rgba(227,168,107,.16)}
+.pf-stage .tag.cat{color:var(--stage-text);background:rgba(255,235,210,.1)}
+.pf-evside{display:grid;gap:10px;justify-items:start}
+.pf-facts{padding-left:18px;font-size:.78rem;line-height:1.5;color:var(--ink-2);display:grid;gap:4px}
+.pf-under{font-size:.75rem;color:var(--ink-2);margin-top:calc(-1 * var(--s2))}
+.pf-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap);align-items:start}
+.pf-method{padding-left:20px;display:grid;gap:10px;font-size:.8125rem;line-height:1.5;color:var(--ink-2)}
+.pf-method b{color:var(--ink)}
+.pf-method summary{display:inline-block;margin-top:2px;font-size:.75rem;font-weight:600;color:var(--copper);cursor:pointer}
+.pf-method summary:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+.pf-method details p{margin-top:4px;font-size:.78rem;color:var(--ink-2)}
+.pf-not{padding-left:18px;display:grid;gap:8px;font-size:.8125rem;line-height:1.5;color:var(--ink-2)}
+.pf-foot p{line-height:1.5}
+@media (max-width:1100px){.pf-ev{grid-template-columns:1fr}}
+@media (max-width:700px){
+  .pf-lede{font-size:1rem}
+  .pf-rule-cols,.pf-cols{grid-template-columns:1fr}
+  /* each row becomes a card: object + verdict, then expected + measured, then limits */
+  .pf-table thead{display:none}
+  .pf-table,.pf-table tbody{display:block}
+  .pf-table tr.pf-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:10px;row-gap:6px;padding:12px 8px;border-bottom:1px solid rgba(84,62,42,.14)}
+  .pf-table tr.pf-row td{border:0;padding:0;min-width:0;max-width:none}
+  .pf-table .pf-obj{grid-column:1;grid-row:1}
+  .pf-table .pf-ver{grid-column:2;grid-row:1;text-align:right}
+  .pf-table .pf-group + .pf-group tr:first-child td{border-top:0}
+  .pf-table .pf-group + .pf-group tr:first-child{border-top:1px solid var(--edge-strong)}
+  .pf-table .pf-exp{grid-column:1;grid-row:2}
+  .pf-table .pf-meas{grid-column:2;grid-row:2;text-align:right}
+  .pf-table .pf-diff{grid-column:1 / -1;grid-row:3}
+  .pf-table .pf-lim{grid-column:1 / -1;grid-row:4}
+  .pf-table .pf-diff small,.pf-table .pf-diff .pf-line{display:inline;margin-right:8px}
+  .pf-table .pf-diff .pf-big{margin-right:6px}
+  .pf-table .pf-exp::before,.pf-table .pf-meas::before,.pf-table .pf-diff::before{display:block;font-size:.6875rem;font-weight:700;letter-spacing:.05em;color:var(--muted)}
+  .pf-table .pf-exp::before{content:"EXPECTED · CATALOGUE"}
+  .pf-table .pf-meas::before{content:"MEASURED · OBSERVED"}
+  .pf-table .pf-diff::before{content:"DIFFERENCE · COMPUTED";display:inline;margin-right:8px}
+  .pf-line{white-space:normal}
+  .pf-big{white-space:normal}
+  .pf-open{min-height:44px}
+  .pf-table tr.pf-drow{display:block}
+  .pf-table tr.pf-drow[hidden]{display:none}
+  .pf-table tr.pf-drow td{display:block;padding:4px 4px 14px}
+}
