@@ -26,7 +26,7 @@
 .sl-rail canvas{display:block;width:100%;height:28px}
 .sl-scale{position:relative;height:16px;margin-top:2px;font:500 .6875rem/16px var(--font-num,"IBM Plex Mono",monospace);color:var(--stage-muted,#B5A898)}
 .sl-scale span{position:absolute;transform:translateX(-50%);white-space:nowrap}
-.sl-bands{position:relative;height:18px;margin-top:2px;font-size:.6875rem;line-height:18px;color:var(--stage-text,#EDE5DA)}
+.sl-bands{position:relative;height:18px;margin-top:2px;font-size:.75rem;line-height:18px;color:var(--stage-text,#EDE5DA)}
 .sl-bands span{position:absolute;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding-right:4px}
 /* footer: quiet progress, retry, start */
 .sl-foot{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px 12px}

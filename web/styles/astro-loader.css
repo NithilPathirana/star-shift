@@ -22,7 +22,7 @@
 @keyframes al-rise{from{opacity:0;transform:translateY(6px)}}
 /* AI label: always visible while the picture shows */
 .al .al-capt{position:absolute;left:10px;bottom:10px;margin:0;max-width:calc(100% - 20px);padding:2px 7px;border-radius:5px;background:rgba(11,9,7,.62);
-  font-size:.6875rem;line-height:1.45;color:#EDE5DA}
+  font-size:.75rem;line-height:1.45;color:#EDE5DA}
 /* 2 px progress hairline along the bottom edge */
 .al-hair{position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(255,235,210,.12);transition:opacity 150ms ease-out}
 .al-hair b{display:block;height:100%;background:var(--ring,#C27A43);transform-origin:0 50%;transform:scaleX(0);transition:transform 260ms cubic-bezier(.23,1,.32,1)}
@@ -31,5 +31,5 @@
 @media (prefers-reduced-motion:reduce){.al,.al *{animation:none!important;transition:none!important}}
 @media (max-width:699px){
   .al-foot{bottom:64px}
-  .al .al-capt{font-size:.625rem}
+  .al .al-capt{font-size:.75rem}
 }
