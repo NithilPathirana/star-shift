@@ -73,10 +73,12 @@ async function openViewer(r) {
     r.opened = true; // the tour opened the time-lapse: its first card says so, and leaving it pauses it
     if ($('stMap') && !$('stMap').hidden) $('mapOpenFilm')?.click(); // map failed: its own "Open time-lapse" key
     else {
-      if (!app()?.M?.sel?.t?.preset) {
+      // the quick tour is about Barnard's Star, whatever was picked before
+      const notBarnard = r.mode === 'quick' && !/barnard/i.test(app()?.M?.sel?.t?.name || '');
+      if (!app()?.M?.sel?.t?.preset || notBarnard) {
         const pick = [...document.querySelectorAll('.pick')].find(b => /barnard/i.test(b.textContent)) || document.querySelector('.pick');
         pick?.click();
-        await until(() => !!app()?.M?.sel?.t?.preset, 6000, r);
+        await until(() => !!app()?.M?.sel?.t?.preset && (!notBarnard || /barnard/i.test(app()?.M?.sel?.t?.name || '')), 6000, r);
         if (r.dead) return false;
       }
       ($('mdPlay') || $('cdPlay'))?.click();
@@ -96,7 +98,14 @@ async function openPart(what, r) {
   } else if (what === 'notebook' && !nbDialog()) {
     try { (await import('../notebook/notebook.js')).openNotebook(); r.openedNotebook = true; } catch { /* step is skipped */ }
     await wait(60);
-  }
+  } else if (what === 'proof-barnard') markBarnard(await until(() => !!barnardRow(), 8000, r));
+}
+// Proof page: Barnard's Star's first row (the motion test). The mark stays after the tour ends.
+const barnardRow = () => [...document.querySelectorAll('tr.pf-row')].find(tr => /barnard/i.test(tr.querySelector('.pf-obj b')?.textContent || ''));
+function markBarnard(ok) {
+  const tr = ok && barnardRow(); if (!tr) return;
+  document.querySelectorAll('tr.pf-row[data-tour-mark]').forEach(x => { if (x !== tr) { delete x.dataset.tourMark; x.classList.remove('tour-mark'); } });
+  tr.dataset.tourMark = '1'; tr.classList.add('tour-mark');
 }
 // leaving the first viewer step: pause the time-lapse the tour opened, with the app's own key
 function pauseOpened(r) {
@@ -215,13 +224,14 @@ function paint(title, body, list, counter) {
   cnt.textContent = counter || ''; cnt.hidden = !counter;
   card.querySelector('#tourTitle').textContent = title;
   const bodyEl = card.querySelector('#tourBody');
-  bodyEl.replaceChildren(Object.assign(document.createElement('p'), { textContent: body }));
+  bodyEl.replaceChildren(...(body ? [Object.assign(document.createElement('p'), { textContent: body })] : []));
+  if (list && !body) bodyEl.classList.add('lines'); else bodyEl.classList.remove('lines');
   if (list) {
     const ul = document.createElement('ul'); ul.className = 'tour-list';
     for (const [k, v] of list) { const li = document.createElement('li'); const b = document.createElement('b'); b.textContent = k; li.append(b, ' ', v); ul.append(li); }
     bodyEl.append(ul);
   }
-  live.textContent = `${counter ? counter + '. ' : ''}${title}. ${body}${list ? ' ' + list.map(([k, v]) => `${k}: ${v}`).join(' ') : ''}`;
+  live.textContent = `${counter ? counter + '. ' : ''}${title}. ${body}${list ? ' ' + list.map(([k, v]) => `${k.replace(/:$/, '')}: ${v}`).join(' ') : ''}`;
   hole.classList.toggle('moving', !reduce());
   clearTimeout(run.moveT); run.moveT = setTimeout(() => hole.classList.remove('moving'), 260);
   card.classList.remove('in'); void card.offsetWidth; card.classList.add('in');
@@ -235,14 +245,15 @@ function renderStep() {
   const step = run.cur = run.plan[run.idx]; run.kind = 'step';
   const v = variant(step), last = run.idx === run.plan.length - 1, nxt = nextChapter(run.ch.id);
   let body = v?.body || step.body;
-  if (step.id === 'play' && run.opened) body = `We've opened ${app()?.V?.name || "Barnard's Star"} for you. ${body}`;
-  const full = run.mode === 'full';
-  // the last card of a chapter: Done, or on to the next page (the full tour carries on by itself)
+  if (step.id === 'play' && run.opened) body = `We've opened ${app()?.V?.name || "Barnard's Star"} for you. ${body}`.trim();
+  const full = run.mode === 'full', quick = run.mode === 'quick';
+  // the last card of a chapter: Done, or on to the next page (the full and quick tours carry on by themselves)
   let next = 'Next', alt = null, altText = '';
-  if (last && full) next = nxt ? `Next: ${nxt.name}` : 'Finish';
+  if (last && quick) next = nxt ? 'Next' : 'Finish';
+  else if (last && full) next = nxt ? `Next: ${nxt.name}` : 'Finish';
   else if (last) { next = 'Done'; if (nxt) { alt = () => continueFull(nxt); altText = `On to ${nxt.name}`; } }
   setButtons({ back: run.idx > 0, next, alt, altText });
-  paint(v?.title || step.title, body, step.list, counterFor(run.ch, run.idx, run.plan.length, full));
+  paint(v?.title || step.title, body, v?.lines || step.lines || step.list, counterFor(run.ch, run.idx, run.plan.length, full));
   save('running');
 }
 function renderCard(c, kind, buttons) {
@@ -257,7 +268,7 @@ function save(status, extra = {}) {
 }
 
 // a step can show only when its part is on screen (or, for steps that open something first, in the page)
-const planned = step => !!variant(step) || (!!step.open && step.targets.some(selExists)) || (!!step.open && step.open === 'notebook');
+const planned = step => !!variant(step) || (!!step.open && step.targets.some(selExists)) || step.open === 'notebook' || step.open === 'proof-barnard';
 
 async function showStep(idx, dir) {
   const token = run.token = (run.token || 0) + 1;
@@ -285,16 +296,17 @@ function go(dir) {
 
 async function chapterDone() {
   const r = run, nxt = nextChapter(r.ch.id);
+  if (r.mode === 'quick') return nxt ? continueFull(nxt, 'quick') : end('done'); // ends on Proof, Barnard's row still marked
   if (r.mode !== 'full') return end('done');
   if (!nxt) { renderCard(FINAL, 'final', { next: 'Done', skip: false }); return; }
   return continueFull(nxt);
 }
 // on to the next chapter in full-tour mode: same page → straight on; else load its page and resume there
-function continueFull(ch) {
+function continueFull(ch, mode = 'full') {
   if (!run) return;
-  run.mode = 'full';
+  run.mode = mode;
   if (chapterRunsHere(ch, page())) return enterChapter(ch, null);
-  writeProgress(getStore(), { mode: 'full', chapter: ch.id, step: null, status: 'running', nav: true });
+  writeProgress(getStore(), { mode, chapter: ch.id, step: null, status: 'running', nav: true });
   if (run.openedNotebook) nbDialog()?.close();
   location.href = ch.url;
 }
@@ -365,7 +377,7 @@ export function end(how = 'skip') {
   const r = run;
   if (how === 'skip' && r.kind === 'step' && !(r.mode === 'page' && r.idx === 0)) {
     writeProgress(getStore(), { mode: r.mode, chapter: r.ch.id, step: r.cur?.id || null, status: 'paused' });
-  } else if (how === 'skip' && (r.kind === 'waiting' || r.kind === 'intro') && r.mode === 'full') {
+  } else if (how === 'skip' && (r.kind === 'waiting' || r.kind === 'intro') && r.mode !== 'page') {
     writeProgress(getStore(), { mode: r.mode, chapter: r.ch.id, step: null, status: 'paused' });
   } else clearProgress(getStore());
   teardown();

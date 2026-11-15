@@ -33,22 +33,28 @@
   .tour-card.sheet{max-height:min(58vh,560px)}
 }
 
-/* first-visit offer: small glass card at the bottom-right of the stage */
-.tour-offer{--glass-tint:rgba(248,244,238,.95);--glass-tint-2:rgba(244,239,232,.94);
-  position:fixed;z-index:35;right:24px;bottom:120px;width:min(320px,calc(100vw - 24px));padding:14px var(--s4);
-  opacity:0;transform:translateY(8px);transition:opacity 180ms var(--ease-out),transform 180ms var(--ease-out)}
-.tour-offer.in{opacity:1;transform:none}
-.tour-offer-t{font-size:.9375rem;font-weight:600;color:var(--ink)}
-.tour-offer .tour-actions{justify-content:flex-end;margin-top:12px}
-.tour-offer .tour-x,.tour-offer .o-sm{display:none}
-/* phone: one 56 px strip under the top bar (text · Tour · close), clear of the dock */
-.tour-offer.strip{position:absolute;left:8px;right:8px;bottom:auto;width:auto;height:56px;display:flex;align-items:center;gap:8px;padding:6px 6px 6px 14px;border-radius:16px}
-.tour-offer.strip .tour-offer-t{flex:1;min-width:0;font-size:.8125rem;line-height:1.25}
-.tour-offer.strip .tour-actions{margin-top:0;gap:6px;flex:none}
-.tour-offer.strip .key{min-height:44px}
-.tour-offer.strip .tour-later,.tour-offer.strip .o-lg{display:none}
-.tour-offer.strip .tour-x{display:inline-flex;width:44px}
-.tour-offer.strip .o-sm{display:inline}
+/* first-visit offer (desktop only): a 296 px callout hanging from the Tour key, over the right panel,
+   never over the stage (boot.js places it and drops it when it would touch the stage) */
+.tour-offer{--glass-tint:rgba(248,244,238,.97);--glass-tint-2:rgba(244,239,232,.96);
+  position:fixed;z-index:20;top:72px;right:12px;width:296px;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 14px;border-radius:14px;
+  opacity:0;transform:scale(.96);transition:opacity 150ms var(--ease-out),transform 150ms var(--ease-out)}
+.tour-offer.in{opacity:1;transform:none;transition-duration:200ms}
+.tour-offer::before{content:"";position:absolute;z-index:2;top:-5px;left:var(--notch-x,240px);width:10px;height:10px;
+  transform:rotate(45deg);background:var(--glass-tint);border-left:1px solid var(--edge,rgba(60,40,24,.14));border-top:1px solid var(--edge,rgba(60,40,24,.14))}
+.tour-offer-t{flex:1;min-width:0;font:600 .875rem/1.25 var(--font-ui,inherit);color:var(--ink)}
+.tour-offer .key{min-height:36px;flex:none}
+.tour-offer .tour-x{width:36px;padding:0;justify-content:center;background:transparent;box-shadow:none;color:var(--muted)}
+@media (max-width:699px){.tour-offer{display:none!important}}
+/* when it leaves without a choice, the Tour key pulses once to show where the tour lives */
+@keyframes tour-pulse{0%{box-shadow:0 0 0 0 rgba(138,71,25,.28)}60%{box-shadow:0 0 0 6px rgba(138,71,25,.28)}100%{box-shadow:0 0 0 6px rgba(138,71,25,0)}}
+.tour-page-key.tour-pulse{animation:tour-pulse 600ms var(--ease-out,ease-out) 1}
+html[data-motion=reduce] .tour-page-key.tour-pulse{animation:none}
+
+/* 60-second tour: three labelled lines per card; Barnard's Star's row on Proof stays marked after it ends */
+.tour-body.lines .tour-list{margin-top:8px;gap:6px;font-size:.875rem;line-height:1.45}
+tr.pf-row.tour-mark>td{background:rgba(168,95,42,.10)}
+tr.pf-row.tour-mark>td:first-child{box-shadow:inset 3px 0 0 var(--copper-key,#A85F2A)}
+.tour-menu .key[hidden]{display:none}
 
 /* Help popover: "Take the tour" at the top */
 #help .tour-start{width:100%;margin:0 0 14px}

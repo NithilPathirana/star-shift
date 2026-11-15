@@ -158,10 +158,49 @@ export const CHAPTERS = [
   ] },
 ];
 
-export const chapterById = id => CHAPTERS.find(c => c.id === id) || null;
+/**
+ * The 60-second tour ("Start tour", judges' item b4): six steps across two pages, each card saying
+ * what it is, what to do and what you learn. It ends on Proof with Barnard's Star's row marked.
+ * Same step shape as the chapters; `lines` are the card's three labelled lines.
+ */
+const QL = (it, act, learn) => [['What it is:', it], ['Do:', act], ['You learn:', learn]];
+export const QUICK = [
+  { id: 'q-pick', quick: true, page: 'index.html', scene: 'map', url: 'index.html', name: 'Quick tour', steps: [
+    { id: 'pick', targets: ['.picks'], prefer: ['below'], title: 'Pick a star', body: '',
+      lines: QL('five objects SPHEREx photographed many times.', "click Barnard's Star, or press Next and the tour opens it.", 'some stars move across the sky fast enough to see.'),
+      alt: { targets: ['.topbar .search'], prefer: ['below'] } },
+  ] },
+  { id: 'q-viewer', quick: true, page: 'index.html', scene: 'viewer', url: DEMO_VIEWER, needs: 'viewer', name: 'Quick tour', steps: [
+    { id: 'play', targets: ['.transport', '.tl'], prefer: ['above', 'below'], title: 'Play the photos', body: '',
+      lines: QL('every SPHEREx photo of this patch, in date order.', 'press Play, or drag the time bar.', "Barnard's Star creeps along while the stars behind it stay put.") },
+    { id: 'blink', targets: ['#viewSeg'], prefer: ['above', 'below'], avoid: ['#speedSeg', '#layerSeg', '.tl'], title: 'Blink first and last', body: '',
+      lines: QL('Blink flips between the first and the last season.', 'click Blink and look for a dot that jumps.', 'a jump means it moved; faraway stars stay still.') },
+  ] },
+  { id: 'q-proof', quick: true, page: 'proof.html', url: 'proof.html', name: 'Quick tour', steps: [
+    { id: 'row', targets: ['tr.pf-row[data-tour-mark]'], open: 'proof-barnard', prefer: ['below', 'above'], title: 'Check it against catalogues', body: '',
+      lines: QL("our measured motion for Barnard's Star beside what star catalogues expect.", 'read its verdict; the arrow opens the evidence.', 'whether the photos agree with decades of careful measurements.'),
+      // phones: the stacked row is taller than the screen, so outline its top cells only (clear of the sheet)
+      phone: { targets: ['tr.pf-row[data-tour-mark] .pf-obj', 'tr.pf-row[data-tour-mark] .pf-ver', 'tr.pf-row[data-tour-mark] .pf-meas'], prefer: ['below'] } },
+    { id: 'spot', targets: ['.rail a[href$="spot.html"]'], prefer: ['right', 'below'], title: 'Spot a mover yourself', body: '',
+      lines: QL('Spot, a page where you hunt for moving dots.', 'blink a patch and click anything that jumps.', 'the app checks flags, known stars and known asteroids before it calls anything unexplained.'),
+      alt: { ...PAGES_ALT, requires: '#pagesPop a[href$="spot.html"]',
+        lines: QL('Spot, under Pages, where you hunt for moving dots.', 'blink a patch and click anything that jumps.', 'the app checks flags, known stars and known asteroids before it calls anything unexplained.') } },
+    { id: 'notebook', targets: ['.rail [data-notebook]'], prefer: ['right'], title: 'Keep what you find', body: '',
+      lines: QL('a lab notebook; every + key saves a value into it.', 'open Notebook when you want to write up what you saw.', 'how an observation becomes a tested conclusion, like a lab report.'),
+      alt: [{ targets: ['[data-rail-more]'], prefer: ['right'],
+        lines: QL('a lab notebook, under More; every + key saves a value into it.', 'open Notebook when you want to write up what you saw.', 'how an observation becomes a tested conclusion, like a lab report.') },
+      { ...PAGES_ALT, lines: QL('a lab notebook, under Pages; every + key saves a value into it.', 'open Notebook when you want to write up what you saw.', 'how an observation becomes a tested conclusion, like a lab report.') }] },
+  ] },
+];
+export const QUICK_TOTAL = QUICK.reduce((n, c) => n + c.steps.length, 0);
+
+export const chapterById = id => CHAPTERS.find(c => c.id === id) || QUICK.find(c => c.id === id) || null;
 export const chapterIndex = id => CHAPTERS.findIndex(c => c.id === id);
-/** The chapter after (dir 1) or before (dir -1) this one in the full tour, or null at either end. */
-export function nextChapter(id, dir = 1) { const i = chapterIndex(id); return i < 0 ? null : CHAPTERS[i + dir] || null; }
+/** The chapter after (dir 1) or before (dir -1) this one in its tour (full or quick), or null at either end. */
+export function nextChapter(id, dir = 1) {
+  const L = QUICK.some(c => c.id === id) ? QUICK : CHAPTERS, i = L.findIndex(c => c.id === id);
+  return i < 0 ? null : L[i + dir] || null;
+}
 
 /** The file name of a page path: '/web/' and '/' are index.html. */
 export function pageOf(pathname = '') {
@@ -186,7 +225,7 @@ export function pickTargets(step, { phone = false, shown = () => true, exists = 
   const cands = [phone && step.phone, step, ...[].concat(step.alt || [])].filter(Boolean);
   for (const c of cands) {
     if (c.requires && !exists(c.requires)) continue;
-    if (c.targets && c.targets.some(shown)) return { targets: c.targets, title: c.title || step.title, body: c.body || step.body, prefer: c.prefer || step.prefer };
+    if (c.targets && c.targets.some(shown)) return { targets: c.targets, title: c.title || step.title, body: c.body || step.body, prefer: c.prefer || step.prefer, lines: c.lines || step.lines };
   }
   return null;
 }
@@ -194,6 +233,10 @@ export function pickTargets(step, { phone = false, shown = () => true, exists = 
 /** "Archive · 2 of 4", with "Part 3 of 9 · " in front during the full tour. */
 export function counterFor(ch, i, n, full) {
   if (!ch || !Number.isInteger(i) || !Number.isInteger(n) || i < 0 || i >= n) return '';
+  if (ch.quick) { // one count across the quick tour's pages: "Quick tour · 4 of 6"
+    let k = i; for (const c of QUICK) { if (c.id === ch.id) break; k += c.steps.length; }
+    return `Quick tour · ${k + 1} of ${QUICK_TOTAL}`;
+  }
   const part = full ? `Part ${chapterIndex(ch.id) + 1} of ${CHAPTERS.length} · ` : '';
   return `${part}${ch.name} · ${i + 1} of ${n}`;
 }
@@ -204,7 +247,7 @@ const MAX_AGE = 7 * 864e5;
 export function readProgress(storage, now = Date.now()) {
   if (!storage) return null;
   let p; try { p = JSON.parse(storage.getItem(PROGRESS_KEY) || 'null'); } catch { return null; }
-  if (!p || typeof p !== 'object' || !chapterById(p.chapter) || !['full', 'page'].includes(p.mode)) return null;
+  if (!p || typeof p !== 'object' || !chapterById(p.chapter) || !['full', 'page', 'quick'].includes(p.mode)) return null;
   if (!(now - (+p.t || 0) < MAX_AGE)) return null;
   return p;
 }

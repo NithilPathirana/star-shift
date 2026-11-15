@@ -112,6 +112,19 @@ export function shouldOffer(storage) {
   try { return storage.getItem(TOUR_KEY) === null; } catch { return false; }
 }
 
+/** How long the first-visit offer waits before it leaves by itself (judges' item a5). */
+export const OFFER_MS = 8000;
+/**
+ * Offer the tour on this URL? Not on a deep link (q, ra+dec or scene in the query): the visitor came
+ * for a view, not a welcome. Pass the URL the page was first loaded with, since the app later
+ * rewrites a plain "/" to "?q=Barnard's Star" for the default patch (that is still a cold open).
+ */
+export function offerAllowed(url = '') {
+  let qp; try { qp = new URL(url, 'http://x/').searchParams; } catch { return false; }
+  const q = qp.get('q'), home = q !== null && /^barnard['’]s star$/i.test(q.trim()); // the default landing patch
+  return !((q !== null && !home) || qp.has('scene') || (qp.has('ra') && qp.has('dec')));
+}
+
 /** Remember the visitor's answer. Returns false when storage is missing or throws (private mode). */
 export function remember(storage, choice) {
   if (!storage || !CHOICES.includes(choice)) return false;
