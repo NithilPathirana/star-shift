@@ -116,7 +116,8 @@ export function createContam(ctx) {
     const raw = f?.raw; if (!raw?.flags) return;
     const g = cv.getContext('2d'), dpr = devicePixelRatio || 1, lw = 1.25 * dpr, tiny = c < 10 * dpr;
     const kind = new Array(n * n), multi = new Uint8Array(n * n);
-    for (let i = 0; i < n * n; i++) { const ks = pixelKinds(raw.flags[i], raw.masks).filter(id => S.show[id]); if (ks.length) { kind[i] = ks[0]; multi[i] = ks.length > 1; } }
+    // no-data pixels get no marks: they already read as calm flat fill (the hover tip still lists their flags)
+    for (let i = 0; i < n * n; i++) { if (f.d?.[i] == null) continue; const ks = pixelKinds(raw.flags[i], raw.masks).filter(id => S.show[id]); if (ks.length) { kind[i] = ks[0]; multi[i] = ks.length > 1; } }
     for (const b of blocks(kind, n)) {
       if (b.cells.length >= 6) {
         const set = new Set(b.cells), path = () => { g.beginPath();
