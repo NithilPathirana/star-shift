@@ -327,6 +327,29 @@ export function decideAsteroid(results, at) {
   return { status: 'clear', text: 'No known Solar System object here on these dates.' };
 }
 
+// ---------------------------------------------------------------- Simple mode: plain-words twins
+// Expert mode shows each check's full text (″, V magnitudes, orbit numbers); Simple shows these.
+// '(2010 AB12)' -> '2010 AB12'; '433 Eros (A898 PA)' -> 'Eros' (the orbit number is Expert detail).
+export function simpleBodyName(name) {
+  const s = plainName(name);
+  if (/^\d{4}\s+[A-Z]{2}\d*$/.test(s)) return s; // a provisional designation such as 2010 AB12
+  const m = /^\d+\s+(?:\((.+)\)|([^(]+?)\s*(?:\(.*\))?)$/.exec(s); // '12345 (2001 XY)' -> '2001 XY'
+  return m ? (m[1] || m[2]) : s;
+}
+// res: a check result as decideStar / decideAsteroid / evaluateFlags / decideSeasons return it.
+export function plainCheckText(id, res) {
+  if (!res) return '';
+  if (id === 'star' && res.status === 'explained' && res.best) {
+    return res.mover ? `${res.best.name}, a catalogued star that moves, lands on your ring in one of the seasons.`
+      : `${res.best.name}, a catalogued star, sits right here and barely moves.`;
+  }
+  if (id === 'asteroid' && (res.hit || res.faint)) {
+    const row = res.hit || res.faint, what = `JPL predicts ${bodyWord(row.name)} ${simpleBodyName(row.name)} passes your ring on ${fmtDay(res.season.mjd)}`;
+    return res.hit ? `${what}, and it may be bright enough for SPHEREx to see.` : `${what}, but it is too faint for SPHEREx to see.`;
+  }
+  return res.text || '';
+}
+
 // ---------------------------------------------------------------- check d: seen in at least two seasons
 export const DETECT_SEARCH_PX = 2;
 export const DETECT_MIN_SNR = 5;

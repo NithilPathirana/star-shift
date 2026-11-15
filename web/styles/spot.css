@@ -188,3 +188,15 @@ html[data-motion=reduce] .sm-toast{transition:none}
   .sm-verdict .sm-vkeys .key,.sm-pfold .key,.sm-l .sm-retry{min-height:44px}
   .sm-l summary{min-height:44px}
 }
+
+/* Sun 07:10 work order: purpose lines, Clear all, Simple/Expert (expert.js hides .x-only / .s-only) */
+.sm-head .sm-purpose{flex:1 1 520px;max-width:none;line-height:1.5}
+.sm-purpose b{color:var(--ink);font-weight:600}
+.sm-sushead{display:flex;align-items:center;gap:8px}
+.sm-sushead h2{flex:1;min-width:0}
+.sm-clear{min-height:30px;padding:0 10px;font-size:.75rem}
+.sm-empty:focus{outline:none}
+.sm-empty:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+html:not([data-expert=on]) .sm-sbtn{grid-template-columns:28px minmax(0,1fr)}
+html:not([data-expert=on]) .sm-sv{text-align:left}
+@media (max-width:700px){.sm-clear{min-height:44px;padding:0 14px}.sm-sbtn{min-height:44px}}

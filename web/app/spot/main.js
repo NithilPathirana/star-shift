@@ -18,8 +18,13 @@ import {
   LOAD_SETTINGS, MAX_SUSPECTS, QUICK, fieldByKey, pickSurprise, nearestField, fmtDay, seasonRange, fmtPos,
   ARTEFACT_KINDS, flagsAtSpot, evaluateFlags, decideSeasons, seasonPresence, STATE_WORD, checkTitle,
   initChecklist, checklistStep, decideVerdict, summaryText, REPORT_LINKS, ASTEROID_HALF_WIDTH_DEG, offsetText, fieldCentre, passDistance,
+  plainCheckText, simpleBodyName, STAR_MATCH_ARCSEC, ASTEROID_MATCH_ARCSEC,
 } from './logic.js';
 import { fetchFieldStars, starCheckAt, fetchFieldAsteroids, asteroidCheckAt } from './checks.js';
+import { isExpert } from '../expert.js'; // Simple / Expert: .x-only and .s-only twins below
+
+// Both twins in the page; CSS from expert.js shows one. Identical texts render once.
+const twin = (simple, expert) => (simple === expert ? expert : `<span class="s-only">${simple}</span><span class="x-only">${expert}</span>`);
 
 const $ = (id) => document.getElementById(id);
 const R = window.MockRender;
@@ -224,7 +229,15 @@ document.addEventListener('keydown', (e) => {
 /* ------------------------------------------------------------------ suspects */
 const selected = () => S.suspects.find(s => s.id === S.sel) || null;
 let nextId = 1;
-function clearSuspects() { for (const s of S.suspects) s.token = null; S.suspects = []; S.sel = null; renderSide(); }
+// Numbers stay stable: removing suspect 2 leaves 1 and 3, and the next click takes the lowest free number.
+// A removed suspect takes its checks, verdict and report summary with it (late answers are dropped in settle).
+function clearSuspects() { for (const s of S.suspects) s.token = null; S.suspects = []; S.sel = null; $('sum').textContent = ''; renderSide(); }
+$('clearAll').onclick = () => {
+  const n = S.suspects.length; if (!n) return;
+  clearSuspects(); draw(); steps();
+  toast(n === 1 ? 'Suspect removed.' : `All ${n} suspects removed.`);
+  $('susEmpty').focus();
+};
 $('cv').addEventListener('click', (e) => {
   if (!S.ready) return;
   const r = $('cv').getBoundingClientRect();
@@ -243,12 +256,24 @@ function addSuspect(x, y) {
   runChecks(s);
 }
 function select(id) { S.sel = id; draw(); renderSide(); steps(); }
-function removeSuspect(id) {
-  const s = S.suspects.find(q => q.id === id); if (s) s.token = null;
+function removeSuspect(id, refocus = false) {
+  const i = S.suspects.findIndex(q => q.id === id); if (i < 0) return;
+  const s = S.suspects[i]; s.token = null;
   S.suspects = S.suspects.filter(q => q.id !== id);
-  if (S.sel === id) S.sel = S.suspects[0]?.id ?? null;
+  if (S.sel === id) { S.sel = S.suspects[0]?.id ?? null; $('sum').textContent = ''; }
   draw(); renderSide(); steps();
+  toast(`Suspect ${s.n} removed.`);
+  if (refocus) { // keyboard: keep focus in the list (the next row, else the previous, else the empty note)
+    const next = S.suspects[Math.min(i, S.suspects.length - 1)];
+    (next ? $('sus').querySelector(`[data-id="${next.id}"]`) : $('susEmpty')).focus();
+  }
 }
+// Delete (or Backspace) on a focused suspect row, or on its ✕, removes that suspect.
+$('sus').addEventListener('keydown', (e) => {
+  if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+  const b = e.target.closest('[data-id], [data-rm]'); if (!b) return;
+  e.preventDefault(); removeSuspect(+(b.dataset.id || b.dataset.rm), true);
+});
 
 /* ------------------------------------------------------------------ the checks */
 // The middle image of a season (its real UTC time goes to JPL).
@@ -343,13 +368,15 @@ const ICON = {
 };
 function renderSide() {
   $('susCount').textContent = `${S.suspects.length} of ${MAX_SUSPECTS}`;
-  $('susEmpty').hidden = !!S.suspects.length; $('sheetOpen').hidden = !S.suspects.length;
+  $('susEmpty').hidden = !!S.suspects.length; $('sheetOpen').hidden = !S.suspects.length; $('clearAll').hidden = !S.suspects.length;
+  const focusId = document.activeElement?.closest?.('#sus [data-id]')?.dataset.id; // re-render keeps keyboard focus
   $('sus').innerHTML = S.suspects.map(s => {
     const v = s.verdict && s.verdict.kind !== 'pending' ? s.verdict.title : 'checking…';
-    return `<li class="${s.id === S.sel ? 'on' : ''}"><button class="sm-sbtn" type="button" data-id="${s.id}" aria-pressed="${s.id === S.sel}"><span class="sm-num num">${s.n}</span><span class="sm-spos num">${esc(formatRA(s.ra))}<br>${esc(formatDec(s.dec))}</span><span class="sm-sv">${esc(v)}</span></button><button class="key xbtn" type="button" data-rm="${s.id}" aria-label="Remove suspect ${s.n}" title="Remove suspect ${s.n}">✕</button></li>`;
+    return `<li class="${s.id === S.sel ? 'on' : ''}"><button class="sm-sbtn" type="button" data-id="${s.id}" aria-pressed="${s.id === S.sel}" aria-keyshortcuts="Delete" title="Suspect ${s.n} (Delete key removes it)"><span class="sm-num num">${s.n}</span><span class="sm-spos num x-only">${esc(formatRA(s.ra))}<br>${esc(formatDec(s.dec))}</span><span class="sm-sv">${esc(v)}</span></button><button class="key xbtn" type="button" data-rm="${s.id}" aria-label="Remove suspect ${s.n}" title="Remove suspect ${s.n}">✕</button></li>`;
   }).join('');
   for (const b of $('sus').querySelectorAll('[data-id]')) b.onclick = () => select(+b.dataset.id);
-  for (const b of $('sus').querySelectorAll('[data-rm]')) b.onclick = () => removeSuspect(+b.dataset.rm);
+  for (const b of $('sus').querySelectorAll('[data-rm]')) b.onclick = (e) => removeSuspect(+b.dataset.rm, e.detail === 0); // detail 0 = keyboard press
+  if (focusId) $('sus').querySelector(`[data-id="${focusId}"]`)?.focus();
   const s = selected();
   $('checkPanel').hidden = !s; $('report').hidden = s?.verdict?.kind !== 'unexplained';
   $('sheetTitle').textContent = s ? `Suspect ${s.n}` : 'Suspects';
@@ -359,7 +386,7 @@ function renderSide() {
   const secs = () => `<span data-secs>${s.astStart ? Math.round((Date.now() - s.astStart) / 1000) : 0} s</span>`;
   $('lines').innerHTML = s.check.lines.map(l => {
     const word = l.status === 'checking' && l.id === 'asteroid' ? `Checking… · ${secs()}` : esc(STATE_WORD[l.status]);
-    const result = l.text ? esc(l.text) : l.status === 'checking' && l.id === 'asteroid' ? 'JPL can take a minute (at most 90 s).' : '';
+    const result = l.text ? twin(esc(plainCheckText(l.id, s.lines[l.id] || l.data)), esc(l.text)) : l.status === 'checking' && l.id === 'asteroid' ? 'JPL can take a minute (at most 90 s).' : '';
     const ev = l.data ? evidence(l.id, l.data, s) : '';
     const retry = l.status === 'failed' ? `<button class="key sm-retry" type="button" data-retry="${l.id}">Retry</button>` : '';
     return `<li class="sm-l st-${l.status}"><details data-id="${l.id}"${open.has(l.id) ? ' open' : ''}><summary><span class="sm-ic">${ICON[l.status]}</span><span class="sm-lt"><b>${esc(checkTitle(l.id))}</b><span class="sm-word">${word}</span></span><span class="sm-lr">${result}</span></summary>${ev}</details>${retry}</li>`;
@@ -380,25 +407,36 @@ function evidence(id, d, s) {
   if (id === 'star') {
     const rows = (d.near || []).slice(0, 5);
     const src = [d.gaia && `Gaia DR3 ${d.gaia.ok ? `(${d.gaia.n} stars within 150″)` : 'did not answer'}`, d.simbad && `SIMBAD ${d.simbad.ok ? `(${d.simbad.n} entries within 300″)` : 'did not answer'}`].filter(Boolean).join(' · ');
+    const simpleRows = rows.slice(0, 3).map(r => `<li>${/^Gaia DR3 \d+$/.test(r.name) ? 'A star in Gaia DR3' : `<b>${esc(r.name)}</b> (${esc(r.source)})`}:${r.minSep <= STAR_MATCH_ARCSEC ? 'lands on your ring' : 'lands away from your ring'}${r.pm >= 1 ? ', moves fast' : ''}</li>`).join('');
     return `<p class="sm-evh">${tagged('CATALOGUE', 'cat')} nearest catalogue entries · predicted places ${tagged('COMPUTED', 'comp')}</p>
-      ${rows.length ? `<table class="sm-tab"><thead><tr><th>Entry</th><th class="r">Motion</th><th>First season</th><th>Latest season</th></tr></thead><tbody>
+      <div class="s-only">${rows.length ? `<ul class="sm-evl">${simpleRows}</ul>` : '<p class="sm-evn">No catalogue entries near the ring.</p>'}
+      <p class="sm-evn">Checked against Gaia DR3 and SIMBAD. Each star is moved along its known motion to each season's date; it explains the ring when it lands within about one and a half pixels of it.${d.mover ? ' On the image, a dashed ivory ring marks where the catalogue puts it in the season shown.' : ''}</p></div>
+      <div class="x-only">${rows.length ? `<table class="sm-tab"><thead><tr><th>Entry</th><th class="r">Motion</th><th>First season</th><th>Latest season</th></tr></thead><tbody>
       ${rows.map(r => `<tr${r === d.best ? ' class="on"' : ''}><td>${esc(r.name)}<small>${esc(r.source)}</small></td><td class="r num">${r.pm ? r.pm.toFixed(r.pm < 1 ? 3 : 2) + '″/yr' : '<span title="no motion in this catalogue entry">—</span>'}</td><td class="num">${esc(offsetText({ ra: s.ra, dec: s.dec }, r.pos[0]))}</td><td class="num">${esc(offsetText({ ra: s.ra, dec: s.dec }, r.pos[1]))}</td></tr>`).join('')}</tbody></table>` : '<p class="sm-evn">No catalogue entries near the ring.</p>'}
-      <p class="sm-evn">${esc(src)}. Each entry is moved in a straight line with its catalogued proper motion to the middle of each season (no parallax wobble). It explains the ring when it lands within 9.2″ (1.5 pixels).${d.mover ? ' On the image, a dashed ivory ring marks where the catalogue puts it in the season shown.' : ''}</p>`;
+      <p class="sm-evn">${esc(src)}. Each entry is moved in a straight line with its catalogued proper motion to the middle of each season (no parallax wobble). It explains the ring when it lands within 9.2″ (1.5 pixels).${d.mover ? ' On the image, a dashed ivory ring marks where the catalogue puts it in the season shown.' : ''}</p></div>`;
   }
   if (id === 'asteroid') {
     const res = d.results || [], ring = { ra: s.ra, dec: s.dec };
     const nearest = (rows) => rows.map(o => ({ o, d: passDistance(o, ring) })).sort((a, b) => a.d - b.d).slice(0, 3);
-    return `<p class="sm-evh">${tagged('JPL', 'cat')} Small-Body Identification for the whole patch (a ${(ASTEROID_HALF_WIDTH_DEG * 7200).toFixed(0)}″ box), distances from your ring</p>
-      <ul class="sm-evl">${res.map(r => `<li><b>${esc(r.label)}</b>, image at <span class="num">${esc(String(r.utc).slice(0, 16).replace('T', ' '))}</span> UTC: ${r.ok
+    const simple = res.map(r => {
+      const close = r.ok ? nearest(r.rows).filter(x => x.d <= ASTEROID_MATCH_ARCSEC) : [];
+      return `<li><b>${esc(r.label)}</b>: ${!r.ok ? 'JPL did not answer'
+        : !r.rows.length ? 'no known objects in the patch'
+          : `${r.rows.length} known object${r.rows.length === 1 ? '' : 's'} in the patch; ${close.length ? `${close.map(({ o }) => esc(simpleBodyName(o.name))).join(', ')} pass${close.length === 1 ? 'es' : ''} your ring` : 'none passes your ring'}`}</li>`;
+    }).join('');
+    return `<p class="sm-evh">${tagged('JPL', 'cat')} Small-Body Identification for the whole patch<span class="x-only">&nbsp;(a ${(ASTEROID_HALF_WIDTH_DEG * 7200).toFixed(0)}″ box), distances from your ring</span></p>
+      <div class="s-only"><ul class="sm-evl">${simple}</ul>
+      <p class="sm-evn">JPL's orbit list predicts where every known asteroid and comet was at the time of each season's middle image. An object explains the ring only if its path crosses it and it is bright enough for SPHEREx to see. These are predictions, not detections.</p></div>
+      <div class="x-only"><ul class="sm-evl">${res.map(r => `<li><b>${esc(r.label)}</b>, image at <span class="num">${esc(String(r.utc).slice(0, 16).replace('T', ' '))}</span> UTC: ${r.ok
         ? (r.rows.length ? `${r.rows.length} known object${r.rows.length === 1 ? '' : 's'} in the patch; nearest to your ring ${nearest(r.rows).map(({ o, d }) => `${esc(o.name)} <span class="num">${Number.isFinite(d) ? fmtArc(d) : '—'}</span>${o.vmag != null ? ` (V <span class="num">${o.vmag}</span>)` : ''}`).join(', ')}` : 'no known objects in the patch')
         + (r.observer ? ` <small>(observer given as ${r.observer === 'mpc-500' ? 'MPC code 500' : 'a geocentric state vector'})</small>` : '')
         : `no answer${r.status ? ` (HTTP <span class="num">${r.status}</span>)` : r.error ? ` (${esc(r.error)})` : ''}`}</li>`).join('')}</ul>
-      <p class="sm-evn">Observer: the Earth's centre (SPHEREx is 700 km up; that shifts a main-belt asteroid by under 2″). Asked once per patch and season; an object explains the ring only when its predicted path (within an hour of the image) passes within 12″ (2 pixels) AND it is bright enough for SPHEREx to see (V ≤ 18.5, an approximate limit). These are JPL's predictions, not detections.</p>`;
+      <p class="sm-evn">Observer: the Earth's centre (SPHEREx is 700 km up; that shifts a main-belt asteroid by under 2″). Asked once per patch and season; an object explains the ring only when its predicted path (within an hour of the image) passes within 12″ (2 pixels) AND it is bright enough for SPHEREx to see (V ≤ 18.5, an approximate limit). These are JPL's predictions, not detections.</p></div>`;
   }
   if (id === 'seasons') {
     return `<p class="sm-evh">${tagged('OBSERVED', 'obs')} Each season's stacked picture at the ring (9 × 9 pixels)</p>
-      <div class="sm-thumbs">${d.per.map((p, i) => `<figure><canvas class="sm-th" data-kind="season" data-i="${i}" width="84" height="84"></canvas><figcaption>${esc(p.label)}<br>${p.found ? `dot, <span class="num">${p.found.snr.toFixed(0)}</span>× the noise` : 'no clear dot'}</figcaption></figure>`).join('')}</div>
-      <p class="sm-evn">A dot counts when its peak is at least 5 times the noise, within 2 pixels of the ring${s.lines.star?.mover ? ' or of the known star\'s predicted place' : ''}.</p>`;
+      <div class="sm-thumbs">${d.per.map((p, i) => `<figure><canvas class="sm-th" data-kind="season" data-i="${i}" width="84" height="84"></canvas><figcaption>${esc(p.label)}<br>${p.found ? `<span class="s-only">clear dot</span><span class="x-only">dot, <span class="num">${p.found.snr.toFixed(0)}</span>× the noise</span>` : 'no clear dot'}</figcaption></figure>`).join('')}</div>
+      <p class="sm-evn"><span class="s-only">A dot counts when it clearly stands out from the background, close to the ring</span><span class="x-only">A dot counts when its peak is at least 5 times the noise, within 2 pixels of the ring</span>${s.lines.star?.mover ? ' or of the known star\'s predicted place' : ''}.</p>`;
   }
   return '';
 }
@@ -473,7 +511,7 @@ function renderVerdict(s) {
   el.innerHTML = `<p class="sm-vk">Verdict for suspect <span class="num">${s.n}</span></p>
     <h2>${esc(v.title)}${v.sub ? ` <span class="sm-vsub">${esc(v.sub)}</span>` : ''}</h2>
     <p class="sm-vb">${v.body.map(esc).join(' ')}</p>
-    ${v.evidence?.length ? `<ul class="sm-vev">${v.evidence.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+    ${v.evidence?.length ? `<ul class="sm-vev">${v.evidence.map((t, i) => `<li>${i === 0 && (v.decidedBy === 'star' || v.decidedBy === 'asteroid') ? twin(esc(plainCheckText(v.decidedBy, s.lines[v.decidedBy])), esc(t)) : esc(t)}</li>`).join('')}</ul>` : ''}
     ${v.running?.includes('asteroid') ? `<p class="sm-vrun">Asteroid check still running · <span data-secs>${Math.round((Date.now() - (s.astStart || Date.now())) / 1000)} s</span>${v.kind === 'artefact' ? '. A known asteroid here would change this answer' : ''}.</p>` : ''}
     ${v.notRun ? `<p class="sm-evn">${esc(v.notRun)}</p>` : ''}
     ${retry ? `<div class="sm-vkeys">${retry}</div>` : ''}
@@ -494,7 +532,10 @@ function renderVerdict(s) {
 $('copy').onclick = async () => {
   const txt = $('sum').textContent;
   try { await navigator.clipboard.writeText(txt); $('copy').textContent = 'Copied'; }
-  catch { const r = document.createRange(); r.selectNodeContents($('sum')); getSelection().removeAllRanges(); getSelection().addRange(r); $('copy').textContent = 'Selected: press Ctrl+C'; }
+  catch {
+    if (!isExpert()) { toast('Copy was blocked. Switch on Expert to see the summary and select it.'); return; }
+    const r = document.createRange(); r.selectNodeContents($('sum')); getSelection().removeAllRanges(); getSelection().addRange(r); $('copy').textContent = 'Selected: press Ctrl+C';
+  }
   setTimeout(() => { $('copy').textContent = 'Copy'; }, 1600);
 };
 

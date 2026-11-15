@@ -51,9 +51,9 @@
     <section class="pg-head sm-head">
       <div>
         <h1>Spot a mover</h1>
-        <p class="pg-target"><b id="fName">No field yet</b> <span class="num" id="fCoords"></span></p>
+        <p class="pg-target"><b id="fName">No field yet</b> <span class="num x-only" id="fCoords"></span></p>
       </div>
-      <p class="pg-lede">Every six months, SPHEREx photographs the whole sky. Flip between two seasons of one patch, click what jumps, and check whether it is real.</p>
+      <p class="pg-lede sm-purpose"><b>Find a dot that moved between seasons.</b> Star Shift checks whether it is a known star (still or moving), a known asteroid (JPL), a detector glitch or a dot seen only once. If nothing explains it, it is worth reporting to Backyard Worlds or the Minor Planet Center. Star Shift never sends anything itself.</p>
     </section>
 
     <nav class="sm-steps" id="steps" aria-label="Steps">
@@ -107,13 +107,14 @@
           <h2 id="repH">How to report it</h2>
           <ul class="sm-links" id="repLinks"></ul>
           <div class="sm-sumhead"><b>Summary to paste</b><button class="key" id="copy" type="button">Copy</button></div>
-          <pre class="sm-sum num" id="sum" tabindex="0"></pre>
+          <p class="sm-note s-only">Ready to paste: the ring's sky position, the two seasons' dates, the image IDs and what each check found. Expert mode shows it in full.</p>
+          <pre class="sm-sum num x-only" id="sum" tabindex="0"></pre>
           <p class="sm-note">Star Shift never sends anything itself: you decide whether to report and where. The summary holds only sky positions, dates, image IDs and check results, nothing about you.</p>
         </section>
         <section class="well sm-panel" aria-labelledby="susH">
-          <h2 id="susH">Suspects <span class="dim num" id="susCount">0 of 5</span></h2>
+          <div class="sm-sushead"><h2 id="susH">Suspects <span class="dim num" id="susCount">0 of 5</span></h2><button class="key sm-clear" id="clearAll" type="button" aria-label="Clear all suspects" hidden>Clear all</button></div>
           <ol class="sm-sus" id="sus"></ol>
-          <p class="sm-empty" id="susEmpty">No suspects yet. Click a dot on the image: it gets a numbered ring in both seasons.</p>
+          <p class="sm-empty" id="susEmpty" tabindex="-1">No suspects yet. Click a dot on the image: it gets a numbered ring in both seasons.</p>
         </section>
         <section class="well sm-panel sm-check" id="checkPanel" aria-labelledby="chkH" hidden>
           <h2 id="chkH">Checks for suspect <span id="chkN" class="num"></span></h2>
