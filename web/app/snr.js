@@ -148,7 +148,7 @@ export function mostlyBlanked(members, x, y) {
  * Words for one result. counts: { nSeason, nAll } same-detector images (optional).
  * Returns { simple, expert: [lines], line } — `line` is the one-line headline for both modes.
  */
-export function snrText(p, counts = {}, { detector, stack = false } = {}) {
+export function snrText(p, counts = {}, { detector, stack = false, notTarget = null } = {}) {
   if (!p.ok) { const t = (stack && REASON_TEXT[p.reason + 'Stack']) || REASON_TEXT[p.reason] || 'SNR not meaningful here'; return { line: t, simple: t, expert: [t] }; }
   const s1 = p.snr, ns = counts.nSeason, na = counts.nAll, det = detector ? `detector ${detector}` : 'this detector';
   const seen = detected(s1);
@@ -174,7 +174,34 @@ export function snrText(p, counts = {}, { detector, stack = false } = {}) {
       : ns > 1 || na > 1 ? [`Median stacks: SNR × √(2n/π) (if each image is like this one; a mean would give × √n): season n = ${ns || 1} → ${medianStackedSNR(s1, ns || 1).toFixed(1)}; all n = ${na || 1} → ${medianStackedSNR(s1, na || 1).toFixed(1)}`] : []),
     ...(p.noiseFrom === 'sky' ? [`Note: ${SKY_LIMITED}`] : []),
   ];
+  // The Brightness panel's rule (lightcurve/logic.js detection): the target is not detected in this band, so
+  // the light here is someone else's; never "clearly real" for the target, never a stack projection.
+  if (notTarget) {
+    const nt = notTargetText(notTarget, p);
+    return { line: nt.line, simple: [nt.line, nt.more].join(' '), expert: [...expert.filter(l => !/^Median stacks/.test(l)), `Not the target: ${nt.expert}`] };
+  }
   return { line, simple, expert };
+}
+
+/**
+ * notTarget: { name, src: { g, sepArcsec } | null } — the Brightness panel found the target not detected in this
+ * band (src: the catalogue neighbour it names, from proof.json / Gaia). p: the photometry (for the circle's radius).
+ */
+export function notTargetText({ name = 'the target', src = null } = {}, p = {}) {
+  const rArc = (p.r || SNR_DEFAULT_R) * PIXEL_ARCSEC;
+  const s = round(p.snr);
+  if (src && Number.isFinite(src.sepArcsec) && Number.isFinite(src.g) && src.sepArcsec <= rArc) {
+    return {
+      line: `Most of this light is a background star ${src.sepArcsec.toFixed(1)}″ away (Gaia G ${src.g.toFixed(1)}), not ${name}.`,
+      more: `That star sits inside the ${rArc.toFixed(1)}″ measuring circle; ${name} itself is not detected at these wavelengths.`,
+      expert: `${name} not detected in this band (Brightness panel rule); Gaia G ${src.g.toFixed(1)} at ${src.sepArcsec.toFixed(1)}″ is inside r = ${rArc.toFixed(1)}″, so SNR ${s} is mostly that star's light`,
+    };
+  }
+  return {
+    line: `This light is not ${name}: ${name} is not detected at these wavelengths (signal-to-noise ${s}).`,
+    more: src && Number.isFinite(src.sepArcsec) ? `The light nearby is a background star ${src.sepArcsec.toFixed(1)}″ away (Gaia G ${src.g.toFixed(1)}).` : 'The light in the circle comes from another source or the noise.',
+    expert: `${name} not detected in this band (Brightness panel rule); SNR ${s} is not the target's`,
+  };
 }
 
 export const CSV_HEAD = 'target,obsid,mjd,detector,wavelength_um,ra_deg,dec_deg,x_px,y_px,r_px,r_in_px,r_out_px,n_ap,n_flagged,n_sky,bg_MJy_sr,sigma_sky_MJy_sr,var_sum,sky_err2,flux_MJy_sr_px,noise,snr,noise_from,n_season_det,snr_season_det,n_all_det,snr_all_det,note';

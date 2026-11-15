@@ -51,8 +51,8 @@ const SIMPLE_WHY = 'It compares the light in a small circle here with the random
 
 // HTML for one result (both modes; expert.js shows one). opts: { counts, name, csv: true for the Copy key, pending,
 // stack: true when the picture measured is a season stack (measured on its own pixels; no projection) }
-export function snrHTML(res, { counts = {}, name = '', when = '', csv = true, pending = false, stack = false } = {}) {
-  const { p, meta } = res, t = snrText(p, counts, { detector: meta.detector, stack });
+export function snrHTML(res, { counts = {}, name = '', when = '', csv = true, pending = false, stack = false, notTarget = null } = {}) {
+  const { p, meta } = res, t = snrText(p, counts, { detector: meta.detector, stack, notTarget });
   const src = !p.ok ? '' : stack ? 'noise from the stacked picture\'s own sky scatter'
     : p.noiseFrom === 'variance+sky' ? 'noise from the VARIANCE layer (which includes the star\'s own photon noise) and the sky scatter'
     : pending ? 'sky scatter only for now; asking the archive for the VARIANCE layer…' : 'sky scatter only (the VARIANCE layer could not be loaded)';
@@ -89,7 +89,7 @@ document.addEventListener('click', async (e) => {
  *   starAt(frame)  [ra, dec] of the target's predicted place on that image, or null
  *   name()         target name, for the CSV
  */
-export function createSnrPanel(el, { frame, frames, seasonOf, starAt, name, base, stacks = () => null, toGrid = null, label = null }) {
+export function createSnrPanel(el, { frame, frames, seasonOf, starAt, name, base, stacks = () => null, toGrid = null, label = null, notTarget = () => null }) {
   let spot = null, spotFor = '', r = SNR_DEFAULT_R, token = 0, timer = 0;
   const radiusKeys = () => `<div class="snr-r" role="group" aria-label="Measuring circle radius"><span>Circle</span>${[1, 2, 3, 4].map(k =>
     `<button type="button" class="key snr-rk" data-r="${k}" aria-pressed="${k === r}" title="${k} pixel${k > 1 ? 's' : ''} = ${(k * PIXEL_ARCSEC).toFixed(1)}″ radius">${k} px</button>`).join('')}</div>`;
@@ -124,7 +124,7 @@ export function createSnrPanel(el, { frame, frames, seasonOf, starAt, name, base
       const data = Float64Array.from(s.data, v => (v == null ? NaN : v));
       const sat = mostlyBlanked(s.members, pos[0], pos[1]) || await satInMost(s.members, f => spot || starAt(f));
       const p = sat ? { ok: false, reason: 'saturated' } : aperturePhotometry({ nx: s.n, ny: s.n, data }, pos[0], pos[1], { r });
-      return `<div class="snr-stk"><p class="snr-sn"><b>${esc(s.label)}</b></p>${snrHTML({ p, meta: {} }, { stack: true, csv: false, when: s.label })}</div>`;
+      return `<div class="snr-stk"><p class="snr-sn"><b>${esc(s.label)}</b></p>${snrHTML({ p, meta: {} }, { stack: true, csv: false, when: s.label, notTarget: spot ? null : notTarget(s.dets || []) })}</div>`;
     }));
     if (my === token) paint(blocks.join(''), what);
   }
@@ -151,7 +151,7 @@ export function createSnrPanel(el, { frame, frames, seasonOf, starAt, name, base
     const when = f.date ? `${String(f.date).slice(0, 10)}` : '';
     try {
       await measureFrame(f, pos[0], pos[1], { r, base, isCurrent: () => my === token,
-        onResult: (res) => { if (my === token) paint(snrHTML(res, { counts, name: name(), when, pending: res.p.ok && res.p.noiseFrom === 'sky' && !varDone(f) }), what); } });
+        onResult: (res) => { if (my === token) paint(snrHTML(res, { counts, name: name(), when, notTarget: spot ? null : notTarget([f.detector]), pending: res.p.ok && res.p.noiseFrom === 'sky' && !varDone(f) }), what); } });
     } catch (e) {
       if (my === token) paint(`<p class="muted">Could not load this image's pixels to measure (${esc(e.message || e)}). Try another image.</p>`, what);
     }

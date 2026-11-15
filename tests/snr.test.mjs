@@ -129,6 +129,24 @@ test('the five saved targets give sensible answers on their real pre-baked cutou
   assert.ok(out['wise-0855'].ok >= 0.9 * out['wise-0855'].n && out['wise-0855'].med > 1 && out['wise-0855'].med < 30, JSON.stringify(out['wise-0855']));
 });
 
+// Full Function Test (live): WISE 0855 below 3.8 µm is not detected (Brightness panel / Proof), and the saved Gaia
+// neighbour sits inside the 2 px circle, so the SNR line names that star and never says "clearly real".
+test('not the target: a background star inside the circle is named from proof.json, with no "clearly real" and no projection', async () => {
+  const proof = JSON.parse(readFileSync(new URL('../web/data/proof.json', import.meta.url), 'utf8'));
+  const t = proof.targets.find(q => /0855/.test(q.name)), nb = t.extra.neighbours.slice().sort((a, b) => a.g - b.g)[0];
+  const p = fake(12.4);
+  const x = S.snrText(p, counts, { detector: 2, notTarget: { name: t.label, src: { g: nb.g, sepArcsec: nb.sepArcsec } } });
+  assert.equal(x.line, `Most of this light is a background star ${nb.sepArcsec.toFixed(1)}″ away (Gaia G ${nb.g.toFixed(1)}), not ${t.label}.`);
+  assert.doesNotMatch(x.line + x.simple + x.expert.join(' '), /clearly real|Stacking this season|Median stacks/);
+  assert.match(x.expert.join(' '), /Not the target: .* inside r = 12\.3″/);
+  // the neighbour outside a 1 px (6.15″) circle: no blame on it, but still not the target
+  const y = S.snrText({ ...p, r: 1 }, counts, { notTarget: { name: t.label, src: { g: nb.g, sepArcsec: nb.sepArcsec } } });
+  assert.match(y.line, new RegExp(`^This light is not ${t.label}`)); assert.doesNotMatch(y.simple, /clearly real/);
+  // and the rule the viewer uses: the Brightness panel's own groups for the real WISE 0855 short band say absent
+  const { notHereText } = await import('../web/app/lightcurve/logic.js');
+  assert.match(notHereText({ state: 'offset' }, null, { g: nb.g, sepArcsec: nb.sepArcsec }, t.label, 'below 3.8 µm'), /background star/);
+});
+
 // Judging panel round 7 (SNR honesty): no projection from noise, the sky-limited note, stacks measured not projected.
 const fake = (snr, extra = {}) => ({ ok: true, snr, flux: snr, noise: 1, r: 2, rIn: 4, rOut: 8, nApUsed: 13, nApFlagged: 0, nSky: 150, nSkyFlagged: 0, bg: 1, sigmaSky: 0.1, varSum: 0.9, skyErr2: 0.1, noiseFrom: 'sky', ...extra });
 const counts = { nSeason: 12, nAll: 30 };

@@ -25,7 +25,7 @@ const plotWhy = (g) => (g.total && !g.absent && g.masked ? (g.masked === g.total
 const WHERE = { short: 'below 3.8 µm', long: 'at 3.8–5.0 µm' }; // the group's range, for "WISE 0855 is too faint below 3.8 µm"
 const fmtJy = (v) => (v == null ? '—' : v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2));
 
-export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick }) {
+export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick, onSource = () => {} }) {
   const plot = $('lcPlot'), read = $('lcRead'), sum = $('lcSum'), cap = $('lcCap');
   const S = { lc: null, frames: [], rows: [], cur: -1, hover: null, key: '', name: '', geo: null };
   if (cap) cap.textContent = `${CAPTION} Each dot is one image (colour = its wavelength band), compared with first-season images from the same detector at the same wavelength (Δ mag, brighter up); white lines are season averages. Seasons sit side by side: the months between them are left out. Flux in mJy uses each image's own 6.15″ pixel size.`;
@@ -54,13 +54,13 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick })
       const [ra, dec] = g.sky.light, ck = `${ra.toFixed(5)},${dec.toFixed(5)}`;
       // the saved neighbour list first (demo targets, proof.json: no network, no 15 s wait when Gaia is slow), then live Gaia
       let src = pickSaved(await savedNeighbours(S.name), g.sky);
-      if (src && S.key === key) { g.src = src; render(); continue; }
+      if (src && S.key === key) { g.src = src; render(); onSource(); continue; }
       try {
         if (!gaiaCache.has(ck)) gaiaCache.set(ck, gaiaCone(ra, dec, BLEND_RADIUS, { endpoint: `${location.origin}/gaia/tap/sync`, top: 10, signal: AbortSignal.timeout(15000) }));
         src = pickSource(await gaiaCache.get(ck), g.sky);
       } catch { gaiaCache.delete(ck); src = pickSaved(await savedNeighbours(S.name), g.sky); }
       if (S.key !== key) return; // another target since
-      if (src) { g.src = src; render(); }
+      if (src) { g.src = src; render(); onSource(); }
     }
   }
   let proofP = null;
@@ -209,5 +209,6 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick })
   let ro = null;
   if (window.ResizeObserver) { let w = 0; ro = new ResizeObserver(() => { const nw = Math.round(plot.clientWidth); if (nw && nw !== w) { w = nw; draw(); } }); ro.observe(plot); }
 
-  return { data, mark, redraw: draw };
+  // per wavelength group: { id, dets, absent, detect, src } (the SNR tool's "not the target" rule reuses this)
+  return { data, mark, redraw: draw, groups: () => S.lc?.groups || [] };
 }

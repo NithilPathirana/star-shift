@@ -389,7 +389,7 @@ const CX = createContam({ $, R, V, P, esc, set, Snd, base: BASE, tables: () => t
   closePop: () => closePop(), hideTip: () => hideTip(),
   tipAt: (html, x, y) => { clearTimeout(tipT); $('tip').innerHTML = html; placeTip({ left: x - 10, right: x + 10, top: y - 10, height: 20 }); } });
 // Brightness-vs-date strip (lightcurve/) and Clean Blink (cleanblink.js)
-const LC = createLightcurve({ $, esc, colourOf: um => rangeOf(um)?.c,
+const LC = createLightcurve({ $, esc, colourOf: um => rangeOf(um)?.c, onSource: () => { try { SNR.update(true); } catch { /* not ready yet */ } }, // the SNR line names the background star too
   onPick: i => { if (mode === 'compare' || mode === 'blink') setMode('play'); P.pause(); const f = V.FK[i]; if (f && !V.F.includes(f)) setHold(false); P.set(Math.max(0, V.F.indexOf(f)), true); Snd.play('scrub'); } });
 // "Make a light curve" (judges' suggestion B, lightcurve/maker.js): from the Brightness-over-time panel, from a spot
 // clicked on the image, or from a shared link (?lc=…). Uses the images the flag filter keeps, as the strip does.
@@ -433,7 +433,10 @@ const SNR = createSnrPanel($('snrBody'), { base: BASE, name: () => V.name,
   // Blink / Compare show season stacks, not the Time image: measure those stacks, named as the stage names them
   stacks: () => ((mode === 'blink' || mode === 'compare') && V.stacks.length > 1 && V.grid ? [firstS(), lastS()].map(s => ({
     label: `${stackName(s).toLowerCase()} stack, ${s.count} image${s.count === 1 ? '' : 's'} (${sRange(s)})`, n: V.grid.n, data: s.d, exp: s.ringOff ? null : s.exp,
+    dets: [...new Set(V.F.filter(f => seasonAt(f.mjd, V.bounds) === s.season).map(f => f.raw.detector))],
     members: V.F.filter(f => seasonAt(f.mjd, V.bounds) === s.season).map(f => ({ n: V.grid.n, data: f.d, raw: f.raw })) })) : null), // a saturated core shows in its images
+  // FFT: the Brightness panel's "not detected here" rule; every detector of the picture in a group where the target is absent
+  notTarget: dets => { const gs = dets.map(d => LC.groups().find(g => g.dets.includes(d))); return gs.length && gs.every(g => g?.absent) ? { name: V.name, src: gs[0].src || null } : null; },
   toGrid: (ra, dec) => worldToGrid(V.grid, ra, dec), label: raw => `${R.fmtDate(raw.date)}, D${raw.detector}`,
   seasonOf: m => seasonAt(m, V.bounds),
   starAt: raw => { const f = V.F.find(x => x.raw === raw); return f && V.ring && !f.ringOff ? gridToWorld(V.grid, f.exp[0], f.exp[1]) : null; } });
