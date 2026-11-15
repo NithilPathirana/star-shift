@@ -55,11 +55,11 @@
     "ok": 96,
     "failed": 0
    },
-   "files": 235,
-   "mib": 14.92,
+   "files": 285,
+   "mib": 17.84,
    "kinds": {
     "gaia": 1,
-    "cutout": 217,
+    "cutout": 267,
     "survey": 3,
     "jpl-sb_ident": 4,
     "sia": 6,
@@ -69,6 +69,10 @@
    "telescopes": {
     "note": "'See 25 years of motion': 2MASS Ks and AllWISE W1 image lists and cutouts, and the wide SPHEREx cutout of the first image (tools/prebake_telescopes.mjs)",
     "files": 6
+   },
+   "archive": {
+    "note": "Archive page: the first page's 50 thumbnails (tools/prebake_archive.mjs)",
+    "files": 50
    }
   },
   "eps-indi-b": {
@@ -118,15 +122,19 @@
     "ok": 96,
     "failed": 0
    },
-   "files": 229,
-   "mib": 13.23,
+   "files": 279,
+   "mib": 16.16,
    "kinds": {
     "gaia": 1,
-    "cutout": 216,
+    "cutout": 266,
     "jpl-sb_ident": 4,
     "sia": 4,
     "tap": 1,
     "simbad": 3
+   },
+   "archive": {
+    "note": "Archive page: the first page's 50 thumbnails (tools/prebake_archive.mjs)",
+    "files": 50
    }
   },
   "wise-0855": {
@@ -176,15 +184,19 @@
     "ok": 96,
     "failed": 0
    },
-   "files": 229,
-   "mib": 12.33,
+   "files": 279,
+   "mib": 15.27,
    "kinds": {
     "gaia": 1,
-    "cutout": 216,
+    "cutout": 266,
     "jpl-sb_ident": 4,
     "sia": 4,
     "tap": 1,
     "simbad": 3
+   },
+   "archive": {
+    "note": "Archive page: the first page's 50 thumbnails (tools/prebake_archive.mjs)",
+    "files": 50
    }
   },
   "rw-aur": {
@@ -234,15 +246,19 @@
     "ok": 96,
     "failed": 0
    },
-   "files": 231,
-   "mib": 12.7,
+   "files": 281,
+   "mib": 15.64,
    "kinds": {
     "gaia": 1,
-    "cutout": 216,
+    "cutout": 266,
     "jpl-sb_ident": 5,
     "sia": 4,
     "tap": 1,
     "simbad": 4
+   },
+   "archive": {
+    "note": "Archive page: the first page's 50 thumbnails (tools/prebake_archive.mjs)",
+    "files": 50
    }
   },
   "r-dra": {
@@ -293,14 +309,19 @@
     "ok": 96,
     "failed": 0
    },
-   "files": 232,
-   "mib": 13.69,
+   "files": 283,
+   "mib": 16.58,
    "kinds": {
-    "cutout": 216,
+    "gaia": 1,
+    "cutout": 266,
     "jpl-sb_ident": 8,
     "sia": 4,
     "tap": 1,
     "simbad": 3
+   },
+   "archive": {
+    "note": "Archive page: the first page's 50 thumbnails (tools/prebake_archive.mjs)",
+    "files": 50
    }
   }
  },
@@ -362,8 +383,8 @@
   "note": "All JPL requests answered."
  },
  "totals": {
-  "files": 1164,
-  "mib": 67.59
+  "files": 1414,
+  "mib": 82.2
  },
  "entries": {
   "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.760098%2C%20-7.24221%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
@@ -403,11 +424,32 @@
    "fetched": "2026-11-15T02:34:13.877Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/1/level2_2025W17_4B_0077_3D1_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/75bd3b6b5d7a417b.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:09.244Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/1/level2_2025W17_4B_0468_1D1_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800180d&size=0.0641": {
    "file": "eps-indi-b/136ffe547cfcb444.fits",
    "size": 57600,
    "fetched": "2026-11-14T16:00:24.498Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/1/level2_2025W17_4B_0468_1D1_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/276764c8ad672a2b.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:11.338Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/1/level2_2025W17_4B_0468_2D1_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/a139eaa25fb09acc.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:12.730Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0017_1D2_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.03": {
    "file": "eps-indi-b/9a3e639622720afd.fits",
@@ -421,17 +463,59 @@
    "fetched": "2026-11-14T12:05:20.543Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0017_1D2_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/5c09a69462ba2568.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:05.850Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0017_2D2_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/a5c7997e65aba596.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:05.920Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0027_3D2_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.0641": {
    "file": "eps-indi-b/6ab29a8b1ce6e032.fits",
    "size": 63360,
    "fetched": "2026-11-14T12:05:15.340Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0027_3D2_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/e58eb08e3a0ce6a9.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:06.807Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0027_4D2_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/cc3e70ced4dc8873.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:07.135Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0202_1D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0641": {
    "file": "eps-indi-b/3b0a9d3a0f76b4de.fits",
    "size": 63360,
    "fetched": "2026-11-14T12:05:21.038Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0202_1D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/4f107def2ab5a491.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:07.680Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0222_1D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/d41d811b931e8ec7.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:07.964Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0222_2D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.03": {
    "file": "eps-indi-b/c86b57889bfdde82.fits",
@@ -445,11 +529,39 @@
    "fetched": "2026-11-14T16:00:33.973Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0222_2D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/74cc32d40d4a16dc.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:08.883Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0222_3D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/9ff67d53bf56c387.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:08.478Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0222_4D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0641": {
    "file": "eps-indi-b/aff395b02f767b39.fits",
    "size": 63360,
    "fetched": "2026-11-14T16:00:25.847Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0222_4D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/bb49e3603a7596aa.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:30.457Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0315_1D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/5da1fb2357c74dd9.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:09.335Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0315_2D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0641": {
    "file": "eps-indi-b/23963fca376eb4ca.fits",
@@ -457,11 +569,53 @@
    "fetched": "2026-11-14T12:05:17.972Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0315_2D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/e86ea4b27cf1c313.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:09.684Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0315_3D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/cd379fc40246f38e.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:10.112Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0447_1D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.03": {
    "file": "eps-indi-b/f42143ef68889352.fits",
    "size": 51840,
    "fetched": "2026-11-15T02:34:15.592Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0447_1D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/c318cff77a3e4d05.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:10.178Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0447_2D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/e17119a110f388f4.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:30.428Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0447_3D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/42aa218bf48bfd06.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:12.295Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/2/level2_2025W17_4B_0447_4D2_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/924e3b4251458a64.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:11.190Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0021_1D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.03": {
    "file": "r-dra/d22ba94cc1e2b9e7.fits",
@@ -475,6 +629,118 @@
    "fetched": "2026-11-14T12:08:41.183Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0021_1D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/a83a4a2c7cf1e2c2.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:18.185Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0021_2D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/42dbd5b95b0faf5d.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:16.734Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0021_3D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/ec45bf16bf7cfa1f.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:16.833Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0021_4D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/7a3daa26e6de357c.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:18.862Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0145_1D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/7998987a239a1d39.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:49.380Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0145_2D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/0ee1895c312918c9.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:17.593Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0145_3D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/758e7d0d44591b0f.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:18.555Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0145_4D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/f058a5ac4f446938.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:18.884Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0409_1D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/92118b7a3b4fc4c8.fits",
+   "size": 54720,
+   "fetched": "2026-11-15T05:53:19.457Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0409_2D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/a84b1e3755f78146.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:19.956Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0409_3D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/a6b537e1e1bfd494.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:19.756Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0409_4D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/e483291356334965.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:20.573Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0431_1D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/b38d848481f1c06b.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:20.623Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0431_2D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/a19413af813771d9.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:22.113Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0431_3D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/862a0eb1fe8c88e7.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:21.864Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0431_4D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/ae7af557ae2c87a3.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:21.682Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/4/level2_2025W17_4B_0077_2D4_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.03": {
    "file": "eps-indi-b/decd29bd2d3dc54f.fits",
    "size": 48960,
@@ -487,11 +753,39 @@
    "fetched": "2026-11-14T12:05:20.625Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/4/level2_2025W17_4B_0077_2D4_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/d5326a20175a15e6.fits",
+   "size": 54720,
+   "fetched": "2026-11-15T02:34:07.205Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/4/level2_2025W17_4B_0077_3D4_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/18d3cb1610fdad55.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:07.614Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/4/level2_2025W17_4B_0468_1D4_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/7238c6bc74a46333.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:12.574Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/4/level2_2025W17_4B_0468_2D4_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800180d&size=0.03": {
    "file": "eps-indi-b/b304fa307d659808.fits",
    "size": 48960,
    "fetched": "2026-11-15T02:34:14.726Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/4/level2_2025W17_4B_0468_2D4_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/4bbe718ff78534e1.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:12.643Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0017_1D5_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.03": {
    "file": "eps-indi-b/b9642c8f0d632f0e.fits",
@@ -499,11 +793,88 @@
    "fetched": "2026-11-15T02:34:13.805Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0017_1D5_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/179f9409d0ca8e68.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:05.897Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0017_2D5_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/c07f745e025d8be9.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:06.972Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0027_3D5_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/e8e21980843e73e4.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:06.836Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0027_4D5_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/00b1b2e3032494fd.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:09.243Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0202_1D5_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/73dcaff99be70c78.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:08.019Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0222_2D5_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/ca6679dfe7e036a1.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:08.418Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0222_3D5_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.03": {
    "file": "eps-indi-b/b6c3405872242be2.fits",
    "size": 48960,
    "fetched": "2026-11-15T02:34:15.297Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0222_3D5_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/a3910e4b8dcfc2f0.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:08.425Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0222_4D5_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/af487c4d197aee17.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:08.862Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0315_1D5_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/f6d0995136bbe8ff.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:09.505Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0315_2D5_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/0e94f5b9a0dc5a8b.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:09.829Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0315_3D5_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/8430f36b24211c04.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:10.090Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0447_1D5_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.03": {
    "file": "eps-indi-b/6dc8911854a7ab6f.fits",
@@ -517,11 +888,39 @@
    "fetched": "2026-11-14T16:00:26.422Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0447_1D5_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/ba0be430de5b75cd.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:10.398Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0447_2D5_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/d969e6b23dac7912.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:10.525Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0447_3D5_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0641": {
    "file": "eps-indi-b/67ce6d31a9068abb.fits",
    "size": 60480,
    "fetched": "2026-11-14T16:00:24.655Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0447_3D5_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/94e4924a3e7991d8.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:11.064Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/5/level2_2025W17_4B_0447_4D5_spx_l2b-v27-2026-196.fits?center=331.095290,-56.800180d&size=0.0655": {
+   "file": "eps-indi-b/1977a884688c53cc.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:30.647Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0021_1D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.03": {
    "file": "r-dra/9f000ac8091b7f03.fits",
@@ -529,11 +928,123 @@
    "fetched": "2026-11-15T05:56:01.882Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0021_1D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/45c997994e4504e9.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:15.256Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0021_2D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/f32fa2ac84e2961a.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:20.942Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0021_3D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/54e9dcd8d6ee51f1.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:17.609Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0021_4D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/966589b42f1beda6.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:15.912Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0145_1D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/12e0972a1bcb57eb.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:16.489Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0145_2D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/ced02eacf6383005.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:17.609Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0145_3D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/c924b52fea93d7fd.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:17.738Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0145_4D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/650f6c4e4146239d.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:18.798Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0409_1D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/ecf01a3026af7180.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:19.301Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0409_2D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/743de87c697c4c81.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:50.118Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0409_3D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0641": {
    "file": "r-dra/271d62575ddb59db.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:08:43.448Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0409_3D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/280e1e0bb7f619df.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:19.939Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0409_4D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/7ae63198489ad367.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:21.009Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0431_1D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/f46d64f18742b3ee.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:20.824Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0431_2D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/f960cb5800a480cb.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:20.842Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0431_3D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/5db63133ab69dc89.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:21.759Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0431_4D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/00c3d6f947825a0c.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:22.239Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0081_2D3_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.03": {
    "file": "eps-indi-b/12cad0054ae0cf25.fits",
@@ -541,11 +1052,74 @@
    "fetched": "2026-11-15T02:34:13.877Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0081_2D3_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.0655": {
+   "file": "eps-indi-b/5fadbdde13cd699a.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:30.601Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0081_3D3_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.0655": {
+   "file": "eps-indi-b/c55892a2339836b6.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:30.663Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0081_4D3_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.0655": {
+   "file": "eps-indi-b/5bac46d288d8bd81.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:31.355Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0085_2D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/d48c32240e65a8f7.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:21.882Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0085_3D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/6e7e43f60ae77a0c.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:23.982Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0085_4D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/9a844635c108ca97.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:24.376Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0091_1D3_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.0655": {
+   "file": "eps-indi-b/ab7c572b67517120.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:31.281Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0091_2D3_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.0641": {
    "file": "eps-indi-b/4b521f68549e5681.fits",
    "size": 54720,
    "fetched": "2026-11-14T16:00:27.454Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0091_2D3_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.0655": {
+   "file": "eps-indi-b/cfe2a912d64e7e2e.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:31.407Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0091_3D3_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.0655": {
+   "file": "eps-indi-b/4bf75efa762f0d75.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:32.191Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0091_4D3_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.03": {
    "file": "eps-indi-b/c3607c8e92aa61e9.fits",
@@ -559,6 +1133,34 @@
    "fetched": "2026-11-14T12:05:21.347Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0116_1D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/ae2373fe2f9f3c17.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:49.420Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0116_2D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/03d42bb7406a9a0f.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:55:00.172Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0116_3D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/e436e3e4df0b9de5.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:54:59.517Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0116_4D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/1fa055faa972c1ec.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:55:00.249Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0175_2D3_spx_l2b-v27-2026-196.fits?center=331.095310,-56.800190d&size=0.0641": {
    "file": "eps-indi-b/8dc463b838dca80c.fits",
    "size": 54720,
@@ -570,6 +1172,20 @@
    "size": 54720,
    "fetched": "2026-11-14T16:00:25.558Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0263_3D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/dfbe9d028162cf40.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:55:01.253Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0263_4D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/9df8abdc38b51a06.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:55:06.401Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0363_1D3_spx_l2b-v27-2026-196.fits?center=331.095310,-56.800190d&size=0.03": {
    "file": "eps-indi-b/ce887e2c901976f7.fits",
@@ -595,11 +1211,74 @@
    "fetched": "2026-11-14T16:00:24.501Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0081_2D6_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.0655": {
+   "file": "eps-indi-b/e7b2debbaa1e1f0b.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:12.259Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0081_3D6_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.0655": {
+   "file": "eps-indi-b/46236219f0551ef4.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:32.407Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0081_4D6_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.0641": {
    "file": "eps-indi-b/18cbaeeacc317677.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:05:21.913Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0081_4D6_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.0655": {
+   "file": "eps-indi-b/4ba92b14f16735bb.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:30.866Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0085_2D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/5ba67f8bc17b4603.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:22.587Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0085_3D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/d5312a9c9059a887.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:49.467Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0085_4D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/f8097ff0d81b54a9.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:49.500Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0091_1D6_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.0655": {
+   "file": "eps-indi-b/b7b66bf6fae6d4f8.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:31.458Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0091_2D6_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.0655": {
+   "file": "eps-indi-b/fd3a86305f2cb47a.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:31.993Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0091_3D6_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.0655": {
+   "file": "eps-indi-b/f1aaa65ddfcbc1ad.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:32.093Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0091_4D6_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.03": {
    "file": "eps-indi-b/f0dc15f756296f84.fits",
@@ -607,11 +1286,39 @@
    "fetched": "2026-11-15T02:34:15.304Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0116_1D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/8b33d1558827713a.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:53:49.526Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0116_2D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/ce27143b160f4a83.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:54:59.707Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0116_3D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0641": {
    "file": "r-dra/ec0ccb4a21f4b8b7.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:09:05.568Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0116_3D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/d1c9ee6258da2e43.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:55:01.000Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0116_4D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/32cfe3fb89f686fd.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:54:59.523Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0238_3D6_spx_l2b-v27-2026-196.fits?center=331.095310,-56.800190d&size=0.0641": {
    "file": "eps-indi-b/5575e5591872273a.fits",
@@ -624,6 +1331,20 @@
    "size": 48960,
    "fetched": "2026-11-15T02:34:16.115Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0263_3D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/c151fdcaa1823f58.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:55:00.366Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0263_4D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0655": {
+   "file": "r-dra/9b445fda8f198c5e.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T05:55:01.054Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W18_2B/l2b-v27-2026-197/2/level2_2025W18_2B_0489_1D2_spx_l2b-v27-2026-197.fits?center=331.095330,-56.800200d&size=0.0641": {
    "file": "eps-indi-b/7823e45153450b61.fits",
@@ -685,11 +1406,25 @@
    "fetched": "2026-11-14T12:06:26.597Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/1/level2_2025W19_1B_0241_1D1_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242300d&size=0.0655": {
+   "file": "wise-0855/521a6c88c57f261d.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:00.075Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/1/level2_2025W19_1B_0241_2D1_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242300d&size=0.0641": {
    "file": "wise-0855/07eef3ecc69ab205.fits",
    "size": 57600,
    "fetched": "2026-11-14T12:06:28.603Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/1/level2_2025W19_1B_0241_2D1_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242300d&size=0.0655": {
+   "file": "wise-0855/38db2b56149ed7dd.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:59.762Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/1/level2_2025W19_1B_0241_3D1_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242300d&size=0.03": {
    "file": "wise-0855/eddc542482ecb1a9.fits",
@@ -697,11 +1432,25 @@
    "fetched": "2026-11-14T23:50:13.029Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/1/level2_2025W19_1B_0241_3D1_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242300d&size=0.0655": {
+   "file": "wise-0855/15ea9feb712cc8c2.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:00.475Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/1/level2_2025W19_1B_0241_4D1_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242300d&size=0.0641": {
    "file": "wise-0855/c979b863fa6ff959.fits",
    "size": 57600,
    "fetched": "2026-11-14T12:06:28.016Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/1/level2_2025W19_1B_0241_4D1_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242300d&size=0.0655": {
+   "file": "wise-0855/a48a8cd8d09294f7.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:00.599Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/2/level2_2025W19_1B_0181_1D2_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.03": {
    "file": "wise-0855/3db095d0a0142ae8.fits",
@@ -715,17 +1464,59 @@
    "fetched": "2026-11-14T12:06:24.195Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/2/level2_2025W19_1B_0181_1D2_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/c8cfdc3823020aab.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:56.956Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/2/level2_2025W19_1B_0181_2D2_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/babf07f895fc21c3.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:57.059Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/2/level2_2025W19_1B_0181_3D2_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/f9ed043a62b199ee.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:58.889Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/2/level2_2025W19_1B_0181_4D2_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.03": {
    "file": "wise-0855/7d89aa9f1c68cfaa.fits",
    "size": 51840,
    "fetched": "2026-11-15T02:35:03.893Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/2/level2_2025W19_1B_0181_4D2_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/61a5d2a247332f2a.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:59.335Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/2/level2_2025W19_1B_0231_1D2_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0641": {
    "file": "wise-0855/0f2195cf5502a9ce.fits",
    "size": 63360,
    "fetched": "2026-11-14T16:01:15.842Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/2/level2_2025W19_1B_0231_1D2_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/ef77984047dc44c4.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:58.440Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/2/level2_2025W19_1B_0231_2D2_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/aab5fc6ea1e46ba7.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:58.662Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/2/level2_2025W19_1B_0231_3D2_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.03": {
    "file": "wise-0855/fd456394162163b5.fits",
@@ -739,6 +1530,20 @@
    "fetched": "2026-11-14T12:06:27.525Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/2/level2_2025W19_1B_0231_3D2_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/fc8cf2289d204769.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:34:58.756Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/2/level2_2025W19_1B_0231_4D2_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/6c5d62c938809794.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:20.493Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/3/level2_2025W19_1B_0116_1D3_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.03": {
    "file": "wise-0855/862f8f8e230122e0.fits",
    "size": 48960,
@@ -751,17 +1556,38 @@
    "fetched": "2026-11-14T12:06:25.750Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/3/level2_2025W19_1B_0116_1D3_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/7b9dc7b5fa11f942.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:55.781Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/3/level2_2025W19_1B_0116_2D3_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0641": {
    "file": "wise-0855/a2577816c23f30c9.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:06:29.224Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/3/level2_2025W19_1B_0116_2D3_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/b0c36f64ba0fce0c.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:55.751Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/3/level2_2025W19_1B_0138_1D3_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0641": {
    "file": "wise-0855/4f3c983de2965e5b.fits",
    "size": 54720,
    "fetched": "2026-11-14T16:01:25.247Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/3/level2_2025W19_1B_0138_1D3_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/d929942300770dff.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:55.755Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/3/level2_2025W19_1B_0344_3D3_spx_l2b-v27-2026-197.fits?center=331.095350,-56.800200d&size=0.03": {
    "file": "eps-indi-b/8ccb22680eeed732.fits",
@@ -775,6 +1601,20 @@
    "fetched": "2026-11-14T23:50:12.279Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/4/level2_2025W19_1B_0241_1D4_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242300d&size=0.0655": {
+   "file": "wise-0855/b3f2ed08080dcf02.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:01.987Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/4/level2_2025W19_1B_0241_2D4_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242300d&size=0.0655": {
+   "file": "wise-0855/d4a66afd91b0e2cf.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:00.257Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/4/level2_2025W19_1B_0241_3D4_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242300d&size=0.03": {
    "file": "wise-0855/b48a94ec60bc0561.fits",
    "size": 48960,
@@ -787,11 +1627,32 @@
    "fetched": "2026-11-14T16:01:17.762Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/4/level2_2025W19_1B_0241_3D4_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242300d&size=0.0655": {
+   "file": "wise-0855/45a590e02659d2ed.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:00.273Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/4/level2_2025W19_1B_0241_4D4_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242300d&size=0.0655": {
+   "file": "wise-0855/8ac0d31a32759d63.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:00.912Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/5/level2_2025W19_1B_0181_1D5_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.03": {
    "file": "wise-0855/ad08d5f4b9711e91.fits",
    "size": 48960,
    "fetched": "2026-11-15T02:35:03.733Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/5/level2_2025W19_1B_0181_1D5_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/113eacf11aa7682a.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:57.043Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/5/level2_2025W19_1B_0181_2D5_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0641": {
    "file": "wise-0855/08fa8e878a6d5398.fits",
@@ -799,11 +1660,25 @@
    "fetched": "2026-11-14T16:01:17.201Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/5/level2_2025W19_1B_0181_2D5_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/3b4f6f9c83047da2.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:57.065Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/5/level2_2025W19_1B_0181_3D5_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0641": {
    "file": "wise-0855/f192ba868cf91c74.fits",
    "size": 54720,
    "fetched": "2026-11-14T16:01:15.272Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/5/level2_2025W19_1B_0181_3D5_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/4e49b462fbf342ac.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:58.986Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/5/level2_2025W19_1B_0181_4D5_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.03": {
    "file": "wise-0855/b49fa358cfe627f9.fits",
@@ -817,11 +1692,32 @@
    "fetched": "2026-11-14T16:01:15.885Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/5/level2_2025W19_1B_0181_4D5_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/282e1ef09ecbcf75.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:57.447Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/5/level2_2025W19_1B_0231_1D5_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/5f073ee3b05e809c.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:57.914Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/5/level2_2025W19_1B_0231_2D5_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0641": {
    "file": "wise-0855/9cbc02b3627116a2.fits",
    "size": 60480,
    "fetched": "2026-11-14T12:06:37.697Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/5/level2_2025W19_1B_0231_2D5_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/11699d25fcb6064e.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:58.423Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/5/level2_2025W19_1B_0231_3D5_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.03": {
    "file": "wise-0855/53c54885904daa1f.fits",
@@ -829,11 +1725,46 @@
    "fetched": "2026-11-14T23:50:17.155Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/5/level2_2025W19_1B_0231_3D5_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/7e5ec16fc2072662.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:00.461Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/5/level2_2025W19_1B_0231_4D5_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/45e11d7d7c4714a7.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:59.610Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/6/level2_2025W19_1B_0116_1D6_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.03": {
    "file": "wise-0855/a3dc88260d3b192d.fits",
    "size": 48960,
    "fetched": "2026-11-14T23:50:14.578Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/6/level2_2025W19_1B_0116_1D6_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/f2f987ba1af45b1c.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:55.754Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/6/level2_2025W19_1B_0116_2D6_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/66b1e19c288af229.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:55.786Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/6/level2_2025W19_1B_0138_1D6_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242310d&size=0.0655": {
+   "file": "wise-0855/ec8f61a74199a7c6.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:34:55.810Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/6/level2_2025W19_1B_0228_4D6_spx_l2b-v27-2026-197.fits?center=248.167240,66.755020d&size=0.0641": {
    "file": "r-dra/91e5f4a64123f744.fits",
@@ -1063,17 +1994,52 @@
    "fetched": "2026-11-14T16:24:09.549Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/3/level2_2025W33_2C_0321_1D3_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.0655": {
+   "file": "barnard/a4e0a773ebe40b6c.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:50.705Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/3/level2_2025W33_2C_0321_2D3_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.0641": {
    "file": "barnard/6ee1e26558bd7eaa.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:02:17.022Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/3/level2_2025W33_2C_0321_2D3_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.0655": {
+   "file": "barnard/3fd8192dc94f8a40.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:44.592Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/3/level2_2025W33_2C_0321_3D3_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.0655": {
+   "file": "barnard/fd73ae3da44de05e.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:44.479Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/3/level2_2025W33_2C_0386_3D3_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.0655": {
+   "file": "barnard/d2457577703639f4.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:45.868Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/3/level2_2025W33_2C_0386_4D3_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.03": {
    "file": "barnard/cb9a86b22812108a.fits",
    "size": 48960,
    "fetched": "2026-11-14T16:24:15.486Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/3/level2_2025W33_2C_0386_4D3_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.0655": {
+   "file": "barnard/efebcbe4a6f69ef3.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:45.935Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/6/level2_2025W33_2C_0321_1D6_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.03": {
    "file": "barnard/e0936795cdf91ab1.fits",
@@ -1087,6 +2053,13 @@
    "fetched": "2026-11-14T12:02:42.687Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/6/level2_2025W33_2C_0321_1D6_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.0655": {
+   "file": "barnard/2bc802c1a505e2e3.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:44.389Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/6/level2_2025W33_2C_0321_1D6_spx_l2b-v27-2026-228.fits?center=269.450240,4.727780d&size=0.1767": {
    "file": "barnard/93d6283592037608.fits",
    "size": 129600,
@@ -1094,11 +2067,32 @@
    "kind": "cutout",
    "source": "IRSA /ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/6/level2_2025W33_2C_0321_1D6_spx_l2b-v27-2026-228.fits (via the Star Shift relay), copied from the local relay cache for the Telescopes view"
   },
+  "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/6/level2_2025W33_2C_0321_2D6_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.0655": {
+   "file": "barnard/df762dd44d4be79d.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:44.410Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/6/level2_2025W33_2C_0321_3D6_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.0655": {
+   "file": "barnard/f73655f7503ffa52.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:44.388Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/6/level2_2025W33_2C_0386_3D6_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.0641": {
    "file": "barnard/d208fff3aceaf4a6.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:02:17.078Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/6/level2_2025W33_2C_0386_3D6_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.0655": {
+   "file": "barnard/716c5423ad012ebc.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:50.521Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/6/level2_2025W33_2C_0386_4D6_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.03": {
    "file": "barnard/f6712100ecaa258e.fits",
@@ -1112,11 +2106,53 @@
    "fetched": "2026-11-14T15:59:19.531Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/6/level2_2025W33_2C_0386_4D6_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.0655": {
+   "file": "barnard/4ce45ffddbe50440.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:45.956Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_1B/l2b-v27-2026-228/3/level2_2025W34_1B_0164_1D3_spx_l2b-v27-2026-228.fits?center=269.446350,4.767140d&size=0.0655": {
+   "file": "barnard/b85f3be43ffe6ca2.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:23:08.289Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W34_1B/l2b-v27-2026-228/3/level2_2025W34_1B_0164_2D3_spx_l2b-v27-2026-228.fits?center=269.446350,4.767140d&size=0.0641": {
    "file": "barnard/8e9b779bf2b1fc85.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:02:17.005Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_1B/l2b-v27-2026-228/3/level2_2025W34_1B_0164_2D3_spx_l2b-v27-2026-228.fits?center=269.446350,4.767140d&size=0.0655": {
+   "file": "barnard/e9c7bf0bd16cc923.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:23:07.651Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_1B/l2b-v27-2026-228/3/level2_2025W34_1B_0164_3D3_spx_l2b-v27-2026-228.fits?center=269.446350,4.767140d&size=0.0655": {
+   "file": "barnard/9412b6db1fec47f3.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:46.820Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_1B/l2b-v27-2026-228/6/level2_2025W34_1B_0164_1D6_spx_l2b-v27-2026-228.fits?center=269.446350,4.767140d&size=0.0655": {
+   "file": "barnard/be49ae57ff254471.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:45.992Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_1B/l2b-v27-2026-228/6/level2_2025W34_1B_0164_2D6_spx_l2b-v27-2026-228.fits?center=269.446350,4.767140d&size=0.0655": {
+   "file": "barnard/8c2b62106aaf86c7.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:52.216Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0090_4D2_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.03": {
    "file": "barnard/824c0c9cad021a92.fits",
@@ -1124,11 +2160,39 @@
    "fetched": "2026-11-14T16:24:13.680Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0090_4D2_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.0655": {
+   "file": "barnard/a7e3d7e002d9d6f2.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T16:22:51.399Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0557_1D2_spx_l2b-v27-2026-229.fits?center=269.446350,4.767180d&size=0.0655": {
+   "file": "barnard/25fefaee8f842526.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T16:22:52.883Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0557_2D2_spx_l2b-v27-2026-229.fits?center=269.446350,4.767180d&size=0.0655": {
+   "file": "barnard/901db6cf7426a452.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T16:22:58.656Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0557_3D2_spx_l2b-v27-2026-229.fits?center=269.446350,4.767180d&size=0.0641": {
    "file": "barnard/c7235143b5880e42.fits",
    "size": 63360,
    "fetched": "2026-11-14T15:59:26.342Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0557_3D2_spx_l2b-v27-2026-229.fits?center=269.446350,4.767180d&size=0.0655": {
+   "file": "barnard/0c0dc807552bbe36.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T16:22:55.504Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0557_4D2_spx_l2b-v27-2026-229.fits?center=269.446350,4.767180d&size=0.03": {
    "file": "barnard/28a148773a19e8aa.fits",
@@ -1136,11 +2200,25 @@
    "fetched": "2026-11-14T16:24:11.355Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0557_4D2_spx_l2b-v27-2026-229.fits?center=269.446350,4.767180d&size=0.0655": {
+   "file": "barnard/49ba459289c0400b.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T16:23:02.179Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/3/level2_2025W34_2B_0030_1D3_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.03": {
    "file": "barnard/3b5737120dcc3da2.fits",
    "size": 48960,
    "fetched": "2026-11-14T16:24:14.551Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/3/level2_2025W34_2B_0030_1D3_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.0655": {
+   "file": "barnard/3e8ed371aac4356a.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:47.289Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/3/level2_2025W34_2B_0030_2D3_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.0641": {
    "file": "barnard/1e8cd314bd4afe2b.fits",
@@ -1148,11 +2226,32 @@
    "fetched": "2026-11-14T12:02:17.899Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/3/level2_2025W34_2B_0030_2D3_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.0655": {
+   "file": "barnard/313b804c4e27863f.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:48.017Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/3/level2_2025W34_2B_0030_3D3_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.0655": {
+   "file": "barnard/33e782e60634d713.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:48.570Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/3/level2_2025W34_2B_0030_4D3_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.0641": {
    "file": "barnard/9eb53249ff3c58d2.fits",
    "size": 54720,
    "fetched": "2026-11-14T15:59:20.202Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/3/level2_2025W34_2B_0030_4D3_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.0655": {
+   "file": "barnard/a5f7c3a428ed7a16.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:49.438Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/5/level2_2025W34_2B_0090_4D5_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.03": {
    "file": "barnard/b980d097ee186bb1.fits",
@@ -1166,11 +2265,39 @@
    "fetched": "2026-11-14T15:59:20.298Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/5/level2_2025W34_2B_0090_4D5_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.0655": {
+   "file": "barnard/605c10593b273353.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:57.462Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/5/level2_2025W34_2B_0557_1D5_spx_l2b-v27-2026-229.fits?center=269.446350,4.767180d&size=0.0655": {
+   "file": "barnard/50a9e2345462e6d7.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:53.062Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/5/level2_2025W34_2B_0557_2D5_spx_l2b-v27-2026-229.fits?center=269.446350,4.767180d&size=0.0641": {
    "file": "barnard/8e6235e2ab15efe1.fits",
    "size": 60480,
    "fetched": "2026-11-14T12:02:18.740Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/5/level2_2025W34_2B_0557_2D5_spx_l2b-v27-2026-229.fits?center=269.446350,4.767180d&size=0.0655": {
+   "file": "barnard/8d1222976b5f069f.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:53.718Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/5/level2_2025W34_2B_0557_3D5_spx_l2b-v27-2026-229.fits?center=269.446350,4.767180d&size=0.0655": {
+   "file": "barnard/c8e074e6f36ac542.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:54.545Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/5/level2_2025W34_2B_0557_4D5_spx_l2b-v27-2026-229.fits?center=269.446350,4.767180d&size=0.03": {
    "file": "barnard/d40af48d9040e690.fits",
@@ -1178,11 +2305,25 @@
    "fetched": "2026-11-14T16:24:27.407Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/5/level2_2025W34_2B_0557_4D5_spx_l2b-v27-2026-229.fits?center=269.446350,4.767180d&size=0.0655": {
+   "file": "barnard/df74b1acc3b0fcd4.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:55.457Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/6/level2_2025W34_2B_0030_1D6_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.0641": {
    "file": "barnard/ee5219f7237c0050.fits",
    "size": 54720,
    "fetched": "2026-11-14T15:59:21.772Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/6/level2_2025W34_2B_0030_1D6_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.0655": {
+   "file": "barnard/ed13040efaa65ef5.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:47.219Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/6/level2_2025W34_2B_0030_2D6_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.03": {
    "file": "barnard/e0f0a8759d3a96ba.fits",
@@ -1190,11 +2331,39 @@
    "fetched": "2026-11-14T16:24:16.082Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/6/level2_2025W34_2B_0030_2D6_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.0655": {
+   "file": "barnard/6f1ff24a7464266f.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:54.610Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/6/level2_2025W34_2B_0030_3D6_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.0655": {
+   "file": "barnard/a4a5cb3a101a800f.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:54.568Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/6/level2_2025W34_2B_0030_4D6_spx_l2b-v27-2026-229.fits?center=269.446350,4.767160d&size=0.0655": {
+   "file": "barnard/60dd974906b06efe.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:23:08.007Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/1/level2_2025W35_1A_0432_4D1_spx_l2b-v27-2026-230.fits?center=269.446350,4.767210d&size=0.03": {
    "file": "barnard/685b2352b158c49d.fits",
    "size": 51840,
    "fetched": "2026-11-14T16:24:11.408Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/1/level2_2025W35_1A_0432_4D1_spx_l2b-v27-2026-230.fits?center=269.446350,4.767210d&size=0.0655": {
+   "file": "barnard/bb50add1cd410980.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T16:23:11.510Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/1/level2_2025W35_1A_0658_1D1_spx_l2b-v27-2026-230.fits?center=269.446340,4.767210d&size=0.0641": {
    "file": "barnard/b30a88e3f3a93630.fits",
@@ -1214,17 +2383,45 @@
    "fetched": "2026-11-14T15:59:19.702Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0146_1D2_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/8c6fab48b94b5875.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T16:23:12.658Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0146_2D2_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/401782e543e10351.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T16:23:06.320Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0146_3D2_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0641": {
    "file": "barnard/9ee996eafe472986.fits",
    "size": 63360,
    "fetched": "2026-11-14T12:02:32.469Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0146_3D2_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/c6ecd7f9b587a26b.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T16:23:13.638Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0146_4D2_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.03": {
    "file": "barnard/4b8e42c5ff7198c7.fits",
    "size": 51840,
    "fetched": "2026-11-14T16:24:32.076Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0146_4D2_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/5db9abb54d5fc94f.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T16:23:11.354Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0444_4D2_spx_l2b-v27-2026-230.fits?center=269.446350,4.767210d&size=0.03": {
    "file": "barnard/65ce09dcada4e13e.fits",
@@ -1244,17 +2441,45 @@
    "fetched": "2026-11-14T12:02:19.688Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/3/level2_2025W35_1A_0008_1D3_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/ad4257a30b40476a.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:56.289Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/3/level2_2025W35_1A_0008_2D3_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0641": {
    "file": "barnard/eb833039d0f5e523.fits",
    "size": 54720,
    "fetched": "2026-11-14T15:59:20.261Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/3/level2_2025W35_1A_0008_2D3_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/baa6fa5c7d75fe36.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:23:12.708Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/3/level2_2025W35_1A_0008_3D3_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/e6aa10d984f6dc7d.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:22:59.470Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/3/level2_2025W35_1A_0008_4D3_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.03": {
    "file": "barnard/c107595ff04f591e.fits",
    "size": 48960,
    "fetched": "2026-11-14T16:24:23.987Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/3/level2_2025W35_1A_0008_4D3_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/59b525a47d4583ed.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:23:12.671Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/3/level2_2025W35_1A_0484_1D3_spx_l2b-v27-2026-230.fits?center=269.446350,4.767210d&size=0.0641": {
    "file": "barnard/c597cd2cc4a2f446.fits",
@@ -1286,6 +2511,27 @@
    "fetched": "2026-11-14T12:03:09.981Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/5/level2_2025W35_1A_0146_1D5_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/43780fd932836932.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:23:03.185Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/5/level2_2025W35_1A_0146_2D5_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/6c63cc3b01242087.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:23:05.549Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/5/level2_2025W35_1A_0146_3D5_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/97740bab38b2d42c.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:23:11.372Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/5/level2_2025W35_1A_0146_4D5_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.03": {
    "file": "barnard/5c3db91cc7d6a090.fits",
    "size": 48960,
@@ -1297,6 +2543,13 @@
    "size": 60480,
    "fetched": "2026-11-14T12:02:26.314Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/5/level2_2025W35_1A_0146_4D5_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/bb2075d5e2aa9d20.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:23:09.842Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/5/level2_2025W35_1A_0444_1D5_spx_l2b-v27-2026-230.fits?center=269.446350,4.767210d&size=0.0641": {
    "file": "barnard/d10e1178192b7e3a.fits",
@@ -1328,11 +2581,39 @@
    "fetched": "2026-11-14T16:24:22.077Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/6/level2_2025W35_1A_0008_1D6_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/19ab8503f1b1656f.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:23:14.935Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/6/level2_2025W35_1A_0008_2D6_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/1025f5bcb94d945e.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:23:04.622Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/6/level2_2025W35_1A_0008_3D6_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/8c504f61e1000fbb.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:23:00.479Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/6/level2_2025W35_1A_0008_4D6_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0641": {
    "file": "barnard/72581cceb6fbc378.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:02:21.587Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/6/level2_2025W35_1A_0008_4D6_spx_l2b-v27-2026-230.fits?center=269.446350,4.767190d&size=0.0655": {
+   "file": "barnard/da421a027eebffbc.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T16:23:01.386Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/6/level2_2025W35_1A_0484_1D6_spx_l2b-v27-2026-230.fits?center=269.446350,4.767210d&size=0.03": {
    "file": "barnard/bc3b9b34b5a9d8b7.fits",
@@ -1472,11 +2753,39 @@
    "fetched": "2026-11-14T12:07:48.618Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0095_1D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/fd1b08bdd399d4e8.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T23:49:47.702Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0095_2D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/54cb1b629d7950be.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:45.991Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0155_1D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/e971394a16dfe7d0.fits",
+   "size": 57600,
+   "fetched": "2026-11-15T02:35:46.004Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0233_2D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/b3ed08135e38e4ce.fits",
    "size": 57600,
    "fetched": "2026-11-14T16:02:00.605Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0233_2D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/234202df9aa05395.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T23:49:50.801Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0233_3D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.03": {
    "file": "rw-aur/bba328823f1b0d14.fits",
@@ -1490,6 +2799,27 @@
    "fetched": "2026-11-14T16:02:05.701Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0233_3D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/02c937c5373a6984.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T23:49:48.563Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0446_1D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/d78c8f45ef645683.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T23:49:48.971Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0446_2D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/573fe70865ce7e85.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T23:49:50.656Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0446_3D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.03": {
    "file": "rw-aur/9e3c32e91695e522.fits",
    "size": 51840,
@@ -1502,11 +2832,39 @@
    "fetched": "2026-11-14T12:07:48.527Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0446_3D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/4cf9c9d76f2f5b62.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T23:49:50.861Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0446_4D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/a8d74ad65fa160d1.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:46.314Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0606_1D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/cc4c09ee231acf70.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T23:49:52.118Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0606_2D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/a9ac07ad7fb7b0f2.fits",
    "size": 57600,
    "fetched": "2026-11-14T16:02:00.700Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0606_2D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/a2ae7a17e6d79875.fits",
+   "size": 63360,
+   "fetched": "2026-11-14T23:49:52.184Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0606_3D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.03": {
    "file": "rw-aur/7a0281588fa8e4f3.fits",
@@ -1514,17 +2872,45 @@
    "fetched": "2026-11-15T02:35:57.955Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0606_3D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/13f4c105ed9900f8.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:46.865Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0606_4D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/1e6cf9dc063c286e.fits",
    "size": 57600,
    "fetched": "2026-11-14T16:02:00.662Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0606_4D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/ce1acaa26b2e0e14.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:47.198Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0663_1D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/29a9ecb6fd1ecf74.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:47.719Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0663_2D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/ab99a34eda3ff48f.fits",
    "size": 57600,
    "fetched": "2026-11-14T16:02:01.592Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0663_2D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/c8e8910634983847.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:49.785Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0663_3D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.03": {
    "file": "rw-aur/3417913104c1ffbf.fits",
@@ -1538,17 +2924,45 @@
    "fetched": "2026-11-14T12:07:51.029Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0663_3D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/41d4e24a122bec0b.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:48.466Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0663_4D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/6cb7355ea9aea5b7.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:49.787Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0677_1D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/1bc8b9a1c41c9be5.fits",
    "size": 57600,
    "fetched": "2026-11-14T12:07:51.198Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0677_1D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/d3d4f9912b951786.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:51.297Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0677_2D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.03": {
    "file": "rw-aur/f3036c0879232212.fits",
    "size": 51840,
    "fetched": "2026-11-15T02:36:00.491Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0677_2D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/8d8b38cb04823120.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:51.066Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0725_3D1_spx_l2b-v27-2026-232.fits?center=248.167240,66.755020d&size=0.03": {
    "file": "r-dra/3364d1dbc0550bb4.fits",
@@ -1568,11 +2982,39 @@
    "fetched": "2026-11-15T02:35:57.243Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0095_1D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/77cbf3f33e8e856f.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T23:49:47.886Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0095_2D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/9cbbca72794bab78.fits",
    "size": 54720,
    "fetched": "2026-11-14T16:02:05.903Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0095_2D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/d1d77cde86ca8e6f.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T23:49:49.851Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0155_1D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/a7a4d945873d9683.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T23:49:48.095Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0233_2D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/a7612b44a2dddd12.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T23:49:50.333Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0233_3D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.03": {
    "file": "rw-aur/743d8ce1c8dac20a.fits",
@@ -1580,11 +3022,32 @@
    "fetched": "2026-11-15T02:35:56.260Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0233_3D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/e1c2049f20787d39.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T23:49:49.137Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0446_1D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/c34bab4742e735be.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:07:48.329Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0446_1D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/25ac331e4bede943.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T23:49:49.426Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0446_2D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/218b2db539dabb02.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T23:49:50.428Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0446_3D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.03": {
    "file": "rw-aur/8d96091ecae72508.fits",
@@ -1592,11 +3055,39 @@
    "fetched": "2026-11-15T02:35:57.615Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0446_3D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/1dc2e174943bf8eb.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:48.426Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0446_4D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/7943b257d06bb83b.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:07:51.796Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0446_4D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/fa850ea0fe24255d.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T23:49:51.790Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0606_1D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/90b2fc2ab09a5d79.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T23:49:52.048Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0606_2D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/cd1dd3205a3b76e9.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:48.432Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0606_3D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.03": {
    "file": "rw-aur/2498e937027f92f0.fits",
@@ -1610,11 +3101,60 @@
    "fetched": "2026-11-14T16:02:00.906Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0606_3D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/1101bc0188d6f96c.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:51.831Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0606_4D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/c5612e40703bbb32.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:46.725Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0663_1D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/47b4983aadd3a687.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:47.444Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0663_2D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/49d12b2f9f231138.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:50.489Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0663_3D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.03": {
    "file": "rw-aur/89d84722902eba38.fits",
    "size": 48960,
    "fetched": "2026-11-15T02:35:59.145Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0663_3D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/0353e4c52b811e3c.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:50.416Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0663_4D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/ce3e7ffa2edc0119.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:54.754Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0677_1D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/f80671af651d8cf0.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:49.783Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0677_2D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.03": {
    "file": "rw-aur/6a74b073e77b3dd8.fits",
@@ -1627,6 +3167,13 @@
    "size": 54720,
    "fetched": "2026-11-14T12:07:54.149Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0677_2D4_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/497197bdc5d98e04.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:51.012Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0725_2D4_spx_l2b-v27-2026-232.fits?center=248.167240,66.755020d&size=0.0641": {
    "file": "r-dra/b1efa1b2c44df2b7.fits",
@@ -1664,11 +3211,39 @@
    "fetched": "2026-11-15T02:35:55.051Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/2/level2_2025W37_1A_0068_1D2_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/7d72f16f2d9ee37f.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:50.963Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/2/level2_2025W37_1A_0068_2D2_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/e9e011c444c4f7b0.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:51.528Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/2/level2_2025W37_1A_0068_3D2_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/e68034029c5a4a9f.fits",
    "size": 63360,
    "fetched": "2026-11-14T12:07:54.976Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/2/level2_2025W37_1A_0068_3D2_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/78dca1acffeb3e21.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:52.216Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/2/level2_2025W37_1A_0068_4D2_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/ce5d4d8afea4265b.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:36:11.833Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/2/level2_2025W37_1A_0124_1D2_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.03": {
    "file": "rw-aur/9636cbef35c8433b.fits",
@@ -1676,11 +3251,25 @@
    "fetched": "2026-11-15T02:35:56.131Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/2/level2_2025W37_1A_0124_1D2_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/d9a2c768158bcc83.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:36:11.915Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/2/level2_2025W37_1A_0124_2D2_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/ac8c1d117f5f3e5d.fits",
    "size": 63360,
    "fetched": "2026-11-14T16:02:01.571Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/2/level2_2025W37_1A_0124_2D2_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/678cc15c1fc3b011.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:36:11.932Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/2/level2_2025W37_1A_0366_1D2_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.03": {
    "file": "rw-aur/b2605e48ada7aa01.fits",
@@ -1760,17 +3349,59 @@
    "fetched": "2026-11-14T12:07:52.250Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/5/level2_2025W37_1A_0068_1D5_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/5a86e9ad186afa7c.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:51.354Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/5/level2_2025W37_1A_0068_2D5_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/605a55883e932a76.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:52.050Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/5/level2_2025W37_1A_0068_3D5_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/3b11b606a78c0d2d.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:52.780Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/5/level2_2025W37_1A_0068_4D5_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/b6c2573e187f73d7.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:07:53.162Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/5/level2_2025W37_1A_0068_4D5_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/4f19ab7fb2481dec.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:36:11.792Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/5/level2_2025W37_1A_0124_1D5_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.03": {
    "file": "rw-aur/429bedf262f3bf79.fits",
    "size": 48960,
    "fetched": "2026-11-15T02:35:56.572Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/5/level2_2025W37_1A_0124_1D5_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/8ee4f9f47ecd2496.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:36:11.831Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/5/level2_2025W37_1A_0124_2D5_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0655": {
+   "file": "rw-aur/acc1b3944cb91fcc.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:36:11.974Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/5/level2_2025W37_1A_0124_3D5_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/90b2eb636813effd.fits",
@@ -2420,6 +4051,13 @@
    "fetched": "2026-11-14T12:06:38.486Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0305_1D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/435c8b13c973a521.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:20.516Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0305_2D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.03": {
    "file": "wise-0855/cbd93034c51a057f.fits",
    "size": 51840,
@@ -2432,11 +4070,39 @@
    "fetched": "2026-11-14T12:06:45.091Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0305_2D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/06039d32e10cd7cb.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:01.457Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0305_3D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/c2f2b11f84ece700.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:20.651Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0305_4D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.03": {
    "file": "wise-0855/c861e3b72c4c13be.fits",
    "size": 51840,
    "fetched": "2026-11-14T23:50:17.993Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0305_4D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/00d95841c6fe0f36.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:02.071Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0321_1D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/fdee23fb102aaaeb.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:22.686Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0321_2D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.03": {
    "file": "wise-0855/113d0d8eee603465.fits",
@@ -2444,11 +4110,25 @@
    "fetched": "2026-11-15T02:35:04.719Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0321_2D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/915c7b0124b1bd41.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:22.875Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0322_1D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0641": {
    "file": "wise-0855/aeff652c357dd377.fits",
    "size": 57600,
    "fetched": "2026-11-14T12:06:30.648Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0322_1D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/40a71ef431db0d01.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:21.315Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0322_2D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0641": {
    "file": "wise-0855/3b4bdb7df54fbd3d.fits",
@@ -2456,11 +4136,32 @@
    "fetched": "2026-11-14T16:01:21.895Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0322_2D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/a5a5aa686e2e6c78.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:22.048Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0322_3D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.03": {
    "file": "wise-0855/f2863c4ac721557c.fits",
    "size": 51840,
    "fetched": "2026-11-15T02:35:07.519Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0322_3D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/aec6b9c54b540a37.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:22.048Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0322_4D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/aa7ec61181a6b9dc.fits",
+   "size": 63360,
+   "fetched": "2026-11-15T02:35:22.279Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0339_1D1_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.03": {
    "file": "wise-0855/915504d8bf2f0a73.fits",
@@ -2486,17 +4187,38 @@
    "fetched": "2026-11-14T12:08:56.000Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0305_1D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/5f95cf05f5244b97.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:01.098Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0305_2D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.03": {
    "file": "wise-0855/8a52429c95ebc012.fits",
    "size": 48960,
    "fetched": "2026-11-14T23:50:16.624Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0305_2D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/df1a3e797aec3dff.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:01.342Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0305_3D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0641": {
    "file": "wise-0855/d167f00e4d8335bd.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:06:28.898Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0305_3D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/35d37ed85d273da2.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:01.705Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0305_4D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.03": {
    "file": "wise-0855/de463748609f5e4f.fits",
@@ -2510,11 +4232,25 @@
    "fetched": "2026-11-14T16:01:18.200Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0305_4D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/d7f6c4fd19dc5b41.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:20.688Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0321_1D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0641": {
    "file": "wise-0855/b5ad5adc549f2d7d.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:06:29.764Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0321_1D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/5815038baa338052.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:20.725Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0321_2D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.03": {
    "file": "wise-0855/66066853216f1a94.fits",
@@ -2528,17 +4264,52 @@
    "fetched": "2026-11-14T12:06:46.609Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0321_2D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/9482eb45bb0233d3.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:21.228Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0322_1D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/4d8657ce917b116e.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:21.368Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0322_2D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/960ccd7e65be8970.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:21.884Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0322_3D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.03": {
    "file": "wise-0855/c87d0185bf537df7.fits",
    "size": 48960,
    "fetched": "2026-11-15T02:35:06.474Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0322_3D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/c295ca764eff6068.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:22.075Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
+  },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0322_4D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0641": {
    "file": "wise-0855/a198855bb769b6de.fits",
    "size": 54720,
    "fetched": "2026-11-14T16:01:16.517Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0322_4D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0655": {
+   "file": "wise-0855/076b12778e2672fe.fits",
+   "size": 60480,
+   "fetched": "2026-11-15T02:35:22.105Z",
+   "kind": "cutout",
+   "source": "IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails"
   },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0339_1D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.03": {
    "file": "wise-0855/c74bb43e9e2164d8.fits",
