@@ -41,6 +41,16 @@ test('seasons split on gaps over 60 days', () => {
   assert.match(s[0].label, /Aug 2025/);
 });
 
+test('all-year coverage (near the ecliptic poles) is split at its largest gaps into runs of at most ~6 months', () => {
+  const mjds = []; for (let m = 60800; m <= 61300; m += 10) if (m < 60950 || m > 60980) mjds.push(m); // 500 days, one 40-day gap
+  const s = seasonsOf(mjds);
+  assert.ok(s.length >= 3, `got ${s.length}`);
+  assert.ok(s.every(x => x.endMjd - x.startMjd <= 183));
+  assert.equal(s[0].endMjd, 60940, 'first cut at the 40-day gap');
+  assert.equal(s.reduce((a, x) => a + x.n, 0), mjds.length);
+  assert.ok(s.every(x => x.endMjd - x.startMjd >= 60), 'no sliver seasons: ' + s.map(x => x.endMjd - x.startMjd));
+});
+
 const rows = toRows([im(61085, 2, 'qr3', 1.1033, 1.6499), im(60900, 1), im(60905, 6, 'dr1', 4.4115, 5.0096), im(61300, 4, 'qr3', 2.4027, 3.8473)]);
 
 test('rows are time-ordered and numbered', () => {
