@@ -253,9 +253,8 @@ html[data-motion=reduce] .fl-sec summary::before { transition: none; }
   .layers .lseg{-webkit-mask:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
   .layers .lseg.at-end{-webkit-mask:none;mask:none}
 }
-/* tokens.css (loaded for the Lab notebook) sets a dark colour scheme; these pages are light, the notebook dialog stays dark */
+/* Star Shift pages are light, the Lab notebook dialog too (Master work order item 9) */
 :root{color-scheme:light}
-.notebook-dialog{color-scheme:dark}
 
 /* telescopes: Telescope compare view (DESIGN.md 31a). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
 .view .seg { width: 344px; }
