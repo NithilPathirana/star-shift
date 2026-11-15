@@ -57,9 +57,12 @@ export function createTelescopes(ctx) {
     if (!force && key === T.key) { draw(); return; }
     T.ctl?.abort(); const ctl = T.ctl = new AbortController();
     T.key = key; T.field = fld; T.res = {}; T.off = {};
+    // where the ring falls at a given date: 2MASS picks the tiles that really show the star then
+    const star = motionStar(), fx = fixedPos();
+    const ringAt = (mjd) => positionsAt(star, fx, [Number.isFinite(mjd) ? mjd : NOMINAL.twomass])[0];
     for (const id of ['wise', 'twomass']) {
       T.res[id] = { state: 'loading' };
-      loadSurvey(SURVEYS[id], fld, { base: ctx.base, signal: ctl.signal })
+      loadSurvey(SURVEYS[id], fld, { base: ctx.base, signal: ctl.signal, ringAt })
         .then(r => { if (ctl.signal.aborted) return; T.res[id] = r.none ? { state: 'none' } : { state: 'ok', data: r }; draw(); })
         .catch(e => { if (ctl.signal.aborted || e?.name === 'AbortError') return; T.res[id] = { state: 'error', why: e?.message || String(e) }; draw(); });
     }
@@ -67,16 +70,18 @@ export function createTelescopes(ctx) {
   }
 
   // Offscreen image in the survey's own pixels, stretched on its own (asinh 2-99.7%).
-  function offscreen(id, values, nx, ny) {
-    if (T.off[id]?.src === values) return T.off[id].cv;
-    const s = stretch(values), cv = document.createElement('canvas'); cv.width = nx; cv.height = ny;
+  // `src` keys the cache; `values` may be a function (built only on a cache miss); `s` = shared stretch
+  function offscreen(id, src, nx, ny, values = src, s = null) {
+    if (T.off[id]?.src === src) return T.off[id].cv;
+    if (typeof values === 'function') values = values();
+    s = s || stretch(values); const cv = document.createElement('canvas'); cv.width = nx; cv.height = ny;
     const g = cv.getContext('2d'), im = g.createImageData(nx, ny);
     for (let i = 0; i < nx * ny; i++) {
       const v = values[i];
       if (v == null || !Number.isFinite(v)) { im.data[4 * i + 3] = 0; continue; }
       const t = s.map(v); im.data[4 * i] = t; im.data[4 * i + 1] = Math.round(t * 0.965); im.data[4 * i + 2] = Math.round(t * 0.91); im.data[4 * i + 3] = 255;
     }
-    g.putImageData(im, 0, 0); T.off[id] = { src: values, cv }; return cv;
+    g.putImageData(im, 0, 0); T.off[id] = { src, cv }; return cv;
   }
   // FITS rows run bottom-up; the canvas wants row 0 at the top.
   function fitsRowsTopDown(img) {
@@ -91,6 +96,9 @@ export function createTelescopes(ctx) {
   }
 
   function sizePanels() {
+    // desktop: the result plate sits at the foot of the stage (ui.js); keep the panels and the note above it
+    const plate = $('resultPlate'), ph = innerWidth >= 700 && plate && !plate.hidden && root.parentElement?.contains(plate) ? plate.offsetHeight : 0;
+    root.style.bottom = ph ? `${ph + 16}px` : '';
     const box = root.getBoundingClientRect(), phone = innerWidth < 700;
     const head = root.querySelector('.tele-head')?.offsetHeight || 40;
     // room left for captions and the note, measured from the last draw (captions wrap with width)
@@ -105,7 +113,7 @@ export function createTelescopes(ctx) {
   function figWidth(side) {
     if (innerWidth < 700) return side;
     const w = Math.floor((root.getBoundingClientRect().width - 2 * 18) / 3);
-    return Math.max(side, Math.min(w, 260));
+    return Math.max(side, Math.min(w, 280));
   }
 
   function draw() {
@@ -132,10 +140,16 @@ export function createTelescopes(ctx) {
       } else {
         const r = T.res[id] || { state: 'loading' };
         if (r.state === 'ok') {
-          const { image, wcs } = r.data, off = offscreen(id, fitsRowsTopDown(image), image.nx, image.ny);
-          const near = nearestPixel(wcs, view.ra0, view.dec0, image.nx, image.ny);
-          const m = imageAffine(wcs.pixToWorld, image.nx, image.ny, view, side, { flipY: true, near });
-          drawImg(g, off, m, dpr, wcs.scaleArcsec * pxPerArcsec(view, side) * dpr); ok = true; pix = wcs.scaleArcsec;
+          // 2MASS may bring 2-3 tiles of one scan (one night): one stretch for all, the ring's tile on top
+          const pcs = r.data.pieces || [r.data];
+          const sv = r.data._s || (r.data._s = stretch(pcs.length > 1 ? pcs.flatMap(p => Array.from(p.image.data)) : r.data.image.data));
+          for (let k = pcs.length - 1; k >= 0; k--) {
+            const { image, wcs } = pcs[k], off = offscreen(id + k, image, image.nx, image.ny, () => fitsRowsTopDown(image), sv);
+            const near = nearestPixel(wcs, view.ra0, view.dec0, image.nx, image.ny);
+            const m = imageAffine(wcs.pixToWorld, image.nx, image.ny, view, side, { flipY: true, near });
+            drawImg(g, off, m, dpr, wcs.scaleArcsec * pxPerArcsec(view, side) * dpr);
+          }
+          ok = true; pix = r.data.wcs.scaleArcsec;
         } else if (r.state === 'none') msg.innerHTML = '<b>No image of this patch</b>';
         else if (r.state === 'error') msg.innerHTML = `<b>IRSA did not answer</b><span>${esc(r.why)}</span><button class="key tele-retry" type="button">Retry</button>`;
         else msg.innerHTML = `<span class="tele-wait">Asking IRSA for the ${SURVEYS[id].name} image…</span>`;
@@ -152,8 +166,12 @@ export function createTelescopes(ctx) {
       (star ? '' : ' No catalogued motion for this object: the ring marks the same spot in all three.');
     // captions and note were measured from the previous draw: if the text still runs past the stage, size once more
     if (innerWidth >= 700 && !refit && root.scrollHeight > root.clientHeight + 1) { refit = true; requestAnimationFrame(() => { draw(); refit = false; }); }
+    moreCue();
   }
   let refit = false;
+  // a very short stage (e.g. 1366×640 with Larger text) scrolls: fade the foot while more text lies below
+  const moreCue = () => root.classList.toggle('tele-more', innerWidth >= 700 && root.scrollHeight - root.scrollTop - root.clientHeight > 2);
+  root.addEventListener('scroll', moreCue, { passive: true });
 
   // Phone: the three panels stack, so the stage grows to hold them (the page scrolls, not the stage).
   function fitPhone() {
@@ -203,26 +221,30 @@ export function createTelescopes(ctx) {
   }
 
   const chip = (w) => `<span class="tele-chip">${w}</span>`;
+  const x = (t) => `<span class="x-only">${t}</span>`; // Expert-only detail (expert.js hides it in Simple)
+  const sx = (simple, expert) => `<span class="s-only">${simple}</span>${x(expert)}`; // short Simple words, full Expert words
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const dateOf = (iso) => { const m = /^(\d{4})-(\d\d)-(\d\d)/.exec(String(iso || '')); return m ? `${+m[3]} ${MON[+m[2] - 1]} ${m[1]}` : '—'; }; // the app's "25 Aug 2025"
   function caption(fig, id, f, pix, star) {
     const cap = fig.querySelector('.tele-cap'), sub = fig.querySelector('.tele-sub');
     const px = pix ? `${pix < 2 ? pix.toFixed(pix < 1.2 ? 1 : 3).replace(/0+$/, '').replace(/\.$/, '') : pix.toFixed(2)}″ pixels` : '';
     if (id === 'spherex') {
-      cap.innerHTML = `<b>SPHEREx</b> ${chip('SPACE')} in orbit · ${dateOf(f?.date)} · ${f?.um ? f.um.toFixed(2) + ' µm' : '—'}${f?.det ? ` (D${f.det})` : ''} · ${px || '6.15″ pixels'}`;
+      cap.innerHTML = `<b>SPHEREx</b> ${chip('SPACE')} in orbit · ${dateOf(f?.date)} · ${f?.um ? f.um.toFixed(2) + ' µm' : '—'}${f?.det ? x(` (D${f.det})`) : ''}${x(` · ${px || '6.15″ pixels'}`)}`;
       const cut = V.grid ? Math.round(V.grid.n * V.grid.scale) : null, wide = cut && T.field && T.field.sizeArcsec / (ctx.zoom?.() || 1) > cut + 1;
-      sub.textContent = f ? `Follows the flip-book: image ${P.i + 1} of ${V.F.length}, on the viewer's 6.15″ grid.${wide ? ` The SPHEREx cutout is ${cut}″ wide; the darker area is outside it.` : ''}` : '';
+      // Simple keeps one short line per panel (fits a short stage with Larger text); Expert adds the detail
+      sub.innerHTML = f ? `Follows the flip-book: image ${P.i + 1} of ${V.F.length}${x(", on the viewer's 6.15″ grid")}.${wide ? sx(' Dark: outside its cutout.', ` The SPHEREx cutout is ${cut}″ wide; the darker area is outside it.`) : ''}` : '';
       return;
     }
     const r = T.res[id], d = r?.data, m = d?.meta;
     if (id === 'wise') {
-      const dates = m?.first && m?.last ? `${dateOf(m.first)} to ${dateOf(m.last)}` : '2010 (dates load with the image)';
-      cap.innerHTML = `<b>AllWISE</b> ${chip('SPACE')} in orbit · ${dates} · W1 ${m?.um ? m.um.toFixed(2) : '3.4'} µm · ${px || '1.375″ pixels'}`;
-      sub.textContent = r?.state === 'ok' ? `One stacked image${m?.frames ? ` of ${m.frames} frames` : ''}, ${m?.first?.slice(0, 4) || '2010'}${star && m?.mid ? `. Ring at the middle frame, ${dateOf(m.mid)}` : ''}. Atlas image ${d.path.split('/').pop().replace('.fits', '')}.` : 'One stacked image, 2010.';
+      const mon = (iso) => dateOf(iso).replace(/^\d+ /, ''), dates = m?.first && m?.last ? sx(m.first.slice(0, 4) === m.last.slice(0, 4) ? mon(m.first).slice(0, 3) + '–' + mon(m.last) : `${mon(m.first)} – ${mon(m.last)}`, `${dateOf(m.first)} to ${dateOf(m.last)}`) : '2010 (dates load with the image)';
+      cap.innerHTML = `<b>AllWISE</b> ${chip('SPACE')} in orbit · ${dates} · W1 ${m?.um ? m.um.toFixed(2) : '3.4'} µm${x(` · ${px || '1.375″ pixels'}`)}`;
+      sub.innerHTML = r?.state === 'ok' ? `One stacked image${m?.frames ? ` of ${m.frames} frames` : ''}${x(`, ${m?.first?.slice(0, 4) || '2010'}${star && m?.mid ? `. Ring at the middle frame, ${dateOf(m.mid)}` : ''}. Atlas image ${esc(d.path.split('/').pop().replace('.fits', ''))}`)}.` : 'One stacked image, 2010.';
     } else {
       const site = m?.site ? `${m.site}` : 'Mt Hopkins, Arizona (north) or Cerro Tololo, Chile (south)';
-      cap.innerHTML = `<b>2MASS</b> ${chip('GROUND')} ${esc(site)} · ${m?.date ? dateOf(m.date) : '1997–2001'} · Ks 2.16 µm · ${px || '1″ pixels'}`;
-      sub.textContent = r?.state === 'ok' ? `One image, ${m?.date?.slice(0, 4) || '—'}${m?.iso ? `, ${m.iso.slice(11, 16)} UT` : ''}. ${m?.hemi === 'north' ? 'The northern 2MASS telescope (the south used Cerro Tololo, Chile).' : m?.hemi === 'south' ? 'The southern 2MASS telescope (the north used Mt Hopkins, Arizona).' : ''} Atlas pixels 1″ (camera pixels 2″).` : '2MASS: two 1.3 m telescopes, 1997–2001; the site is read from the image.';
+      cap.innerHTML = `<b>2MASS</b> ${chip('GROUND')} ${esc(site)} · ${m?.date ? dateOf(m.date) : '1997–2001'} · Ks 2.16 µm${x(` · ${px || '1″ pixels'}`)}`;
+      const nP = d?.pieces?.length || 1, img = nP > 1 ? `${nP === 2 ? 'Two' : 'Three'} adjacent images from one scan` : 'One image';
+      sub.innerHTML = r?.state === 'ok' ? `${img}${x(`, ${m?.date?.slice(0, 4) || '—'}${m?.iso ? `, ${m.iso.slice(11, 16)} UT` : ''}`)}.${x(` ${m?.hemi === 'north' ? 'The northern 2MASS telescope (the south used Cerro Tololo, Chile).' : m?.hemi === 'south' ? 'The southern 2MASS telescope (the north used Mt Hopkins, Arizona).' : ''} Atlas pixels 1″ (camera pixels 2″).`)}` : '2MASS: two 1.3 m telescopes, 1997–2001; the site is read from the image.';
     }
   }
 

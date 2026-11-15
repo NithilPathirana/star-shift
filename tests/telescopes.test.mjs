@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { gzipSync } from 'node:zlib';
 import { linearWcs, sinDeproject, fieldFor, skyToScreen, pxPerArcsec, screenPixel, imageAffine, applyAffine, nearestPixel,
   twomassMeta, wiseMeta, positionsAt, yearOf, stretch } from '../web/app/telescopes/geometry.js';
-import { pickImages, SURVEYS, cutoutUrl, decodeSurvey } from '../web/app/telescopes/surveys.js';
+import { pickImages, SURVEYS, cutoutUrl, decodeSurvey, parsePolygon, insideArcsec, rankScans } from '../web/app/telescopes/surveys.js';
 import { tanDeproject } from '../web/core/wcs.js';
 import { separationArcsec, epochYearToMjd } from '../web/core/motion.js';
 import { makeGrid, gridToWorld } from '../web/core/align.js';
@@ -110,6 +110,24 @@ test('SIA picking: only exact 2MASS Ks / AllWISE W1 paths, nearest centre first'
   assert.equal(w.length, 1);
   assert.equal(pickImages([], SURVEYS.wise, 0, 0).length, 0); // -> "No image of this patch"
   assert.equal(cutoutUrl('http://r', '/x.fits', 269.452, 4.693, 1), 'http://r/x.fits?center=269.452000,4.693000&size=0.2500');
+});
+
+test('2MASS scan choice: the tile holding the ring at that night wins; a field across two tiles takes both', () => {
+  // real footprints (SIA s_region) of two tiles of scan 000528n/s101 next to Barnard's Star
+  const lo = parsePolygon('POLYGON ICRS 269.478657 4.429899 269.336008 4.429943 269.336068 4.714388 269.478773 4.714344 269.478657 4.429899');
+  const hi = lo.map(([r, d]) => [r, d + 0.2704]); // the next tile north (overlaps by ~54″)
+  assert.equal(lo.length, 4); assert.equal(parsePolygon(''), null);
+  close(insideArcsec(lo, 269.4072, 4.70), (4.714366 - 4.70) * 3600, 0.5); assert.ok(insideArcsec(lo, 269.4072, 4.72) < 0);
+  const field = { ra0: 269.4495, dec0: 4.727, sizeArcsec: 400 };
+  const T = (n, region, scan, mjd) => ({ path: `/x/${n}`, region, scan, mjd, dist: 0.1 });
+  const ring2000 = { ra: 269.45199, dec: 4.69452 }; // Barnard on 28 May 2000: 18″ south of the upper tile
+  const cands = [T('hi', hi, '000528n/s101', 51692.43), T('lo', lo, '000528n/s101', 51692.43), T('other', hi.map(([r, d]) => [r, d + 0.05]), '990601n/s001', 51330)];
+  const [best, next] = rankScans(cands, field, () => ring2000);
+  assert.equal(best.scan, '000528n/s101'); assert.equal(best.ringOk, true);
+  assert.deepEqual(best.tiles.map(t => t.path), ['/x/lo', '/x/hi'], 'the ring tile first, then the tile that fills the rest of the field');
+  // the two tiles cover 7/9 of the field (its east edge is past this 8.5′-wide scan); one tile alone 14/27
+  close(best.cover, 7 / 9, 1e-9); close(rankScans([cands[0]], field, () => ring2000)[0].cover, 14 / 27, 1e-9);
+  assert.equal(next.ringOk, false);
 });
 
 test('stretch maps the 2nd..99.7th percentile to 0..255 and skips missing pixels', () => {
