@@ -1,0 +1,53 @@
+/* AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+   The Simple / Expert switch (web/app/expert.js), placed by web/app/rail.js in the rail's foot group
+   and in the Pages sheet (phone, and the More key on short windows). DESIGN.md switch: recessed track,
+   skeuo knob that squashes while pressed, copper track when on. */
+
+.expert-sw{appearance:none;border:0;background:none;font:inherit;cursor:pointer;color:var(--muted)}
+.expert-pill{position:relative;display:block;flex:none;border-radius:999px;
+  background:linear-gradient(180deg,var(--well-top),var(--well-bot));border:1px solid var(--edge-strong);
+  box-shadow:inset 0 1px 3px rgba(60,40,24,.28),0 1px 0 rgba(255,255,255,.8);transition:background var(--t-toggle,180ms)}
+.expert-pill::after{content:"";position:absolute;top:1px;left:1px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#fff,#E7E0D5);border:1px solid var(--edge-strong);box-shadow:0 1px 2px rgba(60,40,24,.3);
+  transition:transform var(--t-toggle,180ms) var(--spring,ease)}
+.expert-sw.on .expert-pill{background:linear-gradient(180deg,var(--copper),var(--copper-key));border-color:rgba(70,32,8,.5)}
+.expert-sw:focus-visible{outline:2.5px solid var(--focus);outline-offset:-2px;border-radius:12px}
+html[data-motion=reduce] .expert-pill,html[data-motion=reduce] .expert-pill::after{transition:none}
+
+/* rail: a nav-sized key, small switch over the label */
+.rail .expert-sw{width:52px;min-height:24px;display:grid;justify-items:center;gap:3px;padding:6px 0 5px;border-radius:12px;font-size:.75rem;font-weight:500;line-height:1.15}
+.rail .expert-pill{width:30px;height:18px;order:-1} /* switch on top, label under, like the nav icons */
+.rail .expert-pill::after{width:14px;height:14px}
+.rail .expert-sw.on{color:var(--copper);font-weight:600}
+.rail .expert-sw.on .expert-pill::after{transform:translateX(12px)}
+.rail .expert-sw:active .expert-pill::after{transform:scaleX(1.18);transform-origin:left}
+.rail .expert-sw.on:active .expert-pill::after{transform:translateX(9px) scaleX(1.18);transform-origin:right}
+@media (hover:hover) and (pointer:fine){.rail .expert-sw:hover{background:rgba(255,255,255,.45)}}
+/* With the switch the full foot (Tonight?, Notebook, Help, About, Expert) needs about 790 px, so the foot folds
+   into More up to 799 px tall (e.css folds it under 700); the switch itself always stays in the rail. */
+@media (min-width:700px) and (max-height:799px){
+  .rail .nav-util:not(.nav-more){display:none}
+  .rail .nav-more{display:grid}
+}
+/* short windows: the switch gets smaller so the rail still fits 640 px */
+@media (min-width:700px) and (max-height:699px){
+  .rail .expert-sw{gap:2px;padding:0;margin-top:-8px;line-height:1.1}
+  .rail .expert-pill{width:26px;height:14px}
+  .rail .expert-pill::after{width:10px;height:10px}
+  .rail .expert-sw.on .expert-pill::after{transform:translateX(12px)}
+  .rail .expert-sw.on:active .expert-pill::after{transform:translateX(9px) scaleX(1.18)}
+}
+
+/* Pages sheet: a full-width row, 44 px tall, DESIGN.md switch size (46 × 26, 20 px knob) */
+.expert-sheet{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;margin-top:12px;padding:8px 2px 0;
+  border-top:1px solid var(--edge);text-align:left;color:var(--ink)}
+.expert-sheet .expert-l{display:grid;gap:1px;font-size:.875rem;font-weight:600}
+.expert-sheet .expert-l small{font-size:.75rem;font-weight:400;color:var(--muted)}
+.expert-sheet .expert-pill{width:46px;height:26px}
+.expert-sheet .expert-pill::after{top:2px;left:2px;width:20px;height:20px}
+.expert-sheet.on .expert-pill::after{transform:translateX(20px)}
+.expert-sheet:active .expert-pill::after{transform:scaleX(1.18);transform-origin:left}
+.expert-sheet.on:active .expert-pill::after{transform:translateX(16px) scaleX(1.18);transform-origin:right}
+.expert-sheet:focus-visible{border-radius:10px}
+/* the rail carries the switch on wider screens (also when More opens this sheet), so the sheet row is phone-only */
+@media (min-width:701px){#pagesPop .expert-sheet{display:none}}

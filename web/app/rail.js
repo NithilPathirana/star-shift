@@ -4,6 +4,29 @@
 //   loaded on first use.
 // - "More" key: on short windows (under 700 px tall) the rail folds Notebook, Help and About into one
 //   key that opens the page's own Pages sheet beside the rail. The page must have #pagesBtn and #pagesPop.
+// - The Simple / Expert switch (web/app/expert.js, Master item 5): one remembered setting, placed at the foot of
+//   the rail and at the foot of the Pages sheet (phone, and the More key on short windows). Default Simple.
+
+import { expertSwitch } from './expert.js';
+
+{
+  const place = () => {
+    const rail = document.querySelector('.rail');
+    if (rail && !rail.querySelector('.expert-sw')) rail.append(expertSwitch('nav-expert'));
+    const pop = document.getElementById('pagesPop');
+    if (pop && !pop.querySelector('.expert-sw')) {
+      const b = expertSwitch('expert-sheet');
+      b.querySelector('.expert-l').innerHTML = 'Expert<small>Full coordinates, ±σ, χ², MJD, detector and flag details, CSV</small>';
+      pop.append(b);
+    }
+  };
+  if (document.querySelector('link[href$="styles/expert.css"]')) place();
+  else { // inject the stylesheet, and place the switch once it has loaded (no unstyled flash)
+    const l = Object.assign(document.createElement('link'), { rel: 'stylesheet', href: 'styles/expert.css' });
+    l.onload = l.onerror = place;
+    document.head.append(l);
+  }
+}
 
 for (const b of document.querySelectorAll('[data-notebook]')) {
   b.addEventListener('click', async (e) => {
