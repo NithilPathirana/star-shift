@@ -337,5 +337,23 @@ html[data-motion=reduce] .pf-open svg{transition:none}
   .pg-filters[data-rows] .chip-k{padding:0 9px}
   .pg-filters[data-rows] .fgroup.grow{flex:1 1 160px;max-width:300px}
 }
+/* Archive, short desktop windows (Design Studio item 6): Detector, Flags, Release and search fold behind "More filters" */
+.more-filters{display:none}
+@media (min-width:701px) and (max-height:700px){
+  .pg-filters[data-rows]{position:relative}
+  .pg-filters[data-rows] .more-filters{display:inline-flex;position:absolute;top:-5px;right:0;min-height:24px;padding:0 10px;font-size:.75rem} /* on the labels' line, top right */
+  .pg-filters[data-rows]:not(.more-open)::after,
+  .pg-filters[data-rows]:not(.more-open) > .fgroup:not(#fSeasonG,#fBandG){display:none}
+  .pg-filters .key.more-filters[aria-expanded=true]{background:linear-gradient(180deg,#E3DACD,#EFE9E0);box-shadow:inset 0 1px 3px rgba(60,40,24,.26)}
+}
+/* Archive on desktop (Design Studio item 10): FITS and Play as 24 px keys, matching the rest of the row */
+@media (min-width:701px){
+  .atable .links{white-space:nowrap}
+  .atable .links a{display:inline-flex;align-items:center;min-height:24px;margin-right:4px;padding:0 7px;border-radius:7px;border:1px solid var(--edge);
+    background:linear-gradient(180deg,#FCFAF6,#ECE5DB);box-shadow:inset 0 1px 0 #fff,var(--sh-contact);font-size:.75rem;text-decoration:none;color:var(--copper)}
+  .atable .links a:last-child{margin-right:0}
+  .atable .links a:active{transform:translateY(1px) scale(.97);box-shadow:inset 0 1px 2px rgba(60,40,24,.25)}
+  .atable .links a:focus-visible{outline:2.5px solid var(--focus);outline-offset:2px}
+}
 /* these pages are light, the Lab notebook dialog too */
 :root{color-scheme:light}

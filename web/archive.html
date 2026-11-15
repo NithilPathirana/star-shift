@@ -57,7 +57,7 @@
     <section class="pg-head" data-fold>
       <div>
         <h1>Observation Archive</h1>
-        <p class="pg-target"><b id="tName">…</b> <span class="num" id="tCoords"></span><span id="tPm"></span></p>
+        <p class="pg-target"><b id="tName">…</b> <span class="num x-only" id="tCoords"></span><span id="tPm"></span></p>
       </div>
       <p class="pg-lede">Every SPHEREx image that covers this spot, straight from the archive's own list. <span class="tag obs">OBSERVED</span></p>
     </section>
@@ -68,9 +68,10 @@
       <div class="sheet-head"><h2>Filters</h2><button class="key" id="filtersDone" type="button">Done</button></div>
       <div class="fgroup" id="fSeasonG" role="group" aria-label="Season"><span class="flabel">Season</span><div class="chips" id="fSeason"></div></div>
       <div class="fgroup" id="fBandG" role="group" aria-label="Band"><span class="flabel">Band</span><div class="chips" id="fBand"></div></div>
-      <div class="fgroup" role="group" aria-label="Detector"><span class="flabel">Detector</span><div class="chips" id="fDet"></div></div>
+      <div class="fgroup x-only" role="group" aria-label="Detector"><span class="flabel">Detector</span><div class="chips" id="fDet"></div></div>
       <div class="fgroup" role="group" aria-label="Flags"><span class="flabel">Flags</span><div class="chips" id="fFlags"></div></div>
-      <div class="fgroup" role="group" aria-label="Data release"><span class="flabel">Release</span><div class="chips" id="fRel"></div></div>
+      <div class="fgroup x-only" role="group" aria-label="Data release"><span class="flabel">Release</span><div class="chips" id="fRel"></div></div>
+      <button class="key chip-k more-filters" id="moreFilters" type="button" aria-expanded="false" aria-controls="filters">More filters</button>
       <div class="fgroup grow"><label class="field well small"><svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="5.5"/><path d="M12 12l4 4"/></svg>
         <input id="fText" aria-label="Filter by observation ID or date" placeholder="Obs ID or date"></label></div>
     </section>
@@ -84,7 +85,7 @@
         <button class="key icon" id="prev" aria-label="Previous page">‹</button>
         <span class="num" id="pageTxt">1 / 1</span>
         <button class="key icon" id="next" aria-label="Next page">›</button>
-        <button class="key" id="csv" type="button">Download list (CSV)</button>
+        <button class="key x-only" id="csv" type="button">Download list (CSV)</button>
       </div>
     </div>
 
@@ -94,15 +95,15 @@
           <th scope="col" class="c-x"><span class="sr-only">Details</span></th>
           <th scope="col" class="c-th">Image</th>
           <th scope="col" data-sort="n" class="r">#</th>
-          <th scope="col" data-sort="date">Date (UTC)</th>
-          <th scope="col" data-sort="time">Time</th>
+          <th scope="col" data-sort="date">Date<span class="x-only"> (UTC)</span></th>
+          <th scope="col" data-sort="time" class="x-only">Time</th>
           <th scope="col" data-sort="season">Season</th>
-          <th scope="col" data-sort="detector" class="r">Det.</th>
+          <th scope="col" data-sort="detector" class="r x-only">Det.</th>
           <th scope="col" data-sort="wl">Wavelength</th>
-          <th scope="col" data-sort="mjd" class="r">MJD</th>
-          <th scope="col" data-sort="obsid">Observation ID</th>
-          <th scope="col" data-sort="release">Release</th>
-          <th scope="col" data-sort="flags" class="r" title="Flagged pixels in the 25×25 patch around the target">Flagged px</th>
+          <th scope="col" data-sort="mjd" class="r x-only">MJD</th>
+          <th scope="col" data-sort="obsid" class="x-only">Observation ID</th>
+          <th scope="col" data-sort="release" class="x-only">Release</th>
+          <th scope="col" data-sort="flags" class="r" title="Flagged pixels in the 25×25 patch around the target"><span class="x-only">Flagged px</span><span class="s-only">Flagged</span></th>
           <th scope="col" data-sort="status">Status</th>
           <th scope="col">Links</th>
         </tr></thead>

@@ -8,6 +8,7 @@ import { wavelengthAt } from '../../core/wave.js';
 import { propagate } from '../../core/motion.js';
 import { DEFAULT_BANDS } from '../bands.js';
 import { toRows, seasonsOf, sortRows, filterRows, paginate, rowsToCSV, summarizeFlags, targetViewerUrl, FLAG_KINDS, flagText, bandAt } from './logic.js';
+import '../expert.js'; // Simple / Expert: .x-only columns and details, .s-only plain-words twins
 import { base, initShell, resolve, listPosition, targetLine, download, slug, esc, cutoutSizeDeg, cutoutCenter } from './shell.js';
 
 const $ = (id) => document.getElementById(id);
@@ -33,7 +34,8 @@ async function load(q) {
     if (ctrl.signal.aborted) return;
     S.target = t;
     const tl = targetLine(t);
-    $('tName').textContent = tl.name; $('tCoords').textContent = tl.coords; $('tPm').textContent = tl.pm;
+    $('tName').textContent = tl.name; $('tCoords').textContent = tl.coords;
+    $('tPm').innerHTML = tl.pm ? `<span class="x-only">${esc(tl.pm)}</span><span class="s-only">moves about ${(Math.hypot(t.pmra, t.pmdec) / 1000).toFixed(1)}″ a year</span>` : '';
     document.title = `${tl.name} · Observation Archive · Star Shift`;
     $('count').textContent = 'Asking IRSA for every SPHEREx image of this spot…';
     const p = listPosition(t);
@@ -102,6 +104,7 @@ function renderActive() {
   if (S.filter.text) on.push(`<button class="key chip-k" type="button" data-k="text" aria-label="Remove text filter">“${esc(S.filter.text)}” <span aria-hidden="true">×</span></button>`);
   $('active').innerHTML = on.join('');
   $('filtersBtn').textContent = on.length ? `Filters (${on.length})` : 'Filters';
+  moreLabel();
 }
 $('active').onclick = (e) => {
   const b = e.target.closest('button[data-k]'); if (!b) return;
@@ -114,6 +117,14 @@ function sheet(open) {
   if (open) $('filtersDone').focus(); else $('filtersBtn').focus();
 }
 $('filtersBtn').onclick = () => sheet(true);
+// Short desktop windows (under 700 px tall, Design Studio item 6): the second filter row folds behind "More filters".
+function moreLabel() {
+  const open = $('filters').classList.contains('more-open');
+  const folded = ['detector', 'hasFlags', 'release'].filter(k => S.filter[k] !== 'all').length + (S.filter.text ? 1 : 0);
+  $('moreFilters').textContent = open ? 'Fewer filters' : folded ? `More filters (${folded} on)` : 'More filters';
+  $('moreFilters').setAttribute('aria-expanded', String(open));
+}
+$('moreFilters').onclick = () => { $('filters').classList.toggle('more-open'); moreLabel(); };
 $('filtersDone').onclick = () => sheet(false);
 $('scrim').onclick = () => sheet(false);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('filters').classList.contains('open')) sheet(false); });
@@ -139,26 +150,27 @@ function render() {
   loadPage(pg.rows);
 }
 
+const plainDay = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 const STATUS = { waiting: 'Waiting', loading: 'Loading', loaded: 'Loaded', failed: 'Failed' };
 function rowHtml(r) {
   const open = S.open.has(r.uri), sel = S.selected === r.uri;
   const s = S.seasons[r.season];
   const fl = r.flags
-    ? `<span class="num" title="${esc(flagText(r.flags))}">${r.flags.flagged}<span class="dim"> / ${r.flags.total}</span></span>`
+    ? `<span class="num x-only" title="${esc(flagText(r.flags))}">${r.flags.flagged}<span class="dim"> / ${r.flags.total}</span></span><span class="s-only" title="${esc(flagText(r.flags))}">${r.flags.flagged ? `${Math.max(1, Math.round(100 * r.flags.flagged / r.flags.total))}% of patch` : 'none'}</span>`
     : `<span class="dim" title="${r.status === 'failed' ? 'The cutout could not be downloaded' : 'Loads when the row is on screen'}">—</span>`;
   const st = r.status === 'failed' ? `<button class="linkbtn" data-act="retry">Failed · Retry</button>` : `<span class="st st-${r.status}">${STATUS[r.status]}</span>`;
   const main = `<tr class="arow${sel ? ' sel' : ''}" data-uri="${esc(r.uri)}" tabindex="0" title="Open this image in the viewer">
     <td class="c-x"><button class="key xbtn" data-act="expand" aria-expanded="${open}" aria-label="Details for image ${r.n}">${open ? '▾' : '▸'}</button></td>
     <td class="c-th"><canvas class="athumb${r.status === 'loaded' ? '' : ' empty'}" width="50" height="50" aria-label="Image ${r.n} thumbnail"></canvas></td>
     <td class="r num">${r.n}</td>
-    <td class="num">${r.date}</td>
-    <td class="num">${r.time}</td>
+    <td class="num"><span class="x-only">${r.date}</span><span class="s-only">${plainDay(r.date)}</span></td>
+    <td class="num x-only">${r.time}</td>
     <td>${s ? esc(s.label) : '—'}</td>
-    <td class="r num">D${r.detector}</td>
+    <td class="r num x-only">D${r.detector}</td>
     <td>${wlCell(r)}</td>
-    <td class="r num">${r.mjd.toFixed(4)}</td>
-    <td class="num">${esc(r.obsid)}</td>
-    <td>${r.release.toUpperCase()}</td>
+    <td class="r num x-only">${r.mjd.toFixed(4)}</td>
+    <td class="num x-only">${esc(r.obsid)}</td>
+    <td class="x-only">${r.release.toUpperCase()}</td>
     <td class="r">${fl}</td>
     <td>${st}</td>
     <td class="links"><a href="${esc(r.irsaUrl)}" target="_blank" rel="noopener" title="${esc(r.irsaUrl)}">FITS ↗</a><a href="${esc(targetViewerUrl(S.target, r.mjd))}" title="Play in Star Shift">Play</a></td>
@@ -181,10 +193,11 @@ function detailHtml(r) {
   const names = f ? Object.entries(f.byName).sort((a, b) => b[1] - a[1]).map(([n, c]) => `<span class="num nm">${esc(n)} ${c}</span>`).join(' ') : '';
   return `<tr class="drow"><td></td><td colspan="13"><div class="detail">
     <div><h3>Flagged pixels <span class="tag obs">OBSERVED</span></h3>
-      ${f ? `<p class="num">${f.flagged} of ${f.total} pixels in the 25×25 patch carry a problem flag (a pixel can have several).</p><ul class="kinds">${kinds}</ul><p class="names">${names || '<span class="dim">No flag bits set.</span>'}</p>`
+      ${f ? `<p class="num">${f.flagged} of ${f.total} pixels in the 25×25 patch carry a problem flag (a pixel can have several).</p><ul class="kinds">${kinds}</ul><p class="names x-only">${names || '<span class="dim">No flag bits set.</span>'}</p>`
     : r.status === 'failed' ? '<p>— The cutout could not be downloaded. <button class="linkbtn" data-act="retry">Retry</button></p>' : '<p class="dim">— Loading the cutout…</p>'}</div>
-    <div><h3>File</h3><p class="num url">${esc(r.irsaUrl)}</p>
-      <p class="num dim">MJD ${r.mjd.toFixed(6)} – ${r.mjdEnd?.toFixed(6) ?? '—'} · ${esc(r.iso)}</p>
+    <div><h3>File</h3><p class="num url x-only">${esc(r.irsaUrl)}</p>
+      <p class="s-only">Taken ${plainDay(r.date)}. The FITS key downloads the full image.</p>
+      <p class="num dim x-only">MJD ${r.mjd.toFixed(6)} – ${r.mjdEnd?.toFixed(6) ?? '—'} · ${esc(r.iso)}</p>
       <p><button class="key" data-act="flags">Check flags</button> <a class="key" href="${esc(targetViewerUrl(S.target, r.mjd))}">Play in Star Shift</a></p></div>
   </div></td></tr>`;
 }
