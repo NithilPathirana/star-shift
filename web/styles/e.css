@@ -508,6 +508,7 @@ html[data-motion=full] .rk .bob{animation:bob 1.6s ease-in-out infinite alternat
 .ai-credit{font-size:.75rem;line-height:1.4;color:var(--muted)}
 .dock-ai{display:none;flex-basis:100%;margin:0}
 @media (max-width:699px){.dock-ai{display:block}}
+.dock-ai.dock-ai-all{display:block} /* Tonight: the dock line on every width; its side panel scrolls, so a credit there was out of sight on desktop (Submission Check) */
 /* "Where to look" line (Master item 3): plain words above the numbers. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
 .cd-look{margin:10px 0 12px;padding:10px 12px;border-radius:12px;background:rgba(255,252,247,.55);border:1px solid var(--edge)}
 #vLook .cd-look{margin:10px 0 4px}
