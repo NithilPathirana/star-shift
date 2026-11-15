@@ -28,7 +28,7 @@ test('steps: titles are at most five words, bodies one or two sentences (flags: 
   }
   assert.match(INTRO.body, /^Every six months, NASA's SPHEREx photographs the whole sky\./);
   const flags = STEPS.find(s => s.id === 'flags');
-  assert.equal(flags.body, 'Hatched squares have no data. Outlines and small marks are pixels the archive flagged. FLAGS shows or hides them, and the arrow beside it opens the legend.');
+  assert.equal(flags.body, 'Dark flat squares have no data; outlines and small marks are pixels the archive flagged. FLAGS shows or hides them, and the arrow beside it opens the legend.');
   const spot = STEPS.find(s => s.id === 'spot');
   assert.equal(spot.title, 'Spot a mover');
   assert.match(spot.body, /^Your turn: blink a patch, click anything that moves/);

@@ -41,7 +41,7 @@ export const STEPS = [
   { id: 'flags', scene: 'viewer', targets: ['.flags-split'], prefer: ['above', 'left'],
     title: 'Flags mark doubtful pixels',
     // three short sentences by the lead's wording (Sat night review); the only step allowed three
-    body: 'Hatched squares have no data. Outlines and small marks are pixels the archive flagged. FLAGS shows or hides them, and the arrow beside it opens the legend.' },
+    body: 'Dark flat squares have no data; outlines and small marks are pixels the archive flagged. FLAGS shows or hides them, and the arrow beside it opens the legend.' },
   { id: 'bands', scene: 'viewer', targets: ['#bandTool'], prefer: ['right', 'above', 'below'],
     title: 'Six colour bands',
     body: 'SPHEREx sees from 0.74 to 5.01 µm, split here into six colour bands that tint the timeline and the wavelength chip. Open this key to rename, recolour or resize them.' },

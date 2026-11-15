@@ -52,3 +52,4 @@ if (more && pagesBtn && pagesPop) {
   new MutationObserver(() => more.setAttribute('aria-expanded', pagesBtn.getAttribute('aria-expanded') || 'false'))
     .observe(pagesBtn, { attributes: true, attributeFilter: ['aria-expanded'] });
 }
+import('./tour/boot.js').catch(() => {}); // guided tour on every page (Tour this page, full tour, resume)

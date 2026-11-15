@@ -13,6 +13,7 @@ import {
   X_RANGE, FEATURES, APERTURES, CUTOUT_DEG, PIXEL_ARCSEC, pickImages, aperturePhotometry, pixelSolidAngle, toMilliJy,
   apertureFlagged, whyNoPhotometry, niceTicks, logTicks, yRange, fmtValue, pointsToCSV,
 } from './logic.js';
+import { isExpert, onExpert } from '../expert.js'; // Simple / Expert (Master item 5)
 import { base, initShell, resolve, listPosition, targetLine, download, slug, esc, cutoutCenter } from '../archive/shell.js';
 
 const $ = (id) => document.getElementById(id);
@@ -39,7 +40,8 @@ async function load(q) {
     const tl = targetLine(t);
     $('tName').textContent = tl.name; $('tCoords').textContent = tl.coords;
     // motion and "Position now" as separate parts, so a phone can put each on its own line (pages.css .sp-tl)
-    $('tPm').innerHTML = tl.pm.split(' · ').filter(Boolean).map(x => `<span class="sp-sep" aria-hidden="true"> · </span><span>${esc(x)}</span>`).join('');
+    $('tPm').innerHTML = tl.pm.split(' · ').filter(Boolean).map(x => `<span class="sp-sep x-only" aria-hidden="true"> · </span><span class="x-only">${esc(x)}</span>`).join('')
+      + (tl.pm ? `<span class="s-only">moves about ${(Math.hypot(t.pmra, t.pmdec) / 1000).toFixed(1)}″ a year</span>` : '');
     $('tName').parentElement.classList.add('sp-tl');
     document.title = `${tl.name} · Spectral Explorer · Star Shift`;
     setStatus('Asking IRSA which SPHEREx images cover this star…');
@@ -149,8 +151,9 @@ function progress() {
 
 function caption() {
   const a = S.aperture;
-  return `<span class="tag comp">COMPUTED</span>Each dot: the sum of the pixel values (MJy/sr) whose centres lie within ${a.rAp} px (${(a.rAp * PIXEL_ARCSEC).toFixed(1)}″) of the star's position on that image's date, minus the median of a ${a.rIn}–${a.rOut} px background ring, times each pixel's solid angle (giving mJy). ` +
-    `Pixels the archive marks as bad are left out and the sum is scaled up for them. Not done: no aperture (PSF) correction, no colour or cross-image calibration; error bars are not drawn (background scatter only, in the CSV). Wavelength = the image's own value at the star's pixel.`;
+  const simple = `<span class="s-only">Each dot is the star's light in one image: the light within ${(a.rAp * PIXEL_ARCSEC).toFixed(0)}″ of the star, with the sky glow around it taken off. A quick look, not calibrated: dots from different images can disagree a little.</span>`;
+  return `<span class="tag comp">COMPUTED</span>${simple}<span class="x-only">Each dot: the sum of the pixel values (MJy/sr) whose centres lie within ${a.rAp} px (${(a.rAp * PIXEL_ARCSEC).toFixed(1)}″) of the star's position on that image's date, minus the median of a ${a.rIn}–${a.rOut} px background ring, times each pixel's solid angle (giving mJy). ` +
+    `Pixels the archive marks as bad are left out and the sum is scaled up for them. Not done: no aperture (PSF) correction, no colour or cross-image calibration; error bars are not drawn (background scatter only, in the CSV). Wavelength = the image's own value at the star's pixel.</span>`;
 }
 
 // Key directly under the chart: filled / hollow and one shape per season.
@@ -272,8 +275,8 @@ function draw() {
   s += `<text x="${m.l + pw / 2}" y="${H - 6}" fill="${muted}" text-anchor="middle">Wavelength (µm)</text>`;
   s += narrow ? `<text x="4" y="${m.t - 12}" fill="${muted}">mJy${S.log ? ' (log)' : ''}</text>`
     : `<text transform="translate(16 ${m.t + ph / 2}) rotate(-90)" fill="${muted}" text-anchor="middle">Flux density (mJy)${S.log ? ', log' : ''}</text>`;
-  // detector spans under the axis (they overlap a little at the edges)
-  for (const d of DETECTORS) {
+  // detector spans under the axis (they overlap a little at the edges); Expert only
+  for (const d of isExpert() ? DETECTORS : []) {
     const y = m.t + ph + 26 + (d.d % 2 ? 0 : 7);
     s += `<line x1="${X(d.min)}" x2="${X(Math.min(d.max, X_RANGE.max))}" y1="${y}" y2="${y}" stroke="${muted}" stroke-width="3" opacity=".55"/>`;
     s += `<text x="${X(d.min) + 2}" y="${y - 3}" fill="${muted}" font-size="9">D${d.d}</text>`;
@@ -307,7 +310,10 @@ function showTip(h, ev) {
   const tip = $('tip');
   if (!h) { tip.hidden = true; return; }
   const p = h.p, s = S.seasons[p.season];
-  tip.innerHTML = `<b>${fmtValue(p.mJy)} mJy</b> ± ${fmtValue(p.errMJy)} (background)<br>λ ${p.um.toFixed(3)} µm · D${p.detector} · ${esc(p.band ?? '')}<br>${p.date} ${p.time} UTC${s ? ` · ${esc(s.label)}` : ''}<br>` +
+  const plainDay = new Date(`${p.date}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  tip.innerHTML = (isExpert()
+    ? `<b>${fmtValue(p.mJy)} mJy</b> ± ${fmtValue(p.errMJy)} (background)<br>λ ${p.um.toFixed(3)} µm · D${p.detector} · ${esc(p.band ?? '')}<br>${p.date} ${p.time} UTC${s ? ` · ${esc(s.label)}` : ''}<br>`
+    : `<b>${fmtValue(p.mJy)} mJy</b><br>${p.um.toFixed(2)} µm · ${esc(p.band ?? '')}<br>${plainDay}<br>`) +
     (p.flagged ? `Flagged in aperture: ${p.kinds.map(k => ({ cosmic: 'cosmic ray', overflow: 'overflow', scatter: 'scattered light', other: 'other' }[k])).join(', ')}<br>` : '') +
     `<span style="color:#B5A898">Click to open this image in the viewer</span>`;
   tip.hidden = false;
@@ -341,5 +347,6 @@ $('plot').addEventListener('click', (ev) => {
 new ResizeObserver(() => scheduleDraw()).observe($('plot'));
 
 renderApertures();
+onExpert(() => scheduleDraw()); // detector spans come and go with Expert
 let currentQ = initShell((q) => { currentQ = q; load(q); });
 load(currentQ);
