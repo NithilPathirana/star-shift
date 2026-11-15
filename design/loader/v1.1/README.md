@@ -93,3 +93,9 @@ Nothing else changes: `set()`, `add()`, `slow()` and `destroy()` are called exac
 
 ## Rebuilding
 `_build/build_rocket_v4.py` (`blender -b --factory-startup -P build_rocket_v4.py -- full`, then `-- exit`; about 40 minutes on the Scar while other work runs) renders `frames_v4/` (240) and `frames_exit_v4/` (45); frames already on disk are kept. `python _build/encode.py` then writes the files above into this folder.
+
+## Scene v6 (15 Nov 2026, 16:03 Sri Lanka time)
+Asked for by Nithil: no Earth, deep space, far more detail on the rocket and the rider, a rider pose that reads as riding.
+- Scene script: `_build/build_rocket_v6.py` (Blender 5.2, Cycles). Raw frames: `_build/frames_v6` (240) and `_build/frames_exit_v6` (45); never publish these, they carry no mark.
+- Encode: `_build/encode.py` (no version argument = v6). The mark is now white on a dark pill, 22 px tall at 1080 and 15 px at 720, on every frame.
+- Checked: 12 files match the old ones in codec, size and frame count; 42 decoded corners all show the mark (`_build/mark-check-sheet.png`); `watermarked-assets.sha256` rewritten and verified.
