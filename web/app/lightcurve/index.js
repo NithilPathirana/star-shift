@@ -6,7 +6,7 @@
 // stage; click or tap a point to jump to that image; arrow keys step between plotted images.
 // The numbers come from logic.js (same method as the Proof page).
 
-import { measure, lightcurve, message, skippedText, fmtMag, CAPTION, lightOnSky, pickSource, pickSaved, notHereText, saturatedNote, BLEND_RADIUS } from './logic.js';
+import { measure, lightcurve, message, skippedText, fmtMag, CAPTION, lightOnSky, pickSource, pickSaved, notHereText, saturatedNote, BLEND_RADIUS, AP_ARCSEC } from './logic.js';
 import { gaiaCone } from '../../core/resolve.js';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -20,8 +20,9 @@ const seasonLbl = (s) => { // 'Sep 25', 'Feb–Mar 26', 'Dec 25–Jan 26'
 const SHAPE = { short: 'circle', long: 'square' };
 const emptyWhy = (g) => (!g.total ? 'no images at these wavelengths'
   : g.absent ? 'not detected here'
-  : g.masked === g.total ? 'centre masked in every image'
-  : g.masked ? `centre masked in ${g.masked} of ${g.total} images` : 'no first-season match');
+  : g.masked === g.total ? `a masked pixel within ${AP_ARCSEC}″ in every image`
+  : g.masked ? `a masked pixel within ${AP_ARCSEC}″ in ${g.masked} of ${g.total} images` : 'no first-season match');
+const WHERE = { short: 'below 3.8 µm', long: 'at 3.8–5.0 µm' }; // the group's range, for "WISE 0855 is too faint below 3.8 µm"
 const fmtJy = (v) => (v == null ? '—' : v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2));
 
 export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick }) {
@@ -86,7 +87,7 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick })
     }
     sum.innerHTML = lc.groups.map(g => {
       const v = g.ok ? `<b>${fmtMag(g.dmag)} ± ${g.dmagErr.toFixed(2)} mag</b> ${g.dmag > 0 ? 'fainter' : 'brighter'}` : g.points.length ? 'too few images to compare seasons'
-        : g.absent ? esc(notHereText(g.detect, g.sky, g.src)) : emptyWhy(g);
+        : g.absent ? esc(notHereText(g.detect, g.sky, g.src, S.name, WHERE[g.id])) : emptyWhy(g);
       return `<div class="lc-row"><span class="lc-k"><i class="lc-mk lc-${SHAPE[g.id]}" aria-hidden="true"></i>${esc(g.name)}</span><span class="lc-v num">${v}${g.points.length ? `<small>${g.ok ? 'last season vs first · ' : ''}${g.points.length} image${g.points.length === 1 ? '' : 's'}</small>` : ''}</span></div>`;
     }).join('') + `<p class="lc-skip num">${esc(skippedText(lc))}</p>`;
     draw();
@@ -196,7 +197,7 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick })
   }
   function skipWhy(idx) {
     const r = S.rows[idx]; if (!r) return '';
-    if (r.masked) return 'not plotted: centre pixels masked';
+    if (r.masked) return `not plotted: a masked pixel within ${AP_ARCSEC}″`;
     if (!(r.flux > 0)) return 'not plotted: no light above the background';
     return 'not plotted: no first-season image at this wavelength';
   }

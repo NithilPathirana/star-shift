@@ -134,7 +134,8 @@ function build() {
   live = card.querySelector('#tourLive');
   card.querySelector('#tourSkip').onclick = () => end('skip');
   card.querySelector('#tourBack').onclick = () => go(-1);
-  card.querySelector('#tourNext').onclick = () => go(1);
+  // a click meant for the card before (e.g. the loading card turning into step 2) must not skip the new card (full test G1)
+  card.querySelector('#tourNext').onclick = () => { if (performance.now() - (run?.paintedAt || 0) > 400) go(1); };
   card.querySelector('#tourAlt').onclick = () => run?.altAction?.();
 }
 // a modal dialog (the Lab notebook) makes the rest of the page inert: the tour moves inside it while it is open
@@ -235,6 +236,7 @@ function paint(title, body, list, counter) {
   hole.classList.toggle('moving', !reduce());
   clearTimeout(run.moveT); run.moveT = setTimeout(() => hole.classList.remove('moving'), 260);
   card.classList.remove('in'); void card.offsetWidth; card.classList.add('in');
+  run.paintedAt = performance.now();
   run.last = null; run.scrolledFor = null;
   update();
   const n = card.querySelector('#tourNext');

@@ -65,6 +65,9 @@ test('caption numbers come from the fit and the stack dates (1.0 yr apart -> 10.
   const c = storyCaption("Barnard's Star", { ok: true, total: 10323, significant: true }, 60950, 60950 + 365.25);
   assert.equal(c.text, "Barnard's Star moved 10.3″ in 1.0 years, about 1.7 pixels.");
   assert.equal(storyCaption('X', { ok: true, total: 500, significant: false }, 1, 400), null);
+  // a noisy fit (WISE 0855, 6.53 ± 1.98″/yr): rounded, with its ±, and one pixel in the singular
+  assert.equal(storyCaption('WISE 0855', { ok: true, total: 6530, totalErr: 1980, significant: true }, 60950, 60950 + 365.25, 8.15).text, 'WISE 0855 moved about 1 pixel in 1.0 years: about 6.5 ± 2.0″ a year; catalogue 8.2″.');
+  assert.equal(storyCaption('X', { ok: true, total: 6150, totalErr: 100, significant: true }, 60950, 60950 + 365.25).text, 'X moved 6.2″ in 1.0 years, about 1 pixel.');
   assert.equal(storyCaption('X', { ok: false }, 1, 400), null);
 });
 
@@ -72,4 +75,6 @@ test('share link keeps target, scene, view mode and image date', () => {
   assert.equal(shareParams({ q: "Barnard's Star", scene: 'viewer', mode: 'blink', mjd: 61000.123 }).toString(), 'q=Barnard%27s+Star&scene=viewer&view=blink');
   assert.equal(shareParams({ ra: 10, dec: -5, scene: 'viewer', mode: 'play', mjd: 61000.12346 }).toString(), 'ra=10.00000&dec=-5.00000&scene=viewer&mjd=61000.1235');
   assert.equal(shareParams({ q: 'WISE 0855', scene: 'map' }).toString(), 'q=WISE+0855');
+  assert.equal(shareParams({ q: "Barnard's Star", scene: 'viewer', mode: 'play', mjd: 61000.5, band: 'all' }).toString(), 'q=Barnard%27s+Star&scene=viewer&mjd=61000.5000&band=all');
+  assert.equal(shareParams({ q: 'WISE 0855', scene: 'map', band: 'd56' }).toString(), 'q=WISE+0855');
 });

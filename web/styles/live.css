@@ -247,7 +247,7 @@ html[data-motion=reduce] .fl-sec summary::before { transition: none; }
   .scalebar{top:auto;bottom:62px;right:12px}
   #stage:has(#ghostBar:not([hidden])) .scalebar{bottom:154px}
   .chip{max-width:calc(100% - 24px);gap:6px;padding:0 10px;font-size:.75rem}
-  .mode-blink .chip{max-width:calc(100% - 150px)}
+  .mode-blink .chip{max-width:calc(100% - 80px)} /* the Clean blink key is a 44 px icon beside it (design review 3, item 2) */
   /* the star and "Other source" hotspots: a 44 px touch area centred on the drawn one (Design review round 2) */
   .hit::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);transform:translate(-50%,-50%);border-radius:50%}
 }
@@ -349,7 +349,10 @@ html[data-motion=full] .tele-wait { animation: tele-pulse 1.4s ease-in-out infin
 .stage.clean-blink .chip, .stage.clean-blink .flag, .stage.clean-blink .lgd, .stage.clean-blink .hit,
 .stage.clean-blink .gh-off, .stage.clean-blink .gh-bar, .stage.clean-blink .cap { display: none !important; }
 /* phone: the tool rail runs along the stage bottom, so the key sits top-right under the season pill */
-@media (max-width: 699px) { .cb-key { height: 44px; padding: 0 16px; left: auto; right: 12px; top: 52px; bottom: auto; transform: none; } }
+@media (max-width: 699px) { .cb-key { height: 44px; padding: 0 16px; left: auto; right: 12px; top: 52px; bottom: auto; transform: none; }
+  /* design review 3, item 2: an icon-only 44 × 44 key in the chip row, off the image's corner; the name stays for screen readers */
+  #cleanKey { width: 44px; padding: 0; justify-content: center; top: 4px; }
+  #cleanKey .cb-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
 
 /* bands + notebook */
 /* AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
@@ -483,6 +486,12 @@ html[data-motion=reduce] .state.loader2 { transition: none; }
 .rp-n { color: var(--stage-text); font-variant-numeric: tabular-nums; }
 .rp-res .brk { display: none; }
 .rp-res .rp-row { flex-basis: 100%; height: 0; } /* the direction check starts its own line */
+.stage.pre-blink .screens, .stage.pre-blink .chip { visibility: hidden; } /* ui.js preBlink: a preset's first picture is its Blink */
+.rp.two .rp-res { max-width: 580px; } /* two rows: no wider than they need, clear of the scale bar (design review 3, item 1) */
+.rp-res > .rp-x { display: contents; } /* the Simple / Expert twins (judging panel A2) lay out as the plate's own items */
+.rp-res > .s-only > span:not([class]) { font: 500 .8125rem/1.4 var(--font-ui); }
+.rp-res .nw { white-space: nowrap; } /* a "·" moves to the next line with its tag, never dangles at a line end */
+.nb-plus.nb-pos { width: auto; height: 28px; margin-top: 10px; padding: 0 10px; border-radius: 999px; white-space: nowrap; font-size: .75rem; } /* "+ Notebook": no orphan "+" (A11) */
 .rp.measuring .rp-res { background-image: linear-gradient(90deg, rgba(227,168,107,.22) var(--p, 0%), transparent var(--p, 0%)); }
 .rp-res.swap { animation: rp-swap 160ms var(--ease-out); }
 @keyframes rp-swap { from { opacity: 0; } }
@@ -501,6 +510,7 @@ html[data-motion=reduce] .rp-res.swap { animation: none; }
   /* room under the image for the plate, the same in every mode so the image never resizes */
   .app[data-scene=viewer] .screens { bottom: 72px; }
   .app[data-scene=viewer] #stage:has(.rp.two) .screens { bottom: 92px; } /* the direction line (a7) adds a row */
+  html:not([data-expert=on]) .app[data-scene=viewer] #stage:has(.rp.two) .screens { bottom: 112px; } /* Simple's sentence (A2) can wrap once more */
   /* the Clean blink key leaves the bottom centre to the plate */
   .cb-key { left: auto; right: 14px; top: 11px; bottom: auto; transform: none; }
 }

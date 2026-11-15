@@ -61,7 +61,7 @@ test('images with masked centre pixels are skipped and counted', () => {
   assert.equal(lc.masked, 1);
   assert.equal(lc.plotted, 35);
   assert.ok(!lc.groups.some(g => g.points.some(p => p.idx === 3)));
-  assert.match(skippedText(lc), /^35 of 36 images plotted · 1 skipped: centre pixels masked/);
+  assert.match(skippedText(lc), /^35 of 36 images plotted · 1 skipped: a masked pixel within 15″/);
 });
 
 test('only same-detector, same-wavelength first-season images are references', () => {
@@ -77,7 +77,7 @@ test('a star saturated in every image says so plainly (R Draconis)', () => {
   assert.equal(lc.status, 'saturated');
   assert.equal(lc.plotted, 0);
   assert.equal(message(lc, 'R Draconis'), 'R Draconis is saturated in every SPHEREx image here, so its brightness cannot be measured.');
-  assert.match(skippedText(lc), /^0 of 36 images plotted · 36 skipped: centre pixels masked/);
+  assert.match(skippedText(lc), /^0 of 36 images plotted · 36 skipped: a masked pixel within 15″/);
 });
 
 test('a9: the saturated dead end says why, with the counts from the data, and where to go', () => {
@@ -108,7 +108,8 @@ test('a3: light centred on another source is "not detected here", and only that 
   const rows = [{ id: 'far', ra: lra + 10 / 3600, dec: ldec, g: 12 }, { id: 'bg', ra: lra + 0.5 / 3600, dec: ldec, g: 16.31 }];
   const src = pickSource(rows, sky);
   assert.equal(src.id, 'bg');
-  assert.match(notHereText(short.detect, sky, src), /^Not detected here: background star \(Gaia G 16\.3, 7\.\d″ away\)$/);
+  assert.match(notHereText(short.detect, sky, src), /^Not detected here: the light is a background star \(Gaia G 16\.3, 7\.\d″ away\)$/);
+  assert.match(notHereText(short.detect, sky, src, 'WISE 0855', 'below 3.8 µm'), /^Not detected here: the light is a background star \(Gaia G 16\.3, 7\.\d″ away\); WISE 0855 is too faint below 3\.8 µm\. That star sits inside the 15″ measuring circle at every wavelength, so the 3\.8–5\.0 µm light is WISE 0855 blended with some of that star's light\.$/);
   assert.equal(pickSource([rows[0]], sky), null);
   // Gaia not answering: the Proof page's saved cone (distances from the target only)
   assert.deepEqual(pickSaved([{ id: 'a', g: 16.31, sepArcsec: 7.8 }, { id: 'b', g: 14, sepArcsec: 14.6 }], sky), { id: 'a', g: 16.31, sepArcsec: 7.8 });

@@ -243,7 +243,7 @@ export function createContam(ctx) {
       <span class="fl-n num">${val(k)}</span><button class="switch well" role="switch" aria-checked="${!!S.show[k.id]}" data-show="${k.id}" aria-label="Show ${esc(k.name)} marks"><i></i></button></div>`).join('');
     const nAff = id => V.FA.filter(x => frameHas(summary(x), id)).length;
     const hk = HIDE_KINDS.filter(k => V.FA.some(f => k.frame ? (f.raw.glow?.known || f.raw.glow?.nearHe) : bitsNamed(f.raw.flagNames, k.bits)));
-    const hid = V.FA.filter(f => !V.F.includes(f)), sat = V.FA.filter(f => summary(f).saturated).length;
+    const hid = V.FA.filter(f => !V.FK.includes(f)), sat = V.FA.filter(f => summary(f).saturated).length; // V.FK: the flag filter alone (V.F also leaves out other bands while one is held)
     const d = f => R.fmtDate(f.date);
     const pop = $('flagsPop'), h3 = pop.querySelector('h3'), foot = pop.querySelector('.foot');
     if (h3) h3.hidden = true; // the section title lives in the <summary> below

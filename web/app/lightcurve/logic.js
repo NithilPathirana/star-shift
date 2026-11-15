@@ -37,6 +37,8 @@ export const GROUPS = [
   { id: 'long', name: '3.8–5.0 µm', long: '3.8–5.0 µm (detectors 5–6)', dets: [5, 6] },
 ];
 export const CAPTION = 'Aperture photometry on single images, not calibrated.';
+// The aperture's radius on the sky, in the Proof page's words: "a masked pixel within 15″" (2.5 px × 6.15″)
+export const AP_ARCSEC = Math.round(APERTURE * GRID_ARCSEC);
 
 // Solid angle of a square pixel of `arcsec` on a side, in steradians.
 export const pixelSr = (arcsec) => (arcsec * Math.PI / 648000) ** 2;
@@ -119,9 +121,12 @@ export function pickSaved(neighbours, sky, radius = BLEND_RADIUS) {
 }
 
 // The summary row for a group whose target is not detected (wording checked by the tests).
-export function notHereText(d, sky, src) {
+// name + where (e.g. 'WISE 0855', 'below 3.8 µm'): say whose light it is not (Idea Generation's wording).
+export function notHereText(d, sky, src, name, where) {
   if (d?.state === 'faint') return 'Not detected here: no light above the noise at its position';
-  if (src) return `Not detected here: background star (Gaia G ${src.g.toFixed(1)}, ${src.sepArcsec.toFixed(1)}″ away)`;
+  const inside = src && name && src.sepArcsec <= APERTURE * GRID_ARCSEC // the same star blends into every band (Master's honesty fix)
+    ? ` That star sits inside the ${AP_ARCSEC}″ measuring circle at every wavelength, so the 3.8–5.0 µm light is ${name} blended with some of that star's light.` : '';
+  if (src) return `Not detected here: the light is a background star (Gaia G ${src.g.toFixed(1)}, ${src.sepArcsec.toFixed(1)}″ away)${name && where ? `; ${name} is too faint ${where}.` : ''}${inside}`;
   return `Not detected here: the light in the aperture is centred ${sky ? `${sky.offArcsec.toFixed(1)}″` : `${(d.offPx * GRID_ARCSEC).toFixed(0)}″`} away, on another source`;
 }
 
@@ -186,7 +191,7 @@ export function message(lc, name = 'This object') {
 export function skippedText(lc) {
   const noMatch = lc.groups.reduce((a, g) => a + g.noMatch, 0), faint = lc.groups.reduce((a, g) => a + g.faint, 0);
   const notHere = lc.groups.reduce((a, g) => a + (g.notHere || 0), 0);
-  const parts = [`${lc.masked} skipped: centre pixels masked`];
+  const parts = [`${lc.masked} skipped: a masked pixel within ${AP_ARCSEC}″`];
   if (noMatch) parts.push(`${noMatch} with no first-season image at the same wavelength`);
   if (faint) parts.push(`${faint} with no light above the background`);
   if (notHere) parts.push(`${notHere} where the light is not the target's`);

@@ -146,7 +146,16 @@ function placeOffer() {
   if (hits(r, stageRect())) return false; // narrow windows: no right panel to lie on, so no card at all
   const nx = Math.round(kr.left + kr.width / 2 - r.left - 5);
   offer.style.setProperty('--notch-x', nx + 'px'); offer.style.transformOrigin = `${nx + 5}px 0`;
+  clearName(r);
   return true;
+}
+// The card hangs over the details panel's top: move the panel's heading (the target's name) down under
+// it while it is there, so the name is never covered (full test map-5 / cross-2). pad = null: put it back.
+function clearName(r) {
+  const h = document.querySelector('#cdPanel .cd-head'), n = $('cdName'); if (!h || !n) return;
+  const cur = parseFloat(h.style.paddingTop) || 0, nr = n.getBoundingClientRect();
+  const need = r && nr.width > 0 && r.left < nr.right && nr.left < r.right ? Math.max(0, Math.ceil(r.bottom + 8 - (nr.top - cur))) : 0;
+  h.style.transition = 'padding-top 200ms'; h.style.paddingTop = need ? need + 'px' : '';
 }
 const replaceOffer = () => { if (offer && !offer.hidden && !placeOffer()) leaveOffer(false); };
 // the offer never sits over an open sheet, popover or dialog: it steps aside until it closes
@@ -180,7 +189,7 @@ function leaveOffer(chose) {
   remember(getStore(), 'dismissed'); // seen: never offered again (starting a tour stores 'started' over it)
   clearInterval(offerIv); clearTimeout(offerT);
   removeEventListener('resize', replaceOffer); removeEventListener('click', onAppAct, true); removeEventListener('submit', onAppAct, true);
-  offer.classList.remove('in');
+  offer.classList.remove('in'); clearName(null);
   if (!chose) pulseKey();
   setTimeout(() => { offer.hidden = true; }, 150);
 }

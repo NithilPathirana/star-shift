@@ -295,6 +295,8 @@ kbd{font-family:var(--font-num);font-size:.75rem;min-width:24px;display:inline-g
 .keys{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;font-size:.8125rem;align-items:center}
 .toast{position:fixed;left:50%;bottom:calc(var(--gap) + 110px);z-index:40;padding:10px 16px;border-radius:12px;font-size:.8125rem;transform:translate(-50%,8px);opacity:0;transition:opacity 200ms var(--ease-out),transform 300ms var(--spring);pointer-events:none}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+/* phone: toasts at the bottom edge, off the result plate (design review 3, item 2b) */
+@media (max-width:699px){.toast{bottom:12px;max-width:calc(100% - 24px)}}
 .scrim{position:fixed;inset:0;z-index:19;background:rgba(40,30,22,.25);opacity:0;pointer-events:none;transition:opacity var(--t-panel) var(--ease-out)}
 .scrim.on{opacity:1;pointer-events:auto}
 

@@ -78,10 +78,18 @@ export function resultState({ mo, measurable, verdict, catYr }) {
 // The Blink caption: "{name} moved {d}″ in {t} years, about {px} pixels." from the measured motion
 // (mas/yr) over the time between the first and last season stacks (their mid-dates, MJD).
 // Only for a significant, measurable motion; null otherwise (the chip alone speaks).
-export function storyCaption(name, mo, mjdA, mjdB) {
+// A noisy fit (error over 15% of the value) is not overstated: it reads as a measurement with its ±
+// (judging panel A11): "WISE 0855 moved about 1 pixel in 1.0 years: about 6.5 ± 2.0″ a year; catalogue 8.2″."
+export function storyCaption(name, mo, mjdA, mjdB, catYr) {
   if (!mo?.ok || mo.significant === false || !Number.isFinite(mjdA) || !Number.isFinite(mjdB) || mjdB <= mjdA) return null;
   const t = (mjdB - mjdA) / 365.25, d = mo.total / 1000 * t, px = d / PIXEL_ARCSEC;
-  return { t, d, px, text: `${name} moved ${d.toFixed(1)}″ in ${t.toFixed(1)} years, about ${px.toFixed(1)} pixels.` };
+  const noisy = Number.isFinite(mo.totalErr) && mo.totalErr > 0.15 * mo.total;
+  const pxS = noisy ? (px < 0.5 ? 'less than a' : String(Math.round(px))) : px.toFixed(1), one = pxS === '1' || pxS === '1.0' || pxS === 'less than a';
+  const pxTxt = `${pxS === '1.0' ? '1' : pxS} pixel${one ? '' : 's'}`;
+  const text = noisy
+    ? `${name} moved about ${pxTxt} in ${t.toFixed(1)} years: about ${(mo.total / 1000).toFixed(1)} ± ${(mo.totalErr / 1000).toFixed(1)}″ a year${Number.isFinite(catYr) ? `; catalogue ${catYr.toFixed(1)}″` : ''}.`
+    : `${name} moved ${d.toFixed(1)}″ in ${t.toFixed(1)} years, about ${pxTxt}.`;
+  return { t, d, px, noisy, text };
 }
 
 // b2: can a preset's Blink start before every image is in? Yes once the season stacks of the images so
@@ -103,15 +111,18 @@ export function heldFitText({ shown, label, mo, heldDets, name }) {
     line: `The motion fit uses ${mo.frames} of these ${shown} images, the ones where ${name} is clearly detected.` };
 }
 
-// The share link: target (q, or ra + dec), scene, view mode and the image date.
-export function shareParams({ q, ra, dec, scene, mode, mjd }) {
+// The share link: target (q, or ra + dec), scene, view mode, the image date and, when it is not the
+// target's default, the held band (band=d56, or band=all for every band).
+export function shareParams({ q, ra, dec, scene, mode, mjd, band }) {
   const p = new URLSearchParams();
   if (q) p.set('q', q); else if (Number.isFinite(ra) && Number.isFinite(dec)) { p.set('ra', ra.toFixed(5)); p.set('dec', dec.toFixed(5)); }
   if (scene === 'viewer') {
     p.set('scene', 'viewer');
     if (mode && mode !== 'play') p.set('view', mode);
     if (Number.isFinite(mjd) && (!mode || mode === 'play')) p.set('mjd', mjd.toFixed(4));
+    if (band) p.set('band', band);
   }
   return p;
 }
 export const VIEW_MODES = ['play', 'compare', 'blink', 'telescopes'];
+export const groupById = id => BAND_GROUPS.find(g => g.id === id) || null;

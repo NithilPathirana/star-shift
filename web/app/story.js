@@ -44,6 +44,7 @@ function init() {
   layer?.addEventListener('pointerdown', e => { if (notStory(e)) leaveStory(); });
   layer?.addEventListener('wheel', e => { if (notStory(e)) leaveStory(); }, { passive: true });
   $('mapWrap')?.addEventListener('keydown', leaveStory);
+  $('tools')?.addEventListener('click', e => { if (e.target.closest?.('button')) leaveStory(); }); // zoom +/-/fit sit outside #mapLayer
   document.addEventListener('submit', e => { if (e.target.closest?.('form.search')) leaveStory(); }, true);
   $('q')?.addEventListener('focus', leaveStory); // typing a search: the story goes and Show is the copper key again
   document.addEventListener('click', e => { if (e.target.closest?.('.pick')) leaveStory(); }, true);
