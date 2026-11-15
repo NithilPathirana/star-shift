@@ -73,3 +73,10 @@ test('both pages call the shared functions (source check: ui.js needs a DOM, so 
   assert.match(pl, /starTonight\(sel, t\)\.st\.rts/); // the Rise and set panel uses the same numbers
   assert.match(pl, /propagate\(p\.target, 61360\)/);
 });
+
+test('tonight numbers do not depend on the second a page is opened (QA pass 2: 18:36/18:37/18:38)', async () => {
+  const { skyTonight } = await import('../web/app/sky.js');
+  const base = Date.parse('2026-11-15T09:30:00+05:30'), key = s => `${s.best.t.getTime()}|${s.best.alt.toFixed(3)}|${s.dark.start.getTime()}|${s.dark.end.getTime()}`;
+  const first = key(skyTonight(269.452, 4.6934, 6.9271, 79.8612, new Date(base)));
+  for (const off of [7, 31, 59, 75, 119]) assert.equal(key(skyTonight(269.452, 4.6934, 6.9271, 79.8612, new Date(base + off * 1000))), first, `opened ${off} s later`);
+});

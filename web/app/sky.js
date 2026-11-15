@@ -139,14 +139,17 @@ const DAY_MS = 86400000;
 // The dark window for "tonight": { start, end, inDark } or null (no dark sky in the next 24 h).
 export function darkWindow(lat, lon, now, stepMin = 2) {
   const step = stepMin * 60000, n = Math.round(1440 / stepMin), isDark = t => sunAlt(lat, lon, t) < DARK_SUN_ALT;
+  // samples sit on fixed clock marks (whole multiples of the step), not on "now + k steps", so two pages
+  // opened seconds apart get the same times (QA pass 2: 05:11 vs 05:13 for the same night)
+  const g0 = Math.floor(now.getTime() / step) * step;
   const inDark = isDark(now);
   let start = null;
-  if (inDark) { start = now; for (let k = 1; k <= n; k++) { const t = new Date(now.getTime() - k * step); if (!isDark(t)) break; start = t; } }
-  else for (let k = 1; k <= n; k++) { const t = new Date(now.getTime() + k * step); if (isDark(t)) { start = t; break; } }
+  if (inDark) { start = now; for (let k = 1; k <= n; k++) { const t = new Date(g0 - (k - 1) * step); if (!isDark(t)) break; start = t; } }
+  else for (let k = 1; k <= n; k++) { const t = new Date(g0 + k * step); if (isDark(t)) { start = t; break; } }
   if (!start) return null;
-  const from = inDark ? now : start;
+  const from = inDark ? now : start, f0 = Math.floor(from.getTime() / step) * step;
   let end = new Date(from.getTime() + DAY_MS); // polar night: a day of darkness
-  for (let k = 1; k <= n; k++) { const t = new Date(from.getTime() + k * step); if (!isDark(t)) { end = new Date(t.getTime() - step); break; } }
+  for (let k = 1; k <= n; k++) { const t = new Date(f0 + k * step); if (!isDark(t)) { end = new Date(t.getTime() - step); break; } }
   return { start, end, inDark };
 }
 // Everything both pages say about tonight, as numbers. ra/dec J2000 (catalogue), Dates in and out.
@@ -157,7 +160,7 @@ export function skyTonight(ra, dec, lat, lon, now, { stepMin = 2, wellAlt = WELL
   if (!dark || rts.always === 'down') return out;
   const from = dark.inDark ? now : dark.start, step = stepMin * 60000, alt = t => altAz(ra, dec, lat, lon, t).alt;
   let best = null, n = 0;
-  for (let ms = from.getTime(); ms <= dark.end.getTime(); ms += step) {
+  for (let ms = Math.ceil(from.getTime() / step) * step; ms <= dark.end.getTime(); ms += step) { // fixed clock marks (see darkWindow)
     const t = new Date(ms), a = alt(t);
     if (a >= wellAlt) n++;
     if (a > STD_HORIZON && (!best || a > best.alt)) best = { t, alt: a };
@@ -169,7 +172,7 @@ export function skyTonight(ra, dec, lat, lon, now, { stepMin = 2, wellAlt = WELL
   if (best) { best.az = altAz(ra, dec, lat, lon, best.t).az; out.best = best; out.wellPlaced = best.alt >= wellAlt; out.hoursWell = n * stepMin / 60; }
   else if (dark.inDark) { // up earlier in this dark period, set since?
     let last = null;
-    for (let ms = now.getTime() - step; ms >= dark.start.getTime(); ms -= step) { if (alt(new Date(ms)) > STD_HORIZON) { last = new Date(ms); break; } }
+    for (let ms = Math.floor(now.getTime() / step) * step; ms >= dark.start.getTime(); ms -= step) { if (alt(new Date(ms)) > STD_HORIZON) { last = new Date(ms); break; } }
     if (last) out.setEarlier = riseTransitSet(ra, dec, lat, lon, last, STD_HORIZON).set;
   }
   return out;
