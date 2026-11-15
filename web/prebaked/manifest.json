@@ -1,6 +1,6 @@
 {
  "about": "Star Shift prebaked answers for the five NASA demo targets (tools/export_prebaked.mjs; read by web/core/prebaked.js). Keys are request paths as the app builds them, relative to the page origin (the relay); SIMBAD keys are full URLs. Exact matches only; anything else goes live.",
- "generated": "2026-11-14T23:13:48.353Z",
+ "generated": "2026-11-15T06:02:44.241Z",
  "settings": {
   "fov": 2.5,
   "max": 120,
@@ -50,13 +50,14 @@
      ]
     }
    },
-   "files": 132,
-   "mib": 8.25,
+   "files": 133,
+   "mib": 8.32,
    "kinds": {
     "gaia": 1,
     "cutout": 120,
     "jpl-sb_ident": 4,
     "sia": 4,
+    "tap": 1,
     "simbad": 3
    }
   },
@@ -102,13 +103,14 @@
      ]
     }
    },
-   "files": 132,
-   "mib": 8.56,
+   "files": 133,
+   "mib": 8.66,
    "kinds": {
     "gaia": 1,
     "cutout": 120,
     "jpl-sb_ident": 4,
     "sia": 4,
+    "tap": 1,
     "simbad": 3
    }
   },
@@ -154,13 +156,14 @@
      ]
     }
    },
-   "files": 132,
-   "mib": 7.71,
+   "files": 133,
+   "mib": 7.76,
    "kinds": {
     "gaia": 1,
     "cutout": 120,
     "jpl-sb_ident": 4,
     "sia": 4,
+    "tap": 1,
     "simbad": 3
    }
   },
@@ -206,14 +209,15 @@
      ]
     }
    },
-   "files": 133,
-   "mib": 8.06,
+   "files": 135,
+   "mib": 8.13,
    "kinds": {
     "gaia": 1,
     "cutout": 120,
     "jpl-sb_ident": 5,
     "sia": 4,
-    "simbad": 3
+    "tap": 1,
+    "simbad": 4
    }
   },
   "r-dra": {
@@ -222,49 +226,19 @@
    "frames": 120,
    "failed": 0,
    "otherSourcePx": [
-    17,
+    7,
     12
    ],
    "spot": {
-    "field": {
-     "centre": {
-      "ra": 248.167234,
-      "dec": 66.755024
-     },
-     "note": "field-level requests: any click in this patch is answered from these files"
-    },
-    "starCheck": {
-     "gaia": true,
-     "simbad": true
-    },
-    "asteroidCheck": {
-     "seasons": [
-      {
-       "label": "First season",
-       "utc": "2025-06-22T15:34:52.014",
-       "ok": true,
-       "objects": 0,
-       "observer": "mpc-500",
-       "error": null
-      },
-      {
-       "label": "Latest season",
-       "utc": "2026-06-08T13:55:44.836",
-       "ok": true,
-       "objects": 0,
-       "observer": "mpc-500",
-       "error": null
-      }
-     ]
-    }
+    "skipped": "one season only"
    },
    "files": 134,
-   "mib": 8.81,
+   "mib": 9.12,
    "kinds": {
-    "gaia": 1,
     "cutout": 120,
     "jpl-sb_ident": 6,
     "sia": 4,
+    "tap": 1,
     "simbad": 3
    }
   }
@@ -327,26 +301,20 @@
   "files": 6
  },
  "jpl": {
-  "asked": 16,
-  "answered": 16,
+  "asked": 14,
+  "answered": 14,
   "notAnswered": [],
   "note": "All JPL requests answered."
  },
  "totals": {
-  "files": 670,
-  "mib": 41.39
+  "files": 675,
+  "mib": 41.98
  },
  "entries": {
   "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.760098%2C%20-7.24221%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
    "file": "wise-0855/8bd59c81382079d7.csv",
    "size": 23096,
    "fetched": "2026-11-14T22:56:26.364Z",
-   "kind": "gaia"
-  },
-  "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.167234%2C%2066.755024%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
-   "file": "r-dra/e32fc63220175be9.csv",
-   "size": 14778,
-   "fetched": "2026-11-14T23:05:34.218Z",
    "kind": "gaia"
   },
   "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20269.446229%2C%204.768703%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
@@ -409,6 +377,12 @@
    "fetched": "2026-11-14T12:05:17.972Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0021_1D3_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/f0ae5b33bd5cda5f.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:08:41.183Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/4/level2_2025W17_4B_0077_2D4_spx_l2b-v27-2026-196.fits?center=331.095280,-56.800180d&size=0.0641": {
    "file": "eps-indi-b/269d7971e00b21b4.fits",
    "size": 54720,
@@ -425,6 +399,12 @@
    "file": "eps-indi-b/67ce6d31a9068abb.fits",
    "size": 60480,
    "fetched": "2026-11-14T16:00:24.655Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0409_3D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/271d62575ddb59db.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:08:43.448Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/3/level2_2025W18_1B_0091_2D3_spx_l2b-v27-2026-196.fits?center=331.095300,-56.800190d&size=0.0641": {
@@ -469,6 +449,12 @@
    "fetched": "2026-11-14T12:05:21.913Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0116_3D6_spx_l2b-v27-2026-196.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/ec0ccb4a21f4b8b7.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:05.568Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2025W18_1B/l2b-v27-2026-196/6/level2_2025W18_1B_0238_3D6_spx_l2b-v27-2026-196.fits?center=331.095310,-56.800190d&size=0.0641": {
    "file": "eps-indi-b/5575e5591872273a.fits",
    "size": 54720,
@@ -491,6 +477,12 @@
    "file": "eps-indi-b/605abe4a6cf745e0.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:05:32.778Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W18_2B/l2b-v27-2026-197/6/level2_2025W18_2B_0015_3D6_spx_l2b-v27-2026-197.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/6832d865b3a78b94.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:08.281Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/1/level2_2025W19_1B_0241_1D1_spx_l2b-v27-2026-197.fits?center=133.761260,-7.242300d&size=0.0641": {
@@ -577,6 +569,12 @@
    "fetched": "2026-11-14T12:06:37.697Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/6/level2_2025W19_1B_0228_4D6_spx_l2b-v27-2026-197.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/91e5f4a64123f744.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:08:41.116Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/6/level2_2025W19_1B_0344_3D6_spx_l2b-v27-2026-197.fits?center=331.095350,-56.800200d&size=0.0641": {
    "file": "eps-indi-b/95f91e3256652216.fits",
    "size": 54720,
@@ -589,40 +587,10 @@
    "fetched": "2026-11-14T16:00:28.352Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W20_2D/l2b-v27-2026-198/6/level2_2025W20_2D_0243_1D6_spx_l2b-v27-2026-198.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/b99a810134057b59.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:03:27.456Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W20_2D/l2b-v27-2026-198/6/level2_2025W20_2D_0243_3D6_spx_l2b-v27-2026-198.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/1e519ce3b6eb5a60.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:03:43.733Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W21_1B/l2b-v27-2026-199/6/level2_2025W21_1B_0329_1D6_spx_l2b-v27-2026-199.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/df1d908ff64fc82a.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:03:30.912Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W23_1C/l2b-v27-2026-200/6/level2_2025W23_1C_0021_2D6_spx_l2b-v27-2026-200.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/49a96acca0e90c67.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:06:58.609Z",
-   "kind": "cutout"
-  },
   "/ibe/data/spherex/dr1/level2/2025W23_1C/l2b-v27-2026-200/6/level2_2025W23_1C_0021_4D6_spx_l2b-v27-2026-200.fits?center=248.167240,66.755020d&size=0.0641": {
    "file": "r-dra/898a4ba11b157960.fits",
    "size": 54720,
    "fetched": "2026-11-14T16:03:49.662Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/1/level2_2025W23_2B_0206_1D1_spx_l2b-v27-2026-201.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/257902dac87c687a.fits",
-   "size": 57600,
-   "fetched": "2026-11-14T16:03:38.212Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/2/level2_2025W23_2B_0285_1D2_spx_l2b-v27-2026-201.fits?center=331.095520,-56.800260d&size=0.0641": {
@@ -649,18 +617,6 @@
    "fetched": "2026-11-14T16:00:33.453Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/2/level2_2025W23_2B_0696_2D2_spx_l2b-v27-2026-201.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/79b2c5737f4be7c9.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:03:32.829Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/4/level2_2025W23_2B_0206_4D4_spx_l2b-v27-2026-201.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/e712a44d09b4f0ee.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:03:31.810Z",
-   "kind": "cutout"
-  },
   "/ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/5/level2_2025W23_2B_0241_3D5_spx_l2b-v27-2026-201.fits?center=331.095520,-56.800260d&size=0.0641": {
    "file": "eps-indi-b/9f805afffab6cc4a.fits",
    "size": 54720,
@@ -679,22 +635,10 @@
    "fetched": "2026-11-14T12:05:24.912Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/5/level2_2025W23_2B_0696_4D5_spx_l2b-v27-2026-201.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/b47919f5a3e9cda7.fits",
-   "size": 60480,
-   "fetched": "2026-11-14T16:03:33.908Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/6/level2_2025W23_2B_0129_2D6_spx_l2b-v27-2026-201.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/f12186318054b45e.fits",
+  "/ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/5/level2_2025W23_2B_0696_3D5_spx_l2b-v27-2026-201.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/5a5081f06abbb46a.fits",
    "size": 54720,
-   "fetched": "2026-11-14T16:03:35.862Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W24_1A/l2b-v27-2026-201/2/level2_2025W24_1A_0215_2D2_spx_l2b-v27-2026-201.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/de8f6e7f919569f4.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:06:56.304Z",
+   "fetched": "2026-11-14T12:08:42.458Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W24_1A/l2b-v27-2026-201/3/level2_2025W24_1A_0245_3D3_spx_l2b-v27-2026-201.fits?center=331.095540,-56.800270d&size=0.0641": {
@@ -703,34 +647,10 @@
    "fetched": "2026-11-14T16:00:34.387Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W24_1A/l2b-v27-2026-201/5/level2_2025W24_1A_0123_2D5_spx_l2b-v27-2026-201.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/1e1d1699ffa404c3.fits",
-   "size": 60480,
-   "fetched": "2026-11-14T16:06:58.068Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W24_1A/l2b-v27-2026-201/5/level2_2025W24_1A_0215_4D5_spx_l2b-v27-2026-201.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/8ba4b17554e842d1.fits",
+  "/ibe/data/spherex/dr1/level2/2025W24_1A/l2b-v27-2026-201/6/level2_2025W24_1A_0631_1D6_spx_l2b-v27-2026-201.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/6ecf22deb20a88e6.fits",
    "size": 54720,
-   "fetched": "2026-11-14T16:03:44.403Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W24_1A/l2b-v27-2026-201/6/level2_2025W24_1A_0457_1D6_spx_l2b-v27-2026-201.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/8f6507f7d4578d0f.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:06:58.252Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W24_1A/l2b-v27-2026-201/6/level2_2025W24_1A_0631_2D6_spx_l2b-v27-2026-201.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/4b47fb0ed38f9bd0.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:06:56.377Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W24_2D/l2b-v27-2026-202/2/level2_2025W24_2D_0534_1D2_spx_l2b-v27-2026-202.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/1078b64295600c78.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:03:56.755Z",
+   "fetched": "2026-11-15T05:52:34.124Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W24_2D/l2b-v27-2026-202/5/level2_2025W24_2D_0534_3D5_spx_l2b-v27-2026-202.fits?center=248.167240,66.755020d&size=0.0641": {
@@ -739,58 +659,10 @@
    "fetched": "2026-11-14T12:08:43.833Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W24_2D/l2b-v27-2026-202/6/level2_2025W24_2D_0033_1D6_spx_l2b-v27-2026-202.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/7d9dfbc201b1ff9a.fits",
+  "/ibe/data/spherex/dr1/level2/2025W26_2A/l2b-v27-2026-214/5/level2_2025W26_2A_0170_4D5_spx_l2b-v27-2026-214.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/f794951e7a87b0b8.fits",
    "size": 54720,
-   "fetched": "2026-11-14T16:03:51.850Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W24_2D/l2b-v27-2026-202/6/level2_2025W24_2D_0033_3D6_spx_l2b-v27-2026-202.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/5789114c6db0e28b.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:03:50.602Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W25_2A/l2b-v27-2026-213/5/level2_2025W25_2A_0633_2D5_spx_l2b-v27-2026-213.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/510f8498bab7e5f0.fits",
-   "size": 60480,
-   "fetched": "2026-11-14T16:06:56.561Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W26_1A/l2b-v27-2026-213/2/level2_2025W26_1A_0517_2D2_spx_l2b-v27-2026-213.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/67b121519d470506.fits",
-   "size": 57600,
-   "fetched": "2026-11-14T16:04:02.297Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W26_1A/l2b-v27-2026-213/5/level2_2025W26_1A_0506_1D5_spx_l2b-v27-2026-213.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/5eb6a321e2152ebb.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:04:14.425Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W26_1A/l2b-v27-2026-213/5/level2_2025W26_1A_0506_4D5_spx_l2b-v27-2026-213.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/ce3334ee2b52a195.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:04:05.019Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W27_1A/l2b-v27-2026-214/2/level2_2025W27_1A_0541_1D2_spx_l2b-v27-2026-214.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/b26dba569861e78c.fits",
-   "size": 57600,
-   "fetched": "2026-11-14T16:04:22.034Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W27_1A/l2b-v27-2026-214/2/level2_2025W27_1A_0555_2D2_spx_l2b-v27-2026-214.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/a4b38459b98def02.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:07:02.319Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W27_1A/l2b-v27-2026-214/5/level2_2025W27_1A_0331_2D5_spx_l2b-v27-2026-214.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/e4eea3adbb0d864b.fits",
-   "size": 60480,
-   "fetched": "2026-11-14T16:04:13.307Z",
+   "fetched": "2026-11-15T05:52:34.292Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W27_2A/l2b-v27-2026-215/1/level2_2025W27_2A_0557_1D1_spx_l2b-v27-2026-215.fits?center=248.167240,66.755020d&size=0.0641": {
@@ -799,46 +671,10 @@
    "fetched": "2026-11-14T12:09:58.174Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W27_2A/l2b-v27-2026-215/4/level2_2025W27_2A_0243_1D4_spx_l2b-v27-2026-215.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/4d9d0e4b001aee09.fits",
-   "size": 60480,
-   "fetched": "2026-11-14T16:04:35.657Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W29_1A/l2b-v27-2026-217/1/level2_2025W29_1A_0141_4D1_spx_l2b-v27-2026-217.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/ce95e49fa2d38ecc.fits",
+  "/ibe/data/spherex/dr1/level2/2025W29_2A/l2b-v27-2026-219/1/level2_2025W29_2A_0288_2D1_spx_l2b-v27-2026-219.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/b2eeae82e36faa47.fits",
    "size": 63360,
-   "fetched": "2026-11-14T16:04:17.096Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W29_1A/l2b-v27-2026-217/4/level2_2025W29_1A_0141_2D4_spx_l2b-v27-2026-217.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/2ab9ef3ca3a6e8e0.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:04:20.084Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W29_1A/l2b-v27-2026-217/4/level2_2025W29_1A_0676_2D4_spx_l2b-v27-2026-217.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/15759c8c20ac87ab.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:04:17.709Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W29_1A/l2b-v27-2026-217/4/level2_2025W29_1A_0676_4D4_spx_l2b-v27-2026-217.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/6ee7dc3852c655a7.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:04:19.729Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W29_2A/l2b-v27-2026-219/1/level2_2025W29_2A_0288_3D1_spx_l2b-v27-2026-219.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/2caacb018830a3c3.fits",
-   "size": 57600,
-   "fetched": "2026-11-14T16:04:18.623Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W29_2A/l2b-v27-2026-219/1/level2_2025W29_2A_0805_1D1_spx_l2b-v27-2026-219.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/cab6f16446dadb17.fits",
-   "size": 57600,
-   "fetched": "2026-11-14T16:04:21.662Z",
+   "fetched": "2026-11-15T05:52:34.274Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/3/level2_2025W33_2C_0321_2D3_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.0641": {
@@ -983,6 +819,12 @@
    "file": "barnard/72581cceb6fbc378.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:02:21.587Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W35_2A/l2b-v27-2026-231/1/level2_2025W35_2A_0219_2D1_spx_l2b-v27-2026-231.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/a7e7f22e8bd0c9a8.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:08:45.306Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W35_2A/l2b-v27-2026-231/1/level2_2025W35_2A_0233_2D1_spx_l2b-v27-2026-231.fits?center=269.446340,4.767230d&size=0.0641": {
@@ -1141,6 +983,24 @@
    "fetched": "2026-11-14T12:07:54.149Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0725_2D4_spx_l2b-v27-2026-232.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/b1efa1b2c44df2b7.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:08:45.114Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W36_2B/l2b-v27-2026-234/4/level2_2025W36_2B_0172_4D4_spx_l2b-v27-2026-234.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/7525f4ad5af57873.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:08:47.899Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/1/level2_2025W37_1A_0100_3D1_spx_l2b-v27-2026-235.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/9707d77673de76a3.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:08:46.202Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/2/level2_2025W37_1A_0068_3D2_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/e68034029c5a4a9f.fits",
    "size": 63360,
@@ -1183,6 +1043,18 @@
    "fetched": "2026-11-14T12:07:57.812Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/4/level2_2025W37_1A_0458_3D4_spx_l2b-v27-2026-235.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/993f684bb3fc4d33.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:08:46.968Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/4/level2_2025W37_1A_0675_4D4_spx_l2b-v27-2026-235.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/bccfbee430406a80.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:08:47.242Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/5/level2_2025W37_1A_0068_1D5_spx_l2b-v27-2026-235.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/5ae444ba72c32564.fits",
    "size": 60480,
@@ -1217,6 +1089,12 @@
    "file": "rw-aur/66abd0a8b3d4dc4d.fits",
    "size": 54720,
    "fetched": "2026-11-14T16:02:13.553Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W37_2A/l2b-v27-2026-236/4/level2_2025W37_2A_0840_3D4_spx_l2b-v27-2026-236.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/75f6afec764366f8.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:08:49.682Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W38_1A/l2b_retry-v27-2026-237/6/level2_2025W38_1A_0691_2D6_spx_l2b_retry-v27-2026-237.fits?center=76.956590,30.401290d&size=0.0641": {
@@ -1261,10 +1139,22 @@
    "fetched": "2026-11-14T16:02:11.550Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W38_1A/l2b-v27-2026-237/4/level2_2025W38_1A_0361_2D4_spx_l2b-v27-2026-237.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/16128f3a56eaa2be.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:08:53.209Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2025W38_1A/l2b-v27-2026-237/6/level2_2025W38_1A_0738_1D6_spx_l2b-v27-2026-237.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/d1a6d0398dc8faf7.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:08:00.991Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W38_2C/l2b-v27-2026-237/1/level2_2025W38_2C_0426_4D1_spx_l2b-v27-2026-237.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/82eafb120d91871d.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:08:53.915Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W38_2C/l2b-v27-2026-237/3/level2_2025W38_2C_0023_2D3_spx_l2b-v27-2026-237.fits?center=76.956590,30.401290d&size=0.0641": {
@@ -1301,6 +1191,12 @@
    "file": "eps-indi-b/eaf42200d168e6dc.fits",
    "size": 54720,
    "fetched": "2026-11-14T16:00:34.805Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W40_1A/l2b-v27-2026-239/1/level2_2025W40_1A_0333_1D1_spx_l2b-v27-2026-239.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/056a5d9e33ad486f.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:08:55.596Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W40_1A/l2b-v27-2026-239/1/level2_2025W40_1A_0353_1D1_spx_l2b-v27-2026-239.fits?center=269.446320,4.767480d&size=0.0641": {
@@ -1471,6 +1367,12 @@
    "fetched": "2026-11-14T16:01:10.082Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2025W41_2B/l2b-v27-2026-242/4/level2_2025W41_2B_0614_1D4_spx_l2b-v27-2026-242.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/2b94c8a2b0a52237.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:08:54.047Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2025W41_2B/l2b-v27-2026-242/5/level2_2025W41_2B_0083_1D5_spx_l2b-v27-2026-242.fits?center=331.096210,-56.800490d&size=0.0641": {
    "file": "eps-indi-b/0887136ba9eddbfc.fits",
    "size": 54720,
@@ -1495,40 +1397,16 @@
    "fetched": "2026-11-14T12:05:36.168Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W42_2A/l2b-v27-2026-243/1/level2_2025W42_2A_0513_1D1_spx_l2b-v27-2026-243.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/aba547141684153d.fits",
-   "size": 57600,
-   "fetched": "2026-11-14T16:04:24.370Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W42_2A/l2b-v27-2026-243/1/level2_2025W42_2A_0513_3D1_spx_l2b-v27-2026-243.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/720dfca673556476.fits",
-   "size": 57600,
-   "fetched": "2026-11-14T16:04:33.012Z",
-   "kind": "cutout"
-  },
   "/ibe/data/spherex/dr1/level2/2025W42_2A/l2b-v27-2026-243/2/level2_2025W42_2A_0033_1D2_spx_l2b-v27-2026-243.fits?center=331.096250,-56.800510d&size=0.0641": {
    "file": "eps-indi-b/713997f5e062f6ab.fits",
    "size": 63360,
    "fetched": "2026-11-14T12:05:37.807Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W42_2A/l2b-v27-2026-243/4/level2_2025W42_2A_0244_1D4_spx_l2b-v27-2026-243.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/eea87d5275c968dd.fits",
+  "/ibe/data/spherex/dr1/level2/2025W42_2A/l2b-v27-2026-243/4/level2_2025W42_2A_0244_2D4_spx_l2b-v27-2026-243.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/b493f6deac084a00.fits",
    "size": 54720,
-   "fetched": "2026-11-14T16:06:57.393Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W42_2A/l2b-v27-2026-243/4/level2_2025W42_2A_0244_3D4_spx_l2b-v27-2026-243.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/26fe62bf20378a63.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:04:30.960Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W42_2A/l2b-v27-2026-243/4/level2_2025W42_2A_0526_2D4_spx_l2b-v27-2026-243.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/626a8656e0c8d049.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:04:25.156Z",
+   "fetched": "2026-11-15T05:52:34.652Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W42_2A/l2b-v27-2026-243/4/level2_2025W42_2A_0526_4D4_spx_l2b-v27-2026-243.fits?center=248.167240,66.755020d&size=0.0641": {
@@ -1537,28 +1415,10 @@
    "fetched": "2026-11-14T12:08:55.437Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W42_2A/l2b-v27-2026-243/4/level2_2025W42_2A_0617_3D4_spx_l2b-v27-2026-243.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/1e0cadf55ac48785.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:07:02.631Z",
-   "kind": "cutout"
-  },
   "/ibe/data/spherex/dr1/level2/2025W43_1A/l2b-v27-2026-244/1/level2_2025W43_1A_0019_1D1_spx_l2b-v27-2026-244.fits?center=331.096270,-56.800510d&size=0.0641": {
    "file": "eps-indi-b/64b58eb0e4b79e84.fits",
    "size": 57600,
    "fetched": "2026-11-14T12:05:36.871Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W43_2A/l2b-v27-2026-245/4/level2_2025W43_2A_0320_1D4_spx_l2b-v27-2026-245.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/6de534f3fb38a6ce.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:04:34.493Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W43_2A/l2b-v27-2026-245/4/level2_2025W43_2A_0464_2D4_spx_l2b-v27-2026-245.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/ee3a42ad5e744bb8.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:04:35.998Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W43_2A/l2b-v27-2026-245/5/level2_2025W43_2A_0023_2D5_spx_l2b-v27-2026-245.fits?center=331.096280,-56.800520d&size=0.0641": {
@@ -1595,6 +1455,12 @@
    "file": "wise-0855/54779ae970b03e55.fits",
    "size": 57600,
    "fetched": "2026-11-14T16:01:17.469Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0164_1D4_spx_l2b-v27-2026-246.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/8a29907711ce4c1b.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:08:56.000Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0305_3D4_spx_l2b-v27-2026-246.fits?center=133.760150,-7.242210d&size=0.0641": {
@@ -1645,18 +1511,6 @@
    "fetched": "2026-11-14T16:05:01.000Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W45_1A/l2b-v27-2026-247/1/level2_2025W45_1A_0638_2D1_spx_l2b-v27-2026-247.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/8fa1dc2546ddc3df.fits",
-   "size": 57600,
-   "fetched": "2026-11-14T16:04:36.364Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W45_1A/l2b-v27-2026-247/4/level2_2025W45_1A_0067_2D4_spx_l2b-v27-2026-247.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/a9ce2a01b63d9161.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:04:35.448Z",
-   "kind": "cutout"
-  },
   "/ibe/data/spherex/dr1/level2/2025W45_1A/l2b-v27-2026-247/4/level2_2025W45_1A_0095_4D4_spx_l2b-v27-2026-247.fits?center=133.760130,-7.242210d&size=0.0641": {
    "file": "wise-0855/debb2046ef501466.fits",
    "size": 54720,
@@ -1687,12 +1541,6 @@
    "fetched": "2026-11-14T12:06:45.023Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W45_1A/l2b-v27-2026-247/4/level2_2025W45_1A_0638_4D4_spx_l2b-v27-2026-247.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/6e43cc05f62e8ac8.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:04:41.754Z",
-   "kind": "cutout"
-  },
   "/ibe/data/spherex/dr1/level2/2025W45_1A/l2b-v27-2026-247/6/level2_2025W45_1A_0003_1D6_spx_l2b-v27-2026-247.fits?center=331.096340,-56.800540d&size=0.0641": {
    "file": "eps-indi-b/a2336cab7aad7f55.fits",
    "size": 54720,
@@ -1703,18 +1551,6 @@
    "file": "eps-indi-b/5f67af4d58c7be58.fits",
    "size": 54720,
    "fetched": "2026-11-14T16:00:50.094Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W45_2A/l2b-v27-2026-247/1/level2_2025W45_2A_0430_2D1_spx_l2b-v27-2026-247.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/3f7ed1411be845f0.fits",
-   "size": 57600,
-   "fetched": "2026-11-14T16:04:58.788Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W45_2A/l2b-v27-2026-247/1/level2_2025W45_2A_0458_1D1_spx_l2b-v27-2026-247.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/803d41042310d9a1.fits",
-   "size": 57600,
-   "fetched": "2026-11-14T12:08:56.947Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W45_2A/l2b-v27-2026-247/2/level2_2025W45_2A_0192_2D2_spx_l2b-v27-2026-247.fits?center=133.760110,-7.242210d&size=0.0641": {
@@ -1757,6 +1593,12 @@
    "file": "wise-0855/b86122ba15ac27cd.fits",
    "size": 63360,
    "fetched": "2026-11-14T12:06:53.256Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W45_2A/l2b-v27-2026-247/4/level2_2025W45_2A_0458_1D4_spx_l2b-v27-2026-247.fits?center=248.167240,66.755020d&size=0.0641": {
+   "file": "r-dra/fdc6e311422e8c06.fits",
+   "size": 54720,
+   "fetched": "2026-11-15T05:52:35.619Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W45_2A/l2b-v27-2026-247/5/level2_2025W45_2A_0164_1D5_spx_l2b-v27-2026-247.fits?center=133.760110,-7.242210d&size=0.0641": {
@@ -1915,28 +1757,10 @@
    "fetched": "2026-11-14T12:06:59.399Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W46_2A/l2b-v27-2026-207/4/level2_2025W46_2A_0002_4D4_spx_l2b-v27-2026-207.fits?center=248.167240,66.755020d&size=0.0641": {
-   "file": "r-dra/643ab8b6d60d8e3b.fits",
+  "/ibe/data/spherex/dr1/level2/2025W46_2A/l2b-v27-2026-207/4/level2_2025W46_2A_0592_1D4_spx_l2b-v27-2026-207.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/adedae293724907d.fits",
    "size": 54720,
-   "fetched": "2026-11-14T16:04:37.159Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W46_2A/l2b-v27-2026-207/4/level2_2025W46_2A_0163_2D4_spx_l2b-v27-2026-207.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/3cde6120d0aa4a68.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:04:39.833Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W46_2A/l2b-v27-2026-207/4/level2_2025W46_2A_0205_1D4_spx_l2b-v27-2026-207.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/233e887673787859.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:04:40.672Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W46_2A/l2b-v27-2026-207/4/level2_2025W46_2A_0205_3D4_spx_l2b-v27-2026-207.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/b547f115d7ca2bd9.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:04:43.532Z",
+   "fetched": "2026-11-15T05:52:35.726Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W46_2A/l2b-v27-2026-207/6/level2_2025W46_2A_0214_1D6_spx_l2b-v27-2026-207.fits?center=133.760060,-7.242210d&size=0.0641": {
@@ -1969,70 +1793,16 @@
    "fetched": "2026-11-14T16:01:23.784Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W47_1A/l2b-v27-2026-208/2/level2_2025W47_1A_0388_1D2_spx_l2b-v27-2026-208.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/3934cb7a60c77035.fits",
+  "/ibe/data/spherex/dr1/level2/2025W48_2A/l2b-v27-2026-209/2/level2_2025W48_2A_0693_4D2_spx_l2b-v27-2026-209.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/63188067f57aff8c.fits",
    "size": 63360,
-   "fetched": "2026-11-14T16:04:47.993Z",
+   "fetched": "2026-11-14T12:08:57.349Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W47_1A/l2b-v27-2026-208/5/level2_2025W47_1A_0388_3D5_spx_l2b-v27-2026-208.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/6224d181834a0331.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:07:03.677Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W47_2A/l2b-v27-2026-208/1/level2_2025W47_2A_0033_1D1_spx_l2b-v27-2026-208.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/326ff4f5117ba44d.fits",
-   "size": 57600,
-   "fetched": "2026-11-14T16:07:09.916Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W48_2A/l2b-v27-2026-209/2/level2_2025W48_2A_0243_2D2_spx_l2b-v27-2026-209.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/9956a6b1f111f6d4.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:06:59.044Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W48_2A/l2b-v27-2026-209/5/level2_2025W48_2A_0693_3D5_spx_l2b-v27-2026-209.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/b500c8e7d9ca3ee9.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:11.692Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W49_1A/l2b-v27-2026-209/2/level2_2025W49_1A_0009_4D2_spx_l2b-v27-2026-209.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/5a185790a3e6d6e0.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:05:02.259Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W49_1A/l2b-v27-2026-209/2/level2_2025W49_1A_0280_2D2_spx_l2b-v27-2026-209.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/6b800924f5d750a4.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:05:05.139Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W49_1A/l2b-v27-2026-209/5/level2_2025W49_1A_0009_1D5_spx_l2b-v27-2026-209.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/e361489afe6b73f4.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:19.535Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W49_1A/l2b-v27-2026-209/5/level2_2025W49_1A_0280_4D5_spx_l2b-v27-2026-209.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/0ff5faa1b94c5bc1.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:06.524Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W50_1A/l2b-v27-2026-209/2/level2_2025W50_1A_0661_1D2_spx_l2b-v27-2026-209.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/d9943b164b00c70e.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:05:07.432Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W50_1A/l2b-v27-2026-209/5/level2_2025W50_1A_0661_4D5_spx_l2b-v27-2026-209.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/c2c8e6ac38e5e70f.fits",
+  "/ibe/data/spherex/dr1/level2/2025W50_1A/l2b-v27-2026-209/5/level2_2025W50_1A_0661_2D5_spx_l2b-v27-2026-209.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/225dc154ea2a3fc2.fits",
    "size": 60480,
-   "fetched": "2026-11-14T16:05:08.273Z",
+   "fetched": "2026-11-15T05:52:35.736Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W50_2A/l2b_retry-v27-2026-210/2/level2_2025W50_2A_0374_1D2_spx_l2b_retry-v27-2026-210.fits?center=133.759880,-7.242190d&size=0.0641": {
@@ -2041,22 +1811,10 @@
    "fetched": "2026-11-14T16:01:25.695Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W50_2A/l2b-v27-2026-210/2/level2_2025W50_2A_0259_4D2_spx_l2b-v27-2026-210.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/509eef88e0abea18.fits",
+  "/ibe/data/spherex/dr1/level2/2025W50_2A/l2b-v27-2026-210/2/level2_2025W50_2A_0301_2D2_spx_l2b-v27-2026-210.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/ab67ef3ebf3d2302.fits",
    "size": 63360,
-   "fetched": "2026-11-14T16:05:11.462Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W50_2A/l2b-v27-2026-210/2/level2_2025W50_2A_0602_1D2_spx_l2b-v27-2026-210.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/1acf2fa9a111cad8.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:07:09.630Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W50_2A/l2b-v27-2026-210/2/level2_2025W50_2A_0799_1D2_spx_l2b-v27-2026-210.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/027b5c55747dde6d.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:05:29.992Z",
+   "fetched": "2026-11-15T05:52:35.564Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2025W50_2A/l2b-v27-2026-210/3/level2_2025W50_2A_0232_1D3_spx_l2b-v27-2026-210.fits?center=133.759890,-7.242190d&size=0.0641": {
@@ -2083,30 +1841,6 @@
    "fetched": "2026-11-14T16:01:30.221Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W50_2A/l2b-v27-2026-210/5/level2_2025W50_2A_0214_4D5_spx_l2b-v27-2026-210.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/971130ea1f6355eb.fits",
-   "size": 60480,
-   "fetched": "2026-11-14T16:05:09.138Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W50_2A/l2b-v27-2026-210/5/level2_2025W50_2A_0259_2D5_spx_l2b-v27-2026-210.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/0640c5bb24e05e4d.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:10.431Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W50_2A/l2b-v27-2026-210/5/level2_2025W50_2A_0301_3D5_spx_l2b-v27-2026-210.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/4643d510ace5c7a3.fits",
-   "size": 60480,
-   "fetched": "2026-11-14T16:05:39.283Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W50_2A/l2b-v27-2026-210/5/level2_2025W50_2A_0333_3D5_spx_l2b-v27-2026-210.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/86ae55e1cb71e39d.fits",
-   "size": 60480,
-   "fetched": "2026-11-14T16:05:12.313Z",
-   "kind": "cutout"
-  },
   "/ibe/data/spherex/dr1/level2/2025W50_2A/l2b-v27-2026-210/5/level2_2025W50_2A_0391_1D5_spx_l2b-v27-2026-210.fits?center=133.759880,-7.242190d&size=0.0641": {
    "file": "wise-0855/82ed0d8da6877665.fits",
    "size": 60480,
@@ -2125,28 +1859,10 @@
    "fetched": "2026-11-14T12:07:06.609Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2025W52_2A/l2b-v27-2026-211/6/level2_2025W52_2A_0161_4D6_spx_l2b-v27-2026-211.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/f295746b9f6723e6.fits",
+  "/ibe/data/spherex/dr1/level2/2025W52_2A/l2b-v27-2026-211/3/level2_2025W52_2A_0227_1D3_spx_l2b-v27-2026-211.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/26f479417b09720e.fits",
    "size": 54720,
-   "fetched": "2026-11-14T16:05:17.620Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W52_2A/l2b-v27-2026-211/6/level2_2025W52_2A_0227_2D6_spx_l2b-v27-2026-211.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/55de440412e2cb50.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:27.541Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2025W52_2A/l2b-v27-2026-211/6/level2_2025W52_2A_0227_4D6_spx_l2b-v27-2026-211.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/fee052601610ff00.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:21.682Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2026W01_1A/l2b-v27-2026-211/3/level2_2026W01_1A_0404_1D3_spx_l2b-v27-2026-211.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/6119adb460056a8e.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:22.647Z",
+   "fetched": "2026-11-14T12:08:59.760Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2026W01_1A/l2b-v27-2026-211/3/level2_2026W01_1A_0534_4D3_spx_l2b-v27-2026-211.fits?center=248.167230,66.755020d&size=0.0641": {
@@ -2155,34 +1871,16 @@
    "fetched": "2026-11-14T16:05:26.376Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2026W01_1A/l2b-v27-2026-211/6/level2_2026W01_1A_0257_3D6_spx_l2b-v27-2026-211.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/6a31e30376a4df28.fits",
+  "/ibe/data/spherex/dr1/level2/2026W06_2A/l2b-v27-2026-222/3/level2_2026W06_2A_0609_1D3_spx_l2b-v27-2026-222.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/6bb1bd7fdacbf791.fits",
    "size": 54720,
-   "fetched": "2026-11-14T16:05:36.937Z",
+   "fetched": "2026-11-14T12:09:00.434Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2026W01_1A/l2b-v27-2026-211/6/level2_2026W01_1A_0656_2D6_spx_l2b-v27-2026-211.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/d14963fcd268e303.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:33.234Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2026W01_2A/l2b-v27-2026-212/6/level2_2026W01_2A_0426_2D6_spx_l2b-v27-2026-212.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/ae9eb6d95199ee4f.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:28.422Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2026W03_1A/l2b-v27-2026-214/3/level2_2026W03_1A_0304_1D3_spx_l2b-v27-2026-214.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/d12233e89cb3fd33.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:29.279Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2026W03_1A/l2b-v27-2026-214/6/level2_2026W03_1A_0304_3D6_spx_l2b-v27-2026-214.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/98bf729ead497531.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:32.031Z",
+  "/ibe/data/spherex/dr1/level2/2026W08_1A/l2b-v27-2026-227/6/level2_2026W08_1A_0138_3D6_spx_l2b-v27-2026-227.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/d83932b9b01fea02.fits",
+   "size": 60480,
+   "fetched": "2026-11-14T12:09:00.590Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2026W08_2A/l2b-v27-2026-227/3/level2_2026W08_2A_0233_2D3_spx_l2b-v27-2026-227.fits?center=76.956590,30.401290d&size=0.0641": {
@@ -2195,6 +1893,12 @@
    "file": "rw-aur/e7eb21e251911ba9.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:08:03.421Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W08_2A/l2b-v27-2026-227/6/level2_2026W08_2A_0104_3D6_spx_l2b-v27-2026-227.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/f81d3b14a67c9403.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:00.819Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2026W08_2A/l2b-v27-2026-227/6/level2_2026W08_2A_0233_1D6_spx_l2b-v27-2026-227.fits?center=76.956590,30.401290d&size=0.0641": {
@@ -2221,10 +1925,28 @@
    "fetched": "2026-11-14T12:08:04.970Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2026W09_1A/l2b-v27-2026-228/3/level2_2026W09_1A_0091_1D3_spx_l2b-v27-2026-228.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/44f6c5d3b2986b2e.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:03.061Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W09_1A/l2b-v27-2026-228/3/level2_2026W09_1A_0489_2D3_spx_l2b-v27-2026-228.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/264abc5912f199df.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:01.459Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2026W09_2A/l2b-v27-2026-229/2/level2_2026W09_2A_0503_1D2_spx_l2b-v27-2026-229.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/ecfbb38bf24b5c92.fits",
    "size": 63360,
    "fetched": "2026-11-14T12:08:08.060Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W09_2A/l2b-v27-2026-229/3/level2_2026W09_2A_0208_1D3_spx_l2b-v27-2026-229.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/5ba39b917cba1094.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:12.065Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2026W09_2A/l2b-v27-2026-229/3/level2_2026W09_2A_0224_4D3_spx_l2b-v27-2026-229.fits?center=76.956590,30.401290d&size=0.0641": {
@@ -2243,6 +1965,12 @@
    "file": "rw-aur/536d2331325f189c.fits",
    "size": 54720,
    "fetched": "2026-11-14T16:02:39.888Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W09_2A/l2b-v27-2026-229/3/level2_2026W09_2A_0564_4D3_spx_l2b-v27-2026-229.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/961d3489c173d714.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:02.330Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2026W09_2A/l2b-v27-2026-229/5/level2_2026W09_2A_0503_2D5_spx_l2b-v27-2026-229.fits?center=76.956590,30.401290d&size=0.0641": {
@@ -2347,6 +2075,18 @@
    "fetched": "2026-11-14T16:02:28.272Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2026W10_1A/l2b-v27-2026-229/6/level2_2026W10_1A_0274_4D6_spx_l2b-v27-2026-229.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/1a0c71ff820e1c2a.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:08.322Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W10_1A/l2b-v27-2026-229/6/level2_2026W10_1A_0625_1D6_spx_l2b-v27-2026-229.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/3778781bef5fe9aa.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:03.867Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2026W10_2B/l2b-v27-2026-231/1/level2_2026W10_2B_0137_2D1_spx_l2b-v27-2026-231.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/b5a1abc7bf72a705.fits",
    "size": 57600,
@@ -2383,6 +2123,12 @@
    "fetched": "2026-11-14T12:08:11.657Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2026W10_2B/l2b-v27-2026-231/3/level2_2026W10_2B_0005_3D3_spx_l2b-v27-2026-231.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/8cd15b492476571d.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:04.739Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2026W10_2B/l2b-v27-2026-231/4/level2_2026W10_2B_0137_3D4_spx_l2b-v27-2026-231.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/ec881c9f4d8637bb.fits",
    "size": 54720,
@@ -2405,6 +2151,12 @@
    "file": "rw-aur/12e9a76358f9c00f.fits",
    "size": 54720,
    "fetched": "2026-11-14T16:02:38.308Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W10_2B/l2b-v27-2026-231/6/level2_2026W10_2B_0502_1D6_spx_l2b-v27-2026-231.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/0df7dacf0af998d4.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:11.188Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2026W11_1A/l2b-v27-2026-232/1/level2_2026W11_1A_0285_2D1_spx_l2b-v27-2026-232.fits?center=76.956590,30.401290d&size=0.0641": {
@@ -2503,6 +2255,24 @@
    "fetched": "2026-11-14T12:08:27.110Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2026W11_1A/l2b-v27-2026-232/6/level2_2026W11_1A_0196_1D6_spx_l2b-v27-2026-232.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/bf357299c4cd7116.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:08.164Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W11_1A/l2b-v27-2026-232/6/level2_2026W11_1A_0239_3D6_spx_l2b-v27-2026-232.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/ac9895bb6410f06f.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:11.679Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W11_1A/l2b-v27-2026-232/6/level2_2026W11_1A_0662_1D6_spx_l2b-v27-2026-232.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/ffac699ecd22b637.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:09.625Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0501_3D2_spx_l2b-v27-2026-234.fits?center=269.446220,4.768780d&size=0.0641": {
    "file": "barnard/6c63c51bca6f0c0d.fits",
    "size": 63360,
@@ -2527,6 +2297,18 @@
    "fetched": "2026-11-14T15:59:25.671Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2026W11_2A/l2b-v27-2026-234/3/level2_2026W11_2A_0298_4D3_spx_l2b-v27-2026-234.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/c81615f835321244.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:11.911Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W11_2A/l2b-v27-2026-234/3/level2_2026W11_2A_0401_1D3_spx_l2b-v27-2026-234.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/5e2247aca55fa076.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:09.994Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2026W11_2A/l2b-v27-2026-234/5/level2_2026W11_2A_0501_2D5_spx_l2b-v27-2026-234.fits?center=269.446220,4.768780d&size=0.0641": {
    "file": "barnard/2e4f6a1c6ebeade4.fits",
    "size": 54720,
@@ -2543,6 +2325,12 @@
    "file": "barnard/308c08e239a3b183.fits",
    "size": 63360,
    "fetched": "2026-11-14T12:03:11.926Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W12_1A/l2b-v27-2026-235/3/level2_2026W12_1A_0370_2D3_spx_l2b-v27-2026-235.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/6a25fb961a883f3f.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:13.112Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2026W12_1A/l2b-v27-2026-235/3/level2_2026W12_1A_0598_3D3_spx_l2b-v27-2026-235.fits?center=269.446220,4.768810d&size=0.0641": {
@@ -2575,6 +2363,18 @@
    "fetched": "2026-11-14T15:59:26.195Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2026W12_1A/l2b-v27-2026-235/6/level2_2026W12_1A_0039_2D6_spx_l2b-v27-2026-235.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/08d9ac2cde8eb14f.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:10.517Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W12_1A/l2b-v27-2026-235/6/level2_2026W12_1A_0336_4D6_spx_l2b-v27-2026-235.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/5d2220d239540b49.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:11.368Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2026W12_1A/l2b-v27-2026-235/6/level2_2026W12_1A_0598_1D6_spx_l2b-v27-2026-235.fits?center=269.446220,4.768810d&size=0.0641": {
    "file": "barnard/d4e0d65340e381d4.fits",
    "size": 54720,
@@ -2597,6 +2397,18 @@
    "file": "barnard/ee6797da863d50ef.fits",
    "size": 63360,
    "fetched": "2026-11-14T12:03:15.097Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W12_2A/l2b-v27-2026-235/3/level2_2026W12_2A_0044_2D3_spx_l2b-v27-2026-235.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/0a395a3c582f7f04.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:12.019Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W12_2A/l2b-v27-2026-235/3/level2_2026W12_2A_0068_4D3_spx_l2b-v27-2026-235.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/575e6231fbb2f5c7.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:12.282Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2026W12_2A/l2b-v27-2026-235/3/level2_2026W12_2A_0324_1D3_spx_l2b-v27-2026-235.fits?center=269.446220,4.768830d&size=0.0641": {
@@ -2623,6 +2435,18 @@
    "fetched": "2026-11-14T15:59:26.622Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2026W12_2A/l2b-v27-2026-235/6/level2_2026W12_2A_0409_2D6_spx_l2b-v27-2026-235.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/2f738820d2b920e0.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:12.579Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W12_2A/l2b-v27-2026-235/6/level2_2026W12_2A_0448_4D6_spx_l2b-v27-2026-235.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/12ec8e580f6b3aa8.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:12.696Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2026W12_2A/l2b-v27-2026-235/6/level2_2026W12_2A_0520_3D6_spx_l2b-v27-2026-235.fits?center=269.446220,4.768840d&size=0.0641": {
    "file": "barnard/5115768efb657f5e.fits",
    "size": 54720,
@@ -2647,16 +2471,118 @@
    "fetched": "2026-11-14T15:59:33.047Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2026W13_1A/l2b-v27-2026-236/3/level2_2026W13_1A_0579_2D3_spx_l2b-v27-2026-236.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/d1b0e18e353df999.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:13.416Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2026W13_1A/l2b-v27-2026-236/6/level2_2026W13_1A_0129_1D6_spx_l2b-v27-2026-236.fits?center=269.446220,4.768850d&size=0.0641": {
    "file": "barnard/3f365b459a2f0331.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:03:19.112Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2026W13_1A/l2b-v27-2026-236/6/level2_2026W13_1A_0180_4D6_spx_l2b-v27-2026-236.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/b0459389878fc21c.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:13.229Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W13_1A/l2b-v27-2026-236/6/level2_2026W13_1A_0539_4D6_spx_l2b-v27-2026-236.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/d24da59234479c19.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:15.097Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W13_2A/l2b-v27-2026-237/3/level2_2026W13_2A_0281_1D3_spx_l2b-v27-2026-237.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/39dd4031eb6c45e9.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:13.436Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W13_2A/l2b-v27-2026-237/6/level2_2026W13_2A_0311_3D6_spx_l2b-v27-2026-237.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/ff3000df83ac8893.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:18.731Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W14_1A/l2b-v27-2026-238/3/level2_2026W14_1A_0171_2D3_spx_l2b-v27-2026-238.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/8e18fa41ccb25f52.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:14.365Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W14_1A/l2b-v27-2026-238/6/level2_2026W14_1A_0129_4D6_spx_l2b-v27-2026-238.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/c5ebb440a3104942.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:14.141Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W14_1A/l2b-v27-2026-238/6/level2_2026W14_1A_0518_4D6_spx_l2b-v27-2026-238.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/e4051d21e450b914.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:14.748Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W14_2A/l2b-v27-2026-238/6/level2_2026W14_2A_0261_1D6_spx_l2b-v27-2026-238.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/175c834c0b75c104.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:14.305Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W14_2A/l2b-v27-2026-238/6/level2_2026W14_2A_0617_3D6_spx_l2b-v27-2026-238.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/adb4c3722d531b9f.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:15.481Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W15_1A/l2b-v27-2026-239/3/level2_2026W15_1A_0556_1D3_spx_l2b-v27-2026-239.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/d2f23a4e5a302dc0.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:16.899Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W15_1A/l2b-v27-2026-239/6/level2_2026W15_1A_0339_3D6_spx_l2b-v27-2026-239.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/700402a62947304c.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:15.262Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W15_2A/l2b-v27-2026-240/3/level2_2026W15_2A_0107_4D3_spx_l2b-v27-2026-240.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/0d65bc0b56ec7cd0.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:20.659Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W15_2A/l2b-v27-2026-240/6/level2_2026W15_2A_0483_3D6_spx_l2b-v27-2026-240.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/51531c77b3bd65f7.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:17.806Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W15_2A/l2b-v27-2026-240/6/level2_2026W15_2A_0559_3D6_spx_l2b-v27-2026-240.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/e46edd6f0dfc76f9.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:17.836Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W16_1A/l2b-v27-2026-241/6/level2_2026W16_1A_0287_3D6_spx_l2b-v27-2026-241.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/6298e4d532bbe290.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:18.276Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2026W16_2A/l2b-v27-2026-242/1/level2_2026W16_2A_0434_1D1_spx_l2b-v27-2026-242.fits?center=331.097270,-56.800850d&size=0.0641": {
    "file": "eps-indi-b/01220a7bea1af4f5.fits",
    "size": 57600,
    "fetched": "2026-11-14T16:01:04.050Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W16_2A/l2b-v27-2026-242/3/level2_2026W16_2A_0144_4D3_spx_l2b-v27-2026-242.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/f57695ca7debe2c4.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:17.746Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2026W17_1B/l2b-v27-2026-242/1/level2_2026W17_1B_0184_1D1_spx_l2b-v27-2026-242.fits?center=331.097280,-56.800860d&size=0.0641": {
@@ -2743,12 +2669,6 @@
    "fetched": "2026-11-14T12:09:18.594Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2026W17_1B/l2b-v27-2026-242/6/level2_2026W17_1B_0434_4D6_spx_l2b-v27-2026-242.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/611e55a53703d0fb.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:32.794Z",
-   "kind": "cutout"
-  },
   "/ibe/data/spherex/dr1/level2/2026W17_1B/l2b-v27-2026-242/6/level2_2026W17_1B_0507_2D6_spx_l2b-v27-2026-242.fits?center=133.759070,-7.242120d&size=0.0641": {
    "file": "wise-0855/672b14b15850fe9a.fits",
    "size": 54720,
@@ -2759,18 +2679,6 @@
    "file": "wise-0855/0fe2e14f0c5de59b.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:07:14.337Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2026W17_1B/l2b-v27-2026-242/6/level2_2026W17_1B_0517_2D6_spx_l2b-v27-2026-242.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/d4878c77a0a51fea.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:33.702Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2026W17_1B/l2b-v27-2026-242/6/level2_2026W17_1B_0517_4D6_spx_l2b-v27-2026-242.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/ca8b5ee8625eafdd.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:35.658Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2026W17_1B/l2b-v27-2026-242/6/level2_2026W17_1B_0634_2D6_spx_l2b-v27-2026-242.fits?center=133.759070,-7.242120d&size=0.0641": {
@@ -2797,12 +2705,6 @@
    "fetched": "2026-11-14T16:01:02.515Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2026W17_2A/l2b-v27-2026-243/3/level2_2026W17_2A_0255_2D3_spx_l2b-v27-2026-243.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/b6e0ebbffcc94ce4.fits",
-   "size": 60480,
-   "fetched": "2026-11-14T16:05:50.855Z",
-   "kind": "cutout"
-  },
   "/ibe/data/spherex/dr1/level2/2026W17_2A/l2b-v27-2026-243/3/level2_2026W17_2A_0609_1D3_spx_l2b-v27-2026-243.fits?center=133.759050,-7.242120d&size=0.0641": {
    "file": "wise-0855/1539fbb1ad0d33ff.fits",
    "size": 54720,
@@ -2825,6 +2727,12 @@
    "file": "eps-indi-b/742930bda4ad6d4d.fits",
    "size": 60480,
    "fetched": "2026-11-14T12:05:44.176Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W17_2A/l2b-v27-2026-243/6/level2_2026W17_2A_0360_2D6_spx_l2b-v27-2026-243.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/0c2c61ec29117d76.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:20.433Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2026W17_2A/l2b-v27-2026-243/6/level2_2026W17_2A_0591_1D6_spx_l2b-v27-2026-243.fits?center=133.759050,-7.242120d&size=0.0641": {
@@ -2989,6 +2897,12 @@
    "fetched": "2026-11-14T16:01:31.867Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/dr1/level2/2026W18_2A/l2b-v27-2026-244/6/level2_2026W18_2A_0514_1D6_spx_l2b-v27-2026-244.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/0a4580a5e234ae53.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:18.731Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/dr1/level2/2026W19_1A/l2b-v27-2026-245/1/level2_2026W19_1A_0227_1D1_spx_l2b-v27-2026-245.fits?center=133.759000,-7.242120d&size=0.0641": {
    "file": "wise-0855/01781c7b88f278df.fits",
    "size": 57600,
@@ -3011,6 +2925,12 @@
    "file": "barnard/b7a67192725d576e.fits",
    "size": 54720,
    "fetched": "2026-11-14T15:59:30.447Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2026W19_1A/l2b-v27-2026-245/3/level2_2026W19_1A_0842_1D3_spx_l2b-v27-2026-245.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/6ae0f3a126e3c30c.fits",
+   "size": 54720,
+   "fetched": "2026-11-15T05:52:39.443Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2026W19_1A/l2b-v27-2026-245/4/level2_2026W19_1A_0201_1D4_spx_l2b-v27-2026-245.fits?center=133.759000,-7.242120d&size=0.0641": {
@@ -3037,12 +2957,6 @@
    "fetched": "2026-11-14T15:59:30.852Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2026W19_1A/l2b-v27-2026-245/6/level2_2026W19_1A_0842_2D6_spx_l2b-v27-2026-245.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/79559cf4d7e83d48.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:36.379Z",
-   "kind": "cutout"
-  },
   "/ibe/data/spherex/dr1/level2/2026W19_2A/l2b-v27-2026-245/3/level2_2026W19_2A_0568_1D3_spx_l2b-v27-2026-245.fits?center=133.758970,-7.242120d&size=0.0641": {
    "file": "wise-0855/085c85db4ac3f853.fits",
    "size": 54720,
@@ -3059,18 +2973,6 @@
    "file": "wise-0855/5dfd8c0d0df38837.fits",
    "size": 54720,
    "fetched": "2026-11-14T12:07:36.466Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2026W19_2A/l2b-v27-2026-245/3/level2_2026W19_2A_1286_1D3_spx_l2b-v27-2026-245.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/e81c0085ee5e661f.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:07:00.256Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2026W19_2A/l2b-v27-2026-245/3/level2_2026W19_2A_1339_1D3_spx_l2b-v27-2026-245.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/ba3b63c147e59eca.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:37.236Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/dr1/level2/2026W19_2A/l2b-v27-2026-245/6/level2_2026W19_2A_0651_1D6_spx_l2b-v27-2026-245.fits?center=133.758970,-7.242120d&size=0.0641": {
@@ -3109,34 +3011,16 @@
    "fetched": "2026-11-14T12:07:38.342Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2026W20_1A/l2b-v27-2026-246/3/level2_2026W20_1A_0101_1D3_spx_l2b-v27-2026-246.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/8b5f3662a6fd752d.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:37.799Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/dr1/level2/2026W20_1A/l2b-v27-2026-246/3/level2_2026W20_1A_0795_1D3_spx_l2b-v27-2026-246.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/910da6f21f8ddc51.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:38.185Z",
-   "kind": "cutout"
-  },
   "/ibe/data/spherex/dr1/level2/2026W20_1A/l2b-v27-2026-246/5/level2_2026W20_1A_0939_1D5_spx_l2b-v27-2026-246.fits?center=133.758940,-7.242110d&size=0.0641": {
    "file": "wise-0855/0ea603c4c53ebd77.fits",
    "size": 54720,
    "fetched": "2026-11-14T16:01:38.942Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/dr1/level2/2026W20_1A/l2b-v27-2026-246/6/level2_2026W20_1A_0795_3D6_spx_l2b-v27-2026-246.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/8a157f14af2edf17.fits",
+  "/ibe/data/spherex/dr1/level2/2026W20_1A/l2b-v27-2026-246/6/level2_2026W20_1A_0795_1D6_spx_l2b-v27-2026-246.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/048b3ea64bdcdfa0.fits",
    "size": 54720,
-   "fetched": "2026-11-14T16:05:48.449Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W20_2A/l2b-v27-2026-267/6/level2_2026W20_2A_0294_3D6_spx_l2b-v27-2026-267.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/714206e29378fd76.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:39.347Z",
+   "fetched": "2026-11-14T12:09:19.510Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/qr3/level2/2026W21_2A/l2b-v27-2026-268/3/level2_2026W21_2A_0325_1D3_spx_l2b-v27-2026-268.fits?center=248.167230,66.755020d&size=0.0641": {
@@ -3145,118 +3029,22 @@
    "fetched": "2026-11-14T16:05:42.180Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/qr3/level2/2026W21_2A/l2b-v27-2026-268/6/level2_2026W21_2A_0035_1D6_spx_l2b-v27-2026-268.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/6ef9e44a86ea50ec.fits",
+  "/ibe/data/spherex/qr3/level2/2026W24_2B/l2b-v27-2026-272/3/level2_2026W24_2B_0242_3D3_spx_l2b-v27-2026-272.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/e7c9be934d415c54.fits",
    "size": 54720,
-   "fetched": "2026-11-14T16:07:03.591Z",
+   "fetched": "2026-11-15T05:52:37.508Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/qr3/level2/2026W21_2A/l2b-v27-2026-268/6/level2_2026W21_2A_0104_3D6_spx_l2b-v27-2026-268.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/f91e04679cdc21a7.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:40.199Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W21_2A/l2b-v27-2026-268/6/level2_2026W21_2A_0325_4D6_spx_l2b-v27-2026-268.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/916583e68a2f6f22.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:07:03.190Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W24_1A/l2b-v27-2026-271/3/level2_2026W24_1A_0125_3D3_spx_l2b-v27-2026-271.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/eff2ad361d12354d.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:59.549Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W24_1A/l2b-v27-2026-271/6/level2_2026W24_1A_0125_1D6_spx_l2b-v27-2026-271.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/70492fa89e8dc69f.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:48.235Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W24_2B/l2b-v27-2026-272/3/level2_2026W24_2B_0242_2D3_spx_l2b-v27-2026-272.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/5681f7848059e96b.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:05:52.538Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W24_2B/l2b-v27-2026-272/3/level2_2026W24_2B_0242_4D3_spx_l2b-v27-2026-272.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/8f5f464529bdd797.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:07:03.512Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W25_2A/l2b-v27-2026-273/2/level2_2026W25_2A_0573_2D2_spx_l2b-v27-2026-273.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/b48374069ab2d5c1.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:05:55.114Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W25_2A/l2b-v27-2026-273/2/level2_2026W25_2A_0573_4D2_spx_l2b-v27-2026-273.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/0f4cb3cf498be401.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:05:55.993Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W25_2A/l2b-v27-2026-273/2/level2_2026W25_2A_0661_3D2_spx_l2b-v27-2026-273.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/8bfe72cf4ba1c11d.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:07:21.311Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W25_2A/l2b-v27-2026-273/2/level2_2026W25_2A_0674_1D2_spx_l2b-v27-2026-273.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/e01dc15796c44fe2.fits",
-   "size": 57600,
-   "fetched": "2026-11-14T12:09:22.308Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W26_1A/l2b-v27-2026-273/2/level2_2026W26_1A_0274_4D2_spx_l2b-v27-2026-273.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/b8d3e91f9069600c.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:06:02.196Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W26_1A/l2b-v27-2026-273/2/level2_2026W26_1A_0324_2D2_spx_l2b-v27-2026-273.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/512cd0810abf0618.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:06:13.062Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W26_1A/l2b-v27-2026-273/5/level2_2026W26_1A_0047_1D5_spx_l2b-v27-2026-273.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/b76131b9661afe93.fits",
+  "/ibe/data/spherex/qr3/level2/2026W25_2A/l2b-v27-2026-273/5/level2_2026W25_2A_0674_1D5_spx_l2b-v27-2026-273.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/25877a03ecbfeead.fits",
    "size": 60480,
-   "fetched": "2026-11-14T16:06:00.383Z",
+   "fetched": "2026-11-15T05:52:37.646Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/qr3/level2/2026W26_1A/l2b-v27-2026-273/5/level2_2026W26_1A_0242_1D5_spx_l2b-v27-2026-273.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/7354aeae3a9362cb.fits",
-   "size": 60480,
-   "fetched": "2026-11-14T16:06:11.526Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W28_1A/l2b-v27-2026-275/1/level2_2026W28_1A_0104_3D1_spx_l2b-v27-2026-275.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/06ba122de47607c9.fits",
+  "/ibe/data/spherex/qr3/level2/2026W28_1A/l2b-v27-2026-275/1/level2_2026W28_1A_0104_1D1_spx_l2b-v27-2026-275.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/7292e3fcd8817d31.fits",
    "size": 57600,
-   "fetched": "2026-11-14T16:06:09.387Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W28_1A/l2b-v27-2026-275/4/level2_2026W28_1A_0104_1D4_spx_l2b-v27-2026-275.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/b0748986dca059d0.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:06:11.061Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W28_1A/l2b-v27-2026-275/4/level2_2026W28_1A_0671_2D4_spx_l2b-v27-2026-275.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/788d9253e2dcf2a7.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:06:10.279Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W28_2A/l2b-v27-2026-276/1/level2_2026W28_2A_0106_1D1_spx_l2b-v27-2026-276.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/d9bcb69d2f7f7662.fits",
-   "size": 57600,
-   "fetched": "2026-11-14T16:06:13.415Z",
+   "fetched": "2026-11-14T12:09:20.511Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/qr3/level2/2026W28_2A/l2b-v27-2026-276/4/level2_2026W28_2A_0364_2D4_spx_l2b-v27-2026-276.fits?center=248.167230,66.755020d&size=0.0641": {
@@ -3265,40 +3053,70 @@
    "fetched": "2026-11-14T12:09:23.032Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/qr3/level2/2026W28_2A/l2b-v27-2026-276/4/level2_2026W28_2A_0364_4D4_spx_l2b-v27-2026-276.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/66970887ef19d8af.fits",
+  "/ibe/data/spherex/qr3/level2/2026W29_1A/l2b-v27-2026-276/4/level2_2026W29_1A_0430_1D4_spx_l2b-v27-2026-276.fits?center=248.167230,66.755020d&size=0.0641": {
+   "file": "r-dra/0ef7d664eafd6cbd.fits",
    "size": 54720,
-   "fetched": "2026-11-14T16:06:38.876Z",
+   "fetched": "2026-11-14T12:09:23.275Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/qr3/level2/2026W28_2A/l2b-v27-2026-276/4/level2_2026W28_2A_0376_3D4_spx_l2b-v27-2026-276.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/fe4ddbc832ab2ca2.fits",
+  "/ibe/data/spherex/qr3/level2/2026W30_2A/l2b-v27-2026-224/4/level2_2026W30_2A_0561_3D4_spx_l2b-v27-2026-224.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/afec05cbe7ef919a.fits",
    "size": 54720,
-   "fetched": "2026-11-14T16:06:20.627Z",
+   "fetched": "2026-11-14T12:09:21.570Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/qr3/level2/2026W29_1A/l2b-v27-2026-276/1/level2_2026W29_1A_0015_2D1_spx_l2b-v27-2026-276.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/c73f1954ee87f36c.fits",
-   "size": 63360,
-   "fetched": "2026-11-14T16:06:18.597Z",
+  "/ibe/data/spherex/qr3/level2/2026W31_1B/l2b-v27-2026-224/4/level2_2026W31_1B_0505_3D4_spx_l2b-v27-2026-224.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/cab85837b8f208e4.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:23.503Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/qr3/level2/2026W29_1A/l2b-v27-2026-276/1/level2_2026W29_1A_0430_1D1_spx_l2b-v27-2026-276.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/6ea1ff6549933c5f.fits",
+  "/ibe/data/spherex/qr3/level2/2026W31_2A/l2b-v27-2026-224/4/level2_2026W31_2A_0217_2D4_spx_l2b-v27-2026-224.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/56b250cccedea22b.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:22.431Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W32_1A/l2b-v27-2026-223/1/level2_2026W32_1A_0052_3D1_spx_l2b-v27-2026-223.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/47eccfaa3f514f4f.fits",
    "size": 57600,
-   "fetched": "2026-11-14T16:06:17.908Z",
+   "fetched": "2026-11-14T12:09:23.058Z",
    "kind": "cutout"
   },
-  "/ibe/data/spherex/qr3/level2/2026W29_1A/l2b-v27-2026-276/4/level2_2026W29_1A_0015_4D4_spx_l2b-v27-2026-276.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/b1e6a5725898e5cc.fits",
-   "size": 54720,
-   "fetched": "2026-11-14T16:06:17.629Z",
-   "kind": "cutout"
-  },
-  "/ibe/data/spherex/qr3/level2/2026W29_2A/l2b-v27-2026-277/1/level2_2026W29_2A_0079_3D1_spx_l2b-v27-2026-277.fits?center=248.167230,66.755020d&size=0.0641": {
-   "file": "r-dra/1a83086e38119cab.fits",
+  "/ibe/data/spherex/qr3/level2/2026W32_1A/l2b-v27-2026-223/1/level2_2026W32_1A_0312_1D1_spx_l2b-v27-2026-223.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/8ecadce6893aeea3.fits",
    "size": 57600,
-   "fetched": "2026-11-14T16:06:18.530Z",
+   "fetched": "2026-11-14T12:09:24.935Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W32_1A/l2b-v27-2026-223/4/level2_2026W32_1A_0646_4D4_spx_l2b-v27-2026-223.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/7a7943b1b1767a0f.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:23.268Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W32_2A/l2b-v27-2026-223/4/level2_2026W32_2A_0396_4D4_spx_l2b-v27-2026-223.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/fbf15aada2262049.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:24.305Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W33_1A/l2b-v27-2026-240/4/level2_2026W33_1A_0051_3D4_spx_l2b-v27-2026-240.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/c76c892574a3ce11.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:25.575Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W33_1A/l2b-v27-2026-240/4/level2_2026W33_1A_0131_3D4_spx_l2b-v27-2026-240.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/ba5c8cc1e60c9566.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:24.170Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W33_1A/l2b-v27-2026-240/4/level2_2026W33_1A_0588_1D4_spx_l2b-v27-2026-240.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/76e1fadf2015a662.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:24.539Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/qr3/level2/2026W33_2A/l2b-v27-2026-241/6/level2_2026W33_2A_0594_4D6_spx_l2b-v27-2026-241.fits?center=269.446130,4.770000d&size=0.0641": {
@@ -3329,6 +3147,24 @@
    "file": "barnard/a021b2784759a08e.fits",
    "size": 54720,
    "fetched": "2026-11-14T15:59:32.476Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W34_1A/l2b-v27-2026-243/4/level2_2026W34_1A_0020_1D4_spx_l2b-v27-2026-243.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/e0783fb113d1bf0c.fits",
+   "size": 48960,
+   "fetched": "2026-11-14T12:09:24.372Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W34_1A/l2b-v27-2026-243/4/level2_2026W34_1A_0060_4D4_spx_l2b-v27-2026-243.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/bce76f816a5bbbb8.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:25.041Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W34_1A/l2b-v27-2026-243/4/level2_2026W34_1A_0493_2D4_spx_l2b-v27-2026-243.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/e078dd7683f3daf8.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:25.188Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/qr3/level2/2026W34_1A/l2b-v27-2026-243/5/level2_2026W34_1A_0363_1D5_spx_l2b-v27-2026-243.fits?center=269.446130,4.770020d&size=0.0641": {
@@ -3385,6 +3221,18 @@
    "fetched": "2026-11-14T15:59:32.764Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/1/level2_2026W34_2A_0039_4D1_spx_l2b-v27-2026-243.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/405744cc281766ef.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:09:25.259Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/1/level2_2026W34_2A_0232_1D1_spx_l2b-v27-2026-243.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/bce2a04ac5d433b8.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:09:25.512Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/1/level2_2026W34_2A_0757_3D1_spx_l2b-v27-2026-243.fits?center=269.446120,4.770060d&size=0.0641": {
    "file": "barnard/d31a39586f534af9.fits",
    "size": 57600,
@@ -3425,6 +3273,18 @@
    "file": "barnard/eae41004642d4bbf.fits",
    "size": 63360,
    "fetched": "2026-11-14T15:59:51.019Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/4/level2_2026W34_2A_0397_2D4_spx_l2b-v27-2026-243.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/fe5f22cd3fe0751c.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:25.763Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/4/level2_2026W34_2A_0709_2D4_spx_l2b-v27-2026-243.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/72dfacb3b8b57874.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:25.795Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/4/level2_2026W34_2A_0757_1D4_spx_l2b-v27-2026-243.fits?center=269.446120,4.770060d&size=0.0641": {
@@ -3469,6 +3329,18 @@
    "fetched": "2026-11-14T12:03:51.407Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/qr3/level2/2026W35_1A/l2b-v27-2026-243/1/level2_2026W35_1A_0279_1D1_spx_l2b-v27-2026-243.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/f323bdfff6958e56.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:09:26.063Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W35_1A/l2b-v27-2026-243/1/level2_2026W35_1A_0342_3D1_spx_l2b-v27-2026-243.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/f35d9e6a9811a1c0.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:09:26.515Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/qr3/level2/2026W35_1A/l2b-v27-2026-243/1/level2_2026W35_1A_0375_1D1_spx_l2b-v27-2026-243.fits?center=269.446120,4.770070d&size=0.0641": {
    "file": "barnard/844db6817e945f5d.fits",
    "size": 57600,
@@ -3511,10 +3383,28 @@
    "fetched": "2026-11-14T12:03:52.443Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/qr3/level2/2026W35_2A/l2b-v27-2026-246/1/level2_2026W35_2A_0051_4D1_spx_l2b-v27-2026-246.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/23e023caf082bdff.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:09:29.025Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W35_2A/l2b-v27-2026-246/1/level2_2026W35_2A_0244_4D1_spx_l2b-v27-2026-246.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/20e9bb15a81834eb.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:09:26.716Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/qr3/level2/2026W35_2A/l2b-v27-2026-246/1/level2_2026W35_2A_0412_2D1_spx_l2b-v27-2026-246.fits?center=269.446120,4.770100d&size=0.0641": {
    "file": "barnard/b2b649c192affa0c.fits",
    "size": 57600,
    "fetched": "2026-11-14T12:03:55.984Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W35_2A/l2b-v27-2026-246/1/level2_2026W35_2A_0642_3D1_spx_l2b-v27-2026-246.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/d6a0826bfbedebdd.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:09:26.666Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/qr3/level2/2026W35_2A/l2b-v27-2026-246/2/level2_2026W35_2A_0126_1D2_spx_l2b-v27-2026-246.fits?center=269.446120,4.770090d&size=0.0641": {
@@ -3523,10 +3413,28 @@
    "fetched": "2026-11-14T16:00:01.253Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/qr3/level2/2026W35_2A/l2b-v27-2026-246/4/level2_2026W35_2A_0026_1D4_spx_l2b-v27-2026-246.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/45bb46fa5a349109.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:26.398Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/qr3/level2/2026W35_2A/l2b-v27-2026-246/4/level2_2026W35_2A_0412_3D4_spx_l2b-v27-2026-246.fits?center=269.446120,4.770100d&size=0.0641": {
    "file": "barnard/c0cf14c5de913a47.fits",
    "size": 54720,
    "fetched": "2026-11-14T15:59:38.942Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W36_1A/l2b-v27-2026-252/1/level2_2026W36_1A_0110_2D1_spx_l2b-v27-2026-252.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/3597100b43b24086.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:09:31.766Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W36_1A/l2b-v27-2026-252/1/level2_2026W36_1A_0326_4D1_spx_l2b-v27-2026-252.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/9e4fed5179781695.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:09:30.282Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/qr3/level2/2026W36_1A/l2b-v27-2026-252/1/level2_2026W36_1A_0506_1D1_spx_l2b-v27-2026-252.fits?center=76.956590,30.401290d&size=0.0641": {
@@ -3559,6 +3467,24 @@
    "fetched": "2026-11-14T12:03:57.653Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/qr3/level2/2026W36_2A/l2b-v27-2026-254/1/level2_2026W36_2A_0048_4D1_spx_l2b-v27-2026-254.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/f45f64eaeb76800a.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:09:29.111Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W36_2A/l2b-v27-2026-254/4/level2_2026W36_2A_0218_4D4_spx_l2b-v27-2026-254.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/1386fbc51e846f9f.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:32.693Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W36_2A/l2b-v27-2026-254/4/level2_2026W36_2A_0510_2D4_spx_l2b-v27-2026-254.fits?center=248.167220,66.755020d&size=0.0641": {
+   "file": "r-dra/0e06974706fd75a7.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:32.982Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/qr3/level2/2026W37_1A/l2b-v27-2026-255/1/level2_2026W37_1A_0234_2D1_spx_l2b-v27-2026-255.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/be1291c38cad2d08.fits",
    "size": 57600,
@@ -3581,6 +3507,12 @@
    "file": "rw-aur/02a4daf23378cbaa.fits",
    "size": 63360,
    "fetched": "2026-11-14T16:02:45.980Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W37_1A/l2b-v27-2026-255/1/level2_2026W37_1A_0453_1D1_spx_l2b-v27-2026-255.fits?center=248.167220,66.755030d&size=0.0641": {
+   "file": "r-dra/8cda58c3a730468e.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:09:29.905Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/qr3/level2/2026W37_1A/l2b-v27-2026-255/4/level2_2026W37_1A_0331_1D4_spx_l2b-v27-2026-255.fits?center=76.956590,30.401290d&size=0.0641": {
@@ -3655,6 +3587,18 @@
    "fetched": "2026-11-14T12:08:35.445Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/qr3/level2/2026W37_2A/l2b-v27-2026-259/4/level2_2026W37_2A_0055_3D4_spx_l2b-v27-2026-259.fits?center=248.167220,66.755030d&size=0.0641": {
+   "file": "r-dra/8f2aff3ad066e9d8.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:35.395Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W37_2A/l2b-v27-2026-259/4/level2_2026W37_2A_0343_2D4_spx_l2b-v27-2026-259.fits?center=248.167220,66.755030d&size=0.0641": {
+   "file": "r-dra/1ce6b071224081a5.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:30.781Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/qr3/level2/2026W37_2A/l2b-v27-2026-259/5/level2_2026W37_2A_0287_4D5_spx_l2b-v27-2026-259.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/fb0c65952fb80252.fits",
    "size": 60480,
@@ -3727,6 +3671,18 @@
    "fetched": "2026-11-14T16:03:12.348Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/qr3/level2/2026W38_1A/l2b-v27-2026-261/4/level2_2026W38_1A_0216_4D4_spx_l2b-v27-2026-261.fits?center=248.167220,66.755030d&size=0.0641": {
+   "file": "r-dra/9749b05188608465.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:31.236Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W38_1A/l2b-v27-2026-261/4/level2_2026W38_1A_0674_1D4_spx_l2b-v27-2026-261.fits?center=248.167220,66.755030d&size=0.0641": {
+   "file": "r-dra/34bb1d6e86c15882.fits",
+   "size": 54720,
+   "fetched": "2026-11-14T12:09:31.907Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/qr3/level2/2026W38_1A/l2b-v27-2026-261/5/level2_2026W38_1A_0064_3D5_spx_l2b-v27-2026-261.fits?center=76.956590,30.401290d&size=0.0641": {
    "file": "rw-aur/dce5fb179c33873a.fits",
    "size": 54720,
@@ -3769,6 +3725,12 @@
    "fetched": "2026-11-14T12:08:32.137Z",
    "kind": "cutout"
   },
+  "/ibe/data/spherex/qr3/level2/2026W39_1A/l2b-v27-2026-268/1/level2_2026W39_1A_0174_4D1_spx_l2b-v27-2026-268.fits?center=248.167220,66.755030d&size=0.0641": {
+   "file": "r-dra/2a91221df55bd8ef.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:09:38.538Z",
+   "kind": "cutout"
+  },
   "/ibe/data/spherex/qr3/level2/2026W39_1A/l2b-v27-2026-268/3/level2_2026W39_1A_0276_1D3_spx_l2b-v27-2026-268.fits?center=331.098130,-56.801140d&size=0.0641": {
    "file": "eps-indi-b/fb03436be4c496af.fits",
    "size": 54720,
@@ -3809,6 +3771,12 @@
    "file": "eps-indi-b/3079d5955d6172f6.fits",
    "size": 54720,
    "fetched": "2026-11-14T16:01:06.574Z",
+   "kind": "cutout"
+  },
+  "/ibe/data/spherex/qr3/level2/2026W39_2A/l2b-v27-2026-271/1/level2_2026W39_2A_0591_1D1_spx_l2b-v27-2026-271.fits?center=248.167220,66.755030d&size=0.0641": {
+   "file": "r-dra/b6e805279fccbf8f.fits",
+   "size": 57600,
+   "fetched": "2026-11-14T12:09:32.581Z",
    "kind": "cutout"
   },
   "/ibe/data/spherex/qr3/level2/2026W39_2A/l2b-v27-2026-271/3/level2_2026W39_2A_0155_2D3_spx_l2b-v27-2026-271.fits?center=331.098150,-56.801150d&size=0.0641": {
@@ -4261,94 +4229,130 @@
    "fetched": "2026-11-14T16:31:28.494Z",
    "kind": "sia"
   },
+  "/TAP/sync?FORMAT=csv&QUERY=SELECT%20a.uri%2C%20p.time_bounds_lower%2C%20p.time_bounds_upper%2C%20p.energy_bandpassname%2C%20p.energy_bounds_lower%2C%20p.energy_bounds_upper%2C%20p.obsid%2C%20p.quality_flag%20FROM%20spherex.artifact%20a%20JOIN%20spherex.plane%20p%20ON%20a.planeid%20%3D%20p.planeid%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20133.7600206105%2C%20-7.2422032066)%2C%20p.poly)%20ORDER%20BY%20p.time_bounds_lower": {
+   "file": "wise-0855/06d2301a354c4aa4.csv",
+   "size": 54335,
+   "fetched": "2026-11-14T09:37:19.012Z",
+   "kind": "tap"
+  },
+  "/TAP/sync?FORMAT=csv&QUERY=SELECT%20a.uri%2C%20p.time_bounds_lower%2C%20p.time_bounds_upper%2C%20p.energy_bandpassname%2C%20p.energy_bounds_lower%2C%20p.energy_bounds_upper%2C%20p.obsid%2C%20p.quality_flag%20FROM%20spherex.artifact%20a%20JOIN%20spherex.plane%20p%20ON%20a.planeid%20%3D%20p.planeid%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20248.1672347031%2C%2066.7550236345)%2C%20p.poly)%20ORDER%20BY%20p.time_bounds_lower": {
+   "file": "r-dra/70e06ea84426db25.csv",
+   "size": 523745,
+   "fetched": "2026-11-14T09:40:40.458Z",
+   "kind": "tap"
+  },
+  "/TAP/sync?FORMAT=csv&QUERY=SELECT%20a.uri%2C%20p.time_bounds_lower%2C%20p.time_bounds_upper%2C%20p.energy_bandpassname%2C%20p.energy_bounds_lower%2C%20p.energy_bounds_upper%2C%20p.obsid%2C%20p.quality_flag%20FROM%20spherex.artifact%20a%20JOIN%20spherex.plane%20p%20ON%20a.planeid%20%3D%20p.planeid%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20269.4462929624%2C%204.7678813020)%2C%20p.poly)%20ORDER%20BY%20p.time_bounds_lower": {
+   "file": "barnard/3a75770a8b24a79c.csv",
+   "size": 75311,
+   "fetched": "2026-11-14T09:34:51.008Z",
+   "kind": "tap"
+  },
+  "/TAP/sync?FORMAT=csv&QUERY=SELECT%20a.uri%2C%20p.time_bounds_lower%2C%20p.time_bounds_upper%2C%20p.energy_bandpassname%2C%20p.energy_bounds_lower%2C%20p.energy_bounds_upper%2C%20p.obsid%2C%20p.quality_flag%20FROM%20spherex.artifact%20a%20JOIN%20spherex.plane%20p%20ON%20a.planeid%20%3D%20p.planeid%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20331.0964419133%2C%20-56.8005723503)%2C%20p.poly)%20ORDER%20BY%20p.time_bounds_lower": {
+   "file": "eps-indi-b/52e048b8a996d573.csv",
+   "size": 96323,
+   "fetched": "2026-11-14T09:36:21.979Z",
+   "kind": "tap"
+  },
+  "/TAP/sync?FORMAT=csv&QUERY=SELECT%20a.uri%2C%20p.time_bounds_lower%2C%20p.time_bounds_upper%2C%20p.energy_bandpassname%2C%20p.energy_bounds_lower%2C%20p.energy_bounds_upper%2C%20p.obsid%2C%20p.quality_flag%20FROM%20spherex.artifact%20a%20JOIN%20spherex.plane%20p%20ON%20a.planeid%20%3D%20p.planeid%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%2076.9565863141%2C%2030.4012919800)%2C%20p.poly)%20ORDER%20BY%20p.time_bounds_lower": {
+   "file": "rw-aur/f8d1437979d0764d.csv",
+   "size": 70529,
+   "fetched": "2026-11-14T09:38:41.427Z",
+   "kind": "tap"
+  },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.7549324191%2C%20-7.2302512574%2C%200.0041666667))": {
    "file": "wise-0855/d9be2233b913b45e.csv",
    "size": 27,
-   "fetched": "2026-11-14T23:13:41.486Z",
+   "fetched": "2026-11-15T06:02:37.537Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.7577786034%2C%20-7.2420186009%2C%200.05))": {
    "file": "wise-0855/87f236ac2a22fa70.csv",
    "size": 140,
-   "fetched": "2026-11-14T23:13:39.823Z",
+   "fetched": "2026-11-15T06:02:35.923Z",
    "kind": "simbad"
   },
-  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.1455907916%2C%2066.7550222687%2C%200.0041666667))": {
-   "file": "r-dra/a92621898e5a76aa.csv",
+  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.1499219789%2C%2066.7498979203%2C%200.0041666667))": {
+   "file": "r-dra/2bf0add1b5e6d06b.csv",
    "size": 27,
-   "fetched": "2026-11-14T23:13:45.887Z",
+   "fetched": "2026-11-15T06:02:42.765Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.1672203826%2C%2066.7550253180%2C%200.05))": {
    "file": "r-dra/e1d2fd21a3b0a655.csv",
    "size": 154,
-   "fetched": "2026-11-14T23:13:44.379Z",
+   "fetched": "2026-11-15T06:02:40.723Z",
+   "kind": "simbad"
+  },
+  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.1888756312%2C%2066.7550223864%2C%200.0041666667))": {
+   "file": "r-dra/fa248eee53f0119e.csv",
+   "size": 27,
+   "fetched": "2026-11-15T06:02:42.463Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20269.4393719471%2C%204.7857861380%2C%200.0041666667))": {
    "file": "barnard/58702f1f91eff02b.csv",
    "size": 27,
-   "fetched": "2026-11-14T23:13:36.516Z",
+   "fetched": "2026-11-15T06:02:32.557Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20269.4460727235%2C%204.7707183640%2C%200.05))": {
    "file": "barnard/b1bd072e9d41cf79.csv",
    "size": 140,
-   "fetched": "2026-11-14T23:13:34.154Z",
+   "fetched": "2026-11-15T06:02:30.338Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20331.0624140088%2C%20-56.8006663248%2C%200.0041666667))": {
    "file": "eps-indi-b/28952fa4d898926e.csv",
    "size": 27,
-   "fetched": "2026-11-14T23:13:39.209Z",
+   "fetched": "2026-11-15T06:02:35.277Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20331.0984339339%2C%20-56.8012468832%2C%200.05))": {
    "file": "eps-indi-b/f4ba24bd5efca4fc.csv",
    "size": 152,
-   "fetched": "2026-11-14T23:13:37.695Z",
+   "fetched": "2026-11-15T06:02:33.791Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%2076.9328168821%2C%2030.4098297987%2C%200.0041666667))": {
    "file": "rw-aur/9be9aac2abc36881.csv",
    "size": 27,
-   "fetched": "2026-11-14T23:13:43.745Z",
+   "fetched": "2026-11-15T06:02:39.780Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%2076.9565886091%2C%2030.4012864140%2C%200.05))": {
    "file": "rw-aur/fe6d6a6c89a6fded.csv",
    "size": 392,
-   "fetched": "2026-11-14T23:13:42.093Z",
+   "fetched": "2026-11-15T06:02:38.173Z",
+   "kind": "simbad"
+  },
+  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%2076.9645092818%2C%2030.3961650455%2C%200.0041666667))": {
+   "file": "rw-aur/96e4cffd445f1c0d.csv",
+   "size": 27,
+   "fetched": "2026-11-15T06:02:40.080Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20800%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.760098%2C%20-7.242210%2C%200.113889))%20%3D%201": {
    "file": "wise-0855/3d2e29dbaf7c4549.csv",
    "size": 714,
-   "fetched": "2026-11-14T23:13:41.782Z",
-   "kind": "simbad"
-  },
-  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20800%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.167234%2C%2066.755024%2C%200.113889))%20%3D%201": {
-   "file": "r-dra/fb13e86308a8967d.csv",
-   "size": 402,
-   "fetched": "2026-11-14T23:13:46.181Z",
+   "fetched": "2026-11-15T06:02:37.855Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20800%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20269.446229%2C%204.768703%2C%200.113889))%20%3D%201": {
    "file": "barnard/891d14fc67baa48c.csv",
    "size": 2288,
-   "fetched": "2026-11-14T23:13:36.820Z",
+   "fetched": "2026-11-15T06:02:32.889Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20800%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20331.096733%2C%20-56.800671%2C%200.113889))%20%3D%201": {
    "file": "eps-indi-b/9d351464356d82bf.csv",
    "size": 691,
-   "fetched": "2026-11-14T23:13:39.516Z",
+   "fetched": "2026-11-15T06:02:35.607Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20800%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%2076.956587%2C%2030.401290%2C%200.113889))%20%3D%201": {
    "file": "rw-aur/f821b3b48f0313fe.csv",
    "size": 1711,
-   "fetched": "2026-11-14T23:13:44.056Z",
+   "fetched": "2026-11-15T06:02:40.395Z",
    "kind": "simbad"
   }
  }

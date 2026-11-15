@@ -10,7 +10,7 @@
 //
 // What is captured, per preset (the viewer's defaults: 2.5′ field, 120 images, all bands):
 //  - map: the pin's coverage image list (SIA at the pin's "now" position) and its 3′ SIMBAD cone;
-//  - viewer: the SIA (or TAP fallback) image list and the trimmed 3-HDU cutouts the app fetches,
+//  - viewer: the SIA and TAP image lists (merged into the complete list, judging panel a4b) and the trimmed 3-HDU cutouts the app fetches,
 //    plus the "Other source" SIMBAD cone (brightest other source in the first-season stack);
 //    the Ghost and Motion panel use the built-in preset values, so they need no Gaia call;
 //  - Spot a mover: the same image list and cutouts, and the field-level lookups the page starts
@@ -34,7 +34,7 @@ import { diskCache } from '../server/server.mjs';
 import { run, buildStacks, seasons } from '../web/app/data.js';
 import { PRESETS } from '../web/app/presets.js';
 import { DEFAULT_SETTINGS } from '../web/app/query.js';
-import { listImages, decodeCutout } from '../web/core/irsa.js';
+import { listImages, decodeCutout, setCompleteMode } from '../web/core/irsa.js';
 import { simbadCone } from '../web/app/skymap.js';
 import { fetchFieldStars, fetchFieldAsteroids } from '../web/app/spot/checks.js';
 import { LOAD_SETTINGS, fieldCentre } from '../web/app/spot/logic.js';
@@ -49,6 +49,9 @@ const CACHE_DIR = join(ROOT, '.cache', 'relay');
 const BASE = process.env.BASE || 'http://127.0.0.1:8787';
 const SETTINGS = { ...DEFAULT_SETTINGS, fov: 2.5, max: 120, band: 'all' }; // ui.js SETTINGS
 const TABLES = JSON.parse(readFileSync(join(ROOT, 'web', 'core', 'data', 'spectral_wcs.json'), 'utf8'));
+// { presetKey: [request URL, ...] } seen in a real browser load (performance entries) but not made by
+// the replay below, e.g. the viewer's "other source" SIMBAD cone when the page's stack differs a little.
+const EXTRA = (() => { try { const j = JSON.parse(readFileSync(join(ROOT, 'tools', 'prebake_extra.json'), 'utf8')); delete j.about; return j; } catch { return {}; } })();
 const IRSA_MS = 120000, JPL_MS = 100000, SIMBAD_MS = 20000;
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const sha1 = (s) => createHash('sha1').update(s).digest('hex');
@@ -168,7 +171,7 @@ async function otherSource(frames, grid, rec) {
   }
   const [ra, dec] = gridToWorld(grid, bx, by);
   await simbadCone(ra, dec, 15 / 3600, { limit: 5, timeoutMs: SIMBAD_MS, fetchFn: rec }).catch(e => console.log('  Other source SIMBAD: ' + e.message));
-  return { px: [bx, by] };
+  return { px: [bx, by] }; // the page's pick can differ (its stack differs a little): tools/prebake_extra.json
 }
 
 // Spot a mover (spot/main.js fieldStars + fieldAsteroids): the field-level lookups the page starts
@@ -214,11 +217,16 @@ for (const p of PRESETS) {
   const t0 = Date.now();
   const rec = recorder(p.key);
   const pin = propagate(p.target, NOW_MJD); // ui.js TARGETS: the pin sits at the star's "now" place
+  // The map pin's coverage line: the quick SIA list only (its TAP list is not saved, so the page uses SIA too).
+  setCompleteMode('never');
   await listImages(pin.ra, pin.dec, { base: BASE, fetchFn: rec }).catch(e => console.log(`  ${p.label} map coverage: ${e.message}`));
+  setCompleteMode('always'); // the viewer and Spot lists: SIA + TAP, saved, so the page uses the complete list (a4b)
   await simbadCone(pin.ra, pin.dec, 3 / 60, { limit: 400, timeoutMs: SIMBAD_MS, fetchFn: rec }).catch(e => console.log(`  ${p.label} map SIMBAD: ${e.message}`));
   const { frames, plan, failed } = await viewer(p, rec);
   if (!plan || !frames.length) { console.log(`  ${p.label}: no images; nothing prebaked for the viewer`); summary[p.key] = { label: p.label, frames: 0, planned: plan?.planned ?? 0, failed }; continue; }
   const other = await otherSource(frames, plan.grid, rec);
+  // Requests a real browser run made that the Node replay above does not predict (tools/prebake_extra.json).
+  for (const url of EXTRA[p.key] || []) await rec(url).then(r => r.arrayBuffer?.()).catch(e => console.log(`  ${p.label} extra request: ${e.message}`));
   const sp = await spot(p, frames, plan.grid, rec);
   summary[p.key] = { label: p.label, planned: plan.planned, frames: frames.length, failed, otherSourcePx: other?.px ?? null, spot: sp };
   console.log(`${p.label}: ${frames.length}/${plan.planned} images, ${failed} failed; Spot JPL ${sp.asteroidCheck ? sp.asteroidCheck.seasons.map(s => s.ok ? 'ok' : 'missing').join('/') : sp.skipped}; ${Math.round((Date.now() - t0) / 1000)} s`);
