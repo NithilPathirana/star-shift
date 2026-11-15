@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="styles/scan-loader.css?v=2">
 <link rel="stylesheet" href="styles/astro-loader.css?v=1">
 <link rel="stylesheet" href="styles/tour.css">
+<link rel="stylesheet" href="styles/story.css"><!-- b1: first-screen story (web/app/story.js) -->
 <link rel="stylesheet" href="styles/notebook.css">
 </head>
 <body>
@@ -81,13 +82,19 @@
         <div class="state" id="stMap" hidden role="alert"><div><h2>Sky map couldn't load</h2><p>The time-lapse still works.</p><div class="row"><button class="key primary" id="mapOpenFilm">Open time-lapse</button><button class="key" id="mapRetry">Try the map again</button></div></div></div>
         <div class="cur" id="cur" aria-hidden="true"><svg viewBox="-20 -20 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><circle r="12"/><path d="M0 -20v6M0 14v6M-20 0h6M14 0h6"/></svg><span class="cur-tag" id="curTag"></span></div>
         <div class="map-read num" id="mapRead"></div>
+        <section class="story on-stage" aria-label="What Star Shift does"><!-- b1 story, desktop copy (story.css / story.js) -->
+          <p class="story-a">Every six months, NASA's SPHEREx photographs the whole sky.</p>
+          <p class="story-b">Star Shift lets anyone flip through those photos, catch what moved, and prove it's real.</p>
+          <button type="button" class="key primary story-go">Watch Barnard's Star move <span aria-hidden="true">→</span></button>
+        </section>
+        <script>document.documentElement.dataset.story = /[?&]scene=viewer/.test(location.search) ? 'off' : 'on';</script>
         <div class="mb-key" id="mapBandsKey" hidden><!-- IR band ranges painted on the map (band-editor agent) -->
           <p class="mb-t">Coloured by your IR band ranges</p>
           <p class="mb-note" id="mapBandsNote"></p>
           <div class="mb-sw" id="mapBandsList"></div>
           <div class="mb-row"><button class="key mb-hold" id="mapBandsHold" type="button" aria-pressed="false">Hold to compare</button><button class="key mb-off" id="mapBandsOff" type="button">Turn off</button></div>
         </div>
-        <p class="map-ph" id="mapCredit">Drag to look around, scroll to zoom. Stars: Hipparcos (ESA). Imagery: NASA/SPHEREx DR1 (Caltech/IPAC) <span id="mapWl">at 1.63 µm</span>.<br><span class="map-logo-credit">Logo: AI-generated (SI) with ChatGPT; small version and favicon redrawn as SVG by Claude.</span></p>
+        <p class="map-ph" id="mapCredit">Drag to look around, <span class="z-wheel">scroll</span><span class="z-pinch">pinch</span> to zoom. Stars: Hipparcos (ESA). Imagery: NASA/SPHEREx DR1 (Caltech/IPAC) <span id="mapWl">at 1.63 µm</span>.<br><span class="map-logo-credit">Logo: AI-generated (SI) with ChatGPT; small version and favicon redrawn as SVG by Claude.</span></p>
       </div>
       <div class="tele" id="tele" hidden><!-- Telescope compare (DESIGN.md 31a) -->
         <div class="tele-head"><p class="tele-line">These are different wavelengths and different cameras. Compare where things are, not how bright they look.</p>
@@ -186,6 +193,11 @@
   </aside>
 
   <footer class="dock glass hero" id="dock" aria-label="Controls">
+    <section class="story in-dock map-only" aria-label="What Star Shift does"><!-- b1 story, phone copy -->
+      <p class="story-a">Every six months, NASA's SPHEREx photographs the whole sky.</p>
+      <p class="story-b">Star Shift lets anyone flip through those photos, catch what moved, and prove it's real.</p>
+      <div class="story-row"><button type="button" class="key primary story-go">Watch Barnard's Star move <span aria-hidden="true">→</span></button><button type="button" class="key story-tour" aria-label="Take the guided tour"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M12.8 7.2l-1.7 3.9-3.9 1.7 1.7-3.9z" stroke-linejoin="round"/></svg>Tour</button></div>
+    </section>
     <div class="map-dock map-only">
       <div class="rd"><span>Cursor</span><b id="mdCursor">–</b></div>
       <div class="rd"><span>Field of view</span><b id="mdFov">–</b></div>

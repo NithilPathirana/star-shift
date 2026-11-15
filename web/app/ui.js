@@ -25,6 +25,7 @@ import { createLightcurve } from './lightcurve/index.js'; // brightness-vs-date 
 import { createCleanBlink } from './cleanblink.js'; // Blink: hide overlays, zoom on the star
 import { createTelescopes } from './telescopes/index.js'; // Telescope compare (DESIGN.md 31a)
 import { CLARITY_KEY, readClarity } from './prefs.js'; // Clarity defaults (sounds off)
+import './story.js'; // b1: first-screen story on the cold-open map (story.css)
 
 const R = window.MockRender;
 const $ = id => document.getElementById(id), root = document.documentElement;
