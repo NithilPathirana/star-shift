@@ -45,7 +45,7 @@ test('counter: planned position while loading (no jump), "(of N)" when IRSA has 
   assert.equal(counterText({ i: 14, shown: 120, loading: false, planned: 120, loaded: 120, total: 358 }), '15 / 120 (of 358)');
   assert.equal(counterText({ i: 14, shown: 120, loading: false, planned: 120, loaded: 120, total: 120 }), '15 / 120');
   assert.equal(counterText({ i: 4, shown: 47, loading: false, held: true, total: 358 }), '5 / 47');
-  assert.equal(counterText({ i: 4, shown: 12, loading: true, held: true, planned: 120, loaded: 31 }), '5 · 31 of 120 loaded');
+  assert.equal(counterText({ i: 4, shown: 12, loading: true, held: true, planned: 120, loaded: 31, plannedIndex: 17 }), '18 / 120 · 31 loaded');
   assert.equal(counterText({ i: 0, shown: 0, loading: true, planned: 120, loaded: 0 }), '0 / 120 · 0 loaded');
   assert.equal(plannedIndexOf([61000, 61001.5, 61002], 61001.501), 1);
   assert.equal(plannedIndexOf([61000], 61005), -1);

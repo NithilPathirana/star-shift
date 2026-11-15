@@ -26,7 +26,7 @@ import { createCleanBlink } from './cleanblink.js'; // Blink: hide overlays, zoo
 import { createTelescopes } from './telescopes/index.js'; // Telescope compare (DESIGN.md 31a)
 import { CLARITY_KEY, readClarity } from './prefs.js'; // Clarity defaults (sounds off)
 import './story.js'; // b1: first-screen story on the cold-open map (story.css)
-import { motionVerdict } from './proof/logic.js'; // the Proof page's verdict rule, for the result plate
+import { motionVerdict, paDelta } from './proof/logic.js'; // the Proof page's verdict rule, for the result plate
 import { groupOfDet, groupByDets, centreMasked, bestGroup, counterText, plannedIndexOf, resultState, storyCaption, shareParams, verdictClass, VIEW_MODES } from './viewerbits.js';
 
 const R = window.MockRender;
@@ -340,7 +340,9 @@ function catalogueMotion() { // { value, err (mas/yr), vec: { pmra, pmdec }, sou
   const p = holdPreset(), pc = p && proofCat?.[p.key];
   if (pc && Number.isFinite(pc.value)) {
     const pa = (pc.pa ?? 0) * Math.PI / 180;
-    return { value: pc.value, err: pc.err || 0, vec: Number.isFinite(pc.pa) ? { pmra: pc.value * Math.sin(pa), pmdec: pc.value * Math.cos(pa) } : null, source: pc.source || '' };
+    // the arrow: the preset's own SIMBAD/Gaia pmra, pmdec (unrounded, as on Proof); else from proof.json's rounded PA
+    const tv = p.target && Number.isFinite(p.target.pmra) && Number.isFinite(p.target.pmdec) ? { pmra: p.target.pmra, pmdec: p.target.pmdec } : null;
+    return { value: pc.value, err: pc.err || 0, vec: tv || (Number.isFinite(pc.pa) ? { pmra: pc.value * Math.sin(pa), pmdec: pc.value * Math.cos(pa) } : null), source: pc.source || '' };
   }
   const t = V.target; if (!t || !(t.pmra || t.pmdec)) return null;
   return { value: totalPM(t.pmra, t.pmdec), err: 0, vec: { pmra: t.pmra, pmdec: t.pmdec }, source: t.source || '' };
@@ -350,6 +352,7 @@ const FAIL_WHY = { 'one season only': 'needs two seasons of images', 'too few fr
 let plateKey = '';
 function updatePlate() {
   const el = $('resultPlate'); if (!el) return;
+  if (V.stalled || V.status === 'error' || V.status === 'empty') { el.hidden = true; plateKey = ''; return; } // the stage's own message speaks
   const loading = V.status === 'loading', mo = V.motion, p = holdPreset();
   const how = `<a class="rp-how" href="proof.html${p ? '#' + p.key : ''}">How we know <span aria-hidden="true">→</span></a>`, sep = '<span class="sep">·</span>';
   let res = '', live = '', done = false, cap = '', capCat = '';
@@ -359,14 +362,19 @@ function updatePlate() {
   } else if (V.status === 'ready') {
     done = true;
     const cat = catalogueMotion(), mc = motionCheck();
-    const v = mo?.ok && cat ? motionVerdict(mo, cat.value, cat.err, mo.span, cat.vec)?.verdict : null;
+    const vr = mo?.ok && cat ? motionVerdict(mo, cat.value, cat.err, mo.span, cat.vec) : null, v = vr?.verdict ?? null;
+    // direction (Proof's own chip, a7): shown only when it is not "DIRECTION AGREES", so the viewer is never more confident than Proof
+    const dir = mo?.significant !== false && vr?.direction && vr.direction.verdict !== 'DIRECTION AGREES' ? vr.direction : null;
+    const dirTxt = dir && cat?.vec ? (() => { const pm = (Math.atan2(mo.pmra, mo.pmdec) * 180 / Math.PI + 360) % 360, pc = (Math.atan2(cat.vec.pmra, cat.vec.pmdec) * 180 / Math.PI + 360) % 360;
+      return `direction ${Math.abs(paDelta(pm, pc)).toFixed(1)}° off (${pm.toFixed(1)}° vs ${pc.toFixed(1)}°)`; })() : '';
     const st = resultState({ mo, measurable: mc ? mc.measurable : true, verdict: v, catYr: cat ? cat.value / 1000 : null });
     const tag = vv => `<span class="rp-v ${verdictClass(vv)}">${vv}</span>`;
     if (st.kind === 'fail') { res = `<span class="rp-k">Motion can't be measured here:</span> ${esc(FAIL_WHY[st.reason] || 'too faint to follow')} ${sep} ${how}`; live = `Motion can't be measured here: ${FAIL_WHY[st.reason] || 'too faint to follow'}.`; }
     else if (st.kind === 'nm') { res = `<span class="rp-k">Motion can't be measured here:</span> ${esc(NM_WHY(mc, mo))} ${sep} ${tag('NOT MEASURABLE')} ${sep} ${how}`; live = `Motion can't be measured here: ${NM_WHY(mc, mo)}. Not measurable.`; }
     else {
-      res = `<span class="rp-k">Measured here</span> <b>${st.value}</b><span class="brk"></span>${st.cat != null ? ` ${sep} <span class="rp-k">catalogue</span> ${st.cat.toFixed(2)}` : ''}${st.verdict ? ` ${sep} ${tag(st.verdict)}` : ''} ${sep} ${how}`;
-      live = `Measured here ${st.value}${st.cat != null ? `, catalogue ${st.cat.toFixed(2)}″ a year` : ''}${st.verdict ? `, ${st.verdict.toLowerCase()}` : ''}.`;
+      res = `<span class="rp-k">Measured here</span> <b>${st.value}</b><span class="brk"></span>${st.cat != null ? ` ${sep} <span class="rp-k">catalogue</span> ${st.cat.toFixed(2)}` : ''}${st.verdict ? ` ${sep} ${tag(st.verdict)}` : ''}`
+        + (dirTxt ? `<span class="rp-row"></span><span class="rp-k">${esc(dirTxt)}</span> ${sep} <span class="rp-v ${dir.verdict === 'DIRECTION OFF' ? 'differs' : 'limit'}" title="${dir.sigma.toFixed(1)}σ">${dir.verdict}</span>` : '') + ` ${sep} ${how}`;
+      live = `Measured here ${st.value}${st.cat != null ? `, catalogue ${st.cat.toFixed(2)}″ a year` : ''}${st.verdict ? `, ${st.verdict.toLowerCase()}` : ''}${dirTxt ? `; ${dirTxt}, ${dir.verdict.toLowerCase()}` : ''}.`;
     }
     // b2 caption: preset, measured, significant motion; numbers from the fit over the first-to-last stack dates
     if (p && st.kind === 'value' && mo.significant !== false && V.stacks.length > 1) {
@@ -379,7 +387,7 @@ function updatePlate() {
   const holdLine = mode === 'play' && HOLD.on && V.F.length ? `Showing ${HOLD.group.label}: ${esc(HOLD.note)}. <button type="button" class="rp-all" data-hold-off>Show all bands</button>` : '';
   const capHTML = story ? `${cap}<span class="rp-cat">${esc(capCat)}</span>` : holdLine;
   const key = [res, capHTML, done].join('|'); if (key === plateKey) return; plateKey = key;
-  el.classList.toggle('done', done); el.classList.toggle('measuring', !done);
+  el.classList.toggle('done', done); el.classList.toggle('measuring', !done); el.classList.toggle('two', res.includes('rp-row'));
   $('rpCap').innerHTML = capHTML; $('rpCap').hidden = !capHTML;
   const r = $('rpRes');
   if (r.dataset.done !== String(done) && done && !set.motion) { r.classList.add('swap'); setTimeout(() => r.classList.remove('swap'), 170); }
@@ -584,19 +592,20 @@ function progress() {
   const slow = V.retries > 0 && V.status === 'loading' && performance.now() - V.lastArrive > STALL_MS;
   V.scan?.slow(slow ? `The image archive (IRSA) is slow right now. ${V.FA.length} of ${V.planned} images in; still asking for the rest.` : null);
   if (V.status === 'loading') $('d-meas').textContent = `measuring… (${V.FA.length} of ${V.planned || '…'} images)`;
+  if (!V.F.length) setCounter(0); // "0 / 120 · 0 loaded" before the first image
   stallCheck();
   updatePlate();
 }
 /* Live-load watchdog (judging panel a10): no new image for 20 s, or IRSA keeps answering "busy"
    (8 retries in a row with no image between), and the stage says so, with Retry and
    "Use the N images loaded". AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
-const STALL_HARD_MS = 20000, STALL_RETRIES = 8;
+const STALL_HARD_MS = 18000, STALL_RETRIES = 8; // 18 s + the 1 s check: the message is up within 20 s
 let stallTimer = 0;
 function stallCheck() {
   if (V.status !== 'loading' || V.stalled) return;
   const quiet = performance.now() - V.lastArrive, busy = V.retries - (V.retriesAtArrive || 0);
   if (quiet < STALL_HARD_MS && busy < STALL_RETRIES) return;
-  V.stalled = true; $('thin').hidden = true; leaveLoader();
+  V.stalled = true; $('thin').hidden = true; leaveLoader(); updatePlate();
   const n = V.FA.length;
   $('errTxt').textContent = n ? `No new image for ${Math.round(quiet / 1000)} s${busy >= STALL_RETRIES ? ` (it answered "busy" ${busy} times)` : ''}. ${n} of ${V.planned} images arrived; you can use them, or ask again.`
     : `Nothing arrived in ${Math.round(quiet / 1000)} s${busy >= STALL_RETRIES ? ` (it answered "busy" ${busy} times)` : ''}. Retry asks again.`;

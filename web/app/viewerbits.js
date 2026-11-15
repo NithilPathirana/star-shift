@@ -38,13 +38,12 @@ export function bestGroup(frames, minFrames = 6) {
 
 // The counter under Play. i = index in the shown list.
 //  loading: "6 / 120 · 84 loaded" (position in the planned sequence, so it never jumps when an
-//           earlier image arrives late); held: "6 · 31 of 120 loaded" (the band's count is not known yet)
+//           earlier image arrives late; the same while one band is held)
 //  ready:   "15 / 120 (of 358)" when IRSA has more than we used; held: "6 / 47"
 export function counterText({ i, shown, loading, planned, loaded, total, plannedIndex, held }) {
   if (!shown) return loading && planned ? `0 / ${planned} · ${loaded || 0} loaded` : '';
   const k = i + 1;
-  if (loading) {
-    if (held) return `${k} · ${loaded} of ${planned} loaded`;
+  if (loading) { // also with one band held: the place in the whole planned sequence
     const n = Number.isFinite(plannedIndex) && plannedIndex >= 0 ? plannedIndex + 1 : k;
     return `${n} / ${planned} · ${loaded} loaded`;
   }
