@@ -125,6 +125,8 @@ const seasonName = v => { const a = new Date(V.F[v.from].date.slice(0, 10)), b =
   return `${MON[a.getUTCMonth()]}${a.getUTCFullYear() !== b.getUTCFullYear() ? ' ' + a.getUTCFullYear() : ''}–${MON[b.getUTCMonth()]} ${b.getUTCFullYear()}`; };
 // observing seasons: SPHEREx revisits a spot about every 6 months; visits < 60 days apart are one season
 // the same seasons as data.js (60-day gaps, and all-year runs near the ecliptic poles split, e.g. R Draconis)
+// a link straight into the viewer (?scene=viewer): until its first load is done, the map panel's IRSA coverage list waits
+let viewerFirst = new URLSearchParams(location.search).get('scene') === 'viewer';
 const visits = (F) => { let i = 0; return groupSeasons(F).map(s => { const v = { from: i, to: i + s.frames.length - 1 }; i += s.frames.length; return v; }); };
 const seasonOf = i => V.seasons.findIndex(v => i >= v.from && i <= v.to);
 
@@ -699,7 +701,7 @@ function load(query, label) {
   const finish = V.finish = () => {
     {
       clearInterval(stallTimer); V.stalled = false;
-      V.status = 'ready'; $('thin').hidden = true; const leaveWait = leaveLoader();
+      V.status = 'ready'; viewerFirst = false; $('thin').hidden = true; const leaveWait = leaveLoader();
       if (!V.FA.length) { V.status = 'error'; $('errTxt').textContent = 'No images arrived. The archive is often busy; Retry asks again.'; $('useLoaded').hidden = true; showState('stError'); Snd.play('error'); return; }
       showState(null);
       restack(); // seasons stacked from the images the flag filter keeps
@@ -1145,8 +1147,11 @@ function renderCD() {
     (t && cat && (cat.pmra || cat.pmdec) ? '<p class="quiet">Position shown for Nov 2026 (catalogue position moved along its proper motion).</p>' : '');
   // coverage: asked live from IRSA
   $('cdCov').innerHTML = '<p class="quiet">Asking IRSA what SPHEREx has here…</p>';
-  const to = AbortSignal.timeout(20000);
-  listImages(s.ra, s.dec, { base: BASE, signal: AbortSignal.any([ctl.signal, to]) }).then(imgs => {
+  // while the viewer is loading its images, wait: this ~0.8 MB list would share the link with them
+  // (b2: a cold Barnard load fetched both image lists at once). Then 20 s to answer.
+  const busy = () => (scene === 'viewer' && V.status === 'loading') || (viewerFirst && V.status !== 'ready' && V.status !== 'error');
+  const idle = () => new Promise(res => { const t0 = Date.now(), tick = () => (!busy() || Date.now() - t0 > 60000 ? res() : setTimeout(tick, 400)); tick(); });
+  idle().then(() => { if (ctl.signal.aborted) throw new DOMException('Aborted', 'AbortError'); return listImages(s.ra, s.dec, { base: BASE, signal: AbortSignal.any([ctl.signal, AbortSignal.timeout(20000)]) }); }).then(imgs => {
     if (ctl.signal.aborted) return;
     if (!imgs.length) { $('cdCov').innerHTML = '<p class="quiet">No SPHEREx images cover this point in the released data yet.</p>'; return; }
     const d = (m) => mjdToDate(m).toISOString().slice(0, 10), dets = [...new Set(imgs.map(i => i.detector))].sort();
