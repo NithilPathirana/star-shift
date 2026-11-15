@@ -30,7 +30,8 @@ import { diffImage, diffStar, diffCaption, drawDiff, diffLegend } from './diffvi
 import { CLARITY_KEY, readClarity } from './prefs.js'; // Clarity defaults (sounds off)
 import './story.js'; // b1: first-screen story on the cold-open map (story.css)
 import { fitPlaceholder, surpriseTarget } from './picktips.js'; // quick-pick tips, search placeholder, "Surprise me"
-import { motionVerdict, paDelta } from './proof/logic.js'; // the Proof page's verdict rule, for the result plate
+import { DISTANCES } from './distances.js'; // cited Gaia DR3 parallaxes (tools/fetch_distances.mjs)
+import { motionVerdict, paDelta, badgeText } from './proof/logic.js'; // the Proof page's verdict rule, for the result plate
 import { groupOfDet, groupByDets, centreMasked, bestGroup, counterText, plannedIndexOf, resultState, storyCaption, shareParams, verdictClass, VIEW_MODES, earlyBlinkReady, heldFitText, groupById } from './viewerbits.js';
 
 const R = window.MockRender;
@@ -428,7 +429,7 @@ function remeasure() {
    The numbers are the motion panel's fit (V.motion), the same numbers in Simple and Expert; the verdict is
    the Proof page's rule (proof/logic.js motionVerdict) with the Proof page's catalogue value (proof.json).
    AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
-let proofCat = null, proofNb = null; // preset key -> proof.json catalogue motion { value, err, pa, source }; Gaia neighbours
+let proofCat = null, proofNb = null, proofBlend = null; // preset key -> proof.json catalogue motion { value, err, pa, source }; Gaia neighbours
 // Master's honesty fix: a Gaia star inside the 15″ measuring circle (2.5 px × 6.15″) blends into every band,
 // so the held band's light is not the target's alone (WISE 0855: G 16.3 at 7.8″). From the neighbour data, not by name.
 const blendNb = () => { const p = holdPreset(), r = 2.5 * 6.15; return (proofNb?.[p?.key] || []).filter(x => x.sepArcsec <= r).sort((a, b) => a.g - b.g)[0] || null; };
@@ -440,6 +441,7 @@ function blendLine(name) {
 fetch('data/proof.json').then(r => r.json()).then(d => {
   proofCat = {}; for (const t of d.targets || []) { const m = (t.tests || []).find(x => x.type === 'motion'); if (m?.expected) proofCat[t.key] = m.expected; }
   proofNb = {}; for (const t of d.targets || []) proofNb[t.key] = t.extra?.neighbours || []; // Gaia DR3 neighbours (blend note)
+  proofBlend = {}; for (const t of d.targets || []) if (t.blendFit) proofBlend[t.key] = t.blendFit; // WISE 0855's two-source fit, information only
   updatePlate();
 }).catch(() => { proofCat = {}; });
 function catalogueMotion() { // { value, err (mas/yr), vec: { pmra, pmdec }, source } or null
@@ -467,8 +469,8 @@ function simpleRes(st, mo, dir, deg, tag) {
   let out = `<span>${esc(speed)}</span>${st.verdict ? ` ${tag(st.verdict)}` : ''}`;
   if (dir && deg != null) {
     const frac = mo.frames ? mo.maskedFrames / mo.frames : 0;
-    const why = frac >= 0.1 ? `: the star's bright centre is blanked in ${Math.round(frac * 100)}% of images, so we measure its edges` : ` from the catalogue's`;
-    out += `<span class="rp-row"></span><span>${esc(`Direction is about ${Math.max(1, Math.round(deg))}° off${why}.`)}</span> <span class="rp-v limit" title="${dir.sigma.toFixed(1)}σ">${dir.verdict}</span>`;
+    const why = frac >= 0.1 ? `, most likely because the star's bright centre is blanked in ${Math.round(frac * 100)}% of images, so we measure its edges` : ` from the catalogue's`;
+    out += `<span class="rp-row"></span><span>${esc(`Direction is about ${Math.max(1, Math.round(deg))}° off${why}.`)}</span> <span class="rp-v limit" title="${dir.sigma.toFixed(1)}σ">${badgeText(dir.verdict, dir.sigma)}</span>`;
   }
   return out;
 }
@@ -491,17 +493,20 @@ function updatePlate() {
     const dirTxt = dir && cat?.vec ? (() => { const pm = (Math.atan2(mo.pmra, mo.pmdec) * 180 / Math.PI + 360) % 360, pc = (Math.atan2(cat.vec.pmra, cat.vec.pmdec) * 180 / Math.PI + 360) % 360;
       return `direction ${Math.abs(paDelta(+pm.toFixed(1), +pc.toFixed(1))).toFixed(1)}° off (${pm.toFixed(1)}° vs ${pc.toFixed(1)}°)`; })() : ''; // from the shown angles
     const st = resultState({ mo, measurable: mc ? mc.measurable : true, verdict: v, catYr: cat ? cat.value / 1000 : null });
-    const tag = vv => `<span class="rp-v ${verdictClass(vv)}">${vv}</span>`;
+    const tag = vv => `<span class="rp-v ${verdictClass(vv)}">${badgeText(vv, vv === v ? vr?.sigma : null)}</span>`; // "AGREES 0.3σ": the verdict's own σ
     const nw = h => `<span class="nw">${sep} ${h}</span>`; // the "·" wraps with what follows it (design review 3, item 3)
     if (st.kind === 'fail') { res = `<span class="rp-k">Motion can't be measured here:</span> ${esc(FAIL_WHY[st.reason] || 'too faint to follow')} ${nw(how)}`; live = `Motion can't be measured here: ${FAIL_WHY[st.reason] || 'too faint to follow'}.`; }
     else if (st.kind === 'nm') { res = `<span class="rp-k">Motion can't be measured here:</span> ${esc(NM_WHY(mc, mo))} ${nw(tag('NOT MEASURABLE'))} ${nw(how)}`; live = `Motion can't be measured here: ${NM_WHY(mc, mo)}. Not measurable.`; }
     else {
       const xRes = `<span class="rp-k">Measured here</span> <b>${st.value}</b><span class="brk"></span>${st.cat != null ? ` ${sep} <span class="rp-k">catalogue</span> ${st.cat.toFixed(2)}` : ''}${st.verdict ? ` ${nw(tag(st.verdict))}` : ''}`
-        + (dirTxt ? `<span class="rp-row"></span><span class="rp-k">${esc(dirTxt)}</span> ${nw(`<span class="rp-v ${dir.verdict === 'DIRECTION OFF' ? 'differs' : 'limit'}" title="${dir.sigma.toFixed(1)}σ">${dir.verdict}</span>`)}` : '');
+        + (dirTxt ? `<span class="rp-row"></span><span class="rp-k">${esc(dirTxt)}</span> ${nw(`<span class="rp-v ${dir.verdict === 'DIRECTION OFF' ? 'differs' : 'limit'}" title="${dir.sigma.toFixed(1)}σ">${badgeText(dir.verdict, dir.sigma)}</span>`)}` : '');
       // judging panel 3 item 4: a still Gaia star inside the measuring circle pulls the fit toward zero (WISE 0855); from proof.json's neighbours
       const nb = mo.significant !== false ? blendNb() : null, lowTxt = nb ? `Likely a lower estimate: a star ${nb.sepArcsec.toFixed(1)}″ away blends in.` : '';
-      res = `<span class="x-only rp-x">${xRes}</span><span class="s-only rp-x">${simpleRes(st, mo, dir, dirTxt ? dirDeg(mo, cat) : null, tag)}</span>${lowTxt ? `<span class="rp-row"></span><span class="rp-k">${esc(lowTxt)}</span>` : ''} ${nw(how)}`;
-      live = `Measured here ${st.value}${st.cat != null ? `, catalogue ${st.cat.toFixed(2)}″ a year` : ''}${st.verdict ? `, ${st.verdict.toLowerCase()}` : ''}${dirTxt ? `; ${dirTxt}, ${dir.verdict.toLowerCase()}` : ''}.${lowTxt ? ' ' + lowTxt : ''}`;
+      // the Proof page's 'For information' line, word for word (make_proof.mjs), with proof.json's blendFit numbers
+      const bf = nb && proofBlend?.[p?.key], pm2 = x => (x / 1000).toFixed(2);
+      const bfTxt = bf ? `For information: fitting that star out (a two-source fit with its Gaia position fixed and the star width measured on Epsilon Indi B) gives ${pm2(bf.value)} ± ${pm2(bf.err)}″/yr from ${bf.frames} images, ${bf.sigma >= 0 ? '+' : ''}${bf.sigma}σ from the catalogue; the verdict uses the standard method above.` : '';
+      res = `<span class="x-only rp-x">${xRes}</span><span class="s-only rp-x">${simpleRes(st, mo, dir, dirTxt ? dirDeg(mo, cat) : null, tag)}</span>${lowTxt ? `<span class="rp-row"></span><span class="rp-k">${esc(lowTxt)}</span>` : ''}${bfTxt ? `<span class="rp-row"></span><span class="rp-k rp-info">${esc(bfTxt).replace(' (a two-source', '<span class="x-only"> (a two-source').replace('Epsilon Indi B)', 'Epsilon Indi B)</span>')}</span>` : ''} ${nw(how)}`;
+      live = `Measured here ${st.value}${st.cat != null ? `, catalogue ${st.cat.toFixed(2)}″ a year` : ''}${st.verdict ? `, ${st.verdict.toLowerCase()}` : ''}${dirTxt ? `; ${dirTxt}, ${dir.verdict.toLowerCase()}` : ''}.${lowTxt ? ' ' + lowTxt : ''}${bfTxt ? ' ' + bfTxt : ''}`;
     }
     // b2 caption: preset, measured, significant motion; numbers from the fit over the first-to-last stack dates
     if (p && st.kind === 'value' && mo.significant !== false && V.stacks.length > 1) {
@@ -1277,9 +1282,11 @@ function motionDial(pa) { // 64 px, north up, east left, fixed-length arrow
 function motionHTML(sel, t, cat, gaia, same, looking) {
   const preset = !!t?.preset;
   const pmFrom = gaia || (cat && (cat.pmra || cat.pmdec) ? cat : null);
-  const plxFrom = gaia && gaia.plx > 0 ? gaia : (cat?.plx > 0 ? cat : null);
+  // RW Aurigae: SIMBAD's system entry still has the old Hipparcos parallax; the cited Gaia DR3 one wins (distances.js)
+  const dd = DISTANCES[t?.preset?.key], cited = dd ? { plx: dd.plx, plxErr: dd.plxErr, cite: dd.cite } : null;
+  const plxFrom = cited || (gaia && gaia.plx > 0 ? gaia : (cat?.plx > 0 ? cat : null));
   const rvFrom = gaia && Number.isFinite(gaia.rv) ? gaia : (cat && Number.isFinite(cat.rv) ? cat : null);
-  const srcName = r => r === gaia ? 'Gaia DR3' : preset ? 'SIMBAD (built-in)' : 'SIMBAD';
+  const srcName = r => r?.cite ? r.cite : r === gaia ? 'Gaia DR3' : preset ? 'SIMBAD (built-in)' : 'SIMBAD';
   const k = pmFrom ? kinematics({ ra: sel.ra, dec: sel.dec, pmra: pmFrom.pmra, pmdec: pmFrom.pmdec, pmraErr: pmFrom.pmraErr, pmdecErr: pmFrom.pmdecErr,
     plx: plxFrom?.plx, plxErr: plxFrom?.plxErr, rv: rvFrom?.rv }) : null;
   let more = '', h = '';
@@ -1298,7 +1305,7 @@ function motionHTML(sel, t, cat, gaia, same, looking) {
       row('Angular speed across the sky', `${k.arcsecYr.toFixed(k.arcsecYr < 0.1 ? 4 : 2)}″/yr · 1 pixel every ${fYears(k.yrPerPix)} years`, 'calc', null, 'x-only') +
       row('Shift in SPHEREx images', `one image pixel every ${fYears(k.yrPerPix)} years`, 'calc', null, 's-only');
     if (k.dist) {
-      h += row('Parallax', `${nf(plxFrom.plx, 3)}${pm(plxFrom.plxErr, 3)} mas`, 'cat', null, 'x-only') +
+      h += row('Parallax', `${nf(plxFrom.plx, 3)}${pm(plxFrom.plxErr, 3)} mas${plxFrom.cite ? ` · ${esc(plxFrom.cite)}` : ''}`, 'cat', null, 'x-only') +
         row('Distance (1000 / parallax)', `${k.dist.pc < 100 ? k.dist.pc.toFixed(3) : nf(k.dist.pc, 0)} pc · ${k.dist.ly < 100 ? k.dist.ly.toFixed(2) : nf(k.dist.ly, 0)} ly`, 'calc',
           ent(`${name}distance (1000 / parallax)${k.dist.weak ? ', unreliable: parallax under 5× its error' : ''}`, +k.dist.pc.toFixed(k.dist.pc < 100 ? 3 : 0), 'pc', '', `Worked out from the ${srcName(plxFrom)} parallax`, 'COMPUTED'), 'x-only') +
         row('Distance', `about ${k.dist.ly < 10 ? k.dist.ly.toFixed(1) : nf(Math.round(k.dist.ly), 0)} light years`, 'calc', null, 's-only');

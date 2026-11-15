@@ -152,6 +152,11 @@ export function mainGroup(t) {
 }
 export const plainBand = (name) => String(name).replace(/\s*\(detectors[^)]*\)/, '');
 
+// σ on a verdict badge (judging panel round 4, item 4): "AGREES 0.4σ", from the same numbers the verdict uses
+// (motion: diff.sigma, the measured-vs-catalogue separation; brightness: the deciding group's σ). None for NOT MEASURABLE.
+export const badgeText = (v, sigma) => (v !== 'NOT MEASURABLE' && Number.isFinite(sigma) ? `${v} ${(+sigma).toFixed(1)}σ` : v);
+export const verdictSigma = (t) => (t.verdict === 'NOT MEASURABLE' ? null : t.type === 'motion' ? t.diff?.sigma ?? null : mainGroup(t)?.sigma ?? null);
+
 // The Proof row's "Why": one plain sentence, verdict in words first, then the one reason. Built only
 // from proof.json's numbers for this test (spec-proof-flags.md 1b); no σ, no brackets.
 export function whySentence(t, target, minYr = 0.7) {
@@ -168,7 +173,7 @@ export function whySentence(t, target, minYr = 0.7) {
       const off = `${Math.abs(d.paDiff).toFixed(1)}°`;
       const blanked = c?.blanked != null && c.fitted > 0 && c.blanked / c.fitted >= 0.25;
       const lead = `Speed ${speed}. Direction is ${off} off`;
-      if (d.verdict === 'DIRECTION OFF') return blanked ? `${lead} because the bright centre is blanked; we measure from the edges.` : `${lead}, more than the error bars allow.`;
+      if (d.verdict === 'DIRECTION OFF') return blanked ? `${lead}, most likely because the bright centre is blanked; we measure from the edges.` : `${lead}, more than the error bars allow.`;
       return `${lead}, at the limit of the error bars.`;
     }
     const wide = m && m.value > 0 && m.err / m.value > 0.2;
@@ -185,5 +190,12 @@ export function whySentence(t, target, minYr = 0.7) {
   const g = mainGroup(t);
   if (!g) return 'No clear change above the noise.';
   const what = `${g.value > 0 ? 'Fainter' : 'Brighter'} by ${Math.abs(g.value).toFixed(2)} mag at ${plainBand(g.name)} from the first to the last season`;
+  // the other wavelength group too, with its own σ, so a change in the other direction is not hidden (RW Aurigae)
+  const o = (t.measured?.groups || []).find(x => x !== g && x.ok && x.err > 0);
+  if (o) { // "Fainter by 0.73 mag at 3.8–5.0 µm and brighter by 0.30 mag at 0.75–3.8 µm: a clear change at 3.8–5.0 µm only."
+    const one = (x) => `${x.value > 0 ? 'fainter' : 'brighter'} by ${Math.abs(x.value).toFixed(2)} mag at ${plainBand(x.name)}`, both = `${one(g).replace(/^f/, 'F').replace(/^b/, 'B')} and ${one(o)}`;
+    if (t.verdict !== 'AGREES') return `${both}: not clearly above the noise.`;
+    return `${both}: a clear change ${o.sigma > 3 ? 'in both' : `at ${plainBand(g.name)} only`}.`;
+  }
   return t.verdict === 'AGREES' ? `${what}: a clear change.` : `${what}: not clearly above the noise.`;
 }

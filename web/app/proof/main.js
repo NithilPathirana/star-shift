@@ -4,14 +4,14 @@
 
 import { initClarity, showPop, closePop, esc } from '../archive/shell.js';
 import { DEFAULT_BANDS } from '../bands.js';
-import { VERDICT_CLASS, along, nmReason, mainGroup, plainBand, whySentence } from './logic.js';
+import { VERDICT_CLASS, along, nmReason, mainGroup, plainBand, whySentence, badgeText, verdictSigma } from './logic.js';
 import '../expert.js'; // Simple / Expert: .x-only (expert detail) and .s-only (plain-words twin)
 
 const $ = (id) => document.getElementById(id);
 const DASH = (why) => `<span class="dim" title="${esc(why)}">—</span>`;
 const arcs = (masYr, d = 2) => (masYr / 1000).toFixed(d);
 const sgn = (v, d = 2) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
-const chip = (v) => `<span class="pf-chip ${VERDICT_CLASS[v] || ''}">${esc(v)}</span>`;
+const chip = (v, sigma) => `<span class="pf-chip ${VERDICT_CLASS[v] || ''}">${esc(badgeText(v, sigma))}</span>`; // σ: proof/logic.js badgeText
 const mjdDate = (mjd) => new Date((mjd - 40587) * 86400000);
 const fmtDay = (d) => d.toISOString().slice(0, 10);
 const shortSource = (s) => String(s).split(/ \(via|[,;]/)[0].trim();
@@ -44,7 +44,9 @@ function measuredCell(t) {
   }
   const g = mainGroup(t);
   if (!g) return NA('No usable change');
-  return `<span title="${esc(plainBand(g.name))}">${numCell(`${Math.abs(g.value).toFixed(2)} ± ${g.err.toFixed(2)}`, ` mag ${g.value > 0 ? 'fainter' : 'brighter'}`)}</span>`;
+  // every measured wavelength group, the deciding one first (RW Aurigae: fainter at 3.8–5.0 µm, brighter at 0.75–3.8 µm)
+  const all = [g, ...(t.measured?.groups || []).filter(x => x.ok && x.err > 0 && x !== g)];
+  return all.map(x => `<span class="pf-grp" title="${esc(plainBand(x.name))}">${numCell(`${Math.abs(x.value).toFixed(2)} ± ${x.err.toFixed(2)}`, ` mag ${x.value > 0 ? 'fainter' : 'brighter'}${all.length > 1 ? ` at ${esc(plainBand(x.name))}` : ''}`)}</span>`).join('<br>');
 }
 function diffCell(t) {
   if (!t.diff) return DASH(t.verdict === 'NOT MEASURABLE' ? 'Nothing measured to compare' : 'No difference computed');
@@ -208,7 +210,7 @@ function render(d) {
         <td class="pf-exp">${expectedCell(t)}</td>
         <td class="pf-meas">${measuredCell(t)}</td>
         <td class="pf-diff x-only">${diffCell(t)}</td>
-        <td class="pf-ver">${chip(t.verdict)}${t.direction ? chip(t.direction.verdict) : ''}</td>
+        <td class="pf-ver">${chip(t.verdict, verdictSigma(t))}${t.direction ? chip(t.direction.verdict, t.direction.sigma) : ''}</td>
         <td class="pf-why"><p>${esc(whySentence(t, target, minYr))}</p></td>
         <td class="pf-more"><button class="pf-det" type="button" aria-expanded="false" aria-controls="${id}">Details ${chev}</button></td></tr>
         <tr class="drow pf-drow" id="${id}" hidden><td colspan="7">${evidence(t, target)}</td></tr>`;

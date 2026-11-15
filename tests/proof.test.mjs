@@ -145,14 +145,15 @@ test('why sentence: one plain sentence per row, from proof.json numbers', async 
   const d = JSON.parse(readFileSync(new URL('../web/data/proof.json', import.meta.url), 'utf8'));
   const why = (key, type) => { const t = d.targets.find(x => x.key === key); return whySentence(t.tests.find(x => x.type === type), t, 0.7); };
   const b = d.targets.find(t => t.key === 'barnard').tests[0];
-  assert.equal(why('barnard', 'motion'), `Speed matches. Direction is ${Math.abs(b.direction.paDiff).toFixed(1)}° off because the bright centre is blanked; we measure from the edges.`);
+  assert.equal(why('barnard', 'motion'), `Speed matches. Direction is ${Math.abs(b.direction.paDiff).toFixed(1)}° off, most likely because the bright centre is blanked; we measure from the edges.`);
   assert.equal(why('eps-indi-b', 'motion'), 'Speed and direction both match.');
   const w = d.targets.find(t => t.key === 'wise-0855').tests[0];
   assert.equal(why('wise-0855', 'motion'), `Matches inside a wide error bar: only ${w.measured.frames} long-wavelength images show it.`);
   // the viewer's not-measurable words (commit 7affb05), blanked centre first for R Draconis
   assert.equal(why('rw-aur', 'motion'), 'Not measurable: its catalogue motion is under the 0.7″ a year we can measure.');
   assert.match(why('r-dra', 'motion'), /^Not measurable: centre blanked in \d+ of \d+ images, and its catalogue motion is under the 0\.7″ a year we can measure\.$/);
-  assert.match(why('rw-aur', 'brightness'), /^Fainter by 0\.7\d mag at 3\.8–5\.0 µm from the first to the last season: a clear change\.$/);
+  // both wavelength groups (judging panel round 4, item 4): fainter at 3.8–5.0 µm, brighter at 0.75–3.8 µm
+  assert.match(why('rw-aur', 'brightness'), /^Fainter by 0\.7\d mag at 3\.8–5\.0 µm and brighter by 0\.\d\d mag at 0\.75–3\.8 µm: a clear change at 3\.8–5\.0 µm only\.$/);
   assert.match(why('r-dra', 'brightness'), /^Too bright to measure: its centre is saturated in /);
   for (const t of d.targets) for (const x of t.tests) {
     const s = whySentence(x, t, 0.7);
