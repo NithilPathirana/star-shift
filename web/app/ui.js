@@ -307,7 +307,7 @@ function draw() {
     const f = F[Math.min(P.i, F.length - 1)]; CX.drawStage(A, f, V.n, opt(A), true); GH.drawCanvas(A, f, +A.dataset.dev); info(f);
     const rg = rangeOf(f.um), bl = bandLabel(rg); // "CO₂-ice band · 3.82–4.42 µm": a range, not a detection
     $('chip').title = bl ? bl.tip : '';
-    $('chip').innerHTML = CX.chipLead() + (HOLD.on ? `<b class="hold-g" title="Hold one band is on: only detectors ${HOLD.group.dets.join('–')} play">${HOLD.group.label} only</b><span class="sep">·</span>` : '') + `${bl ? `<i class="sw" style="--rc:${rg.c}"></i><span>${esc(bl.name)}</span><span class="sep bl-r">·</span><span class="bl-r">${bl.range}</span><span class="sep">·</span>` : ''}<span>λ ${f.um ? f.um.toFixed(2) : '?'} µm</span><span class="sep bl-d x-only">·</span><span class="bl-d x-only">D${f.det}</span><span class="sep">·</span><span>${R.fmtDate(f.date)}</span>`;
+    $('chip').innerHTML = CX.chipLead() + (HOLD.on ? `<b class="hold-g" title="Hold one band is on: only detectors ${HOLD.group.dets.join('–')} play">${HOLD.group.label} only</b><span class="sep">·</span>` : '') + `<span>λ ${f.um ? f.um.toFixed(2) : '?'} µm</span>${bl ? `<span class="sep">·</span><i class="sw" style="--rc:${rg.c}"></i><span>${esc(bl.name)}</span><span class="sep bl-r">·</span><span class="bl-r">${bl.range}</span>` : ''}<span class="sep bl-d x-only">·</span><span class="bl-d x-only">D${f.det}</span><span class="sep">·</span><span>${R.fmtDate(f.date)}</span>`;
     A.setAttribute('aria-label', `SPHEREx infrared image of ${V.name}, ${R.fmtDate(f.date)}, ${f.um ? f.um.toFixed(2) + ' micrometres' : ''}`);
   } else if (mode === 'compare' && diffOn) drawDiffView(A);
   else if (mode === 'compare') {
@@ -355,7 +355,7 @@ function onFrame(i, manual) {
   if (!manual && P.playing && i > 0 && s !== seasonOf(i - 1)) Snd.play('seasonSoft');
   if (s >= 0) $('seasonLbl').innerHTML = seasonLabel(f.mjd) || `<b>Season ${s + 1}</b> of ${V.seasons.length} · ${seasonName(V.seasons[s])}`;
   const rg = rangeOf(f.um); // the coloured tick under the thumb, named in words (colour is never the only cue)
-  $('tlDate').innerHTML = (rg ? `<span class="tl-band" title="${esc(bandLabel(rg).text)}"><i style="--rc:${rg.c}"></i><span class="tlb-n">${esc(bandName(rg))}</span><span class="tlb-i" aria-hidden="true">${f.um ? `${f.um.toFixed(2)} µm` : esc(bandInitials(rg))}</span></span>` : '') + `<span>${R.fmtDate(f.date)}</span>`;
+  $('tlDate').innerHTML = (rg ? `<span class="tl-band" title="${esc(bandLabel(rg).text)}"><i style="--rc:${rg.c}"></i><span class="tlb-n">${f.um ? `λ ${f.um.toFixed(2)} µm · ` : ''}${esc(bandName(rg))}</span><span class="tlb-i" aria-hidden="true">${f.um ? `${f.um.toFixed(2)} µm` : esc(bandInitials(rg))}</span></span>` : '') + `<span>${R.fmtDate(f.date)}</span>`;
   track.setAttribute('aria-valuenow', i + 1); track.setAttribute('aria-valuetext', `Image ${i + 1}, ${R.fmtDate(f.date)}${rg ? ', ' + bandName(rg) : ''}`);
   setCounter(i, manual);
   { const k = V.FK.indexOf(f); if (k >= 0) LC.mark(k); } // the strip lists every kept image, all bands
