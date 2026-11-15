@@ -5,10 +5,14 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { statSync } from 'node:fs';
+import { join } from 'node:path';
 
 export const EXCLUDE = [':(exclude,glob)**/_build/**', ':(exclude,glob)**/*.log', ':(exclude,glob)**/.env*', ':(exclude,glob)**/*.env',
   ':(exclude,glob)**/.dev.vars', ':(exclude)web/source.zip',
-  ':(exclude)web/prebaked']; // prebaked = cached archive answers, not source: rebuilt by tools/export_prebaked.mjs
+  ':(exclude)web/prebaked', // prebaked = cached archive answers, not source: rebuilt by tools/export_prebaked.mjs
+  // loader media: served by the site and kept in the repo, but too big for the zip (Cloudflare's 25 MiB per file)
+  ':(exclude,glob)design/loader/**/*.mp4', ':(exclude,glob)design/loader/**/*.webm', ':(exclude,glob)design/loader/**/*.webp'];
 
 const BAD_NAME = [/(^|\/)\.env/i, /\.env$/i, /(^|\/)_build\//, /\.log$/i, /(^|\/)node_modules\//, /(^|\/)\.cache\//, /^web\/prebaked\//, /\.dev\.vars$/, /\.(pem|key|p12|pfx)$/i];
 const BAD_TEXT = [
@@ -24,8 +28,8 @@ const ALLOWED_EMAIL = /^(noreply@anthropic\.com|[^@]+@users\.noreply\.github\.co
 const BINARY = /\.(png|jpe?g|gif|webp|webm|mp4|woff2?|fits|gz|zip|ico|glb|bin|pdf)$/i;
 
 // git archive packs HEAD; ls-files (the index) takes the same pathspecs and matches HEAD once committed
-export function filesInZip(root) {
-  return execFileSync('git', ['ls-files', '--', '.', ...EXCLUDE], { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26 }).split('\n').filter(Boolean);
+export function filesInZip(root, { all = false } = {}) {
+  return execFileSync('git', ['ls-files', '--', '.', ...(all ? [] : EXCLUDE)], { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26 }).split('\n').filter(Boolean);
 }
 
 export function scanText(name, text) {
@@ -40,9 +44,14 @@ export function scanText(name, text) {
   return out;
 }
 
-export function scan(root) {
-  const problems = [], files = filesInZip(root);
-  for (const f of files) for (const re of BAD_NAME) if (re.test(f)) problems.push(`${f}: file type that must not ship`);
+// all: every tracked file (the GitHub repo, where web/prebaked/ belongs), not just the zip's list
+export function scan(root, { all = false } = {}) {
+  const problems = [], files = filesInZip(root, { all });
+  const names = all ? BAD_NAME.filter(re => !re.test('web/prebaked/x')) : BAD_NAME;
+  for (const f of files) for (const re of names) if (re.test(f)) problems.push(`${f}: file type that must not ship`);
+  if (all) for (const f of files) { // GitHub warns over 50 MB and refuses over 100 MB
+    try { const s = statSync(join(root, f)).size; if (s > 50 * 1048576) problems.push(`${f}: ${(s / 1048576).toFixed(1)} MB, over 50 MB`); } catch { /* deleted in the work tree */ }
+  }
   const texts = files.filter(f => !BINARY.test(f)); // binaries: names only
   // one git process for every blob in the index (":path"), not one per file
   const out = execFileSync('git', ['cat-file', '--batch'], { cwd: root, input: texts.map(f => `:${f}`).join('\n') + '\n', maxBuffer: 1 << 30 });
@@ -58,7 +67,7 @@ export function scan(root) {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const root = fileURLToPath(new URL('..', import.meta.url));
-  const p = scan(root);
+  const p = scan(root, { all: process.argv.includes('--all') });
   if (p.length) { console.error(`source scan: ${p.length} problem(s)\n` + p.join('\n')); process.exit(1); }
   console.log('source scan: clean');
 }

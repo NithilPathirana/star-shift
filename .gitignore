@@ -20,3 +20,30 @@ web/loader/
 
 # Built by npm run source-zip (git archive of HEAD); regenerate, do not commit
 web/source.zip
+
+# Not for the public repo (GitHub prep, Sun 15 Nov): tool caches, the team's video and pitch work,
+# design mockups/references/build frames, ad-hoc test screenshots and logs
+.impeccable/
+video/
+tools/metadata_report/
+design/mockups/
+design/references/
+design/pitch/
+design/loader/_retired/
+design/loader/scan/
+design/loader/v1.1/_build/
+design/loader/v1.1/preview.mp4
+design/loader/v1.1/astronaut-still.png
+evidence/fulltest/
+evidence/ground-vs-space/
+evidence/pages/
+evidence/proof/
+evidence/ring-bug/
+evidence/spot/
+evidence/tour/
+evidence/flags2/viewer-phone.png
+evidence/motion/*-tall.png
+evidence/motion/barnard.png
+evidence/motion$n-tall.png
+evidence/gemini-review-2200.md
+*.log
