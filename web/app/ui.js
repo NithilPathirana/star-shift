@@ -753,7 +753,7 @@ function autoRetry(ctl) {
   AUTO.t = setTimeout(async () => {
     clearInterval(AUTO.tick); AUTO.tick = 0; show();
     let ok = false; // a quiet probe: the image list only; the loader shows again only once it answers
-    try { const tg = V.target || await resolveTarget(V.query, { signal: ctl.signal }); await planImages(tg, SETTINGS, { base: BASE, signal: ctl.signal }); ok = true; } catch { /* still busy */ }
+    try { const tg = V.target || await resolveTarget(V.query, { signal: ctl.signal }); await planImages(tg, SETTINGS, { base: BASE, signal: ctl.signal }); ok = true; irsaState(false); } catch { /* still busy */ }
     if (V.ctl !== ctl || V.status !== 'error' || $('stError').hidden) return;
     if (scene !== 'viewer') { autoStop(); return; } // back on the map: the viewer asks again when reopened
     AUTO.n++;
@@ -890,7 +890,7 @@ function load(query, label) {
     else if (e.type === 'ERROR' || e.type === 'NOT_FOUND') {
       V.status = 'error'; $('thin').hidden = true;
       const busy = e.type === 'ERROR' && e.retryable !== false, irsa = busy && /IRSA/.test(e.message); // an outage: calm line + quiet retry
-      calmHead(irsa ? 'irsa' : busy ? 'simbad' : null);
+      calmHead(irsa ? 'irsa' : busy ? 'simbad' : null); if (irsa) irsaState(true);
       $('errTxt').textContent = irsa ? 'It has short outages on and off. Star Shift keeps asking quietly and loads the images as soon as it answers.' : e.message + (V.FA.length ? ` ${V.FA.length} images arrived and are kept.` : '');
       $('retry').hidden = e.type === 'NOT_FOUND'; $('useLoaded').hidden = !V.FA.length; $('useLoaded').textContent = `Use the ${V.FA.length} image${V.FA.length === 1 ? '' : 's'} loaded`;
       showState('stError'); if (busy) autoRetry(ctl); else Snd.play('error');
@@ -1149,13 +1149,13 @@ function select(ra, dec, t, fromUser) {
 // now, they open as that star: name, ring, catalogue motion and pre-saved images.
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 const PRESET_SNAP_ARCSEC = 10;
-function presetNear(ra, dec) {
+function presetNear(ra, dec, maxArcsec = PRESET_SNAP_ARCSEC) {
   let best = null, bestSep = Infinity;
   for (const t of TARGETS) for (let k = 0; k <= 80; k++) { // Barnard's Star: 80 steps of ~4.6″ along 27 years
     const p = propagate(t.preset.target, 51544.5 + (NOW_MJD + 365 - 51544.5) * k / 80), sep = separationArcsec(ra, dec, p.ra, p.dec);
     if (sep < bestSep) { bestSep = sep; best = t; }
   }
-  return bestSep <= PRESET_SNAP_ARCSEC ? best : null;
+  return bestSep <= maxArcsec ? best : null;
 }
 async function goTo(text) {
   $('serr').hidden = true; // a pick, a Try key or a new search clears an earlier error
@@ -1169,6 +1169,7 @@ async function goTo(text) {
   }
   const preset = findPreset(q.name);
   if (preset) { const t = TARGETS.find(x => x.key === preset.key); return flyTo(t.ra, t.dec, 2, () => select(t.ra, t.dec, t, false)); return; }
+  if (IRSA_ST.down) { busyNote(); Snd.play('tick'); return; } // IRSA down: steer to the saved stars before the click
   $('serr').hidden = true; toast(`Looking up “${q.name}” in SIMBAD…`);
   try {
     const tg = await resolveTarget(q);
@@ -1201,7 +1202,7 @@ function plainType(code) {
 }
 function showSearchError(text, why) {
   const near = TARGETS.find(x => { const a = x.name.toLowerCase().replace(/[^a-z]/g, ''), b = String(text).toLowerCase().replace(/[^a-z]/g, ''); return b.length > 3 && (a.startsWith(b.slice(0, 4)) || b.startsWith(a.slice(0, 4))); });
-  const el = $('serr'); el.hidden = false; $('toast').classList.remove('show'); // the "Looking up..." toast is answered
+  const el = $('serr'); el.hidden = false; el.classList.remove('calm'); $('toast').classList.remove('show'); // the "Looking up..." toast is answered
   el.innerHTML = `<span>${why ? esc(why) : `Couldn't find “${esc(text)}”.`}</span>${near ? `<button class="key" id="serrFix">Try ${esc(near.name)}</button>` : ''}${why && /coordinates|RA Dec|269\.45/i.test(why) ? '' : '<span style="color:var(--muted)">or type RA Dec like 269.45 +4.69</span>'}`; // one hint only (a11)
   if (near) $('serrFix').onclick = () => { el.hidden = true; $('q').value = near.name; goTo(near.name); };
 }
@@ -1247,6 +1248,7 @@ let cdCtl = null, repaintMot = null;
     form.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) { menu.hidden = true; e.stopPropagation(); } });
     menu.addEventListener('pointerdown', e => e.preventDefault()); // keep the field focused while clicking
     $('surpriseKey').onclick = () => {
+      if (IRSA_ST.down) { const p = TARGETS[Math.floor(Math.random() * TARGETS.length)]; Snd.play('click'); menu.hidden = true; $('serr').hidden = true; q.value = p.name; q.blur(); goTo(p.name); return; } // IRSA down: a saved star
       const tg = surpriseTarget(); Snd.play('click');
       menu.hidden = true; $('serr').hidden = true; q.value = tg.name; q.blur();
       document.querySelectorAll('.pick').forEach(x => x.setAttribute('aria-pressed', 'false'));
@@ -1831,7 +1833,11 @@ function toMap(instant, fromHistory) {
 }
 function playPatch(fromHistory) {
   if (fromHistory !== true) fromHistory = false; // as a click handler it gets the event
-  const s = M.sel; if (!s) return;
+  let s = M.sel; if (!s) return;
+  if (IRSA_ST.down && !s.t?.preset) { // IRSA down: a spot inside a saved target's 150″ cutout opens that saved target
+    const pt = presetNear(s.ra, s.dec, 75);
+    if (pt) { select(pt.ra, pt.dec, pt, false); s = M.sel; toast(`The NASA archive is busy, so this opens the saved ${pt.name}, which covers this spot.`); }
+  }
   Snd.play('click');
   const t = s.t, preset = t?.preset;
   const query = preset ? { type: 'name', name: preset.label } : t?.simbad ? { type: 'name', name: t.simbad.name } : { type: 'coords', ra: s.ra, dec: s.dec };
@@ -1902,6 +1908,28 @@ addEventListener('popstate', () => {
   } else if (want === 'viewer' && scene === 'map') playPatch(true);
   else if (want === 'map' && scene === 'viewer') toMap(false, true);
 });
+
+/* IRSA status (Sun 15 Nov outage): one cheap SIA ping per page (a tiny random cone, so no cached answer
+   stands in for IRSA) at start and every 60 s while the page is visible; a failed live load counts too.
+   While IRSA is down a small pill says so, and search, "Surprise me" and Play steer to the saved stars.
+   AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+const IRSA_ST = { down: false, t: 0 };
+function irsaState(down) { IRSA_ST.down = !!down; $('irsaPill').hidden = !down; }
+async function irsaPing() {
+  clearTimeout(IRSA_ST.t); IRSA_ST.t = setTimeout(irsaPing, 60000);
+  if (document.hidden) return;
+  const ra = (Math.random() * 360).toFixed(4), dec = (Math.random() * 120 - 60).toFixed(4);
+  try {
+    const r = await fetch(`${BASE}/SIA?COLLECTION=spherex_qr3&POS=circle+${ra}+${dec}+0.0001&RESPONSEFORMAT=VOTABLE`, { cache: 'no-store', signal: AbortSignal.timeout(10000) });
+    irsaState(!r.ok); r.body?.cancel?.().catch(() => {});
+  } catch { irsaState(true); }
+}
+setTimeout(irsaPing, 2500);
+function busyNote() { // calm inline note under the search box, with the saved stars
+  const el = $('serr'); el.hidden = false; el.classList.add('calm'); $('toast').classList.remove('show');
+  el.innerHTML = `<span>The NASA archive is busy right now. Try one of the saved stars:</span>${TARGETS.map(t => `<button class="key" type="button" data-n="${esc(t.name)}">${esc(t.name)}</button>`).join('')}`;
+  el.querySelectorAll('button[data-n]').forEach(b => { b.onclick = () => { Snd.play('click'); el.hidden = true; $('q').value = b.dataset.n; goTo(b.dataset.n); }; });
+}
 
 /* ---------- start ---------- */
 window.__app = { skymap, V, M }; // debugging hook (read-only use)

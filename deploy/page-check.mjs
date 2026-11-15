@@ -21,6 +21,8 @@ const PAGES = [
   ['/index.html#about', 6000],
   // Judging panel round 4, item 11: the first-screen key plays Barnard's Star through to a verdict on the plate
   ['/?cta', 7000],
+  // IRSA outage (Sun 15 Nov): IRSA's relay routes fail; the status pill shows, a search for a non-saved name gets the calm note, the error screen has its saved-target chips
+  ['/?irsa-down', 8000],
 ];
 // Help and About are two different panels (Nithil: "Help and About open the same thing")
 const POPS = "(() => { const v = id => { const p = document.getElementById(id); return !!p && !p.hidden && p.getClientRects().length > 0; };"
@@ -57,6 +59,7 @@ async function run() {
       const errs = [], soft = [];
       const h = (d) => {
         if (d.sessionId !== s) return;
+        if (d.method === 'Fetch.requestPaused') { send('Fetch.failRequest', { requestId: d.params.requestId, errorReason: 'Failed' }, s).catch(() => {}); return; } // /?irsa-down only
         if (d.method === 'Runtime.exceptionThrown') { const e = d.params.exceptionDetails; errs.push(`uncaught: ${(e.exception?.description || e.text || '').split('\n').slice(0, 2).map(x => x.trim()).join(' ')}`); }
         if (d.method === 'Runtime.consoleAPICalled' && d.params.type === 'error') {
           const t = d.params.args.map(a => a.value ?? a.description ?? '').join(' ').slice(0, 200);
@@ -71,6 +74,7 @@ async function run() {
       await send('Runtime.enable', {}, s); await send('Log.enable', {}, s); await send('Page.enable', {}, s);
       // unhandled rejections surface as Runtime.exceptionThrown ("Uncaught (in promise)")
       await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false }, s);
+      if (path === '/?irsa-down') await send('Fetch.enable', { patterns: ['*/SIA?*', '*/TAP/*', '*/ibe/*'].map(urlPattern => ({ urlPattern })) }, s);
       await send('Page.navigate', { url: base + path }, s);
       await sleep(wait);
       if (/scene=viewer/.test(path)) { // the viewer really opened and has images (not just "no errors");
@@ -133,6 +137,15 @@ async function run() {
         }
         if (!clicked) errs.push('the first-screen story key was not on screen');
         else if (!/AGREES|DIFFERS|AT THE LIMIT|NOT MEASURABLE/.test(v)) errs.push(`the story key did not reach a verdict within 45 s ("${v.slice(0, 80)}")`);
+      }
+      if (path === '/?irsa-down') {
+        const ev = async (x) => (await send('Runtime.evaluate', { expression: x, returnByValue: true, awaitPromise: true }, s)).result?.result?.value || {};
+        let p = {};
+        for (let k = 0; k < 15; k++) { p = await ev("(() => { const e = document.getElementById('irsaPill'); return { pill: !!e && !e.hidden && e.getClientRects().length > 0 }; })()"); if (p.pill) break; await sleep(1000); }
+        if (!p.pill) errs.push('IRSA blocked: the status pill did not show');
+        const n = await ev("(async () => { const q = document.getElementById('q'); q.value = 'Altair'; document.querySelector('form.search').requestSubmit(); await new Promise(r => setTimeout(r, 1200)); const e = document.getElementById('serr'); return { note: !e.hidden && e.classList.contains('calm'), chips: e.querySelectorAll('button[data-n]').length, saved: document.querySelectorAll('#openSaved button[data-n]').length }; })()");
+        if (!n.note || n.chips < 5) errs.push(`IRSA blocked: no calm search note with the saved stars (${JSON.stringify(n)})`);
+        if (n.saved < 5) errs.push(`the error screen lacks its saved-target chips (${n.saved})`);
       }
       if (path === '/index.html#about') { // the hash must survive the viewer's address rewrite and open About
         let d = {};
