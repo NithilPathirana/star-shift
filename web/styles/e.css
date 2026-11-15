@@ -32,6 +32,10 @@
 }
 html[data-contrast=more]{--ink:#0E0B09;--ink-2:#231C17;--muted:#352C25;--edge:rgba(40,28,18,.62);--edge-strong:rgba(40,28,18,.8);--glass-tint:rgba(252,249,245,.96);--glass-tint-2:rgba(250,246,240,.96);--stage-muted:#D6CABC}
 html[data-text=large]{font-size:115%}
+/* Large text: rail labels keep their 52 px column, dock segments grow with their labels (work order 7) */
+html[data-text=large] .nav-btn{font-size:.625rem}
+html[data-text=large] .map-read{height:auto;min-height:30px;padding-top:5px;padding-bottom:5px;flex-wrap:wrap;gap:0 8px;border-radius:15px}
+@container dock (min-width:521px){html[data-text=large] .view .seg{width:300px}html[data-text=large] .speed .seg{width:206px}}
 
 /* ===== Base ===== */
 *{box-sizing:border-box;margin:0}
