@@ -17,7 +17,8 @@ import { expertSwitch } from './expert.js';
     if (pop && !pop.querySelector('.expert-sw')) {
       const b = expertSwitch('expert-sheet');
       b.querySelector('.expert-l').innerHTML = 'Expert<small>Full coordinates, ±σ, χ², MJD, detector and flag details, CSV</small>';
-      pop.append(b);
+      const nav = pop.querySelector('nav');
+      if (nav) nav.after(b); else pop.append(b); // straight under the page list
     }
   };
   if (document.querySelector('link[href$="styles/expert.css"]')) place();
