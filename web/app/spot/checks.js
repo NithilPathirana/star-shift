@@ -45,8 +45,9 @@ export async function fetchFieldStars({ centre, base, fetchFn = prebakedFetch, s
   };
 }
 // The star check for one ring, from the field's catalogue answer.
-export function starCheckAt({ gaia, simbad }, at, epochs) {
-  return { ...decideStar({ gaia, simbad }, at, epochs), gaia: { ok: gaia.ok, n: gaia.stars?.length ?? 0, error: gaia.error }, simbad: { ok: simbad.ok, n: simbad.stars?.length ?? 0, error: simbad.error } };
+// dot: the clicked dot's measured centre { ra, dec, k } (logic.js dotAt), or null.
+export function starCheckAt({ gaia, simbad }, at, epochs, dot = null, opts = {}) {
+  return { ...decideStar({ gaia, simbad }, at, epochs, dot, opts), gaia: { ok: gaia.ok, n: gaia.stars?.length ?? 0, error: gaia.error }, simbad: { ok: simbad.ok, n: simbad.stars?.length ?? 0, error: simbad.error } };
 }
 
 // at: { ra, dec } of the ring; epochs: [{ mjd, label }] of the blinked seasons. (Per-click form, kept for tools.)

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as L from '../web/app/spot/logic.js';
 import { runStarCheck, runAsteroidCheck } from '../web/app/spot/checks.js';
-import { propagate } from '../web/core/motion.js';
+import { propagate, separationArcsec } from '../web/core/motion.js';
 import { PRESETS } from '../web/app/presets.js';
 
 const barnard = PRESETS.find(p => p.key === 'barnard').target;
@@ -191,7 +191,7 @@ test('a known object near the ring explains it only if SPHEREx could see it (V �
   // the verdict for a faint object near a known star stays Known star
   let s = L.checklistStep(L.initChecklist(), { type: 'start' });
   for (const [id, status, data] of [['flags', 'clear'], ['star', 'explained', { best: { name: 'RW Aur' }, mover: false }], ['asteroid', faint.status, faint], ['seasons', 'clear']]) s = L.checklistStep(s, { type: 'done', id, status, text: '', data });
-  assert.equal(L.decideVerdict(s).title, 'Known star');
+  assert.equal(L.decideVerdict(s).kind, 'known-star'); assert.equal(L.decideVerdict(s).title, 'Known still star', 'a star that does not move is named as still (A4)');
 });
 test('field-level lookups: one JPL request per season for the whole patch serves every click', async () => {
   const { fetchFieldAsteroids, asteroidCheckAt } = await import('../web/app/spot/checks.js');
@@ -289,4 +289,144 @@ test('banned words and things never appear on the page', () => {
   assert.match(html, /href="spot.html" aria-current="page"/);
   assert.doesNotMatch(html, /<img[^>]+(nasa|spherex)[^>]*>/i, 'no agency logos');
   for (const l of L.REPORT_LINKS) assert.match(l.href, /^https:\/\//);
+});
+
+// ---------- judging panel A4: the nearest source, not the first mover within 9.2″ (WISE 0855 decoy)
+// Real rows from the WISE 0855 field (Gaia DR3 + SIMBAD prebaked answers, 15 Nov 2026) and the real
+// season middles: all detectors 60801.22 / 61161.96, detectors 5–6 60801.19 / 61158.27.
+const WISE = { name: 'WISEA J085510.74-071442.5', ra: 133.81890825, dec: -7.247048, pmra: -8123.7, pmdec: 673.2, epoch: 2000, source: 'SIMBAD', otype: 'BD*' };
+const G163 = { name: 'Gaia DR3 5756956644387831296', ra: 133.75818250493919, dec: -7.241155906974705, pmra: -6.187834849360848, pmdec: 1.9308548733514355, epoch: 2016, source: 'Gaia DR3', g: 16.314917 };
+const W_CAT = { gaia: { ok: true, stars: [G163] }, simbad: { ok: true, stars: [WISE] } };
+const EP_ALL = [{ mjd: 60801.22, label: 'First season' }, { mjd: 61161.96, label: 'Latest season' }];
+const EP_56 = [{ mjd: 60801.19, label: 'First season' }, { mjd: 61158.27, label: 'Latest season' }];
+const verdictFor = (star) => L.decideVerdict(finished({ flags: 'clear', star: star.status, starData: star, asteroid: 'clear', seasons: 'clear' }));
+
+test('A4: the G 16.3 dot beside WISE 0855 is a known still star, not the brown dwarf predicted 4.6″ away', () => {
+  const g = propagate(G163, EP_ALL[1].mjd), w = propagate(WISE, EP_ALL[1].mjd);
+  const dot = { ra: g.ra, dec: g.dec, k: 1 }; // the dot's measured centre in the latest all-detector stack sits on the Gaia star
+  const old = L.matchCatalogue([G163, WISE], g, EP_ALL);
+  assert.ok(old.find(m => m.name === WISE.name).minSep < L.STAR_MATCH_ARCSEC, 'the brown dwarf is inside 9.2″, so the old first-mover rule named it');
+  const r = L.decideStar(W_CAT, g, EP_ALL, dot);
+  assert.equal(r.status, 'explained'); assert.equal(r.best.name, G163.name); assert.equal(r.mover, false);
+  assert.equal(r.rival.name, WISE.name);
+  assert.match(r.text, /^Gaia DR3 5756956644387831296, G 16\.3 is catalogued 0(\.0)?″ from the centre of the dot you clicked/);
+  assert.match(r.text, /WISEA J085510\.74-071442\.5, a brown dwarf that moves 8\.15″ a year, is predicted 4\.\d″ from the centre of the dot you clicked: further away/);
+  const v = verdictFor(r);
+  assert.equal(v.kind, 'known-star'); assert.equal(v.title, 'Known still star'); assert.equal(v.sub, 'Gaia DR3 5756956644387831296, G 16.3');
+  assert.match(L.plainCheckText('star', r), /^Gaia DR3 5756956644387831296, G 16\.3, a catalogued star, sits right here/);
+  // no dot measured: the ring is the reference, and it is on the Gaia star too
+  assert.equal(L.decideStar(W_CAT, g, EP_ALL).best.name, G163.name);
+  const sep = separationArcsec(g.ra, g.dec, w.ra, w.dec);
+  assert.ok(sep > 4 && sep < 5, `brown dwarf ${sep}″ from the Gaia star in the latest season`);
+});
+
+test('A4: clicking the brown dwarf in the 3.8–5.0 µm stack names it as a moving brown dwarf', () => {
+  const w = propagate(WISE, EP_56[1].mjd), g = propagate(G163, EP_56[1].mjd);
+  const r = L.decideStar(W_CAT, w, EP_56, { ra: w.ra, dec: w.dec, k: 1 });
+  assert.equal(r.best.name, WISE.name); assert.ok(r.mover); assert.equal(r.word, 'brown dwarf');
+  const v = verdictFor(r);
+  assert.equal(v.title, 'Known brown dwarf'); assert.equal(v.sub, 'moving as expected');
+  assert.equal(v.body[0], 'This is WISEA J085510.74-071442.5, a brown dwarf known to move this much.');
+  assert.match(L.plainCheckText('star', r), /a catalogued brown dwarf that moves/);
+  // the real latest 5–6 dot is a blend, centred 2.2″ from the brown dwarf and 2.5″ from the Gaia star:
+  // within the 1.5″ tie the mover is named
+  const f = 0.47, blend = { ra: w.ra + f * (g.ra - w.ra), dec: w.dec + f * (g.dec - w.dec), k: 1 };
+  assert.equal(L.decideStar(W_CAT, w, EP_56, blend).best.name, WISE.name);
+  // first season (4 images on 5–6): the two are 11.8″ apart; a click on the Gaia star's place with no dot under it
+  const g0 = propagate(G163, EP_56[0].mjd);
+  assert.equal(L.decideStar(W_CAT, g0, EP_56).best.name, G163.name);
+});
+
+test('A4: pickStar takes the nearest entry; a mover wins only a tie within 1.5″', () => {
+  const m = (name, ref, pm, shift, source = 'Gaia DR3') => ({ name, ref, minSep: ref, pm, shift, source });
+  assert.equal(L.pickStar([m('still', 0.3, 0.005, 0.01), m('mover', 1.0, 8, 8)]).name, 'mover', 'inside the tie');
+  assert.equal(L.pickStar([m('still', 0.3, 0.005, 0.01), m('mover', 2.0, 8, 8)]).name, 'still', 'outside the tie');
+  assert.equal(L.pickStar([m('old survey copy', 0.2, 0, 0, 'SIMBAD'), m('mover', 1.2, 10, 10, 'SIMBAD')]).name, 'mover');
+  assert.equal(L.pickStar([m('far', 9.5, 8, 8)]), null, 'nothing lands within 9.2″ of the ring');
+  assert.equal(L.STAR_TIE_ARCSEC, 1.5);
+  assert.equal(L.objectWord({ otype: 'BD*' }), 'brown dwarf'); assert.equal(L.objectWord({ otype: '*' }), 'star');
+  assert.equal(L.objectWord({ note: 'Coldest known brown dwarf' }), 'brown dwarf'); assert.equal(L.objectWord({ otype: 'WD*' }), 'white dwarf');
+  assert.equal(L.objectWord({ source: 'Gaia DR3' }), 'star');
+});
+
+test('A4: dotAt measures the dot nearest the click, not the brightest one nearby', () => {
+  const n = 25, data = new Float32Array(n * n).map((_, i) => 1 + ((i * 7919) % 13) / 100);
+  const add = (x, y, v) => { for (const [dx, dy, f] of [[0, 0, 1], [1, 0, 0.3], [-1, 0, 0.3], [0, 1, 0.3], [0, -1, 0.3]]) data[(y + dy) * n + x + dx] += v * f; };
+  add(9, 12, 60); add(13, 12, 15); // a bright star and a fainter one 4 pixels east
+  const st = { n, data };
+  const d = L.dotAt(st, 12.8, 12.1);
+  assert.ok(d && Math.abs(d.x - 13) < 0.3 && Math.abs(d.y - 12) < 0.3, `nearest dot: ${JSON.stringify(d)}`);
+  assert.equal(L.dotAt(st, 18, 18), null, 'empty sky');
+  assert.ok(Math.abs(L.dotAt(st, 9.2, 11.8).x - 9) < 0.3);
+  assert.equal(L.detectNear(st, 11.4, 12), null, 'detectNear lands on the bright neighbour\'s wing there');
+  assert.equal(Math.round(L.dotAt(st, 11.4, 12).x), 13, 'dotAt still finds the faint dot 1.6 pixels away');
+});
+
+test('A4: WISE 0855 is blinked on detectors 5–6 only, and the header says so', () => {
+  const b = L.fieldBand(L.fieldByKey('wise-0855'));
+  assert.deepEqual(b.dets, [5, 6]); assert.equal(b.text, 'Showing 3.8–5.0 µm: WISE 0855 is invisible at shorter wavelengths');
+  assert.equal(L.fieldBand(L.fieldByKey('barnard')), null); assert.equal(L.fieldBand(L.fieldByKey('s-leo')), null);
+  const seasonsOf = (fs) => [...new Set(fs.map(f => Math.floor(f.mjd / 300)))];
+  const frames = [1, 3, 5, 6].flatMap(d => [{ detector: d, mjd: 60800 }, { detector: d, mjd: 61160 }]);
+  const use = L.framesForField(frames, b, seasonsOf);
+  assert.ok(use.frames.every(f => f.detector === 5 || f.detector === 6) && use.frames.length === 4 && use.band === b);
+  const one = L.framesForField(frames.filter(f => f.mjd < 61000 || f.detector < 5), b, seasonsOf);
+  assert.equal(one.band, null, 'fewer than two seasons on 5–6: keep every detector');
+  assert.equal(L.framesForField(frames, null, seasonsOf).frames, frames);
+});
+
+// ---------- Master's rule (Full Function Test: RW Aur false "worth reporting"): a click on a catalogued
+// star's own edge, 2 px (12″) from it, is that star, never "Unexplained"
+test('a ring 2 px from a catalogued still star whose dot is found is Known star; 3 px on its glow is "Not a separate dot: part of"', async () => {
+  const { makeGrid, gridToWorld } = await import('../web/core/align.js');
+  const n = 25, grid = makeGrid(76.95, 30.4, n * 6.15, 6.15);
+  const data = new Float32Array(n * n).map((_, i) => 1 + ((i * 7919) % 13) / 100);
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) data[j * n + i] += 80 * Math.exp(-((i - 12) ** 2 + (j - 12) ** 2) / (2 * 0.9 ** 2)); // PSF ~1 px FWHM 2.1 px
+  const st = { n, data };
+  const [sra, sdec] = gridToWorld(grid, 12, 12);
+  const cat = { gaia: { ok: true, stars: [] }, simbad: { ok: true, stars: [{ name: 'RW Aur A', ra: sra, dec: sdec, pmra: 7.2, pmdec: -20.3, epoch: 2000, source: 'SIMBAD', otype: 'Or*' }] } };
+  const ep = [{ mjd: 60940, label: 'First season' }, { mjd: 61290, label: 'Latest season' }];
+  const ringAt = (x, y) => { const [ra, dec] = gridToWorld(grid, x, y); return { ra, dec }; };
+  const dotFor = (x, y) => { const d = L.dotAt(st, x, y) || L.wingPeak(st, x, y); if (!d) return null; const [ra, dec] = gridToWorld(grid, d.x, d.y); return { ra, dec, k: 0, part: !!d.part }; };
+  // 2 px south: the old ring-only match missed (12.3″ > 9.2″) while the seasons check found the dot
+  assert.equal(L.decideStar(cat, ringAt(12, 14), ep).status, 'clear', 'the bug: ring-only matching');
+  assert.ok(L.seasonPresence([st, st], () => [[12, 14]]).k === 2, 'the seasons check sees the star\'s own dot');
+  const r2 = L.decideStar(cat, ringAt(12, 14), ep, dotFor(12, 14));
+  assert.equal(r2.status, 'explained'); assert.equal(r2.best.name, 'RW Aur A'); assert.equal(r2.part, false);
+  assert.equal(verdictFor(r2).title, 'Known still star');
+  for (const px of [0, 1]) assert.equal(verdictFor(L.decideStar(cat, ringAt(12, 12 + px), ep, dotFor(12, 12 + px))).kind, 'known-star', `${px} px`);
+  // 3 px: no dot of its own there, the glow climbs to the star
+  const d3 = dotFor(12, 15);
+  assert.ok(d3?.part, 'walked uphill to the star');
+  const r3 = L.decideStar(cat, ringAt(12, 15), ep, d3);
+  assert.ok(r3.part); const v3 = verdictFor(r3);
+  assert.equal(v3.title, 'Not a separate dot'); assert.equal(v3.sub, 'part of RW Aur A');
+  assert.match(L.plainCheckText('star', r3), /^Your ring is on the glow of RW Aur A/);
+  // 6 px: empty sky, nothing above the noise: no peak, ring only, nothing catalogued there
+  assert.equal(dotFor(12, 18), null);
+  assert.equal(L.decideStar(cat, ringAt(12, 18), ep, null).status, 'clear');
+});
+
+test('Master\'s rule exception: a SEPARATE peak with a real dip between it and the catalogued star is not explained by it', async () => {
+  const { makeGrid, gridToWorld } = await import('../web/core/align.js');
+  const n = 25, grid = makeGrid(150, 10, n * 6.15, 6.15);
+  const data = new Float32Array(n * n).map((_, i) => 1 + ((i * 7919) % 13) / 100);
+  const psf = (x, y, a) => { for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) data[j * n + i] += a * Math.exp(-((i - x) ** 2 + (j - y) ** 2) / (2 * 0.6 ** 2)); };
+  psf(12, 12, 80); psf(12, 10, 30); // catalogued star at (12,12); an uncatalogued dot 2 px north (12.3″)
+  const st = { n, data };
+  const [sra, sdec] = gridToWorld(grid, 12, 12);
+  const cat = { gaia: { ok: true, stars: [{ name: 'Gaia DR3 1', ra: sra, dec: sdec, pmra: 0, pmdec: 0, epoch: 2016, source: 'Gaia DR3', g: 12 }] }, simbad: { ok: true, stars: [] } };
+  const ep = [{ mjd: 60940, label: 'First season' }, { mjd: 61290, label: 'Latest season' }];
+  const d = L.dotAt(st, 12, 10.6); // ring 1.4 px from the star (8.6″, inside 9.2″), on the faint dot
+  assert.ok(Math.abs(d.y - 10) < 0.4, `the faint dot (its centre leans a little towards the bright star): ${d.y}`);
+  const [rra, rdec] = gridToWorld(grid, 12, 10.6), [dra, ddec] = gridToWorld(grid, d.x, d.y);
+  const dot = { ra: dra, dec: ddec, k: 0 };
+  assert.equal(L.separatePeaks(st, d, { x: 12, y: 12 }), true, 'a dip between the two peaks');
+  const sep = (m) => L.separatePeaks(st, d, { x: 12, y: 12 });
+  assert.equal(L.decideStar(cat, { ra: rra, dec: rdec }, ep, dot, { separate: sep }).status, 'clear', 'its own peak: the star beside it does not explain it');
+  assert.equal(L.decideStar(cat, { ra: rra, dec: rdec }, ep, dot).status, 'explained', 'without the saddle test the ring match would explain it');
+  // one blended source (no dip): not separate
+  const one = { n, data: new Float32Array(n * n).map((_, i) => 1 + ((i * 7919) % 13) / 100) };
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) one.data[j * n + i] += 80 * Math.exp(-((i - 12) ** 2 + (j - 12) ** 2) / (2 * 1.2 ** 2));
+  assert.equal(L.separatePeaks(one, { x: 12, y: 12 }, { x: 12, y: 13.4 }), false);
 });

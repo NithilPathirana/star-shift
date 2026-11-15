@@ -201,3 +201,5 @@ html[data-motion=reduce] .sm-toast{transition:none}
 html:not([data-expert=on]) .sm-sbtn{grid-template-columns:28px minmax(0,1fr)}
 html:not([data-expert=on]) .sm-sv{text-align:left}
 @media (max-width:700px){.sm-clear{min-height:44px;padding:0 14px}.sm-sbtn{min-height:44px}}
+/* WISE 0855: the wavelengths Spot blinks, and why (judging panel A4) */
+.sm-fband{margin-top:4px;font-size:.875rem;color:var(--copper-ink);font-weight:500}

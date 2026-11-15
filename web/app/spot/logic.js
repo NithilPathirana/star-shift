@@ -13,6 +13,7 @@ import { centroid } from '../../core/align.js';
 import { formatRA, formatDec } from '../query.js';
 import { PRESETS } from '../presets.js';
 import { buildSbIdentParams } from '../neo/sb-ident.js';
+import { groupByDets } from '../viewerbits.js';
 
 export const PIXEL_ARCSEC = 6.15;
 // The viewer's own load settings (web/app/ui.js SETTINGS), so the relay's disk cache is shared.
@@ -40,6 +41,25 @@ export const SURPRISE = [
 ];
 export const ALL_FIELDS = [...QUICK, ...SURPRISE];
 export const fieldByKey = (k) => ALL_FIELDS.find(f => f.key === k) || null;
+
+// Detectors Spot stacks for a field (judging panel A4): a preset with motionDetectors (WISE 0855:
+// 5–6, the only detectors where it shows) is blinked on those alone, so the dot you see is the
+// brown dwarf and not a Gaia G 16.3 star 7.8″ away that fills the shorter wavelengths. null = all.
+// band: the header line, "Showing 3.8–5.0 µm: WISE 0855 is invisible at shorter wavelengths".
+export function fieldBand(f) {
+  const p = PRESETS.find(q => q.key === (f?.target?.presetKey || f?.key));
+  const dets = Array.isArray(p?.motionDetectors) && p.motionDetectors.length ? p.motionDetectors.slice().sort((a, b) => a - b) : null;
+  if (!dets) return null;
+  const g = groupByDets(dets);
+  const um = g ? g.label : `detectors ${dets.join(', ')}`;
+  return { dets, um, text: `Showing ${um}${p.holdNote ? `: ${p.holdNote}` : ''}` };
+}
+// The frames to stack: those on the field's detectors, unless that leaves fewer than two seasons.
+export function framesForField(frames, band, seasonsOf) {
+  if (!band) return { frames, band: null };
+  const on = frames.filter(fr => band.dets.includes(Number(fr.detector)));
+  return seasonsOf(on).length >= 2 ? { frames: on, band } : { frames, band: null };
+}
 
 // A different surprise patch from the current one. rand: () => [0, 1).
 export function pickSurprise(currentKey, rand = Math.random) {
@@ -149,43 +169,93 @@ const PLANET_TYPES = /^(Pl|Pl\?)$/;
 export const cleanSimbadName = (s) => String(s || '').replace(/^(NAME|\*|V\*)\s+/, '').replace(/\s+/g, ' ').trim();
 
 // stars: [{ name, ra, dec, pmra, pmdec, epoch, source, g? }]; at: { ra, dec } (the ring);
-// epochs: [{ mjd, label }] (the two blinked seasons). Sorted by closest predicted approach.
-export function matchCatalogue(stars, at, epochs) {
+// epochs: [{ mjd, label }] (the two blinked seasons); dot: { ra, dec, k } or null, the measured centre
+// of the dot you clicked, in blinked season k (dotAt below). Each entry gets `ref`: its distance from
+// that centre in that season, or (no dot) its closest approach to the ring. Sorted by `ref`.
+export function matchCatalogue(stars, at, epochs, dot = null) {
   return (stars || []).filter(s => Number.isFinite(s.ra) && Number.isFinite(s.dec)).map(s => {
     const pos = epochs.map(e => propagate({ ...s, pmra: s.pmra || 0, pmdec: s.pmdec || 0 }, e.mjd));
     const seps = pos.map(p => separationArcsec(at.ra, at.dec, p.ra, p.dec));
     let k = 0; seps.forEach((v, i) => { if (v < seps[k]) k = i; });
     const pm = Math.hypot(s.pmra || 0, s.pmdec || 0) / 1000;
     const shift = pos.length > 1 ? separationArcsec(pos[0].ra, pos[0].dec, pos[pos.length - 1].ra, pos[pos.length - 1].dec) : 0;
-    return { ...s, pos, seps, minSep: seps[k], at: k, pm, shift };
-  }).sort((a, b) => a.minSep - b.minSep);
+    const dk = dot && pos[dot.k] ? dot.k : -1;
+    const ref = dk >= 0 ? separationArcsec(dot.ra, dot.dec, pos[dk].ra, pos[dk].dec) : seps[k];
+    return { ...s, pos, seps, minSep: seps[k], at: k, pm, shift, ref, refAt: dk >= 0 ? dk : k };
+  }).sort((a, b) => a.ref - b.ref);
 }
 
-// Which catalogue entry explains the ring, if any. A star with a catalogued motion wins over an entry
-// without one (SIMBAD also lists the same star from older surveys with no motion, at old positions).
-export function pickStar(matches, radius = STAR_MATCH_ARCSEC) {
-  const hits = matches.filter(m => m.minSep <= radius);
+// Two catalogue entries closer together than this, as seen from the clicked dot, cannot be told
+// apart (judging panel A4). Physics: a SPHEREx pixel is 6.15″ and the PSF about one pixel, so a
+// dot's centre at 5× the noise is good to ~FWHM/(2.35 × 5) ≈ 0.5-1″; the catalogue motion is
+// propagated without the parallax wobble (up to 0.55″ for Barnard's Star, 0.44″ for WISE 0855); and
+// a season stack is the middle value of images spread over weeks. 1.5″ (a quarter pixel) covers
+// those together. Inside that tie a moving entry wins: SIMBAD also lists moving stars again from
+// older surveys with no motion, and those copies sit right beside the real star.
+export const STAR_TIE_ARCSEC = 1.5;
+
+// Which catalogue entry explains the ring, if any (judging panel A4: the NEAREST one, not the first
+// moving one within 9.2″). Master's rule (Sun 15 Nov, after the RW Aur false "worth reporting"): an
+// entry qualifies when its predicted place on that date lies within 1.5 × the PSF FWHM of the click
+// (the ring, in either season) OR of the peak the click belongs to (the clicked dot's measured centre,
+// or the top its glow climbs to). FWHM: the documented SPHEREx value, about one 6.15″ pixel, so
+// 1.5 × FWHM = STAR_MATCH_ARCSEC = 9.2″. The one exception: `separate(m)` says the clicked dot is its
+// own peak with a real dip (saddle) between it and that entry's place; then nearness to the ring
+// alone does not count. Among the qualifiers, the one closest to the peak wins (to the ring when
+// there is none). Ties within STAR_TIE_ARCSEC: a mover, then any catalogued motion, then SIMBAD (a
+// name rather than a Gaia number), then the closer one.
+export function pickStar(matches, radius = STAR_MATCH_ARCSEC, tie = STAR_TIE_ARCSEC, separate = null) {
+  const ref = (m) => (Number.isFinite(m.ref) ? m.ref : m.minSep);
+  const hits = matches.filter(m => ref(m) <= radius || (m.minSep <= radius && !(separate && separate(m))));
   if (!hits.length) return null;
-  hits.sort((a, b) => (b.pm > 0) - (a.pm > 0) || (b.source === 'SIMBAD') - (a.source === 'SIMBAD') || a.minSep - b.minSep);
-  return hits[0];
+  const d0 = Math.min(...hits.map(ref));
+  const close = hits.filter(m => ref(m) <= d0 + tie);
+  close.sort((a, b) => isMover(b) - isMover(a) || (b.pm > 0) - (a.pm > 0) || (b.source === 'SIMBAD') - (a.source === 'SIMBAD') || ref(a) - ref(b));
+  return close[0];
 }
 
 // Is it moving enough between the two blinked seasons to jump? Half a pixel or more.
-export const isMover = (m) => m && m.shift >= PIXEL_ARCSEC / 2;
+export const isMover = (m) => !!m && m.shift >= PIXEL_ARCSEC / 2;
 
-// gaia, simbad: { ok, stars, error }. Returns the check result.
-export function decideStar({ gaia, simbad }, at, epochs) {
+// What kind of object a catalogue entry is, for the wording (judging panel A4: WISE 0855 is a brown
+// dwarf, not "a star"). SIMBAD object types: BD* brown dwarf, WD* white dwarf; a preset's own note
+// ("Coldest known brown dwarf") counts too. Anything else (Gaia rows have no type) is a star.
+export function objectWord(s) {
+  const t = String(s?.otype || '').trim();
+  if (/^BD\*/.test(t) || /brown dwarf/i.test(String(s?.note || ''))) return 'brown dwarf';
+  if (/^WD\*/.test(t)) return 'white dwarf';
+  return 'star';
+}
+// "Gaia DR3 5756956644387831296, G 16.3" (Gaia's G magnitude when we have it)
+export const starLabel = (s) => `${s.name}${Number.isFinite(s.g) ? `, G ${s.g.toFixed(1)}` : ''}`;
+
+// gaia, simbad: { ok, stars, error }; dot: the peak the click belongs to, { ra, dec, k, part }: the
+// clicked dot's measured centre (dotAt), or with part: true the top of the glow the ring sits on
+// (wingPeak). separate(m): see pickStar. Returns the check result; part: true when the ring is on
+// the glow of the named star rather than on a dot of its own ("Not a separate dot: part of …").
+export function decideStar({ gaia, simbad }, at, epochs, dot = null, { separate = null } = {}) {
   const stars = [...(gaia?.ok ? gaia.stars : []), ...(simbad?.ok ? simbad.stars : [])];
-  const matches = matchCatalogue(stars, at, epochs);
-  const best = pickStar(matches);
+  const matches = matchCatalogue(stars, at, epochs, dot);
+  const best = pickStar(matches, STAR_MATCH_ARCSEC, STAR_TIE_ARCSEC, separate);
   const near = matches.slice(0, 6);
   if (best) {
     const e = epochs[best.at];
     const other = epochs.length > 1 ? epochs[1 - best.at] : null;
-    const text = isMover(best)
-      ? `${best.name} moves ${best.pm.toFixed(2)}″ a year. Its catalogue motion puts it ${fmtArc(best.minSep)} from your ring in the ${e.label.toLowerCase()}${other ? `, and ${offsetText(at, best.pos[1 - best.at])} in the ${other.label.toLowerCase()}` : ''}.`
-      : `${best.name} is catalogued ${fmtArc(best.minSep)} from your ring and moves only ${best.pm < 0.01 ? 'a tiny amount' : best.pm.toFixed(2) + '″ a year'}: it stays put between these seasons.`;
-    return { status: 'explained', best, near, mover: isMover(best), text };
+    const mover = isMover(best), word = objectWord(best);
+    const part = !!dot?.part && best.minSep > PIXEL_ARCSEC / 2; // the ring is on the star's glow, not on its dot
+    const from = !dot ? 'your ring' : dot.part ? 'the top of the glow your ring sits on' : 'the centre of the dot you clicked';
+    const dotTxt = !dot ? '' : dot.part ? ` Your ring sits on its glow: the light climbs to a peak ${fmtArc(best.ref)} from its place in the ${epochs[best.refAt].label.toLowerCase()}.`
+      : ` The dot you clicked is centred ${fmtArc(best.ref)} from its place in the ${epochs[best.refAt].label.toLowerCase()}.`;
+    // the closest entry of the other kind (a still star beside a mover, or the reverse), and why it lost
+    const rival = matches.find(m => m !== best && (m.minSep <= STAR_MATCH_ARCSEC || m.ref <= STAR_MATCH_ARCSEC) && isMover(m) !== mover);
+    const tied = rival && rival.ref - best.ref <= STAR_TIE_ARCSEC;
+    const rivalTxt = !rival ? ''
+      : isMover(rival) ? ` ${rival.name}, a ${objectWord(rival)} that moves ${rival.pm.toFixed(2)}″ a year, is predicted ${fmtArc(rival.ref)} from ${from}: further away, so this dot is not it.`
+        : ` ${starLabel(rival)}, a still star, is ${fmtArc(rival.ref)} from ${from}${tied ? ': too close to tell apart, so the moving one is named' : ': further away'}.`;
+    const text = mover
+      ? `${best.name} moves ${best.pm.toFixed(2)}″ a year. Its catalogue motion puts it ${fmtArc(best.minSep)} from your ring in the ${e.label.toLowerCase()}${other ? `, and ${offsetText(at, best.pos[1 - best.at])} in the ${other.label.toLowerCase()}` : ''}.${dotTxt}${rivalTxt}`
+      : `${starLabel(best)} is catalogued ${fmtArc(dot ? best.ref : best.minSep)} from ${from} and moves only ${best.pm < 0.01 ? 'a tiny amount' : best.pm.toFixed(2) + '″ a year'}: it stays put between these seasons.${part ? ` Your ring is ${fmtArc(best.minSep)} from it, on its glow.` : ''}${rivalTxt}`;
+    return { status: 'explained', best, near, mover, word, rival: rival || null, dot: dot || null, part, text };
   }
   if (!gaia?.ok || !simbad?.ok) {
     const down = [!gaia?.ok && 'Gaia', !simbad?.ok && 'SIMBAD'].filter(Boolean).join(' and ');
@@ -348,8 +418,10 @@ export function simpleBodyName(name) {
 export function plainCheckText(id, res) {
   if (!res) return '';
   if (id === 'star' && res.status === 'explained' && res.best) {
-    return res.mover ? `${res.best.name}, a catalogued star that moves, lands on your ring in one of the seasons.`
-      : `${res.best.name}, a catalogued star, sits right here and barely moves.`;
+    const word = res.word || objectWord(res.best);
+    if (res.part) return `Your ring is on the glow of ${res.best.name}, a catalogued ${word}, not on a dot of its own.`;
+    return res.mover ? `${res.best.name}, a catalogued ${word} that moves, lands on your ring in one of the seasons.`
+      : `${starLabel(res.best)}, a catalogued ${word}, sits right here and barely moves.${res.rival ? ` ${res.rival.name}, which moves, is predicted further away.` : ''}`;
   }
   if (id === 'asteroid' && (res.hit || res.faint)) {
     const row = res.hit || res.faint, what = `JPL predicts ${bodyWord(row.name)} ${simpleBodyName(row.name)} passes your ring on ${fmtDay(res.season.mjd)}`;
@@ -378,6 +450,28 @@ export function detectNear(stack, x, y, { search = DETECT_SEARCH_PX, minSnr = DE
   const c = centroid(stack, bx, by, 2);
   if (!c || !(c.snr >= minSnr) || Math.hypot(c.x - x, c.y - y) > search + 0.5) return null;
   return { x: c.x, y: c.y, snr: c.snr };
+}
+
+// The dot you clicked (judging panel A4): the NEAREST local peak to the click within the search
+// radius that stands 5× above the noise, and its measured centre; null if the click is on no dot.
+// (detectNear above takes the brightest pixel nearby, right for "is anything here", but next to a
+// brighter neighbour it would answer for the neighbour.)
+export function dotAt(stack, x, y, { search = DETECT_SEARCH_PX, minSnr = DETECT_MIN_SNR } = {}) {
+  const n = stack.n, peaks = [];
+  for (let j = Math.floor(y - search); j <= Math.ceil(y + search); j++) for (let i = Math.floor(x - search); i <= Math.ceil(x + search); i++) {
+    if (i < 0 || j < 0 || i >= n || j >= n || Math.hypot(i - x, j - y) > search || !Number.isFinite(stack.data[j * n + i])) continue;
+    if (isPeak(stack, i, j)) peaks.push([i, j]);
+  }
+  peaks.sort((a, b) => Math.hypot(a[0] - x, a[1] - y) - Math.hypot(b[0] - x, b[1] - y));
+  for (const [i, j] of peaks) {
+    // its own centre: the 3 × 3 pixels around the peak (PSF ~1 px), so a neighbour's wing 2 px away
+    // does not pull it; a centre that still drifts off its peak pixel falls back to the peak itself
+    const c = centroid(stack, i, j, 1.5, 1);
+    if (!c || !(c.snr >= minSnr)) continue;
+    const [cx, cy] = Math.hypot(c.x - i, c.y - j) <= 0.75 ? [c.x, c.y] : [i, j];
+    if (Math.hypot(cx - x, cy - y) <= search + 0.5) return { x: cx, y: cy, snr: c.snr };
+  }
+  return null;
 }
 
 function isPeak(stack, x, y) {
@@ -417,6 +511,38 @@ export function skyNoise(stack) {
   if (!v.length) return { sky: 0, sigma: Infinity };
   const med = v[v.length >> 1], dev = v.map(x => Math.abs(x - med)).sort((a, b) => a - b);
   return { sky: med, sigma: 1.4826 * dev[dev.length >> 1] || 1e-9 };
+}
+
+// The top of the glow a click sits on when it is not on a dot of its own (Master's rule: walk uphill
+// to the local peak): only when the light at the click is above the sky noise (else "Nothing here"),
+// and within GLOW_MAX_PX (the PSF wings). Returns { x, y, part: true } or null.
+export function wingPeak(stack, x, y) {
+  const n = stack.n, { sky, sigma } = skyNoise(stack), v = stack.data[Math.round(y) * n + Math.round(x)];
+  if (!(Number.isFinite(v) && v >= sky + 3 * sigma)) return null;
+  const g = glowSource(stack, x, y); if (!g) return null;
+  const c = Number.isFinite(stack.data[g.y * n + g.x]) ? centroid(stack, g.x, g.y, 1.5) : null;
+  return c && Math.hypot(c.x - g.x, c.y - g.y) < 1 ? { x: c.x, y: c.y, part: true } : { x: g.x, y: g.y, part: true };
+}
+// Is the source at b a SEPARATE peak from the dot at a (Master's rule)? Yes when b has its own maximum
+// (a local peak within one pixel of b, 5× above the noise, not a's own peak pixel) and the light along
+// the line between them dips at least 3× the noise below both peaks: a real saddle. Grid coordinates.
+export function separatePeaks(stack, a, b) {
+  const n = stack.n, val = (i, j) => (i < 0 || j < 0 || i >= n || j >= n ? NaN : stack.data[j * n + i]);
+  const { sky, sigma } = skyNoise(stack);
+  const ai = Math.round(a.x), aj = Math.round(a.y);
+  let bi = -1, bj = -1, bv = -Infinity;
+  for (let j = Math.round(b.y) - 1; j <= Math.round(b.y) + 1; j++) for (let i = Math.round(b.x) - 1; i <= Math.round(b.x) + 1; i++) {
+    const v = val(i, j); if (Number.isFinite(v) && v > bv) { bv = v; bi = i; bj = j; }
+  }
+  if (bi < 0 || (bi === ai && bj === aj) || !isPeak(stack, bi, bj) || bv < sky + 5 * sigma) return false;
+  const av = val(ai, aj), steps = Math.max(2, Math.ceil(Math.hypot(bi - ai, bj - aj) * 4));
+  let low = Infinity;
+  for (let k = 1; k < steps; k++) {
+    const i = Math.round(ai + (bi - ai) * k / steps), j = Math.round(aj + (bj - aj) * k / steps);
+    if ((i === ai && j === aj) || (i === bi && j === bj)) continue;
+    const v = val(i, j); if (Number.isFinite(v)) low = Math.min(low, v);
+  }
+  return Number.isFinite(low) && low <= Math.min(av, bv) - 3 * sigma;
 }
 
 // stacks: [{ label, n, data }]; pointsFor(k): candidate grid positions in season k (the ring, plus a
@@ -503,10 +629,16 @@ export function decideVerdict(state) {
   const decided = (v) => ({ ...v, running });
   if (by.star.status === 'explained') {
     const b = by.star.data?.best, mover = by.star.data?.mover;
-    const name = b?.name || 'a catalogued star';
-    return decided({ kind: 'known-star', title: 'Known star', sub: mover ? 'moving as expected' : 'not moving between these seasons',
-      body: mover ? [`This is ${name}, a star known to move this much.`, 'You found it by eye: that is exactly how it is done.']
-        : [`This is ${name}, a catalogued star.`, 'Its catalogued motion is too small to shift it between these seasons, so a change you saw is in brightness, not position.'],
+    const name = b?.name || 'a catalogued star', word = by.star.data?.word || (b ? objectWord(b) : 'star');
+    // a still entry is named with its Gaia G magnitude: "Known still star · Gaia DR3 …, G 16.3"
+    if (by.star.data?.part) { // Master's rule: the ring is on a catalogued star's glow
+      return decided({ kind: 'known-star', part: true, title: 'Not a separate dot', sub: `part of ${name}`,
+        body: [`This spot is the outer glow of ${name}, a catalogued ${word}, not an object of its own.`, 'A star\'s light spreads a pixel or two around its centre; the ring sits on that spread.'],
+        evidence: [by.star.text], notRun, decidedBy: 'star' });
+    }
+    return decided({ kind: 'known-star', still: !mover, title: mover ? `Known ${word}` : `Known still ${word}`, sub: mover ? 'moving as expected' : (b ? starLabel(b) : ''),
+      body: mover ? [`This is ${name}, a ${word} known to move this much.`, 'You found it by eye: that is exactly how it is done.']
+        : [`This is ${b ? starLabel(b) : name}, a catalogued ${word} that does not move between these seasons.`, 'Its catalogued motion is too small to shift it between these seasons, so a change you saw is in brightness, not position.'],
       evidence: [by.star.text], notRun, decidedBy: 'star' });
   }
   if (!isDone(by.star)) return { kind: 'pending' };

@@ -18,7 +18,7 @@ import {
   LOAD_SETTINGS, MAX_SUSPECTS, QUICK, fieldByKey, pickSurprise, nearestField, fmtDay, seasonRange, fmtPos,
   ARTEFACT_KINDS, flagsAtSpot, evaluateFlags, decideSeasons, seasonPresence, STATE_WORD, checkTitle,
   initChecklist, checklistStep, decideVerdict, summaryText, REPORT_LINKS, ASTEROID_HALF_WIDTH_DEG, offsetText, fieldCentre, passDistance,
-  plainCheckText, simpleBodyName, STAR_MATCH_ARCSEC, ASTEROID_MATCH_ARCSEC,
+  plainCheckText, simpleBodyName, STAR_MATCH_ARCSEC, ASTEROID_MATCH_ARCSEC, dotAt, wingPeak, separatePeaks, fieldBand, framesForField, STAR_TIE_ARCSEC,
 } from './logic.js';
 import { fetchFieldStars, starCheckAt, fetchFieldAsteroids, asteroidCheckAt } from './checks.js';
 import { pickTip, fitPlaceholder } from '../picktips.js'; // chip tips (NASA's challenge targets), search placeholder
@@ -43,7 +43,7 @@ function viewSettings() {
 }
 
 const S = {
-  field: null, target: null, grid: null, frames: [], stacks: [], seasonFrames: [], ready: false, ctl: null,
+  field: null, target: null, grid: null, frames: [], stacks: [], seasonFrames: [], allSeasons: [], band: null, ready: false, ctl: null,
   show: 0, blinking: true, timer: null, suspects: [], sel: null, loaded: 0, planned: 0, failed: 0,
 };
 const lastIdx = () => S.stacks.length - 1;
@@ -128,7 +128,8 @@ async function loadField(f) {
   const frames = [];
   const dog = watchdog(ctl, () => archiveDown(f, frames));
   stopBlink(); clearSuspects();
-  Object.assign(S, { field: f, target: f.target, grid: null, frames: [], stacks: [], seasonFrames: [], ready: false, loaded: 0, planned: 0, failed: 0, show: 0 });
+  Object.assign(S, { field: f, target: f.target, grid: null, frames: [], stacks: [], seasonFrames: [], allSeasons: [], band: null, ready: false, loaded: 0, planned: 0, failed: 0, show: 0 });
+  $('fBand').hidden = true; $('fBand').textContent = '';
   markPicks(); $('pickNote').textContent = ''; foldPick(true);
   $('fName').textContent = fieldTitle(f);
   const now = propagate(f.target, Date.now() / 86400000 + 40587);
@@ -175,13 +176,19 @@ function finishField(f, frames, partial = false) {
   if (S.field !== f) return;
   frames.sort((a, b) => a.mjd - b.mjd);
   if (partial) { S.loaded = frames.length; S.failed = S.planned - frames.length; }
-  S.frames = frames;
-  S.seasonFrames = groupSeasons(frames);
+  // WISE 0855 is blinked on detectors 5–6 only (logic.js fieldBand); JPL is still asked at each season's
+  // middle image of ALL loaded images, the request web/prebaked/ holds (tools/export_prebaked.mjs spot()).
+  S.allSeasons = groupSeasons(frames);
+  const use = framesForField(frames, fieldBand(f), groupSeasons);
+  S.band = use.band;
+  $('fBand').textContent = S.band ? S.band.text + '.' : ''; $('fBand').hidden = !S.band;
+  S.frames = use.frames;
+  S.seasonFrames = groupSeasons(use.frames);
   if (S.seasonFrames.length < 2) {
     if (S.failed) { showState('Too few images arrived', `${S.loaded} of ${S.planned} images came in; IRSA is busy. Retry asks again.`, [['Retry', () => loadField(f)]]); return; }
     return oneSeason(f);
   }
-  const st = buildStacks(frames);
+  const st = buildStacks(S.frames);
   S.stacks = st.map((s, i) => ({ ...s, label: i === 0 ? 'First season' : i === st.length - 1 ? 'Latest season' : `Season ${i + 1}`,
     F: { d: Array.from(s.data, v => (Number.isFinite(v) ? v : null)) },
     frames: S.seasonFrames[i].frames }));
@@ -224,7 +231,7 @@ function draw() {
     c.beginPath(); c.arc((gx + .5) * k, (gy + .5) * k, 1.1 * k, 0, Math.PI * 2); c.stroke(); c.restore();
   }
   for (const s of S.suspects) ring(c, s, k, s.id === S.sel);
-  $('chip').innerHTML = `<b>${esc(st.label)}</b><span class="sep">·</span><span>stacked, ${st.count} images</span>`;
+  $('chip').innerHTML = `<b>${esc(st.label)}</b><span class="sep">·</span><span>stacked, ${st.count} images</span>${S.band ? `<span class="sep">·</span><span>${esc(S.band.um)} only</span>` : ''}`;
   $('flag').textContent = seasonRange(st);
   cv.setAttribute('aria-label', `${st.label} of ${S.field.label}, stacked from ${st.count} SPHEREx images, ${seasonRange(st)}. ${S.suspects.length} suspects marked.`);
   segs();
@@ -291,7 +298,12 @@ $('cv').addEventListener('click', (e) => {
 function addSuspect(x, y) {
   const used = new Set(S.suspects.map(s => s.n)); let n = 1; while (used.has(n)) n++;
   const [ra, dec] = gridToWorld(S.grid, x, y);
-  const s = { id: nextId++, n, x, y, ra, dec, check: initChecklist(), lines: {}, verdict: null, token: null };
+  // the peak the click belongs to, in the season on screen (judging panel A4 + Master's rule): the dot
+  // under it (measured centre), else the top of the glow it sits on; the catalogue is matched to that
+  // as well as to the ring. Neither: the ring alone.
+  const k = S.show ? 1 : 0, d = dotAt(blinked()[k], x, y) || wingPeak(blinked()[k], x, y);
+  const dot = d ? (([dra, ddec]) => ({ ra: dra, dec: ddec, x: d.x, y: d.y, snr: d.snr, part: !!d.part, k }))(gridToWorld(S.grid, d.x, d.y)) : null;
+  const s = { id: nextId++, n, x, y, ra, dec, dot, check: initChecklist(), lines: {}, verdict: null, token: null };
   S.suspects.push(s); S.suspects.sort((a, b) => a.n - b.n);
   select(s.id); openSheet();
   runChecks(s);
@@ -349,7 +361,7 @@ function runChecks(s, retryId) {
   update(s);
   if (my.flags) setTimeout(() => settle('flags', evaluateFlags([A, B].map((st, i) => ({ label: epochs[i].label, frames: st.frames })), s.x, s.y)), reduce() ? 0 : 150);
   if (my.star) {
-    fieldStars(retryId === 'star').p.then(cat => starCheckAt(cat, at, epochs))
+    fieldStars(retryId === 'star').p.then(cat => starCheckAt(cat, at, epochs, s.dot, { separate: separateFrom(s) }))
       .catch(e => ({ status: 'failed', text: `The star catalogues did not answer (${e.message}).`, near: [] }))
       .then(res => { settle('star', res); if (my.seasons) settle('seasons', seasonsNow()); }); // seasons uses a known mover's predicted places
   } else if (my.seasons) setTimeout(() => settle('seasons', seasonsNow()), 0);
@@ -359,6 +371,13 @@ function runChecks(s, retryId) {
       .catch(e => ({ status: 'failed', text: `Could not ask JPL (${e.message}).`, results: [] }))
       .then(res => settle('asteroid', res));
   }
+}
+// Master's rule: a catalogue entry near the ring does not explain a clicked dot that is its own peak with
+// a real dip between it and the entry's place (logic.js separatePeaks), in the season the dot was measured.
+function separateFrom(s) {
+  if (!s.dot || s.dot.part) return null;
+  const st = blinked()[s.dot.k];
+  return (m) => { const p = m.pos?.[s.dot.k]; if (!p) return false; const [gx, gy] = worldToGrid(S.grid, p.ra, p.dec); return separatePeaks(st, s.dot, { x: gx, y: gy }); };
 }
 // Field-level lookups (lead, for the prebaked demo): Gaia + SIMBAD once per patch, JPL once per patch
 // and season, started when the field loads and matched locally for every ring. Kept in memory; a
@@ -385,7 +404,8 @@ function presetNames(stars) {
 }
 function fieldAsteroids(force) {
   const c = fieldCentre(S.grid);
-  const parts = blinked().map((st, i) => {
+  const all = S.allSeasons.length >= 2 ? [S.allSeasons[0], S.allSeasons[S.allSeasons.length - 1]] : [];
+  const parts = (all.length ? all.map(g => ({ frames: g.frames, mjd: g.frames.reduce((a, f) => a + f.mjd, 0) / g.frames.length })) : blinked()).map((st, i) => {
     const f = middleImage(st), season = { label: i ? 'Latest season' : 'First season', mjd: f.mjd, utc: f.date, obsid: f.obsid };
     return fieldLookup(`jpl|${c.ra},${c.dec}|${season.utc}`, () => fetchFieldAsteroids({ centre: c, seasons: [season], base: BASE })
       .then(r => Object.assign(r[0], { failed: !r[0].ok }))
@@ -458,10 +478,10 @@ function evidence(id, d, s) {
     const simpleRows = rows.slice(0, 3).map(r => `<li>${/^Gaia DR3 \d+$/.test(r.name) ? 'A star in Gaia DR3' : `<b>${esc(r.name)}</b> (${esc(r.source)})`}:${r.minSep <= STAR_MATCH_ARCSEC ? 'lands on your ring' : 'lands away from your ring'}${r.pm >= 1 ? ', moves fast' : ''}</li>`).join('');
     return `<p class="sm-evh">${tagged('CATALOGUE', 'cat')} nearest catalogue entries · predicted places ${tagged('COMPUTED', 'comp')}</p>
       <div class="s-only">${rows.length ? `<ul class="sm-evl">${simpleRows}</ul>` : '<p class="sm-evn">No catalogue entries near the ring.</p>'}
-      <p class="sm-evn">Checked against Gaia DR3 and SIMBAD. Each star is moved along its known motion to each season's date; it explains the ring when it lands within about one and a half pixels of it.${d.mover ? ' On the image, a dashed ivory ring marks where the catalogue puts it in the season shown.' : ''}</p></div>
+      <p class="sm-evn">Checked against Gaia DR3 and SIMBAD. Each star is moved along its known motion to each season's date; it explains the ring when it lands within about one and a half pixels of it. If more than one does, the one closest to the dot you clicked is named.${d.mover ? ' On the image, a dashed ivory ring marks where the catalogue puts it in the season shown.' : ''}</p></div>
       <div class="x-only">${rows.length ? `<table class="sm-tab"><thead><tr><th>Entry</th><th class="r">Motion</th><th>First season</th><th>Latest season</th></tr></thead><tbody>
       ${rows.map(r => `<tr${r === d.best ? ' class="on"' : ''}><td>${esc(r.name)}<small>${esc(r.source)}</small></td><td class="r num">${r.pm ? r.pm.toFixed(r.pm < 1 ? 3 : 2) + '″/yr' : '<span title="no motion in this catalogue entry">—</span>'}</td><td class="num">${esc(offsetText({ ra: s.ra, dec: s.dec }, r.pos[0]))}</td><td class="num">${esc(offsetText({ ra: s.ra, dec: s.dec }, r.pos[1]))}</td></tr>`).join('')}</tbody></table>` : '<p class="sm-evn">No catalogue entries near the ring.</p>'}
-      <p class="sm-evn">${esc(src)}. Each entry is moved in a straight line with its catalogued proper motion to the middle of each season (no parallax wobble). It explains the ring when it lands within 9.2″ (1.5 pixels).${d.mover ? ' On the image, a dashed ivory ring marks where the catalogue puts it in the season shown.' : ''}</p></div>`;
+      <p class="sm-evn">${esc(src)}. Each entry is moved in a straight line with its catalogued proper motion to the middle of each season (no parallax wobble). It explains the ring when it lands within 9.2″ (1.5 pixels) of it or of the dot you clicked; of those, the entry nearest ${d.dot?.part ? 'the top of the glow your ring sits on (no dot of its own under it)' : d.dot ? `the measured centre of the dot you clicked (${esc(d.dot.k ? 'latest' : 'first')} season, <span class="num">${d.dot.snr.toFixed(0)}</span>× the noise)` : 'your ring (no dot under it to measure)'} is named, a moving entry only when it is within ${STAR_TIE_ARCSEC}″ of the nearest.${d.mover ? ' On the image, a dashed ivory ring marks where the catalogue puts it in the season shown.' : ''}</p></div>`;
   }
   if (id === 'asteroid') {
     const res = d.results || [], ring = { ra: s.ra, dec: s.dec };
