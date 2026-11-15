@@ -732,6 +732,7 @@ export function summaryText(s) {
   L.push('');
   L.push('Checks:');
   for (const l of s.lines) L.push(`  ${checkTitle(l.id)}: ${STATE_WORD[l.status]}. ${l.text}`);
+  if (s.colourLine) L.push(`  ${s.colourLine}`); // 5th check (colour.js): an estimate, never part of the verdict
   if (s.verdict?.title) L.push(`Verdict: ${s.verdict.title}${s.verdict.sub ? ` (${s.verdict.sub})` : ''}`);
   L.push('');
   L.push(`Made with Star Shift from NASA SPHEREx data via IRSA: ${DOIS}. Catalogues: Gaia DR3, SIMBAD, JPL Small-Body Identification.`);

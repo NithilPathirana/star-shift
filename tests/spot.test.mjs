@@ -445,8 +445,9 @@ test('parseClick: click=ra,dec (first season unless on=latest); junk and impossi
 test('the "How Spot decides" links on spot.html are real fields with sky positions parseClick accepts', () => {
   const html = readFileSync(new URL('../web/spot.html', import.meta.url), 'utf8');
   const links = [...html.matchAll(/href="spot\.html\?([^"]+)">([^<]+)<\/a>/g)].map(m => ({ q: new URLSearchParams(m[1].replace(/&amp;/g, '&')), label: m[2] }));
-  assert.deepEqual(links.map(l => l.label), ['Known star', 'Not a separate dot', 'Likely artefact', 'Nothing here']);
-  for (const l of links) { assert.ok(L.fieldByKey(l.q.get('field')), l.label); assert.ok(L.parseClick(l.q), l.label); }
+  assert.deepEqual(links.map(l => l.label), ['Known star', 'Not a separate dot', 'Likely artefact', 'Nothing here', 'Known asteroid']);
+  for (const l of links.slice(0, 4)) { assert.ok(L.fieldByKey(l.q.get('field')), l.label); assert.ok(L.parseClick(l.q), l.label); }
+  assert.equal(links[4].q.get('field'), 'botha', 'Known asteroid opens the one-night example (web/app/spot/botha.js)');
   assert.ok(!/discover|new planet/i.test(html.slice(html.indexOf('id="howH"'), html.indexOf('</section>', html.indexOf('id="howH"')))));
 });
 

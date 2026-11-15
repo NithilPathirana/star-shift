@@ -89,6 +89,7 @@ html[data-motion=reduce] .sm-line i{transition:none}
 .st-clear .sm-ic,.st-clear .sm-word{color:var(--sage)}
 .st-explained .sm-ic,.st-explained .sm-word{color:var(--copper)}
 .st-failed .sm-ic,.st-failed .sm-word{color:var(--coral)}
+.st-info .sm-ic,.st-info .sm-word{color:var(--ink-2)} /* Colour (estimate): supporting evidence, not a check result */
 html[data-motion=full] .sm-spin{animation:sm-spin 1s linear infinite}
 @keyframes sm-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.sm-spin{animation:none!important}}

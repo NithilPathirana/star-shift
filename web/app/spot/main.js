@@ -9,7 +9,7 @@
 import { planImages, gridFor, loadFrame, buildStacks, seasons as groupSeasons } from '../data.js';
 import { mapLimit } from '../../core/irsa.js';
 import { gridToWorld, worldToGrid } from '../../core/align.js';
-import { propagate } from '../../core/motion.js';
+import { propagate, separationArcsec } from '../../core/motion.js';
 import { fmtArc } from '../../core/ghost.js';
 import { parseQuery, formatRA, formatDec } from '../query.js';
 import { initClarity, showPop, closePop, resolve, updateNav, esc } from '../archive/shell.js';
@@ -19,10 +19,13 @@ import {
   ARTEFACT_KINDS, flagsAtSpot, evaluateFlags, decideSeasons, seasonPresence, STATE_WORD, checkTitle,
   initChecklist, checklistStep, decideVerdict, summaryText, REPORT_LINKS, ASTEROID_HALF_WIDTH_DEG, offsetText, fieldCentre, passDistance,
   plainCheckText, simpleBodyName, parseClick, STAR_MATCH_ARCSEC, ASTEROID_MATCH_ARCSEC, dotAt, wingPeak, separatePeaks, fieldBand, framesForField, STAR_TIE_ARCSEC,
+  PIXEL_ARCSEC, starLabel,
 } from './logic.js';
 import { fetchFieldStars, starCheckAt, fetchFieldAsteroids, asteroidCheckAt } from './checks.js';
+import { measureColour, colourEstimate, colourLines, withColour, ratioText, COLOUR_LABEL, AP_PX, COLOUR_GROUPS } from './colour.js'; // 5th check: supporting evidence only
 import { pickTip, fitPlaceholder } from '../picktips.js'; // chip tips (NASA's challenge targets), search placeholder
 import { isExpert } from '../expert.js'; // Simple / Expert: .x-only and .s-only twins below
+import { BOTHA_KEY, BOTHA_URL, bothaFrames, bothaGrid, bothaColour, bothaCard } from './botha.js'; // "Known asteroid" example: one night
 
 // Both twins in the page; CSS from expert.js shows one. Identical texts render once.
 const twin = (simple, expert) => (simple === expert ? expert : `<span class="s-only">${simple}</span><span class="x-only">${expert}</span>`);
@@ -128,7 +131,7 @@ async function loadField(f) {
   S.ctl?.abort(); const ctl = S.ctl = new AbortController();
   const frames = [];
   const dog = watchdog(ctl, () => archiveDown(f, frames));
-  stopBlink(); clearSuspects();
+  stopBlink(); bothaMode(false); clearSuspects();
   Object.assign(S, { field: f, target: f.target, grid: null, frames: [], stacks: [], seasonFrames: [], allSeasons: [], band: null, ready: false, loaded: 0, planned: 0, failed: 0, show: 0 });
   $('fBand').hidden = true; $('fBand').textContent = '';
   markPicks(); $('pickNote').textContent = ''; foldPick(true);
@@ -233,6 +236,16 @@ function draw() {
     c.beginPath(); c.arc((gx + .5) * k, (gy + .5) * k, 1.1 * k, 0, Math.PI * 2); c.stroke(); c.restore();
   }
   for (const s of S.suspects) ring(c, s, k, s.id === S.sel);
+  if (S.botha && st.predicted) { // JPL's predicted place at this image's time (Ghost style: hollow dashed ivory ring)
+    c.save(); c.strokeStyle = 'rgba(255,246,232,.85)'; c.lineWidth = Math.max(1.5, k / 10); c.setLineDash([k * .3, k * .25]);
+    c.beginPath(); c.arc((st.predicted.x + .5) * k, (st.predicted.y + .5) * k, 1.6 * k, 0, Math.PI * 2); c.stroke(); c.restore();
+  }
+  if (S.botha) {
+    $('chip').innerHTML = `<b>${esc(st.label)}</b><span class="sep">·</span><span>one image, ${esc(st.wl.toFixed(2))} µm</span>`;
+    $('flag').textContent = `14 Dec 2025 · ${st.utc.slice(11, 19)} UTC`;
+    cv.setAttribute('aria-label', `${st.label}: one SPHEREx image of 14 Dec 2025 at ${st.utc.slice(11, 19)} UTC, ${st.wl.toFixed(2)} µm. A dashed ring marks where JPL predicts asteroid 1354 Botha at that time.`);
+    return segs();
+  }
   $('chip').innerHTML = `<b>${esc(st.label)}</b><span class="sep">·</span><span>stacked, ${st.count} images</span>${S.band ? `<span class="sep">·</span><span>${esc(S.band.um)} only</span>` : ''}`;
   $('flag').textContent = seasonRange(st);
   cv.setAttribute('aria-label', `${st.label} of ${S.field.label}, stacked from ${st.count} SPHEREx images, ${seasonRange(st)}. ${S.suspects.length} suspects marked.`);
@@ -290,6 +303,7 @@ $('clearAll').onclick = (e) => {
 };
 $('cv').addEventListener('click', (e) => {
   if (!S.ready) return;
+  if (S.botha) { toast('This example is fixed: the dashed ring is JPL\'s predicted place. Pick a field above to click your own.'); return; }
   const r = $('cv').getBoundingClientRect();
   const x = (e.clientX - r.left) / cssCell - .5, y = (e.clientY - r.top) / cssCell - .5;
   const hit = S.suspects.find(s => Math.hypot(s.x - x, s.y - y) <= 1.6);
@@ -365,7 +379,7 @@ function runChecks(s, retryId) {
   if (my.star) {
     fieldStars(retryId === 'star').p.then(cat => starCheckAt(cat, at, epochs, s.dot, { separate: separateFrom(s) }))
       .catch(e => ({ status: 'failed', text: `The star catalogues did not answer (${e.message}).`, near: [] }))
-      .then(res => { settle('star', res); if (my.seasons) settle('seasons', seasonsNow()); }); // seasons uses a known mover's predicted places
+      .then(res => { settle('star', res); if (my.seasons) settle('seasons', seasonsNow()); if (s.gen.star === my.star) runColour(s); }); // seasons and colour use a known mover's predicted places
   } else if (my.seasons) setTimeout(() => settle('seasons', seasonsNow()), 0);
   if (my.asteroid) {
     const fa = fieldAsteroids(retryId === 'asteroid'); s.astStart = fa.t0;
@@ -374,6 +388,39 @@ function runChecks(s, retryId) {
       .then(res => settle('asteroid', res));
   }
 }
+// ---- 5th check, "Colour (estimate)" (colour.js): supporting evidence only, never the verdict.
+// The season's images of ALL detectors (WISE 0855 is blinked on 5–6 only, but its colour needs 1–6).
+const allOf = (stack) => S.allSeasons.find(g => g.frames.includes(stack.frames[0]))?.frames || stack.frames;
+function runColour(s) {
+  if (!S.suspects.includes(s)) return;
+  try {
+    const B = blinked(), k = s.dot ? s.dot.k : (S.show ? 1 : 0);
+    const p0 = s.dot ? { x: s.dot.x, y: s.dot.y } : { x: s.x, y: s.y };
+    const mover = s.lines.star?.mover ? s.lines.star.best : null;
+    // the dot's place in the other blinked season: moved with a known mover's catalogue motion, then its dot there (within 1 px)
+    const placeIn = (j) => {
+      if (j === k) return p0;
+      let q = p0;
+      if (mover) {
+        const a = propagate(mover, B[k].mjd), b = propagate(mover, B[j].mjd), [ax, ay] = worldToGrid(S.grid, a.ra, a.dec), [bx, by] = worldToGrid(S.grid, b.ra, b.dec);
+        q = { x: p0.x + bx - ax, y: p0.y + by - ay };
+      }
+      const d = dotAt(B[j], q.x, q.y);
+      return d && Math.hypot(d.x - q.x, d.y - q.y) <= 1 ? d : q;
+    };
+    s.colour = colourEstimate([k, 1 - k].map(j => { const p = placeIn(j); return { label: j ? 'latest season' : 'first season', rows: measureColour(allOf(B[j]), p.x, p.y).rows }; }));
+    s.colour.blend = blendWith(s);
+  } catch (e) { s.colour = null; console.warn('Colour estimate failed:', e); }
+  update(s);
+}
+// A catalogued star (not the one named) inside the measuring circle: the colour is a blend of both.
+function blendWith(s) {
+  const st = s.lines.star; if (!st?.near) return null;
+  const r = AP_PX * PIXEL_ARCSEC, best = st.best;
+  const k = st.dot ? st.dot.k : 0, same = (m) => best && m.pos?.[k] && best.pos?.[k] && separationArcsec(m.pos[k].ra, m.pos[k].dec, best.pos[k].ra, best.pos[k].dec) <= STAR_TIE_ARCSEC; // the same star again in the other catalogue
+  return st.near.find(m => m !== best && Number.isFinite(m.ref) && m.ref <= r && !same(m)) || null;
+}
+
 // Master's rule: a catalogue entry near the ring does not explain a clicked dot that is its own peak with
 // a real dip between it and the entry's place (logic.js separatePeaks), in the season the dot was measured.
 function separateFrom(s) {
@@ -417,7 +464,7 @@ function fieldAsteroids(force) {
 }
 function update(s) {
   const before = s.verdict?.kind;
-  s.verdict = decideVerdict(s.check);
+  s.verdict = withColour(decideVerdict(s.check), s.colour); // colour only adds an evidence line (colour.js)
   if (s.id === S.sel && before && before !== 'pending' && s.verdict.kind !== 'pending' && s.verdict.kind !== before) toast(`Suspect ${s.n}: the verdict changed to ${s.verdict.title}.`);
   renderSide(); steps(); draw();
 }
@@ -434,9 +481,11 @@ const ICON = {
   checking: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" class="sm-spin"><path d="M8 2.5a5.5 5.5 0 1 1-5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
   clear: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5 8.2l2 2 4-4.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   explained: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2.5" fill="currentColor"/><path d="M8 4.6v4.2M8 10.9v.5" stroke="#FFF8F0" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  info: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.8a6.2 6.2 0 0 1 0 12.4z" fill="currentColor"/></svg>',
   failed: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 1.8l6.6 11.6H1.4z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6v3.4M8 11.2v.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
 };
 function renderSide() {
+  if (S.botha) { renderBotha(); return; }
   $('susCount').textContent = `${S.suspects.length} of ${MAX_SUSPECTS}`;
   $('susEmpty').hidden = !!S.suspects.length; $('sheetOpen').hidden = !S.suspects.length; $('clearAll').hidden = !S.suspects.length;
   const focusId = document.activeElement?.closest?.('#sus [data-id]')?.dataset.id; // re-render keeps keyboard focus
@@ -461,12 +510,29 @@ function renderSide() {
     const retry = l.status === 'failed' ? `<button class="key sm-retry" type="button" data-retry="${l.id}">Retry</button>` : '';
     return `<li class="sm-l st-${l.status}"><details data-id="${l.id}"${open.has(l.id) ? ' open' : ''}><summary><span class="sm-ic">${ICON[l.status]}</span><span class="sm-lt"><b>${esc(checkTitle(l.id))}</b><span class="sm-word">${word}</span></span><span class="sm-lr">${result}</span></summary>${ev}</details>${retry}</li>`;
   }).join('');
+  $('lines').insertAdjacentHTML('beforeend', colourItem(s, open.has('colour')));
   for (const b of $('lines').querySelectorAll('[data-retry]')) b.onclick = () => runChecks(s, b.dataset.retry);
   paintThumbs(s);
   renderVerdict(s);
 }
 
 function tagged(t, cls) { return `<span class="tag ${cls}">${t}</span>`; }
+// The colour line (5th, after the four checks): an estimate, shown in the checklist, never a verdict.
+function colourItem(s, isOpen) {
+  const c = s.colour, st = c ? 'info' : s.check.lines.some(l => l.status === 'checking') ? 'checking' : 'pending';
+  const word = c ? 'Estimate' : STATE_WORD[st];
+  const blend = c?.blend ? ` A catalogued star, ${starLabel(c.blend)}, sits ${fmtArc(c.blend.ref)} from the dot, inside the ${fmtArc(AP_PX * PIXEL_ARCSEC)} measuring circle: the colour is a blend of both.` : '';
+  const t = c ? colourLines(c, c.seasons.join(' + ')) : null;
+  const result = c ? twin(esc(t.simple + (blend ? ' A nearby star shares the measuring circle, so this mixes both.' : '')), esc(t.expert + blend)) : '';
+  return `<li class="sm-l st-${st}"><details data-id="colour"${isOpen ? ' open' : ''}><summary><span class="sm-ic">${ICON[st]}</span><span class="sm-lt"><b>${esc(COLOUR_LABEL)}</b><span class="sm-word">${esc(word)}</span></span><span class="sm-lr">${result}</span></summary>${c ? colourEvidence(c) : ''}</details></li>`;
+}
+function colourEvidence(c) {
+  const rows = COLOUR_GROUPS.map(G => { const g = c.groups[G.id]; return `<tr><td>${esc(G.name)}<small>detector${G.dets.length > 1 ? 's' : ''} ${G.dets.length > 1 ? `${G.dets[0]}–${G.dets.at(-1)}` : G.dets[0]}</small></td><td class="r num">${g.used} of ${g.n}</td><td class="r num">${g.mean != null ? `${g.mean.toPrecision(3)} ± ${g.err.toPrecision(2)}` : '—'}</td></tr>`; }).join('');
+  return `<p class="sm-evh">${tagged('OBSERVED', 'obs')} the dot's light in each image of the ${esc(c.seasons.join(' and '))} · lines ${tagged('COMPUTED', 'comp')}</p>
+    <div class="s-only"><p class="sm-evn">SPHEREx sees each wavelength in a different image. Star Shift adds up the dot's light in the short-wavelength images (0.75–2.4 µm) and in the long ones (3.8–5.0 µm) and compares them: ordinary stars are brighter at short wavelengths, cold brown dwarfs much brighter at long ones, and asteroids reflect sunlight and add their own warmth. It is a hint only and never changes the verdict.</p></div>
+    <div class="x-only"><table class="sm-tab"><thead><tr><th>Wavelengths</th><th class="r">Images used</th><th class="r">Mean Fν, mJy</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="sm-evn">Aperture photometry at the dot's centre: a ${AP_PX}-pixel (${fmtArc(AP_PX * PIXEL_ARCSEC)}) circle minus the median of a sky ring 4–8 pixels out, in each image of the season; an image with a blanked (saturated or bad) pixel in the circle is skipped. Error: the larger of the sky noise and the scatter left after a straight line in wavelength. ${esc(ratioText(c) || 'No ratio.')} Boundaries come from physics, evaluated at these very wavelengths (blackbodies at 2300 K, the coolest stars, and 600 K, the hottest asteroid surface), not fitted to any target. Supporting evidence only: the verdict is decided by the four checks above.</p></div>`;
+}
 function evidence(id, d, s) {
   if (id === 'flags') {
     return `<p class="sm-evh">${tagged('OBSERVED', 'obs')} Flags within one pixel of the ring, per image</p>
@@ -550,14 +616,15 @@ function seasonInfo(st, i, s) {
 }
 function summaryFor(s) {
   return summaryText({ fieldLabel: S.field.label, centre: { ra: S.grid.ra0, dec: S.grid.dec0 }, suspect: s,
-    seasons: blinked().map((st, i) => seasonInfo(st, i, s)), lines: s.check.lines, verdict: s.verdict });
+    seasons: blinked().map((st, i) => seasonInfo(st, i, s)), lines: s.check.lines, verdict: s.verdict,
+    colourLine: s.colour ? `${COLOUR_LABEL}: ${s.colour.text}${ratioText(s.colour) ? ` (${ratioText(s.colour)}, Fν 3.8–5.0 µm over 0.75–2.4 µm)` : ''}. Supporting evidence only.` : '' });
 }
 function notebookEntry(s) {
   const v = s.verdict, [A, B] = blinked();
   const checks = s.check.lines.map(l => `${checkTitle(l.id)}: ${STATE_WORD[l.status]}`).join('; ');
   return {
     label: `Spot a mover · suspect ${s.n} · ${S.field.label}`,
-    value: `${v.title}${v.sub ? ` (${v.sub})` : ''}. Ring at ${fmtPos(s)} (J2000). Seasons ${seasonRange(A)} and ${seasonRange(B)}. Checks: ${checks}.`,
+    value: `${v.title}${v.sub ? ` (${v.sub})` : ''}. Ring at ${fmtPos(s)} (J2000). Seasons ${seasonRange(A)} and ${seasonRange(B)}. Checks: ${checks}.${s.colour ? ` ${COLOUR_LABEL}: ${s.colour.text}.` : ''}`,
     unit: '', uncertainty: '', source: 'NASA SPHEREx via IRSA (DOIs 10.26131/IRSA678, 10.26131/IRSA662); Gaia DR3; SIMBAD; JPL Small-Body Identification',
     tag: 'COMPUTED',
     context: { page: 'Spot', ra: +s.ra.toFixed(6), dec: +s.dec.toFixed(6), date: `${fmtDay(A.mjd)} / ${fmtDay(B.mjd)}`, frameId: `${middleImage(A).obsid} / ${middleImage(B).obsid}`, url: location.href },
@@ -636,6 +703,53 @@ function openSheet() { if (!phone()) return; $('side').classList.add('open'); $(
 function closeSheet() { $('side').classList.remove('open'); $('scrim').hidden = true; }
 $('sheetClose').onclick = closeSheet; $('sheetOpen').onclick = () => { if (phone()) openSheet(); }; $('scrim').onclick = closeSheet;
 
+/* ------------------------------------------------------------------ "Known asteroid" example: one night (botha.js) */
+// Season pictures median out an asteroid, so this example blinks the first and last exposure of one
+// SPHEREx visit (detector 3, 1.9-2.0 µm) with JPL's predicted place ringed; the card replaces the checklist.
+const BOTHA_FIELD = { key: BOTHA_KEY, label: 'Asteroid 1354 Botha, one night', target: null };
+const HINT = $('hint').textContent;
+function bothaMode(on) {
+  S.botha = on ? S.botha : null;
+  $('sus').closest('section').hidden = on; $('checkPanel').hidden = on || !selected();
+  if (!on) $('hint').textContent = HINT;
+  $('sheetOpen').textContent = on ? 'Details' : 'Checks'; if (on) $('sheetOpen').hidden = false; // phone: the card sits in the bottom sheet
+}
+async function loadBotha() {
+  S.ctl?.abort(); const ctl = S.ctl = new AbortController();
+  stopBlink(); clearSuspects();
+  Object.assign(S, { field: BOTHA_FIELD, target: null, grid: null, frames: [], stacks: [], seasonFrames: [], allSeasons: [], band: null, ready: false, loaded: 0, planned: 0, failed: 0, show: 0 });
+  $('fBand').hidden = true; markPicks(); foldPick(true);
+  $('fName').textContent = BOTHA_FIELD.label; $('fCoords').textContent = '';
+  showState('Opening one night of SPHEREx images', 'Saved with the app, so this works offline.'); steps();
+  let j;
+  try { j = await fetch(BOTHA_URL, { signal: ctl.signal }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }); }
+  catch (e) { if (!ctl.signal.aborted) showState('This example could not open', `Its saved file did not load (${e.message}).`, [['Retry', () => loadBotha()]]); return; }
+  if (ctl.signal.aborted) return;
+  const frames = bothaFrames(j), d3 = frames.filter(f => f.detector === 3);
+  S.botha = { j, frames, colour: bothaColour(frames), card: bothaCard(j) };
+  S.grid = bothaGrid(j);
+  $('fCoords').textContent = `Field centre: ${formatRA(S.grid.ra0)} ${formatDec(S.grid.dec0)}`;
+  updateNav({ type: 'coords', ra: S.grid.ra0, dec: S.grid.dec0 });
+  S.stacks = d3.map((f, i) => ({ n: f.n, data: f.data, F: { d: Array.from(f.data, v => (Number.isFinite(v) ? v : null)) }, count: 1, mjd: f.mjd,
+    startDate: new Date(f.date + 'Z'), endDate: new Date(f.date + 'Z'), label: `Image ${i + 1} of ${d3.length}`, frames: [f], predicted: f.predicted, utc: f.date, wl: f.wavelengthUm }));
+  S.ready = true; progress(); showState(null); bothaMode(true);
+  const a = S.stacks[0], z = S.stacks[S.stacks.length - 1], mins = Math.round((z.mjd - a.mjd) * 1440);
+  $('hint').textContent = `The dashed ring is where JPL predicts asteroid 1354 Botha in the image shown. JPL's predicted place moves ${fmtArc(Math.hypot(z.predicted.x - a.predicted.x, z.predicted.y - a.predicted.y) * PIXEL_ARCSEC)} between the first and last image, ${mins} minutes apart.`;
+  S.show = 0; startBlink(); layout(); steps(); renderBotha();
+}
+function renderBotha() {
+  const B = S.botha; if (!B) return;
+  const card = B.card, c = B.colour, t = colourLines(c, 'night of 14 Dec 2025'), el = $('verdict');
+  el.hidden = false; el.className = 'glass sm-verdict v-known-asteroid'; $('sheetTitle').textContent = 'Example';
+  el.innerHTML = `<p class="sm-vk">Example</p>
+    <h2>${esc(card.title)} <span class="sm-vsub">${esc(card.sub)}</span></h2>
+    <p class="sm-vb">${card.body.map(esc).join(' ')}</p>
+    <ul class="sm-vev">${card.evidence.map(x => `<li>${esc(x)}</li>`).join('')}<li>${twin(esc(t.simple), esc(t.expert))}</li></ul>
+    <p class="sm-evn x-only">${esc(B.j.sources.predicted)}. Images: ${esc(B.j.frames.map(f => f.image).join(', '))}. Pixels: ${esc(B.j.sources.mask)}. The colour uses both detectors (3 and 6) at the predicted place in each image.</p>
+    <div class="sm-vkeys"><a class="key" href="neo.html">Open Asteroids</a></div>`;
+  announceVerdict('Example: known asteroid 1354 Botha, as JPL predicts.');
+}
+
 /* ------------------------------------------------------------------ shell: Clarity, Pages, search */
 initClarity();
 const toggler = (popId, btnId) => (e) => { e.stopPropagation(); const p = $(popId); p.hidden || !p.classList.contains('open') ? showPop(p, $(btnId)) : closePop(); };
@@ -668,11 +782,12 @@ function placeClick() {
 function fromURL() {
   const p = new URLSearchParams(location.search);
   S.pendingClick = parseClick(p);
+  if (p.get('field') === BOTHA_KEY) return loadBotha();
   const f = fieldByKey(p.get('field') || '');
   if (f) return loadField(f);
   if (p.get('q')) { $('q').value = p.get('q'); return searchField(p.get('q'), false); }
   if (p.has('ra') && p.has('dec')) { $('q').value = `${p.get('ra')} ${p.get('dec')}`; return searchField(`${p.get('ra')} ${p.get('dec')}`, false); }
-  S.ctl?.abort(); S.field = null; S.ready = false; clearSuspects(); stopBlink(); markPicks(); steps();
+  S.ctl?.abort(); S.field = null; S.ready = false; bothaMode(false); clearSuspects(); stopBlink(); markPicks(); steps();
 }
 window.addEventListener('popstate', fromURL);
 buildPicker(); renderSide(); steps(); fromURL();

@@ -935,6 +935,7 @@ html:where(:not([data-ax-look=classic]))[data-glass=solid] .pl-place{background:
 :where(html:not([data-ax-look=classic])) .st-clear .sm-ic,:where(html:not([data-ax-look=classic])) .st-clear .sm-word{color:var(--sage)}
 :where(html:not([data-ax-look=classic])) .st-explained .sm-ic,:where(html:not([data-ax-look=classic])) .st-explained .sm-word{color:var(--copper)}
 :where(html:not([data-ax-look=classic])) .st-failed .sm-ic,:where(html:not([data-ax-look=classic])) .st-failed .sm-word{color:var(--coral)}
+:where(html:not([data-ax-look=classic])) .st-info .sm-ic,:where(html:not([data-ax-look=classic])) .st-info .sm-word{color:var(--ink-2)}
 :where(html:not([data-ax-look=classic])) .sm-lr{color:var(--ink-2)}
 :where(html:not([data-ax-look=classic])) .sm-l summary{color:var(--copper)}
 :where(html:not([data-ax-look=classic])) .sm-l summary:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
