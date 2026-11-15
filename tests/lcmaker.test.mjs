@@ -5,6 +5,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { run } from '../web/app/data.js';
 import { configurePrebaked } from '../web/core/prebaked.js';
+import { gridToWorld } from '../web/core/align.js';
+import { measure, lightcurve } from '../web/app/lightcurve/logic.js';
 import { fieldGaia } from '../web/app/gaia-overlay.js';
 import { makeCurve, bandSet, toCSV, CSV_COLUMNS, lombScargle, periodSearch, periodRange, periodText, falseAlarm, encodeChoices, decodeChoices,
   comparisonCandidates, autoPick, countsText, PERIOD_CAVEAT } from '../web/app/lightcurve/make.js';
@@ -40,15 +42,16 @@ test('RW Aurigae offline: with the Proof page\'s choices the numbers are the Pro
     assert.equal(b.long, g.name);
     assert.equal(b.points.length, g.frames);
     assert.deepEqual(b.bySeason.map(s => [s.season, s.n, r3(s.dm), r3(s.sem)]), g.seasons.map(s => [s.season, s.n, s.dm, s.sem]));
-    // Proof rounds the season means first, then subtracts (make_proof.mjs)
-    const sa = b.bySeason[0], sz = b.bySeason.at(-1);
-    assert.equal(r3(r3(sz.dm) - r3(sa.dm)), g.value); assert.equal(r3(Math.hypot(r3(sa.sem), r3(sz.sem))), g.err);
+    // the change, its error and σ are Proof's numbers exactly (Proof rounds season means first; FFT found +0.73 ± 0.06 vs +0.72 ± 0.07)
+    assert.equal(b.dmag, g.value); assert.equal(b.dmagErr, g.err); assert.equal(b.sigma, g.sigma);
+    assert.equal(`${b.dmag.toFixed(2)} ± ${b.dmagErr.toFixed(2)}`, `${g.value.toFixed(2)} ± ${g.err.toFixed(2)}`);
     // every plotted image, one by one (Proof's chart points)
     const cp = P.chart.groups[k].points;
     assert.deepEqual(b.points.map(p => [r3(p.mjd), p.det, r3(p.dm)]), cp.map(p => [p.mjd, p.det, p.dm]));
   });
   assert.equal(c.counts.plotted, P.measured.frames);
-  assert.match(countsText(c), /^64 of 120 images plotted · 16 saturated \(a masked pixel within 15″\)/);
+  assert.match(countsText(c), /^64 of 120 images plotted · 16 skipped: a masked pixel within 15″/);
+  assert.doesNotMatch(countsText(c), /saturated/); // one meaning of "saturated": every image masked (Proof)
   // the default choices: comparison stars from the saved Gaia list, flagged images skipped; the 3.8–5.0 µm change stays
   const { stars } = await load('RW Aurigae', 'rw-aur');
   const cands = comparisonCandidates(stars, frames, grid);
@@ -66,7 +69,7 @@ test('R Draconis offline: saturated, not measurable', async () => {
   const c = makeCurve(frames, grid, {});
   assert.equal(c.status, 'saturated');
   assert.equal(c.counts.plotted, 0);
-  assert.equal(c.counts.saturated, frames.length);
+  assert.equal(c.counts.masked, frames.length);
 });
 
 // ---- synthetic frames: a target and a comparison star on a flat background ----
@@ -116,7 +119,7 @@ test('CSV: the columns, one row per image per band, plotted rows carry numbers a
   const plotted = rows.filter(r => r.status === 'plotted');
   assert.equal(plotted.length, c.counts.plotted);
   for (const r of plotted) { assert.ok(Number.isFinite(+r.dmag) && r.dmag !== ''); assert.ok(+r.flux_mJy > 0); assert.match(r.date_utc, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/); }
-  assert.equal(rows.find(r => r.status === 'saturated')?.mjd, fs[0].mjd.toFixed(5));
+  assert.equal(rows.find(r => r.status === 'masked')?.mjd, fs[0].mjd.toFixed(5));
   assert.equal(rows[0].band, '0.75–3.8 µm');
 });
 
@@ -154,4 +157,27 @@ test('choices survive the link', () => {
   assert.deepEqual(decodeChoices(encodeChoices({ comps: [] })).comps, []);
   const junk = decodeChoices('b=<x>;a=99;c=1.<script>;s=1,200');
   assert.equal(junk.bandKind, 'proof'); assert.equal(junk.aperture, 2.5); assert.deepEqual(junk.comps, ['Gaia DR3 1']); assert.equal(junk.source, null);
+});
+
+test('WISE 0855 with Proof\'s choices: below 3.8 µm the light is a background star, so no change is claimed (as the panel)', async () => {
+  const { frames, grid } = await load('WISE 0855', 'wise-0855');
+  const c = makeCurve(frames, grid, { bands: bandSet('proof'), aperture: 2.5, comps: [], skipFlagged: false });
+  const short = c.bands.find(b => b.id === 'short');
+  assert.ok(short.absent, `short band detection ${JSON.stringify(short.detect)}`);
+  assert.equal(short.points.length, 0); assert.equal(short.dmag, null); assert.ok(short.notHere > 0);
+  // the panel (lightcurve/logic.js) says the same for this group
+  const panel = lightcurve(measure(frames, grid));
+  assert.equal(panel.groups.find(g => g.id === 'short').absent, true);
+  assert.match(countsText(c), /where the light is not the source's/);
+  assert.doesNotMatch(countsText(c), /saturated/);
+});
+
+test('a clicked empty spot: nothing detected, nothing plotted (no ±600 mag axis)', async () => {
+  for (const [name, key] of [['RW Aurigae', 'rw-aur'], ['R Draconis', 'r-dra']]) {
+    const { frames, grid } = await load(name, key);
+    const [ra, dec] = gridToWorld(grid, 5, 19); // empty sky near a corner
+    const c = makeCurve(frames, grid, { source: { ra, dec }, skipFlagged: false });
+    assert.equal(c.counts.plotted, 0, `${name}: ${countsText(c)}`);
+    assert.ok(['nothing', 'saturated'].includes(c.status), `${name}: ${c.status}`);
+  }
 });

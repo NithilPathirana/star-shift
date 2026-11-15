@@ -7,7 +7,9 @@
 //  - Photometry: align.js centroid(…, 1 pass) at the source's predicted grid position: the sum of
 //    background-subtracted pixels inside the aperture, background = median of a ring r+2 to r+5 px.
 //    An image with any masked pixel in the aperture (the archive blanks saturated and bad pixels)
-//    is "saturated" and never measured.
+//    is "masked" and never measured; when every image is masked the source is too bright (saturated).
+//    An image whose sum is under 3 times its noise is a non-detection there and is not plotted; a band
+//    whose light is not the source's (the Brightness-over-time panel's rule, logic.js detection) plots nothing.
 //  - Δm: each image only against first-season images of the same band, the same detector and the
 //    same wavelength (±0.05 µm), Δm = −2.5 log10(F / mean F_ref): SPHEREx sees a different wavelength
 //    in every image, so raw fluxes from different images cannot be lined up.
@@ -26,7 +28,7 @@ import { propagate, separationArcsec } from '../../core/motion.js';
 import { classifyFrame } from '../../core/contam.js';
 import { meanSem } from '../proof/logic.js';
 import { seasonBounds } from '../seasons.js';
-import { GROUPS, APERTURE, WL_MATCH, GRID_ARCSEC, SEASON_GAP, toMilliJy, seasonIndex } from './logic.js';
+import { GROUPS, APERTURE, WL_MATCH, GRID_ARCSEC, SEASON_GAP, DET, toMilliJy, seasonIndex, detection } from './logic.js';
 
 // Detector wavelength ranges (SPHEREx Explanatory Supplement v2.0, as the band editor in ui.js).
 export const DET_UM = [[0.744, 1.116], [1.099, 1.651], [1.636, 2.421], [2.423, 3.822], [3.809, 4.420], [4.412, 5.002]];
@@ -36,6 +38,10 @@ export const APERTURES = [1.5, 2, 2.5, 3, 3.5]; // px (×6.15″)
 export const MAX_COMPS = 3;
 export const PERIOD_CAVEAT = "SPHEREx visits a spot roughly every 6 months, so periods shorter than ~1 year can't be found; this shows what the data can and can't say.";
 export const SATURATED_TEXT = 'Saturated: not measurable.';
+export const NOTHING_TEXT = 'Nothing detected at this spot.';
+export const DETECT_SIGMA = 3; // an image whose aperture sum is under 3 times its noise is a non-detection there
+// Proof's rounding (tools/make_proof.mjs): season means to 0.001 mag, then last minus first, σ to 0.1
+const r3 = (v) => +v.toFixed(3), r1 = (v) => +v.toFixed(1);
 export const ERR_NOTE = "Error bars: background noise in the aperture only. The star's own photon noise and calibration drifts are not included, so they are a lower bound; choose comparison stars to add their measured scatter.";
 export const ERR_NOTE_COMP = 'Error bars: background noise in the aperture plus the scatter of the comparison stars about each other (how much a steady star spreads in this band).';
 const F = 2.5 / Math.LN10; // 1.0857: σ_m = F σ_F / F
@@ -89,12 +95,19 @@ export function makeCurve(frames, grid, choices = {}, bounds) {
     const [x, y] = sourceAt(source, f, grid);
     const t = phot(f, x, y, aperture);
     const cs = comps.map(c => { const [cx, cy] = sourceAt(c, f, grid); return phot(f, cx, cy, aperture); });
-    const status = t.masked ? 'saturated' : t.edge ? 'off image' : skipFlagged && t.flagged ? 'flagged' : !(t.flux > 0) || !Number.isFinite(f.wavelengthUm) ? 'faint' : 'usable';
-    return { idx, mjd: f.mjd, det: f.detector, wl: f.wavelengthUm, s: season[idx], pix: f.pixArcsec ?? grid?.scale ?? GRID_ARCSEC, at: [x, y], t, cs, status };
+    // where the light really is (the Brightness-over-time panel's rule, logic.js detection: motion-fit settings)
+    const lc = t.masked || t.edge ? null : centroid(f, x, y, DET.radius);
+    const below = !(t.flux > 0) || (t.fluxErr > 0 && t.flux < DETECT_SIGMA * t.fluxErr);
+    const status = t.masked ? 'masked' : t.edge ? 'off image' : skipFlagged && t.flagged ? 'flagged' : below || !Number.isFinite(f.wavelengthUm) ? 'faint' : 'usable';
+    return { idx, mjd: f.mjd, det: f.detector, wl: f.wavelengthUm, s: season[idx], pix: f.pixArcsec ?? grid?.scale ?? GRID_ARCSEC, at: [x, y], t, cs, status,
+      masked: t.masked, light: lc ? [lc.x, lc.y] : null, snr: lc ? lc.snr : null };
   });
   const outBands = bands.map(b => {
     const mine = rows.filter(r => inBand(b, r));
-    const usable = mine.filter(r => r.status === 'usable');
+    // not the source's light (the panel's a3 rule, same function): no light above the noise there, or the light is
+    // centred on another source. Then nothing is plotted for this band and no change is reported.
+    const detect = detection(mine), absent = !!detect && detect.state !== 'ok';
+    const usable = absent ? [] : mine.filter(r => r.status === 'usable');
     const firstS = usable.length ? Math.min(...usable.map(r => r.s)) : -1;
     const first = usable.filter(r => r.s === firstS);
     const refOf = (r, ok) => first.filter(q => q !== r && q.det === r.det && Math.abs(q.wl - r.wl) <= WL_MATCH && ok(q));
@@ -155,27 +168,32 @@ export function makeCurve(frames, grid, choices = {}, bounds) {
     const a = bySeason[0], z = bySeason[bySeason.length - 1];
     const ok = bySeason.length >= 2 && a.season === firstS && a.n >= 3 && z.n >= 3 && a.sem != null && z.sem != null;
     const count = st => mine.filter(r => r.status === st).length;
-    return { ...b, total: mine.length, saturated: count('saturated'), flagged: count('flagged'), faint: count('faint') + count('off image'),
+    const dmag = ok ? r3(r3(z.dm) - r3(a.dm)) : null, dmagErr = ok ? r3(Math.hypot(r3(a.sem), r3(z.sem))) : null;
+    return { ...b, total: mine.length, masked: count('masked'), flagged: absent ? 0 : count('flagged'), faint: absent && detect.state === 'offset' ? 0 : absent ? count('usable') + count('faint') + count('off image') : count('faint') + count('off image'),
+      detect, absent, notHere: absent && detect.state === 'offset' ? count('usable') + count('faint') : 0,
       noRef: [...why.values()].filter(w => w === 'no reference').length, noComp: [...why.values()].filter(w => w === 'no comparison').length, why,
-      points, compScatter, direct: comps.length > 0 && !useComps, bySeason, ok, dmag: ok ? z.dm - a.dm : null, dmagErr: ok ? Math.hypot(a.sem, z.sem) : null };
+      points, compScatter, direct: comps.length > 0 && !useComps, bySeason, ok, dmag, dmagErr, sigma: ok && dmagErr > 0 ? r1(Math.abs(dmag) / dmagErr) : null };
   });
   const inAny = rows.filter(r => outBands.some(b => inBand(b, r)));
-  const counts = { total: inAny.length, saturated: inAny.filter(r => r.status === 'saturated').length, flagged: inAny.filter(r => r.status === 'flagged').length,
+  const counts = { total: inAny.length, masked: inAny.filter(r => r.status === 'masked').length, flagged: inAny.filter(r => r.status === 'flagged').length,
     plotted: outBands.reduce((a, b) => a + b.points.length, 0) };
-  const status = !inAny.length ? 'empty' : counts.saturated === inAny.length ? 'saturated' : counts.plotted ? 'ok' : 'none';
+  // every image masked within the aperture: too bright for SPHEREx (Proof's one meaning of "saturated")
+  const status = !inAny.length ? 'empty' : counts.masked === inAny.length ? 'saturated' : counts.plotted ? 'ok'
+    : outBands.every(b => !b.total || b.absent || !b.points.length) && outBands.some(b => b.absent || b.faint) ? 'nothing' : 'none';
   return { rows, bands: outBands, counts, status, choices: { aperture, skipFlagged, nComps: comps.length } };
 }
 
-// "64 of 120 images plotted · 16 saturated (masked within 15″) · 3 flagged · …"
+// "64 of 120 images plotted · 16 skipped: a masked pixel within 15″ · 3 flagged at the source · …"
 export function countsText(c) {
   const sum = (k) => c.bands.reduce((a, b) => a + (b[k] || 0), 0);
   const ap = Math.round(c.choices.aperture * GRID_ARCSEC);
-  const parts = [`${c.counts.plotted} of ${c.counts.total} images plotted`, `${c.counts.saturated} saturated (a masked pixel within ${ap}″)`];
+  const parts = [`${c.counts.plotted} of ${c.counts.total} images plotted`, `${c.counts.masked} skipped: a masked pixel within ${ap}″`];
   if (c.choices.skipFlagged) parts.push(`${c.counts.flagged} flagged at the source`);
-  const nr = sum('noRef'), nc = sum('noComp'), fa = sum('faint');
+  const nr = sum('noRef'), nc = sum('noComp'), fa = sum('faint'), nh = sum('notHere');
   if (nr) parts.push(`${nr} with no first-season image at the same wavelength`);
   if (nc) parts.push(`${nc} with no usable comparison star`);
-  if (fa) parts.push(`${fa} with no light above the background`);
+  if (fa) parts.push(`${fa} with no light above the noise`);
+  if (nh) parts.push(`${nh} where the light is not the source's`);
   return parts.join(' · ');
 }
 
@@ -205,7 +223,7 @@ export function comparisonCandidates(stars, frames, grid, { source = { own: true
     snr.sort((a, b) => a - b);
     const med = snr.length ? snr[snr.length >> 1] : 0;
     out.push({ id: s.id, ra: s.ra, dec: s.dec, pmra: s.pmra || 0, pmdec: s.pmdec || 0, epoch: s.epoch ?? 2016.0, g: s.g,
-      sepArcsec: Math.hypot(s.x - sx, s.y - sy) * grid.scale, clean: good, saturated: sat, of: frames.length, snr: med, eligible: good >= minClean * frames.length });
+      sepArcsec: Math.hypot(s.x - sx, s.y - sy) * grid.scale, clean: good, satFlag: sat, of: frames.length, snr: med, eligible: good >= minClean * frames.length });
   }
   return out.sort((a, b) => (b.eligible - a.eligible) || (b.snr - a.snr));
 }

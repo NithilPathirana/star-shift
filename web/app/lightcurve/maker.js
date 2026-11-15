@@ -4,9 +4,9 @@
 // from a spot clicked on the image. The numbers come from make.js; this file only draws and wires.
 
 import { makeCurve, bandSet, countsText, comparisonCandidates, autoPick, periodSearch, periodText, toCSV, encodeChoices,
-  snapSource, APERTURES, MAX_COMPS, PERIOD_CAVEAT, SATURATED_TEXT, ERR_NOTE, ERR_NOTE_COMP } from './make.js';
+  snapSource, APERTURES, MAX_COMPS, PERIOD_CAVEAT, SATURATED_TEXT, NOTHING_TEXT, ERR_NOTE, ERR_NOTE_COMP } from './make.js';
 import { fieldGaia } from '../gaia-overlay.js';
-import { GRID_ARCSEC, fmtMag } from './logic.js';
+import { GRID_ARCSEC, fmtMag, lightOnSky, pickSource, pickSaved, notHereText } from './logic.js';
 import { groupInto, seasonMonths, seasonBounds } from '../seasons.js';
 
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -16,7 +16,7 @@ const SHAPES = ['circle', 'square', 'diamond', 'triangle', 'circle', 'square'];
 const BAND_KINDS = [['proof', '2 groups (as Proof)'], ['dets', 'Detectors 1–6'], ['ranges', 'Your bands']];
 const NS = 'http://www.w3.org/2000/svg';
 
-let dlg = null;
+let dlg = null, proofP = null;
 const S = {}; // the open session: inputs, choices, results
 
 function build() {
@@ -73,7 +73,7 @@ const q = id => dlg.querySelector('#' + id);
 //         ranges: () => the band editor's ranges, notebookAdd, toast, shareURL: () => the viewer link, isExpert }
 export async function openMaker(opts) {
   if (!dlg) build();
-  Object.assign(S, { ...opts, stars: null, cands: null, curve: null, gaiaFailed: false });
+  Object.assign(S, { ...opts, stars: null, cands: null, curve: null, gaiaFailed: false, nb: [] });
   if (!S.bounds?.length) S.bounds = seasonBounds(S.frames.map(f => f.mjd));
   const ch = opts.choices || {};
   S.bandKind = ch.bandKind || 'proof'; S.off = new Set(); S.aperture = ch.aperture || 2.5; S.skipFlagged = ch.skipFlagged ?? true; S.period = !!ch.period;
@@ -83,6 +83,9 @@ export async function openMaker(opts) {
   q('lcmT').textContent = S.name || 'This object';
   q('lcmPer').open = S.period;
   if (!dlg.open) dlg.showModal();
+  // the Proof page's saved Gaia neighbours of a demo target, as the Brightness-over-time panel names a blend with them
+  proofP ||= fetch(new URL('../../data/proof.json', import.meta.url)).then(r => (r.ok ? r.json() : null)).catch(() => null);
+  proofP.then(d => { const t = d?.targets?.find(q => q.name === S.name || q.label === S.name); S.nb = t?.extra?.neighbours || []; if (dlg.open && S.curve?.bands.some(b => b.absent)) summary(); });
   update(); // first draw with no comparison stars while Gaia answers
   try {
     S.stars = await fieldGaia({ grid: S.grid, preset: S.preset, base: S.base, signal: AbortSignal.timeout(20000) });
@@ -136,8 +139,13 @@ function summary() {
   const c = S.curve, sum = q('lcmSum'), cnt = q('lcmCnt'), err = q('lcmErr');
   if (!c) { sum.innerHTML = '<p class="lcm-msg">Choose at least one band.</p>'; cnt.textContent = ''; err.textContent = ''; return; }
   cnt.textContent = countsText(c);
-  if (c.status === 'saturated') {
-    sum.innerHTML = `<p class="lcm-msg lcm-sat"><b>${esc(SATURATED_TEXT)}</b> All ${c.counts.total} images have a masked pixel within ${Math.round(S.aperture * GRID_ARCSEC)}″ of the source (the archive blanks saturated pixels), so its brightness cannot be measured here.</p>`;
+  const ap = Math.round(S.aperture * GRID_ARCSEC);
+  if (c.status === 'saturated') { // Proof's one meaning of saturated: every image masked within the aperture
+    sum.innerHTML = `<p class="lcm-msg lcm-sat"><b>${esc(SATURATED_TEXT)}</b> Too bright for SPHEREx: ${c.counts.total === 1 ? 'the one image has' : `all ${c.counts.total} images have`} a masked pixel within ${ap}″ of ${S.source.own ? 'the star' : 'this spot'}, so its brightness can't be measured here.</p>`;
+    err.textContent = ''; return;
+  }
+  if (c.status === 'nothing') {
+    sum.innerHTML = `<p class="lcm-msg"><b>${esc(NOTHING_TEXT)}</b> No image shows light above the noise ${S.source.own ? `at ${esc(S.name)}'s position` : 'here'}${c.bands.some(b => b.absent && b.detect?.state === 'offset') ? ', or the light there is centred on another source' : ''}, so there is no light curve to draw.</p>`;
     err.textContent = ''; return;
   }
   const anyComp = c.bands.some(b => b.points.some(p => p.nComp));
@@ -146,10 +154,13 @@ function summary() {
     const how = b.direct ? ' <span class="lcm-tag">direct: no comparison star measurable in this band</span>' : b.points.some(p => p.nComp) ? ' <span class="lcm-tag">differential</span>' : '';
     let v;
     if (b.ok) {
-      const ratio = Math.pow(10, -0.4 * b.dmag), sig = Math.abs(b.dmag) / b.dmagErr;
+      const ratio = Math.pow(10, -0.4 * b.dmag), sig = b.sigma;
       const words = sig < 3 ? `no clear change between the first and last season (under 3 times its uncertainty)` : `${b.dmag > 0 ? 'fainter' : 'brighter'} in the last season than the first: about ${ratio >= 1 ? ratio.toFixed(1) + '×' : (ratio * 100).toFixed(0) + '%'} the brightness`;
       v = `<span class="x-only"><b>${fmtMag(b.dmag)} ± ${b.dmagErr.toFixed(2)} mag</b> last season vs first (${sig.toFixed(1)}σ)</span><span class="s-only">${esc(words)}</span>`;
-    } else v = b.points.length ? 'too few images in the first or last season to compare them' : b.saturated === b.total && b.total ? esc(SATURATED_TEXT) : 'nothing to plot in this band';
+    } else if (b.absent) { // the panel's a3 rule and wording: whose light it is, if it is not the source's
+      const sky = lightOnSky(b.detect, S.grid), src = (S.source.own && pickSaved(S.nb, sky)) || (S.stars ? pickSource(S.stars, sky) : null); // saved first, as the panel
+      v = esc(notHereText(b.detect, sky, src, S.source.own ? S.name : 'this source', /^0\.75/.test(b.name) ? 'below 3.8 µm' : `in ${b.name}`));
+    } else v = b.points.length ? 'too few images in the first or last season to compare them' : b.masked === b.total && b.total ? `a masked pixel within ${ap}″ in every image` : 'nothing detected in this band';
     return `<div class="lcm-row"><span class="lcm-k"><i style="--bc:${esc(b.colour)}" aria-hidden="true"></i>${esc(b.name)}</span><span class="lcm-v">${v}${how}<small>${b.points.length} image${b.points.length === 1 ? '' : 's'}</small></span></div>`;
   }).join('');
 }
@@ -163,7 +174,7 @@ function shape(kind, x, y, c, r = 3.4) {
 }
 function draw() {
   const plot = q('lcmPlot'), leg = q('lcmLeg'), c = S.curve;
-  if (!c || c.status !== 'ok') { plot.innerHTML = c?.status === 'saturated' ? `<p class="lcm-pmsg">${esc(SATURATED_TEXT)}</p>` : c ? '<p class="lcm-pmsg">No image passes all the choices: nothing to plot.</p>' : ''; leg.innerHTML = ''; return; }
+  if (!c || c.status !== 'ok') { plot.innerHTML = c?.status === 'saturated' ? `<p class="lcm-pmsg">${esc(SATURATED_TEXT)}</p>` : c?.status === 'nothing' ? `<p class="lcm-pmsg">${esc(NOTHING_TEXT)}</p>` : c ? '<p class="lcm-pmsg">No image passes all the choices: nothing to plot.</p>' : ''; leg.innerHTML = ''; return; }
   const W = Math.max(260, Math.round(plot.clientWidth || 520)), H = 230, L = 46, R = 10, T = 10, B = 26;
   const pts = c.bands.flatMap((b, k) => b.points.map(p => ({ ...p, b, k })));
   const seasons = groupInto(pts.map(p => ({ mjd: p.mjd })).sort((a, b) => a.mjd - b.mjd), S.bounds)
@@ -171,7 +182,8 @@ function draw() {
   const sg = 10, pw = (W - L - R - sg * (seasons.length - 1)) / seasons.length;
   seasons.forEach((s, i) => { const pad = Math.max(1.5, (s.to - s.from) * 0.08); s.t0 = s.from - pad; s.t1 = s.to + pad; s.x0 = L + i * (pw + sg); });
   const X = m => { const s = seasons.find(z => m >= z.t0 && m <= z.t1) || seasons[0]; return s.x0 + (m - s.t0) / (s.t1 - s.t0) * pw; };
-  const lo0 = Math.min(0, ...pts.map(p => p.dm - (p.err || 0))), hi0 = Math.max(0, ...pts.map(p => p.dm + (p.err || 0)));
+  const e = (p) => Math.min(p.err || 0, 0.5); // the scale follows the points; a long error bar is clipped at the edge
+  const lo0 = Math.min(0, ...pts.map(p => p.dm - e(p))), hi0 = Math.max(0, ...pts.map(p => p.dm + e(p)));
   const half = Math.max(0.3, (hi0 - lo0) / 2 * 1.1), mid = (hi0 + lo0) / 2, lo = mid - half, hi = mid + half;
   const Y = v => T + (v - lo) / (hi - lo) * (H - T - B); // brighter (negative Δm) up
   let g = '';
@@ -242,7 +254,7 @@ function copyLink(e) {
 }
 function addNotebook(e) {
   const c = S.curve; if (!c) return;
-  const parts = c.status === 'saturated' ? [SATURATED_TEXT] : c.bands.map(b => `${b.name}: ${b.ok ? `${fmtMag(b.dmag)} ± ${b.dmagErr.toFixed(2)} mag last season vs first` : `${b.points.length} images, no season comparison`}`);
+  const parts = c.status === 'saturated' ? [SATURATED_TEXT] : c.status === 'nothing' ? [NOTHING_TEXT] : c.bands.map(b => `${b.name}: ${b.ok ? `${fmtMag(b.dmag)} ± ${b.dmagErr.toFixed(2)} mag last season vs first` : `${b.points.length} images, no season comparison`}`);
   const how = `aperture ${Math.round(S.aperture * GRID_ARCSEC)}″, ${S.comps?.length ? `${S.comps.length} comparison star${S.comps.length > 1 ? 's' : ''}` : 'no comparison stars'}${S.skipFlagged ? ', flagged images skipped' : ''}`;
   const mj = S.frames.map(f => f.mjd);
   try {

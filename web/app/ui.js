@@ -405,6 +405,7 @@ async function openLC(source, choices) {
   } catch (err) { console.warn('light curve', err); toast("Couldn't open the light-curve maker."); }
 }
 $('lcMake').onclick = () => openLC();
+$('lcTool').onclick = () => openLC(); // the stage toolbar: reachable on phones, where the info sheet is closed
 (() => { // a click (not a drag) on the image offers a key for that spot; on the target itself, the target
   const cv = $('cvA'), scr = cv.parentElement; let down = null;
   scr.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; if (!e.target.closest('#lcmPick')) $('lcmPick')?.remove(); });

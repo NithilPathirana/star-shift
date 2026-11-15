@@ -656,3 +656,5 @@ html[data-motion=reduce] .rp-res.swap { animation: none; }
   .lcm-band, .lcm-comp, .lcm-ck { min-height: 44px; align-items: center; }
   .lcm-x { width: 44px; height: 44px; }
 }
+/* the stage toolbar's light-curve key (phones: the info sheet is closed): one more 44 px key must still fit 390 px */
+@media (max-width: 699px) { .tools { gap: 2px; } .tools hr { display: none; } }
