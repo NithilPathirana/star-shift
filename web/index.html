@@ -257,13 +257,12 @@
   <p class="foot">Starts from your system settings. Choices are remembered on this device.</p>
 </div>
 
-<div class="pop glass fl-pop" id="flagsPop" role="dialog" aria-label="Flag legend and filter" hidden>
-  <h2>Flags in this image</h2>
+<div class="pop glass fl-pop" id="flagsPop" role="dialog" aria-label="Flags in this image" hidden>
+  <div class="fl-head"><h2>Flags in this image</h2><span class="fl-hidehd" id="flHideHd" title="Hide images where this flag touches the star">Hide</span></div>
   <div id="flRows"></div>
-  <p class="fl-dust">Dust glow is the ZODI layer, not a pixel flag. <button class="fl-link" id="flZodi">Show ZODI</button></p>
-  <h3>Hide images where these touch the star</h3>
-  <div id="flHide"></div>
-  <p class="foot">Flags come from the archive's own quality mask for each image. "Touch the star" = within 3 pixels (18″) of where it should be.</p>
+  <p class="fl-dust">Dust glow is the ZODI layer, not a flag. <button class="fl-link" id="flZodi">Show ZODI</button></p>
+  <div id="flWhy"></div>
+  <p class="foot">From the archive's own quality mask.</p>
 </div>
 
 <div class="pop glass wide" id="bands" role="dialog" aria-label="IR band ranges" hidden>
@@ -281,12 +280,42 @@
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="pop glass" id="pagesPop" role="dialog" aria-label="Pages" hidden>
   <h2>Pages</h2>
-  <nav class="pages-list"><a class="key" href="index.html" aria-current="page">Viewer</a><a class="key" href="archive.html" data-carry="archive.html">Archive</a><a class="key" href="spectral.html" data-carry="spectral.html">Spectrum</a><a class="key" href="proof.html">Proof</a><a class="key" href="neo.html">Asteroids</a><a class="key" href="spot.html">Spot</a><a class="key" href="planetarium.html" data-carry="planetarium.html">Can I see it tonight?</a><button class="key pg-util" type="button" data-notebook>Notebook</button><button class="key pg-util" type="button" data-open-help>Help</button><button class="key pg-util" type="button" data-open-help>About</button></nav>
+  <nav class="pages-list"><a class="key" href="index.html" aria-current="page">Viewer</a><a class="key" href="archive.html" data-carry="archive.html">Archive</a><a class="key" href="spectral.html" data-carry="spectral.html">Spectrum</a><a class="key" href="proof.html">Proof</a><a class="key" href="neo.html">Asteroids</a><a class="key" href="spot.html">Spot</a><a class="key" href="planetarium.html" data-carry="planetarium.html">Can I see it tonight?</a><button class="key pg-util" type="button" data-notebook>Notebook</button><button class="key pg-util" type="button" data-open-help>Help</button><button class="key pg-util" type="button" data-open-about>About</button></nav>
 </div>
-<div class="pop glass" id="help" role="dialog" aria-label="About and help" hidden>
-  <button class="key tour-start" id="tourStart" type="button">Take the tour</button>
+<div class="pop glass" id="help" role="dialog" aria-label="Help" hidden>
+  <h2>Help: how to use Star Shift</h2>
+  <div class="help-tours"><button class="key tour-start" id="tourStart" type="button">Take the full tour</button>
+  <button class="key" type="button" data-help-tour="quick">60-second tour</button><button class="key" type="button" data-help-tour="page">Tour this page</button></div>
+  <h3>What each page is for</h3>
+  <dl class="help-pages">
+    <dt>Viewer</dt><dd>Pick a star or a spot on the sky map, then flip through its SPHEREx images as a time-lapse to see what moved.</dd>
+    <dt>Archive</dt><dd>Every SPHEREx image of one patch of sky: dates, detectors, wavelengths and flagged pixels.</dd>
+    <dt>Spectrum</dt><dd>A quick-look infrared spectrum of one star, measured from single SPHEREx images.</dd>
+    <dt>Proof</dt><dd>For five well-known objects, what the catalogues expect next to what we measure, with honest limits.</dd>
+    <dt>Asteroids</dt><dd>Known asteroids and comets that NASA/JPL predicts inside a SPHEREx field on its dates.</dd>
+    <dt>Spot</dt><dd>Blink two seasons of one patch, click what jumps, and check it against flags, catalogues and JPL.</dd>
+    <dt>Can I see it tonight?</dt><dd>The sky from a place on Earth at a chosen time, to see whether a star is up.</dd>
+  </dl>
+  <h3>Shortcuts</h3>
+  <div class="keys"><kbd>Space</kbd><span>Play or pause</span><kbd>←</kbd><span>Previous image</span><kbd>→</kbd><span>Next image</span><kbd>T</kbd><span>Time view</span><kbd>C</kbd><span>Compare first and last season</span><kbd>B</kbd><span>Blink the two seasons</span><kbd>M</kbd><span>Back to the sky map</span><kbd>+ −</kbd><span>Zoom the sky map</span><kbd>Enter</kbd><span>Play the selected patch (map)</span><kbd>?</kbd><span>This help</span><kbd>Esc</kbd><span>Close panels</span></div>
+  <h3>Simple and Expert</h3>
+  <p class="note">Simple (the default) gives plain words, like "moves about 10 arcseconds a year". Turn on the Expert switch for the full detail: uncertainties (σ), χ², full coordinates, MJD dates, flag details and CSV export. The switch is remembered in this browser.</p>
+  <h3>What the verdict chips mean</h3>
+  <dl class="help-verdicts">
+    <dt>AGREES</dt><dd>Our measured speed is within 2 uncertainties (2σ) of the star catalogue.</dd>
+    <dt>AT THE LIMIT</dt><dd>Between 2σ and 3σ off, or the uncertainty is large: no firm answer either way.</dd>
+    <dt>DIFFERS</dt><dd>More than 3σ from the catalogue. Shown as measured, with the likely reason.</dd>
+    <dt>NOT MEASURABLE</dt><dd>The star moves too little over these dates (or its centre is blanked) for us to measure.</dd>
+  </dl>
+  <p class="note">"No significant motion" means the measured shift is no bigger than its own error bars.</p>
+  <h3>Can't load?</h3>
+  <p class="note">NASA's archive (IRSA) may be busy. Use the 5 NASA targets (Barnard's Star, Epsilon Indi B, WISE 0855, RW Aurigae, R Draconis): their images are saved with the app, so they open even when the archive is down.</p>
+  <p class="note"><a href="source.zip" download>Download the source code</a> · open source under the MIT licence. <button class="linkish" type="button" data-open-about>About Star Shift</button></p>
+</div>
+<div class="pop glass" id="about" role="dialog" aria-label="About Star Shift" hidden>
   <h2>About Star Shift</h2>
-  <section class="team-words" aria-label="In the team's own words"><!-- b5: the team's own words, copied exactly (Obsidian note 23); do not edit -->
+  <p class="about-pitch">Every six months, NASA's SPHEREx photographs the whole sky. Star Shift lets anyone flip through those photos, catch what moved, and prove it's real.</p>
+  <section class="team-words" aria-label="In the team's own words"><!-- b5: the team's own words, copied exactly from README.md; do not edit -->
   <h3>Who is this for?</h3>
   <p class="team-q">"Curious people, people that don't know and know about astronomy, people who are and aren't experienced in this field."</p>
   <h3>Our idea</h3>
@@ -309,13 +338,13 @@
   </ul>
   <p class="team-sign">— Team Proper Motion (Nithil, Kurucharan, Dehan)</p>
   </section>
-  <p class="about-pitch">Every six months, NASA's SPHEREx photographs the whole sky. Star Shift lets anyone flip through those photos, catch what moved, and prove it's real.</p>
+  <h3>Data and credits</h3>
+  <p class="note">Images: NASA SPHEREx via IRSA: Data Release 1 (DR1) spectral images (DOI 10.26131/IRSA678) and Quick Release 3 (QR3) spectral images (DOI 10.26131/IRSA662). Each viewer image is a 150″ cutout, lined up north up, 6.15″ per pixel; flags come from the archive's own quality mask. Star names and motions: SIMBAD (CDS, Strasbourg) and Gaia DR3 (ESA). Asteroids: NASA/JPL. Full references on the <a href="proof.html">Proof</a> page.</p>
+  <h3>AI use</h3>
+  <p class="note">AI (Super Intelligence, SI): all code was written by AI models (Claude, by Anthropic; a few modules by OpenAI Codex) under the team's direction. The team chose the idea, checked the science and approved the design.</p>
   <p class="note ai-credit">Logo: SI-generated with ChatGPT; small version and favicon redrawn as SVG by Claude.</p>
-  <p class="note"><a href="source.zip" download>Download the source code (MIT)</a> · Star Shift is open source under the MIT licence.</p>
-  <h3 style="margin-top:14px">Shortcuts</h3>
-  <div class="keys" style="margin-top:10px"><kbd>Space</kbd><span>Play or pause</span><kbd>←</kbd><span>Previous image</span><kbd>→</kbd><span>Next image</span><kbd>T</kbd><span>Time view</span><kbd>C</kbd><span>Compare first and last season</span><kbd>B</kbd><span>Blink the two seasons</span><kbd>M</kbd><span>Back to the sky map</span><kbd>+ −</kbd><span>Zoom the sky map</span><kbd>Enter</kbd><span>Play the selected patch (map)</span><kbd>?</kbd><span>This help</span><kbd>Esc</kbd><span>Close panels</span></div>
-  <h3>About the data</h3>
-  <p class="note">Each image is a 150″ cutout of SPHEREx infrared data from IRSA, lined up north up, 6.15″ per pixel. Dark flat squares have no data; outlines and small marks are pixels the archive flagged. SPHEREx images each detector at a different wavelength, so brightness changes between images mix wavelength and time.</p>
+  <p class="note"><a href="source.zip" download>Download the source code</a> · Star Shift is open source under the MIT licence.</p>
+  <p class="team-sign">Team Proper Motion · NASA Space Apps Challenge 2026</p>
 </div>
 
 <div class="scrim" id="scrim"></div>
@@ -334,12 +363,19 @@ document.querySelectorAll('a[data-carry]').forEach(a => a.addEventListener('clic
   a.href = a.dataset.carry + (o.toString() ? '?' + o : '');
 }));</script>
 <script>/* AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
-   Help and About (DESIGN.md 25): the rail Help key and the phone Pages sheet open the About and help panel;
-   other pages link here with #help or #about, which opens it once the viewer has loaded. */
-document.querySelectorAll('[data-open-help]').forEach(b => b.addEventListener('click', e => {
-  e.stopPropagation(); document.getElementById('aboutBtn').click();
-}));
-addEventListener('load', () => { if (/^#(help|about)$/.test(location.hash)) setTimeout(() => document.getElementById('aboutBtn').click(), 60); });
+   Help and About are two panels (Nithil: "Help and About open the same thing"): Help = how to use it,
+   About = the team's own words, credits and licence. The rail keys and the phone Pages sheet open them;
+   other pages link here with #help or #about. The hash is read now, before ui.js (a module, so it runs
+   after this) rewrites the address with replaceState and drops it (full test global-1). */
+{ const startHash = location.hash, open = id => document.getElementById(id === 'about' ? 'aboutBtn' : 'helpBtn').click();
+  document.querySelectorAll('[data-open-help],[data-open-about]').forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation(); open(b.hasAttribute('data-open-about') ? 'about' : 'help');
+  }));
+  const want = /^#(help|about)$/.exec(startHash)?.[1];
+  if (want) { // open it once the viewer is up; again if the map's start-up closed it (closePop on a scene change)
+    const show = () => { if (document.getElementById(want).hidden) open(want); };
+    addEventListener('load', () => { setTimeout(show, 60); setTimeout(show, 1500); });
+  } }
 /* the Layers row fades at its right edge while more keys are off screen (phone) */
 { const ls = document.getElementById('layerSeg'), end = () => ls.classList.toggle('at-end', ls.scrollLeft + ls.clientWidth >= ls.scrollWidth - 2);
   ls.addEventListener('scroll', end, { passive: true }); new ResizeObserver(end).observe(ls); }</script>

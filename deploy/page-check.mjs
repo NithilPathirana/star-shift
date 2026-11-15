@@ -17,7 +17,12 @@ const PAGES = [
   ['/neo.html', 5000], ['/planetarium.html?q=Barnard%27s%20Star', 5000],
   // the other three demo targets' deep links (Master's freeze gate: all five presets must open in the viewer)
   ['/index.html?q=Epsilon%20Indi%20B&scene=viewer', 10000], ['/index.html?q=RW%20Aurigae&scene=viewer', 10000], ['/index.html?q=R%20Draconis&scene=viewer', 10000],
+  // other pages' About link (full test global-1: it lost its #about and opened nothing)
+  ['/index.html#about', 6000],
 ];
+// Help and About are two different panels (Nithil: "Help and About open the same thing")
+const POPS = "(() => { const v = id => { const p = document.getElementById(id); return !!p && !p.hidden && p.getClientRects().length > 0; };"
+  + " const t = id => document.getElementById(id)?.textContent || ''; return { help: v('help'), about: v('about'), helpTour: /Tour/.test(t('help')), helpTeam: /Who is this for/.test(t('help')), aboutTeam: /Who is this for/.test(t('about')) }; })()";
 const BROWSERS = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
   '/usr/bin/google-chrome', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'];
 // archive / catalogue hosts and relay routes whose failures are "the archive is busy", not our bug
@@ -91,6 +96,24 @@ async function run() {
           }
           if (d.p !== 'true' || !d.lg) errs.push(`Compare > Difference did not switch on (aria-pressed=${d.p}, legend shown=${d.lg})`);
         }
+      }
+      if (path === '/') { // open Help, then About: each must show its own content, never the other's
+        const ev = async (x) => (await send('Runtime.evaluate', { expression: x, returnByValue: true }, s)).result?.result?.value || {};
+        await ev("document.getElementById('helpBtn').click()"); await sleep(500);
+        const a = await ev(POPS);
+        await ev("document.getElementById('aboutBtn').click()"); await sleep(500);
+        const b = await ev(POPS);
+        if (!(a.help && !a.about && a.helpTour && !a.helpTeam)) errs.push(`Help did not open as its own panel (${JSON.stringify(a)})`);
+        if (!(b.about && !b.help && b.aboutTeam)) errs.push(`About did not open as its own panel (${JSON.stringify(b)})`);
+      }
+      if (path === '/index.html#about') { // the hash must survive the viewer's address rewrite and open About
+        let d = {};
+        for (let k = 0; k < 10; k++) {
+          d = (await send('Runtime.evaluate', { expression: POPS, returnByValue: true }, s)).result?.result?.value || {};
+          if (d.about) break;
+          await sleep(1000);
+        }
+        if (!d.about || d.help) errs.push(`/index.html#about did not open About (${JSON.stringify(d)})`);
       }
       handlers.splice(handlers.indexOf(h), 1);
       await send('Target.closeTarget', { targetId });

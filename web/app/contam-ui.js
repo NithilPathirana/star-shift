@@ -23,6 +23,8 @@ const ICON = {
   scatter: '<circle cx="4.5" cy="11.5" r="1.3" fill="currentColor"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/><circle cx="11.5" cy="4.5" r="1.3" fill="currentColor"/>',
   airglow: '<path d="M2 8.5c1.5-3 3-3 4 0s2.5 3 4 0 2.5-3 4 0"/>',
   other: '<rect x="3.5" y="3.5" width="9" height="9"/>',
+  persist: '<circle cx="8" cy="8" r="4.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/>',
+  streak: '<path d="M2.5 13.5L13.5 2.5"/>',
 };
 const icon = id => `<svg class="fl-ic" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">${ICON[id]}</svg>`;
 import { isExpert } from './expert.js';
@@ -228,33 +230,52 @@ export function createContam(ctx) {
     }
     return KINDS.filter(k => ids.has(k.id));
   }
+  // One row per flag (spec-proof-flags.md 2a): mark (shows/hides its marks) | name | images where it
+  // touches the star | ? (one-line description) | Hide switch (the old "Hide images" checkbox).
+  const MEANING = { persist: 'The pixel still glows from a bright source in an earlier image', streak: 'A line left by a satellite or other object crossing the view' };
+  let qOpen = null; // the one flag whose description is open
   function renderPop() {
-    const a = document.activeElement, refocus = a?.dataset?.show ? `[data-show=${a.dataset.show}]` : a?.dataset?.hide ? `[data-hide=${a.dataset.hide}]` : null;
+    const a = document.activeElement, ds = a?.dataset || {};
+    const refocus = ds.show ? `[data-show=${ds.show}]` : ds.hide ? `[data-hide=${ds.hide}]` : ds.q ? `[data-q=${ds.q}]` : null;
     renderPopInner();
     if (refocus) $('flagsPop').querySelector(refocus)?.focus();
   }
   function renderPopInner() {
     const f = V.F[ctx.P.i], raw = f?.raw, c = raw ? countKinds(raw.flags, raw.masks, raw.data) : null;
-    const kinds = present();
-    const val = k => !raw ? '–' : k.frame ? (raw.glow?.flagged ? 'whole image' : 'none') : `${c[k.id]} px`;
-    const any = raw && kinds.some(k => (k.frame ? raw.glow?.flagged : c[k.id] > 0));
-    $('flRows').innerHTML = (raw && !any ? '<p class="fl-empty">No flagged pixels in this image.</p>' : '') + kinds.map(k => `
-      <div class="fl-row"><span class="fl-mk">${icon(k.id)}</span><span class="fl-txt"><b>${esc(k.name)}</b><small>${esc(k.meaning)}</small></span>
-      <span class="fl-n num">${val(k)}</span><button class="switch well" role="switch" aria-checked="${!!S.show[k.id]}" data-show="${k.id}" aria-label="Show ${esc(k.name)} marks"><i></i></button></div>`).join('');
-    const nAff = id => V.FA.filter(x => frameHas(summary(x), id)).length;
     const hk = HIDE_KINDS.filter(k => V.FA.some(f => k.frame ? (f.raw.glow?.known || f.raw.glow?.nearHe) : bitsNamed(f.raw.flagNames, k.bits)));
-    const hid = V.FA.filter(f => !V.FK.includes(f)), sat = V.FA.filter(f => summary(f).saturated).length; // V.FK: the flag filter alone (V.F also leaves out other bands while one is held)
+    const shown = present(), ids = [...new Set([...shown.map(k => k.id), ...hk.map(k => k.id)])];
+    const rows = ids.map(id => { const k = KINDS.find(x => x.id === id), h = hk.find(x => x.id === id); return { id, k: shown.includes(k) ? k : null, h, name: h?.name || k.name, full: k?.name || h.name, meaning: k?.meaning || MEANING[id] || '' }; });
+    const nAff = id => V.FA.filter(x => frameHas(summary(x), id)).length;
+    const sat = V.FA.filter(f => summary(f).saturated).length, N = V.FA.length;
+    const here = r => !raw || !r.k ? '' : r.k.frame ? (raw.glow?.flagged ? ' · whole of this image' : ' · not in this image') : ` · ${c[r.id]} px in this image`;
+    const touch = `within ${CORE_PX} pixels (~${Math.round(CORE_PX * 6.15)}″)`;
+    $('flHideHd').title = `Hide images where this flag touches the star (${touch})`;
+    const any = raw && shown.some(k => (k.frame ? raw.glow?.flagged : c[k.id] > 0));
+    if (qOpen && !ids.includes(qOpen)) qOpen = null;
+    $('flagsPop').classList.toggle('fl-many', rows.length > 8);
+    $('flRows').innerHTML = (raw && !any ? '<p class="fl-empty">No flagged pixels in this image.</p>' : '') + rows.map(r => {
+      const n = r.h ? nAff(r.id) : r.id === 'overflow' ? sat : null;
+      const nTip = n == null ? '' : r.h ? `${n} of ${N} images: it touches the star (${touch})` : `${n} of ${N} images have a saturated core`;
+      const mk = r.k ? `<button class="fl-mk" aria-pressed="${!!S.show[r.id]}" data-show="${r.id}" aria-label="Show ${esc(r.full)} marks on the image" title="Marks on the image: ${S.show[r.id] ? 'shown' : 'off'}">${icon(r.id)}</button>`
+        : `<span class="fl-mk" aria-hidden="true">${icon(r.id)}</span>`;
+      const sw = r.h ? `<button class="switch well" role="switch" aria-checked="${S.hide.has(r.id)}" data-hide="${r.id}" aria-label="Hide images where ${esc(r.name)} touches the star"><i></i></button>`
+        : `<span class="fl-nosw" title="${r.id === 'overflow' ? 'A saturated core is the star itself: those images stay' : 'Not used to hide images'}">–</span>`;
+      const open = qOpen === r.id;
+      return `<div class="fl-item"><div class="fl-row">${mk}<span class="fl-name" title="${esc(r.full + ': ' + r.meaning + here(r))}">${esc(r.name)}</span>`
+        + `<span class="fl-n num"${nTip ? ` title="${esc(nTip)}"` : ''}>${n ?? ''}</span>`
+        + `<button class="fl-q" data-q="${r.id}" aria-expanded="${open}" aria-controls="flq-${r.id}" aria-label="What is ${esc(r.name)}?">?</button>${sw}</div>`
+        + (open ? `<p class="fl-desc" id="flq-${r.id}">${esc(r.meaning.replace(/\.$/, ''))}.${r.h ? ` Hide: ${touch} of the star.` : r.id === 'overflow' ? ' The star itself: shown, not hidden.' : ''}</p>` : '') + '</div>';
+    }).join('');
+    const hid = V.FA.filter(f => !V.FK.includes(f)); // V.FK: the flag filter alone (V.F also leaves out other bands while one is held)
     const d = f => R.fmtDate(f.date);
-    const pop = $('flagsPop'), h3 = pop.querySelector('h3'), foot = pop.querySelector('.foot');
-    if (h3) h3.hidden = true; // the section title lives in the <summary> below
-    if (foot) foot.textContent = `Flags come from the archive's own quality mask for each image. "Touch the star" = within ${CORE_PX} pixels (~${Math.round(CORE_PX * 6.15)}″) of where it should be.`;
-    const wasOpen = !!$('flHide').querySelector('details')?.open;
-    $('flHide').innerHTML = `<details class="fl-sec"${wasOpen ? ' open' : ''}><summary>Hide images where these touch the star${hideSet().size ? ` <span class="num">· ${hid.length} hidden</span>` : ''}</summary>` + hk.map(k => `<label class="fl-hide"><input type="checkbox" data-hide="${k.id}" ${S.hide.has(k.id) ? 'checked' : ''}> ${esc(k.name)} <span class="num">${nAff(k.id)} of ${V.FA.length}</span></label>`).join('')
-      + `<p class="fl-note">Counts only hits within ${CORE_PX} pixels of the star.${sat ? ` ${sat} image${sat === 1 ? ' has' : 's have'} a saturated core (the star filled its own pixels): shown, not hidden.` : ''}</p>`
+    const wasOpen = !!$('flWhy').querySelector('details')?.open;
+    $('flWhy').innerHTML = `<details class="fl-sec"${wasOpen ? ' open' : ''}><summary>Which images are hidden${hideSet().size ? ` <span class="num">· ${hid.length} hidden</span>` : ''}</summary>`
+      + `<p class="fl-note">A switch hides images where that flag is ${touch} of the star.${sat ? ` ${sat} image${sat === 1 ? ' has' : 's have'} a saturated core (the star filled its own pixels): shown, not hidden.` : ''}</p>`
       + (hideSet().size ? `<p class="fl-hidden num">${hid.length} image${hid.length === 1 ? '' : 's'} hidden</p>` : '')
       + (hid.length ? `<ul class="fl-why">${hid.map(f => `<li title="${esc(whyHidden(f) || '')}"><span class="num">${d(f)}</span> ${esc(whyHidden(f) || '')}</li>`).join('')}</ul>` : '') + '</details>';
     $('flRows').querySelectorAll('[data-show]').forEach(b => { b.onclick = () => { const id = b.dataset.show; S.show[id] = !S.show[id]; persist(); ctx.Snd.play('click'); ctx.redraw(); renderPop(); }; });
-    $('flHide').querySelectorAll('[data-hide]').forEach(cb => { cb.onchange = () => { const id = cb.dataset.hide; cb.checked ? S.hide.add(id) : S.hide.delete(id); persist(); ctx.Snd.play('click'); ctx.refilter(); renderPop(); }; });
+    $('flRows').querySelectorAll('[data-hide]').forEach(b => { b.onclick = () => { const id = b.dataset.hide; S.hide.has(id) ? S.hide.delete(id) : S.hide.add(id); persist(); ctx.Snd.play('click'); ctx.refilter(); renderPop(); }; });
+    $('flRows').querySelectorAll('[data-q]').forEach(b => { b.onclick = () => { qOpen = qOpen === b.dataset.q ? null : b.dataset.q; renderPop(); }; });
   }
   $('flZodi').onclick = () => { setLayer('zodi', true); ctx.closePop(); };
 

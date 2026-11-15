@@ -900,17 +900,19 @@ $('clarityBtn').onclick = e => { e.stopPropagation(); openPop?.pop.id === 'clari
 $('helpBtn').onclick = e => { e.stopPropagation(); openPop?.pop.id === 'help' ? closePop() : showPop($('help'), $('helpBtn')); };
 $('flagsMore').onclick = e => { e.stopPropagation(); if (openPop?.pop.id === 'flagsPop') return closePop(); CX.renderPop(); showPop($('flagsPop'), $('flagsMore'));
   placeFlagsPop(); };
-// Flag legend: inside the stage, at most min(520 px, stage height − 16 px) tall (it scrolls inside),
-// anchored by its bottom so opening the "Hide images" section grows it upwards.
+// Flag legend (spec-proof-flags.md 2b): left edge on the FLAGS key, bottom 8 px above the dock, grows
+// upward, never above the stage's top: max height = stage height − 16 px (scrolls only as a last resort).
 function placeFlagsPop() {
-  const r = $('flagsMore').getBoundingClientRect(), st = $('stage').getBoundingClientRect(), p = $('flagsPop');
-  p.style.maxHeight = Math.max(160, Math.min(520, st.height - 16)) + 'px';
-  p.style.top = 'auto'; p.style.bottom = (innerHeight - Math.min(r.top - 10, st.bottom - 8)) + 'px';
-  p.style.right = Math.max(innerWidth - st.right + 8, innerWidth - r.right, 8) + 'px';
+  const k = $('flagsBtn').getBoundingClientRect(), st = $('stage').getBoundingClientRect(), p = $('flagsPop');
+  const dock = $('dock').getBoundingClientRect(), bottom = Math.min(dock.top, k.top) - 8;
+  p.style.maxHeight = Math.max(160, Math.min(st.height - 16, bottom - st.top - 8)) + 'px';
+  p.style.top = 'auto'; p.style.bottom = (innerHeight - bottom) + 'px'; p.style.right = 'auto';
+  const w = p.offsetWidth || 340; // phone: centred, like a sheet
+  p.style.left = (innerWidth < 700 ? Math.max(8, (innerWidth - w) / 2) : Math.max(8, Math.min(k.left, innerWidth - w - 8))) + 'px';
 }
 addEventListener('resize', () => { if (openPop?.pop.id === 'flagsPop') placeFlagsPop(); });
 $('pagesBtn').onclick = e => { e.stopPropagation(); openPop?.pop.id === 'pagesPop' ? closePop() : showPop($('pagesPop'), $('pagesBtn')); };
-$('aboutBtn').onclick = e => { e.stopPropagation(); showPop($('help'), $('helpBtn')); };
+$('aboutBtn').onclick = e => { e.stopPropagation(); openPop?.pop.id === 'about' ? closePop() : showPop($('about'), $('helpBtn')); }; // its own panel, not Help's
 document.addEventListener('pointerdown', e => { if (openPop && !openPop.pop.contains(e.target) && !openPop.btn.contains(e.target)) closePop(); });
 function sheet(on) { $('insp').classList.toggle('open', on); $('scrim').classList.toggle('on', on); $('infoBtn').setAttribute('aria-expanded', on); if (on) Snd.play('tick'); }
 $('infoBtn').onclick = () => sheet(!$('insp').classList.contains('open')); $('inspClose').onclick = () => sheet(false); $('scrim').onclick = () => sheet(false);

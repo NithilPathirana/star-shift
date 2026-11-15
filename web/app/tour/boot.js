@@ -101,6 +101,12 @@ function helpKey() { // index.html: Help's "Take the tour" now starts the full t
     if ($('help') && !$('help').hidden) $('helpBtn')?.click(); // ui.js closes its own popover
     fullTour($('helpBtn'));
   });
+  // Help's other two tour keys: the 60-second tour and "Tour this page" (Help and About split, Sun 15 Nov)
+  document.querySelectorAll('#help [data-help-tour]').forEach(k => k.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!$('help').hidden) $('helpBtn')?.click();
+    (k.dataset.helpTour === 'quick' ? quickTour : tourThisPage)($('helpBtn'));
+  }));
 }
 function notebookKey() { // a Tour key in the Lab notebook header, whenever the dialog exists
   const add = () => {
