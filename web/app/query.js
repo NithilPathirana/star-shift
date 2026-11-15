@@ -4,7 +4,7 @@
 
 export class QueryError extends Error {}
 
-const EXAMPLES = "Try a star name like Barnard's Star, or coordinates like 269.45 +4.69 or 17 57 48.5 +04 41 36.";
+const EXAMPLES = "Try a star name like Barnard's Star, or coordinates like 269.446 +4.771 or 17 57 47.0 +04 46 16.";
 
 // Normalise unicode symbols people paste from websites.
 function clean(text) {

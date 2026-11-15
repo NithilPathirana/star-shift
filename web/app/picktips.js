@@ -27,8 +27,8 @@ export function tipPicks(root = document) {
 }
 
 // The search placeholder, shortened only when the field is too narrow to show it whole.
-const PLACEHOLDERS = ['Any star name or coordinates, e.g. Vega or 269.45 +4.69', 'Any star or coordinates, e.g. Vega or 269.45 +4.69',
-  'Any star, e.g. Vega or 269.45 +4.69', 'Any star or coordinates'];
+const PLACEHOLDERS = ['Any star name or coordinates, e.g. Vega or 269.446 +4.771', 'Any star or coordinates, e.g. Vega or 269.446 +4.771',
+  'Any star, e.g. Vega or 269.446 +4.771', 'Any star or coordinates'];
 export function fitPlaceholder(input) {
   if (!input) return;
   const ctx = document.createElement('canvas').getContext('2d');
