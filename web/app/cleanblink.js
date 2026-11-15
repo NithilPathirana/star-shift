@@ -77,6 +77,6 @@ export function createCleanBlink(ctx) {
     opt: (o) => (S.on ? cleanOpt(o) : o),
     // leaving Blink, loading another target: drop clean mode (the caller sets its own zoom)
     leave: () => off(false),
-    on, off,
+    off, // no "on" method here: it replaced the getter above, so CB.on was always truthy and Blink never drew its cross
   };
 }
