@@ -23,6 +23,7 @@ import { seeItWith } from './seeit.js'; // can you actually see it (V magnitude)
 import { createGhost } from './ghost-ui.js';
 import { createLightcurve } from './lightcurve/index.js'; // brightness-vs-date strip (info panel)
 import { createCleanBlink } from './cleanblink.js'; // Blink: hide overlays, zoom on the star
+import { createGaiaOverlay } from './gaia-overlay.js'; // b9: Gaia DR3 circles on the frames
 import { createTelescopes } from './telescopes/index.js'; // Telescope compare (DESIGN.md 31a)
 import { diffImage, diffStar, diffCaption, drawDiff, diffLegend } from './diffview.js'; // b6: Compare > Difference
 import { CLARITY_KEY, readClarity } from './prefs.js'; // Clarity defaults (sounds off)
@@ -270,6 +271,7 @@ function info(f, head) {
 }
 function draw() {
   const A = $('cvA'), B = $('cvB'), F = V.F;
+  GO.place();
   $('ghostOff').hidden = true; $('diffLgd').hidden = true;
   if (mode === 'telescopes') { const f = F[Math.min(P.i, F.length - 1)]; TS.refresh(); TS.draw(); info(f || null); $('chip').innerHTML = CX.chipLead() + '<span>Telescopes · same patch, same scale, north up</span>'; return; }
   if (!F.length) { const c = A.getContext('2d'); c.clearRect(0, 0, A.width, A.height); info(null); $('chip').innerHTML = ''; return; }
@@ -375,6 +377,11 @@ const LC = createLightcurve({ $, esc, colourOf: um => rangeOf(um)?.c,
 const CB = createCleanBlink({ $, Snd, mode: () => mode, n: () => V.n, cell: () => cssCell, redraw: () => draw(),
   getView: () => ({ zoom, panX, panY }), setView: v => { zoom = v.zoom; if (v.panX != null) { panX = v.panX; panY = v.panY; } layout(); },
   target: () => (firstS()?.exp && lastS()?.exp ? [firstS().exp, lastS().exp] : null) });
+// b9: Gaia DR3 circles on the image on cvA (Time, or Blink's stack); off in Compare, Telescopes, Clean Blink
+const GO = createGaiaOverlay({ cv: $('cvA'), sw: $('gaiaSw'), note: $('gaiaNote'), base: BASE, view: () => {
+  const one = mode === 'play' || (mode !== 'telescopes' && V.stacks.length < 2), f = !V.F.length ? null : one ? V.F[Math.min(P.i, V.F.length - 1)] : mode === 'blink' ? (side ? lastS() : firstS()) : null;
+  return { show: scene === 'viewer' && !$('stage').classList.contains('clean-blink') && !!f, grid: V.grid, mjd: f?.mjd, cell: cssCell, preset: V.query?.type === 'name' ? findPreset(V.query.name)?.key : null };
+} });
 function restack() { V.stacks = V.F.length ? buildStacks(V.F.map(f => f.raw).sort((a, b) => a.mjd - b.mjd)).map(stackToF) : []; }
 // Measure the motion from the images the flag filter keeps (also with no catalogue motion, e.g. a
 // coordinate search). Runs when loading finishes and again whenever the filter changes.
