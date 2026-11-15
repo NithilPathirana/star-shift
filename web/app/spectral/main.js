@@ -446,7 +446,7 @@ $('plot').addEventListener('mousemove', (ev) => {
 $('plot').addEventListener('mouseleave', () => { S.hover = null; showTip(null); draw(); });
 $('plot').addEventListener('click', (ev) => {
   const h = nearest(ev);
-  if (h) location.href = targetViewerUrl(S.target, h.p.mjd);
+  if (h) location.href = targetViewerUrl(S.target, h.p.mjd, h.p.detector); // the detector too: D1/D4 share exposure times
 });
 new ResizeObserver(() => scheduleDraw()).observe($('plot'));
 
