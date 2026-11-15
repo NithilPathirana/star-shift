@@ -26,7 +26,7 @@ import { measureColour, colourEstimate, colourLines, withColour, ratioText, COLO
 import { pickTip, fitPlaceholder } from '../picktips.js'; // chip tips (NASA's challenge targets), search placeholder
 import { isExpert } from '../expert.js'; // Simple / Expert: .x-only and .s-only twins below
 import { BOTHA_KEY, BOTHA_URL, bothaFrames, bothaGrid, bothaColour, bothaCard } from './botha.js'; // "Known asteroid" example: one night
-import { spotSnrHTML } from '../snr-ui.js'; // spec A: signal-to-noise line on the verdict card
+import { spotSnrMeasure, spotSnrRender } from '../snr-ui.js'; // spec A: signal-to-noise line on the verdict card
 import { buildReport, reportMarkdown, bywText, mpcNotes, reportFileName, HOW_TO, CAVEAT } from './report.js'; // extra 4: "Report this find"
 
 // Both twins in the page; CSS from expert.js shows one. Identical texts render once.
@@ -661,11 +661,15 @@ function snrCard(s) {
     s.snr = null;
     const k = s.dot ? s.dot.k : (S.show ? 1 : 0), st = blinked()[k], img = st && middleImage(st);
     const ra = s.dot ? s.dot.ra : s.ra, dec = s.dot ? s.dot.dec : s.dec;
-    if (img?.uri) spotSnrHTML(st, img, S.frames, ra, dec, { base: BASE, label: `${k ? 'latest' : 'first'} season, ${fmtDay(img.mjd)}` })
-      .then(h => { s.snr = h; }, () => { s.snr = '<p class="snr-line muted">Signal-to-noise: this image\'s pixels could not be loaded.</p>'; })
-      .then(() => { if (S.sel === s.id && $('smSnr')) $('smSnr').innerHTML = s.snr; });
+    if (img?.uri) spotSnrMeasure(st, img, S.frames, ra, dec, { base: BASE, label: `${k ? 'latest' : 'first'} season, ${fmtDay(img.mjd)}`, grid: S.grid, key: S.field?.key, name: S.field?.label })
+      .then(m => { s.snr = m || ''; }, () => { s.snr = '<p class="snr-line muted">Signal-to-noise: this image\'s pixels could not be loaded.</p>'; })
+      .then(() => { if (S.sel === s.id && $('smSnr')) $('smSnr').innerHTML = snrNow(s); });
   }
-  return s.snr || '<p class="snr-line muted">Measuring the signal-to-noise…</p>';
+  return snrNow(s) || '<p class="snr-line muted">Measuring the signal-to-noise…</p>';
+}
+// drawn with the verdict of the moment, so an artefact / nothing verdict never sits under "clearly real" (Judging panel round 9)
+function snrNow(s) {
+  return s.snr && typeof s.snr === 'object' ? spotSnrRender(s.snr, s.verdict) : s.snr;
 }
 function renderVerdict(s) {
   const v = s.verdict, el = $('verdict');

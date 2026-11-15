@@ -1,5 +1,6 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 // Adds the Archive page's first-page thumbnails (50 per demo target, 25 px cutouts) to web/prebaked/,
+// plus, for the saved targets, the Archive's own image-list requests (SIA/TAP at its SIMBAD position),
 // so archive.html?q=<a demo target> asks IRSA nothing (IRSA outage, Sun 15 Nov: cutouts 503 on and off).
 // The keys come from tools/prebake_archive.json (read from a real page load); the answers are copied
 // from the local relay's disk cache (.cache/relay, the relay's own output), never fetched here.
@@ -24,14 +25,16 @@ for (const [owner, keys] of Object.entries(LIST)) {
     if (!existsSync(cf)) { console.log('not in the relay cache:', key); missing++; continue; }
     const bytes = readFileSync(cf), meta = JSON.parse(readFileSync(cf + '.json', 'utf8'));
     if (meta.url !== IRSA + key) throw new Error('cache entry is for another URL: ' + key);
-    const file = `${owner}/${sha1(key).slice(0, 16)}.fits`;
+    const kind = key.startsWith('/SIA?') ? 'sia' : key.startsWith('/TAP/sync?') ? 'tap' : 'cutout';
+    const file = `${owner}/${sha1(key).slice(0, 16)}${{ sia: '.xml', tap: '.csv', cutout: '.fits' }[kind]}`;
     mkdirSync(dirname(join(OUT, file)), { recursive: true });
     writeFileSync(join(OUT, file), bytes);
-    man.entries[key] = { file, size: bytes.length, fetched: statSync(cf).mtime.toISOString(), kind: 'cutout',
-      source: 'IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails' };
+    man.entries[key] = { file, size: bytes.length, fetched: statSync(cf).mtime.toISOString(), kind,
+      source: kind === 'cutout' ? 'IRSA SPHEREx cutout (via the Star Shift relay), copied from the local relay cache for the Archive page thumbnails'
+        : `IRSA SPHEREx ${kind === 'sia' ? 'SIA' : 'TAP'} image list (via the Star Shift relay), copied from the local relay cache for the Archive page` };
     added++;
   }
-  const t = man.targets[owner];
+  const t = man.targets[owner] || man.savedTargets?.[owner]; // NASA's five or a saved target (--add)
   if (t) {
     const mine = Object.values(man.entries).filter(e => e.file.startsWith(owner + '/'));
     t.files = mine.length; t.mib = Math.round(mine.reduce((a, e) => a + e.size, 0) / 1048576 * 100) / 100;

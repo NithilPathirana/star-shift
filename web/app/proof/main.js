@@ -4,7 +4,7 @@
 
 import { initClarity, showPop, closePop, esc } from '../archive/shell.js';
 import { DEFAULT_BANDS } from '../bands.js';
-import { VERDICT_CLASS, along, nmReason, mainGroup, plainBand, whySentence, badgeText, verdictSigma } from './logic.js';
+import { VERDICT_CLASS, along, nmReason, plainBand, whySentence, badgeText, verdictSigma, magParts, magGroups } from './logic.js';
 import '../expert.js'; // Simple / Expert: .x-only (expert detail) and .s-only (plain-words twin)
 
 const $ = (id) => document.getElementById(id);
@@ -42,11 +42,11 @@ function measuredCell(t) {
     if (m.significant === false) return numCell(`&lt; ${arcs(m.upperLimit)}`, '″/yr');
     return numCell(`${arcs(m.value)} ± ${arcs(m.err)}`, '″/yr');
   }
-  const g = mainGroup(t);
-  if (!g) return NA('No usable change');
-  // every measured wavelength group, the deciding one first (RW Aurigae: fainter at 3.8–5.0 µm, brighter at 0.75–3.8 µm)
-  const all = [g, ...(t.measured?.groups || []).filter(x => x.ok && x.err > 0 && x !== g)];
-  return all.map(x => `<span class="pf-grp" title="${esc(plainBand(x.name))}">${numCell(`${Math.abs(x.value).toFixed(2)} ± ${x.err.toFixed(2)}`, ` mag ${x.value > 0 ? 'fainter' : 'brighter'}${all.length > 1 ? ` at ${esc(plainBand(x.name))}` : ''}`)}</span>`).join('<br>');
+  // every measured wavelength group, the deciding one first (RW Aurigae: fainter at 3.8–5.0 µm, brighter at 0.75–3.8 µm);
+  // the text comes from logic.js magParts, the same formatter as the viewer's result plate
+  const all = magGroups(t);
+  if (!all.length) return NA('No usable change');
+  return all.map(x => { const m = magParts(x, all.length > 1); return `<span class="pf-grp" title="${esc(plainBand(x.name))}">${numCell(esc(m.val), esc(m.unit))}</span>`; }).join('<br>');
 }
 function diffCell(t) {
   if (!t.diff) return DASH(t.verdict === 'NOT MEASURABLE' ? 'Nothing measured to compare' : 'No difference computed');

@@ -194,3 +194,47 @@ test("sky-limited note: the exact phrase in Expert when the star's own noise is 
   assert.equal(S.mostlyBlanked([holed, clean, clean], 4, 4), false);
   assert.match(S.snrText({ ok: false, reason: 'saturated' }, {}, { stack: true }).line, /saturated or blanked in most images of this stack/);
 });
+
+// Judging panel round 9, item 2: SNR must agree with the verdict.
+test("Spot: an artefact / nothing verdict never sits under 'clearly real' or a stacking projection", () => {
+  const p = fake(48);
+  for (const [v, why] of [[{ kind: 'artefact', title: 'Likely artefact', decidedBy: 'flags' }, /most likely an artefact \(flagged pixels\)/],
+    [{ kind: 'artefact', title: 'Likely artefact', decidedBy: 'seasons' }, /most likely an artefact \(not a clear dot in both seasons\)/],
+    [{ kind: 'artefact', title: 'Not a separate dot', decidedBy: 'seasons' }, /outer glow of a brighter source/],
+    [{ kind: 'nothing', title: 'Nothing here' }, /no dot that stands out/]]) {
+    const t = S.snrText(p, counts, { detector: 3, verdict: v });
+    assert.match(t.line, /^Signal-to-noise 48 at this pixel, but the checks/); assert.match(t.line, why);
+    assert.doesNotMatch(t.line + t.simple + t.expert.join(' '), /clearly real|Stacking this season|Median stacks|combined: about/);
+    assert.equal(t.detection, false);
+  }
+  // other verdicts leave the line alone
+  for (const kind of ['unexplained', 'known-star', 'known-asteroid', 'pending']) assert.match(S.snrText(p, counts, { verdict: { kind } }).line, /clearly real/);
+  // the card renders with the verdict of the moment (not a line cached before the verdict landed)
+  const spot = readFileSync(new URL('../web/app/spot/main.js', import.meta.url), 'utf8');
+  assert.match(spot, /spotSnrRender\(s\.snr, s\.verdict\)/);
+});
+
+test('WISE 0855 below 3.8 µm: all-band stacks and clicks near the target follow the Brightness panel', () => {
+  const nb = { g: 16.31, sepArcsec: 7.8 };
+  const groups = [{ id: 'short', dets: [1, 2, 3, 4], absent: true, src: nb }, { id: 'long', dets: [5, 6], absent: false }];
+  assert.deepEqual(S.notTargetFor(groups, [2, 3], 'WISE 0855'), { name: 'WISE 0855', src: nb });
+  assert.equal(S.notTargetFor(groups, [5, 6], 'WISE 0855'), null);
+  const mixed = S.notTargetFor(groups, [1, 2, 5, 6], 'WISE 0855');
+  assert.equal(mixed.mixed, true); assert.equal(mixed.where, 'below 3.8 µm');
+  const t = S.snrText(fake(17), counts, { stack: true, notTarget: mixed });
+  assert.match(t.line, /^Signal-to-noise 17, but part of this light is a background star 7\.8″ away \(Gaia G 16\.3\): WISE 0855 is not detected below 3\.8 µm/);
+  assert.doesNotMatch(t.line + t.simple, /clearly real/);
+  // a clicked point counts as the target within the circle plus one pixel (2 px circle: 18.45″)
+  assert.equal(S.nearTarget(10, 2), true); assert.equal(S.nearTarget(18.4, 2), true); assert.equal(S.nearTarget(19, 2), false);
+  const ui = readFileSync(new URL('../web/app/snr-ui.js', import.meta.url), 'utf8');
+  assert.match(ui, /atStar \? notTarget\(\[f\.detector\]\) : null/); assert.match(ui, /notTargetFor\(await targetGroups/);
+});
+
+test("help sentence: 'adding more images raises it' only for a detection (snr-ui.js, round 9)", () => {
+  const ui = readFileSync(new URL('../web/app/snr-ui.js', import.meta.url), 'utf8');
+  assert.match(ui, /t\.detection \? SIMPLE_WHY : SIMPLE_WHY_NONE/);
+  assert.match(ui, /SIMPLE_WHY_NONE = 'It compares the light in a small circle here with the random flicker of the sky around it\.'/);
+  assert.equal(S.snrText(fake(1.2), counts).detection, false);
+  assert.equal(S.snrText(fake(20), counts).detection, true);
+  assert.equal(S.snrText(fake(20), counts, { notTarget: { name: 'X' } }).detection, false);
+});

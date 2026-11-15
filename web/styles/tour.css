@@ -137,6 +137,11 @@ html[data-motion=reduce] .ss-consent{transition:none!important}
 .tour-chip.stack .tour-chip-t{flex-basis:100%;white-space:normal}
 .tour-chip.in-bar{position:relative;top:auto;right:auto;z-index:auto;flex:1 1 100%;width:100%;max-width:none;margin-top:8px;box-shadow:none}
 .tour-chip.in-bar .tour-chip-t{flex:1;white-space:normal}
+/* desktop: docked in the top bar before the Tour key (Judging panel round 9: never over a heading) */
+.tour-chip.docked{position:static;top:auto;right:auto;z-index:auto;flex:none;max-width:none;padding:0 2px 0 4px;gap:0;border-radius:999px;align-self:center}
+.tour-chip.docked .tour-chip-go{white-space:nowrap;padding:4px 6px}
+.tour-chip.docked .key.icon{min-height:28px;min-width:28px;padding:0}
+.tour-chip.in-bar .tour-chip-go{flex:1}
 /* Reject / withdraw: the kept-for-this-tab note and its Export notebook link; Clear saved data now asks first */
 .ssc-link{display:inline;min-height:0;padding:0;font:inherit;font-weight:600;color:var(--copper-ink);text-decoration:underline;text-underline-offset:2px;background:none;border:0;cursor:pointer}
 .ssc-kept{font-weight:600;color:var(--ink)}
@@ -159,3 +164,13 @@ html[data-motion=reduce] .tour-chip.pulse{animation:none}
 .tour-chip .tour-chip-go{min-height:32px;padding:4px 8px;font-weight:600;background:none;border:0;color:var(--ink);cursor:pointer;font-size:.8125rem;text-align:left}
 .tour-chip.small .tour-chip-go{font-size:.75rem;font-weight:500}
 @media (max-width:699px){.tour-chip .tour-chip-go{min-height:44px}}
+/* the consent chip (first visit): one small line at the bottom; never over the stage, plate or verdict */
+.ss-cc{--glass-tint:rgba(248,244,238,.97);--glass-tint-2:rgba(244,239,232,.96);position:fixed;z-index:30;left:12px;bottom:12px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;padding:4px 12px;border-radius:12px;max-width:min(560px,calc(100vw - 24px));font-size:.75rem;color:var(--ink-2)}
+.ss-cc>*{position:relative;z-index:3}
+.ss-cc.right{left:auto;right:12px}
+.ss-cc[hidden]{display:none}
+.ss-cc .ssc-link{min-height:24px;font-size:.75rem}
+.ss-cc-t{font-weight:600;color:var(--ink)}
+.ss-cc.in-bar{position:relative;left:auto;right:auto;bottom:auto;z-index:auto;flex:1 1 100%;max-width:none;margin-top:8px;box-shadow:none}
+.ss-cc.foot{position:relative;left:auto;right:auto;bottom:auto;margin:12px;max-width:none}.ss-cc.in-story{margin:10px 0 0;box-shadow:none}
+@media (max-width:699px){.ss-cc .ssc-link{min-height:44px}.ss-cc{padding:4px 12px 0;gap:0 10px}.ss-cc-t{flex-basis:100%}}

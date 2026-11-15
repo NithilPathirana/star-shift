@@ -241,24 +241,46 @@ function sleep(ms, signal) {
   });
 }
 
+// One attempt's signal: aborts after `ms` (timedOut = true) or when the caller's signal aborts.
+function attemptSignal(signal, ms) {
+  const ctl = new AbortController(), st = { signal: ctl.signal, timedOut: false };
+  const t = setTimeout(() => { st.timedOut = true; ctl.abort(Object.assign(new Error('Cutout timed out'), { name: 'TimeoutError' })); }, ms);
+  const onAbort = () => ctl.abort(signal.reason);
+  if (signal?.aborted) ctl.abort(signal.reason); else signal?.addEventListener?.('abort', onAbort, { once: true });
+  st.done = () => { clearTimeout(t); signal?.removeEventListener?.('abort', onAbort); };
+  return st;
+}
+
 // Download a cutout but keep only PRIMARY, IMAGE and FLAGS (stops the download early).
 // IRSA's cutout service returns HTTP 503 now and then (seen often on 14 Nov 2026), so retry.
+// A request that hangs (no answer in `timeoutMs`) is dropped and tried once more, so one
+// stuck download can't hold a slot of the parallel loader for minutes (15 Nov 2026).
 export async function fetchCutout(uri, ra, dec, sizeDeg,
-  { base = IRSA, fetchFn = prebakedFetch, signal, retries = 5, backoffMs = 1500 } = {}) {
+  { base = IRSA, fetchFn = prebakedFetch, signal, retries = 5, backoffMs = 1500, timeoutMs = 20000, timeoutRetries = 1 } = {}) {
   const url = cutoutUrl(uri, ra, dec, sizeDeg, base);
+  let timeouts = 0;
   for (let attempt = 0; ; attempt++) {
-    const res = await fetchFn(url, { signal });
-    if (res.ok) {
-      // A body that breaks off mid-file is retried like a 503 (never decoded half-read).
-      try { return decodeCutout(await readHDUsFromStream(res.body, 3)); } catch (e) {
-        if (!(e?.retryable || e?.name === 'TypeError') || signal?.aborted || attempt >= retries) throw e;
-        await sleep(backoffMs * (attempt + 1), signal);
-        continue;
+    const a = attemptSignal(signal, timeoutMs);
+    try {
+      const res = await fetchFn(url, { signal: a.signal });
+      if (res.ok) {
+        // A body that breaks off mid-file is retried like a 503 (never decoded half-read).
+        try { return decodeCutout(await readHDUsFromStream(res.body, 3)); } catch (e) {
+          if (a.timedOut) throw e; // handled below
+          if (!(e?.retryable || e?.name === 'TypeError') || signal?.aborted || attempt >= retries) throw e;
+          await sleep(backoffMs * (attempt + 1), signal);
+          continue;
+        }
       }
-    }
-    res.body?.cancel?.().catch(() => {});
-    const retryable = res.status === 503 || res.status === 502 || res.status === 429;
-    if (!retryable || attempt >= retries) throw new Error(`HTTP ${res.status} for cutout`);
+      res.body?.cancel?.().catch(() => {});
+      const retryable = res.status === 503 || res.status === 502 || res.status === 429;
+      if (!retryable || attempt >= retries) throw new Error(`HTTP ${res.status} for cutout`);
+    } catch (e) {
+      if (!a.timedOut || signal?.aborted) throw e;
+      if (timeouts++ >= timeoutRetries) throw new Error(`Cutout timed out after ${Math.round(timeoutMs / 1000)} s`);
+      await sleep(Math.min(backoffMs, 1000), signal); // short pause, then one fresh try
+      continue;
+    } finally { a.done(); }
     await sleep(backoffMs * (attempt + 1), signal);
   }
 }

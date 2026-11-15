@@ -15,7 +15,9 @@ import { Sky3D as SkyMap } from './sky3d/index.js'; // 3D celestial sphere (thre
 import { layersFor, DEFAULT_BANDS, bandLabel, bandName, bandInitials, BAND_NOTE } from './bands.js';
 import { notebookAdd, openNotebook } from './notebook/notebook.js'; // Lab notebook: "+" keys in the info panel
 import { listImages } from '../core/irsa.js';
-import { isExpert } from './expert.js';
+import { isExpert, onExpert } from './expert.js';
+// Simple mode names the archive in plain words; Expert and the credits keep IRSA (judging round 8, item 4)
+const ARC = () => (isExpert() ? 'IRSA' : "NASA's archive");
 import { propagate, separationArcsec, mjdToDate } from '../core/motion.js';
 import { gridToWorld, worldToGrid } from '../core/align.js';
 import { createContam } from './contam-ui.js';
@@ -29,11 +31,12 @@ import { createTelescopes } from './telescopes/index.js'; // Telescope compare (
 import { diffImage, diffStar, diffCaption, drawDiff, diffLegend } from './diffview.js'; // b6: Compare > Difference
 import { createGifExport } from './gifexport.js'; // spec-team-extras 3: Save as GIF / video
 import { createSnrPanel } from './snr-ui.js'; // spec A: signal-to-noise of a clicked spot (side panel)
+import { notTargetFor } from './snr.js'; // the Brightness panel's not-the-target rule, for the SNR line
 import { CLARITY_KEY, readClarity } from './prefs.js'; // Clarity defaults (sounds off)
 import './story.js'; // b1: first-screen story on the cold-open map (story.css)
 import { fitPlaceholder, surpriseTarget } from './picktips.js'; // quick-pick tips, search placeholder, "Surprise me"
 import { DISTANCES } from './distances.js'; // cited Gaia DR3 parallaxes (tools/fetch_distances.mjs)
-import { motionVerdict, paDelta, badgeText } from './proof/logic.js'; // the Proof page's verdict rule, for the result plate
+import { motionVerdict, paDelta, badgeText, brightnessLead } from './proof/logic.js'; // the Proof page's verdict rule, for the result plate
 import { groupOfDet, groupByDets, centreMasked, bestGroup, counterText, plannedIndexOf, resultState, storyCaption, shareParams, verdictClass, VIEW_MODES, earlyBlinkReady, heldFitText, groupById } from './viewerbits.js';
 
 const R = window.MockRender;
@@ -294,7 +297,9 @@ function diffNow() { // computed once per pair of season stacks
   if (b._diff?.from !== a) {
     const img = diffImage(a.d, b.d, V.n), p = a.exp || [V.grid.c, V.grid.c], q = b.exp || p;
     const sep = Math.hypot(q[0] - p[0], q[1] - p[1]), star = diffStar(img, a.d, [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], 4 + sep / 2);
-    b._diff = { from: a, img, star, cap: diffCaption(star, V.name) };
+    b._diff = { from: a, img, star, cap: (star && /brighter|fainter/.test(star.kind) && (Math.min(a.count ?? 9, b.count ?? 9) < 3 || holdPreset()?.key === 'r-dra'))
+      ? (holdPreset()?.key === 'r-dra' ? `${V.name}'s centre is saturated, so the brightness change can't be trusted here.` : `One season stack has under 3 images, so the brightness change can't be trusted here.`)
+      : diffCaption(star, V.name) }; // R Dra's 1-image last stack read 'about 58% fainter' (objectives audit)
   }
   return b._diff;
 }
@@ -472,7 +477,7 @@ const SNR = createSnrPanel($('snrBody'), { base: BASE, name: () => V.name,
     dets: [...new Set(V.F.filter(f => seasonAt(f.mjd, V.bounds) === s.season).map(f => f.raw.detector))],
     members: V.F.filter(f => seasonAt(f.mjd, V.bounds) === s.season).map(f => ({ n: V.grid.n, data: f.d, raw: f.raw })) })) : null), // a saturated core shows in its images
   // FFT: the Brightness panel's "not detected here" rule; every detector of the picture in a group where the target is absent
-  notTarget: dets => { const gs = dets.map(d => LC.groups().find(g => g.dets.includes(d))); return gs.length && gs.every(g => g?.absent) ? { name: V.name, src: gs[0].src || null } : null; },
+  notTarget: dets => notTargetFor(LC.groups(), dets, V.name), // mixed-band stacks too (Judging panel round 9)
   toGrid: (ra, dec) => worldToGrid(V.grid, ra, dec), label: raw => `${R.fmtDate(raw.date)}, D${raw.detector}`,
   seasonOf: m => seasonAt(m, V.bounds),
   starAt: raw => { const f = V.F.find(x => x.raw === raw); return f && V.ring && !f.ringOff ? gridToWorld(V.grid, f.exp[0], f.exp[1]) : null; } });
@@ -520,7 +525,7 @@ function remeasure() {
    The numbers are the motion panel's fit (V.motion), the same numbers in Simple and Expert; the verdict is
    the Proof page's rule (proof/logic.js motionVerdict) with the Proof page's catalogue value (proof.json).
    AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
-let proofCat = null, proofNb = null, proofBlend = null; // preset key -> proof.json catalogue motion { value, err, pa, source }; Gaia neighbours
+let proofCat = null, proofNb = null, proofBlend = null, proofBright = null; // preset key -> proof.json catalogue motion { value, err, pa, source }; Gaia neighbours
 // Master's honesty fix: a Gaia star inside the 15″ measuring circle (2.5 px × 6.15″) blends into every band,
 // so the held band's light is not the target's alone (WISE 0855: G 16.3 at 7.8″). From the neighbour data, not by name.
 const blendNb = () => { const p = holdPreset(), r = 2.5 * 6.15; return (proofNb?.[p?.key] || []).filter(x => x.sepArcsec <= r).sort((a, b) => a.g - b.g)[0] || null; };
@@ -533,6 +538,7 @@ fetch('data/proof.json').then(r => r.json()).then(d => {
   proofCat = {}; for (const t of d.targets || []) { const m = (t.tests || []).find(x => x.type === 'motion'); if (m?.expected) proofCat[t.key] = m.expected; }
   proofNb = {}; for (const t of d.targets || []) proofNb[t.key] = t.extra?.neighbours || []; // Gaia DR3 neighbours (blend note)
   proofBlend = {}; for (const t of d.targets || []) if (t.blendFit) proofBlend[t.key] = t.blendFit; // WISE 0855's two-source fit, information only
+  proofBright = {}; for (const t of d.targets || []) { const b = brightnessLead((t.tests || []).find(x => x.type === 'brightness')); if (b) proofBright[t.key] = b; } // variable stars lead with brightness
   updatePlate();
 }).catch(() => { proofCat = {}; });
 function catalogueMotion() { // { value, err (mas/yr), vec: { pmra, pmdec }, source } or null
@@ -601,6 +607,13 @@ function updatePlate() {
       const bfTxt = bf ? `For information: fitting that star out (a two-source fit with its Gaia position fixed and the star width measured on Epsilon Indi B) gives ${pm2(bf.value)} ± ${pm2(bf.err)}″/yr from ${bf.frames} images, ${bf.sigma >= 0 ? '+' : ''}${bf.sigma}σ from the catalogue; the verdict uses the single-star fit.` : '';
       res = `<span class="x-only rp-x">${xRes}</span><span class="s-only rp-x">${simpleRes(st, mo, dir, dirTxt ? dirDeg(mo, cat) : null, tag)}</span>${lowTxt ? `<span class="rp-row"></span><span class="rp-k">${esc(lowTxt)}</span>` : ''}${bfTxt ? `<span class="rp-row"></span><span class="rp-k rp-info">${esc(bfTxt).replace(' (a two-source', '<span class="x-only"> (a two-source').replace('Epsilon Indi B)', 'Epsilon Indi B)</span>')}</span>` : ''} ${nw(how)}`;
       live = `Measured here ${st.value}${st.cat != null ? `, catalogue ${st.cat.toFixed(2)}″ a year` : ''}${st.verdict ? `, ${st.verdict.toLowerCase()}` : ''}${dirTxt ? `; ${dirTxt}, ${dir.verdict.toLowerCase()}` : ''}.${lowTxt ? ' ' + lowTxt : ''}${bfTxt ? ' ' + bfTxt : ''}`;
+    }
+    // judging round 8, item 3: a variable star (a Proof brightness test) leads with its brightness line, from proof.json
+    // through logic.js brightnessLead, the Proof row's own formatter and badge; the motion result comes second
+    const bl = p && proofBright?.[p.key];
+    if (bl) {
+      res = `<span class="rp-b"><b>${esc(bl.text)}</b> ${nw(`<span class="rp-v ${verdictClass(bl.verdict)}">${esc(bl.badge)}</span>`)}</span><span class="rp-row"></span>${res}`;
+      live = `${bl.text}, ${bl.badge.toLowerCase()}. ${live}`;
     }
     // b2 caption: preset, measured, significant motion; numbers from the fit over the first-to-last stack dates
     if (p && st.kind === 'value' && mo.significant !== false && V.stacks.length > 1) {
@@ -776,6 +789,11 @@ const coordStr = (ra, dec) => `${ra.toFixed(5)} ${dec >= 0 ? '+' : ''}${dec.toFi
 function curPos() { if (scene === 'viewer' && V.grid) return { ra: V.grid.ra0, dec: V.grid.dec0 }; return M.sel || (skymap.aladin ? skymap.center() : null); }
 $('copyTop').onclick = e => { const p = curPos(); if (p) copyText(e.currentTarget, coordStr(p.ra, p.dec)); };
 $('copyInsp').onclick = e => { const p = curPos(); if (p) copyText(e.currentTarget, coordStr(p.ra, p.dec)); };
+// objectives audit item 4: the same spot in CDS's Aladin Lite (opens in a new tab; the address is built from the spot shown)
+{ const al = document.createElement('a'); al.id = 'aladinInsp'; al.className = 'key'; al.target = '_blank'; al.rel = 'noopener';
+  al.href = 'https://aladin.cds.unistra.fr/AladinLite/'; al.textContent = 'Open in Aladin Lite (CDS)'; al.style.cssText = 'margin:10px 0 0 8px;display:inline-flex';
+  al.addEventListener('click', () => { const p = curPos(); if (p) al.href = `https://aladin.cds.unistra.fr/AladinLite/?target=${p.ra.toFixed(5)}%20${p.dec >= 0 ? '%2B' : ''}${p.dec.toFixed(5)}&fov=0.1`; });
+  $('copyInsp').after(al); }
 // b11 "Share this movie": the full link (target, scene, view mode, and the image when paused); no login needed
 function shareURL() {
   const q = V.query, f = V.F[Math.min(P.i, V.F.length - 1)], t = M.sel?.t;
@@ -836,7 +854,7 @@ function leaveLoader(quick) {
 const AUTO = { t: 0, tick: 0, n: 0, at: 0 }; let autoLoading = false;
 function autoStop() { clearTimeout(AUTO.t); clearInterval(AUTO.tick); AUTO.t = AUTO.tick = 0; $('errAuto').hidden = true; }
 function calmHead(kind) { // 'irsa' | 'simbad' | null (any other error: the old heading)
-  $('errHead').textContent = kind === 'irsa' ? "NASA's image archive (IRSA) is busy right now" : kind === 'simbad' ? 'The star-name service (SIMBAD) is busy right now' : "The NASA archive isn't answering";
+  $('errHead').textContent = kind === 'irsa' ? (isExpert() ? "NASA's image archive (IRSA) is busy right now" : "NASA's image archive is busy right now") : kind === 'simbad' ? 'The star-name service (SIMBAD) is busy right now' : "The NASA archive isn't answering";
   $('stError').classList.toggle('calm', !!kind); $('retry').textContent = kind ? 'Retry now' : 'Retry';
 }
 function autoRetry(ctl) {
@@ -866,7 +884,7 @@ function progress() {
   rocketAt(done / N);
   // Retries stay quiet (the thin line keeps moving); a message only when nothing has arrived for STALL_MS
   const slow = V.retries > 0 && V.status === 'loading' && performance.now() - V.lastArrive > STALL_MS;
-  V.scan?.slow(slow ? `The image archive (IRSA) is slow right now. ${V.FA.length} of ${V.planned} images in; still asking for the rest.` : null);
+  V.scan?.slow(slow ? `${isExpert() ? 'The image archive (IRSA)' : "NASA's image archive"} is slow right now. ${V.FA.length} of ${V.planned} images in; still asking for the rest.` : null);
   if (V.status === 'loading') $('d-meas').textContent = `measuring… (${V.FA.length} of ${V.planned || '…'} images)`;
   if (!V.F.length) setCounter(0); // "0 / 120 · 0 loaded" before the first image
   stallCheck();
@@ -875,12 +893,13 @@ function progress() {
 /* Live-load watchdog (judging panel a10): no new image for 20 s, or IRSA keeps answering "busy"
    (8 retries in a row with no image between), and the stage says so, with Retry and
    "Use the N images loaded". AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
-const STALL_HARD_MS = 18000, STALL_RETRIES = 8; // 18 s + the 1 s check: the message is up within 20 s
+const STALL_HARD_MS = 18000, STALL_LIST_MS = 60000, STALL_RETRIES = 8; // 18 s + the 1 s check: the message is up within 20 s
 let stallTimer = 0;
 function stallCheck() {
   if (V.status !== 'loading' || V.stalled) return;
   const quiet = performance.now() - V.lastArrive, busy = V.retries - (V.retriesAtArrive || 0);
-  if (quiet < STALL_HARD_MS && busy < STALL_RETRIES) return;
+  const hard = V.planned ? STALL_HARD_MS : STALL_LIST_MS; // the image list itself can take 20-25 s on a busy night (objectives audit)
+  if (quiet < hard && busy < STALL_RETRIES) return;
   V.stalled = true; $('thin').hidden = true; leaveLoader(); updatePlate();
   const n = V.FA.length;
   const why = busy >= STALL_RETRIES ? `It answered "busy" ${busy} times in a row` : n ? `No new image for ${Math.round(quiet / 1000)} s` : `Nothing arrived in ${Math.round(quiet / 1000)} s`;
@@ -1010,9 +1029,9 @@ function load(query, label) {
       if (lcWant) { const w = lcWant; lcWant = null; import('./lightcurve/make.js').then(mk => { const ch = mk.decodeChoices(w); openLC(ch.source ? { ...ch.source, clicked: true } : { own: true }, ch); }).catch(() => {}); } // a shared light-curve link
       // V.FA = every image loaded; V.F = the ones the user's flag filter keeps (QA, Sun: say so, so the counts match Proof)
       // Master item 1: say that up to 120 images are used, spread evenly in time, out of all IRSA found
-      const hid = V.FA.length - V.FK.length, hidTxt = hid > 0 ? ` ${hid} hidden by your flag filter (FLAGS ▾ to change).` : '';
-      const usedTxt = V.planned < V.total ? `${V.FA.length} of the ${V.total} images IRSA has here are in (spread evenly over time to keep it quick).` : V.failed ? `${V.FA.length} of ${V.total} images are in.` : `All ${V.FA.length} images are in.`;
-      toast(`${usedTxt}${hidTxt}${V.failed ? ` ${V.failed} couldn't be fetched (IRSA busy); Retry later fills them.` : ''}`);
+      const hid = V.FA.length - V.FK.length, hidTxt = hid > 0 ? ` ${hid} hidden by your flag filter${isExpert() ? ' (FLAGS ▾ to change)' : ''}.` : '';
+      const usedTxt = V.planned < V.total ? `${V.FA.length} of the ${V.total} images ${ARC()} has here are in (spread evenly over time to keep it quick).` : V.failed ? `${V.FA.length} of ${V.total} images are in.` : `All ${V.FA.length} images are in.`;
+      toast(`${usedTxt}${hidTxt}${V.failed ? ` ${V.failed} couldn't be fetched (${ARC()} busy); Retry later fills them.` : ''}`);
       // b2: a preset opens on the Blink of its first and last season stacks (the hop, with the ring and the caption);
       // ?view= (a shared link) opens its own mode; anything else plays
       const want = wantView; wantView = null;
@@ -1480,7 +1499,7 @@ function renderCD() {
     '<p class="quiet s-only">Sky coordinates (RA, Dec) are in Expert mode.</p>' +
     (t && cat && (cat.pmra || cat.pmdec) ? '<p class="quiet">Position shown for Nov 2026 (catalogue position moved along its proper motion).</p>' : '');
   // coverage: asked live from IRSA
-  $('cdCov').innerHTML = '<p class="quiet">Asking IRSA what SPHEREx has here…</p>';
+  $('cdCov').innerHTML = `<p class="quiet">Asking ${ARC()} what SPHEREx has here…</p>`;
   // while the viewer is loading its images, wait: this ~0.8 MB list would share the link with them
   // (b2: a cold Barnard load fetched both image lists at once). Then 20 s to answer.
   const busy = () => (scene === 'viewer' && V.status === 'loading') || (viewerFirst && V.status !== 'ready' && V.status !== 'error');
@@ -1499,7 +1518,7 @@ function renderCD() {
       row('Detectors', dets.map(x => 'D' + x).join(', ') + ` · ${wl}`, 'obs', null, 'x-only') + row('Infrared colours', `${wl} (light too red for the eye)`, 'obs', null, 's-only') + part;
   }).catch((e) => { // say "20 s" only when it really was the 20 s limit
     if (ctl.signal.aborted) return;
-    $('cdCov').innerHTML = `<p class="quiet err">${e?.name === 'TimeoutError' ? 'IRSA did not answer in 20 s.' : 'IRSA (the NASA archive) isn\'t answering right now.'} Click the spot again to retry.</p>`;
+    $('cdCov').innerHTML = `<p class="quiet err">${e?.name === 'TimeoutError' ? `${ARC()} did not answer in 20 s.` : (isExpert() ? 'IRSA (the NASA archive) isn\'t answering right now.' : 'NASA\'s archive isn\'t answering right now.')} Click the spot again to retry.</p>`;
   });
   // motion (DESIGN.md 27): catalogue now (SIMBAD / built-in), Gaia DR3 when the Ghost's match arrives
   const pending = !t?.preset && GH.G.mStar, ms = { gaia: null, looking: !!pending };
@@ -1919,11 +1938,11 @@ bindTip($('hitOther'), () => otherName ? `<b>${esc(otherName.name)}</b><small>${
 function toViewer(instant, then, fromHistory) {
   let ran = false; // a page that is not drawing (e.g. a hidden pane) never runs the transition's update: run it anyway after 600 ms
   if (!instant) setTimeout(() => go(), 600);
-  const go = () => { if (ran) return; ran = true; scene = 'viewer'; app.dataset.scene = 'viewer'; then?.(); hideTip(); layout(); onFrame(P.i); placeHits(); GH.placeMap(); if (innerWidth < 1100) sheet(false); updateURL(!fromHistory); };
+  const go = () => { if (ran) return; ran = true; scene = 'viewer'; app.dataset.scene = 'viewer'; then?.(); if (mode === 'telescopes') TS.show(true); hideTip(); layout(); onFrame(P.i); placeHits(); GH.placeMap(); if (innerWidth < 1100) sheet(false); updateURL(!fromHistory); };
   if (!instant && document.startViewTransition && !set.motion) viewTransition(go); else go();
 }
 function toMap(instant, fromHistory) {
-  const go = () => { scene = 'map'; app.dataset.scene = 'map'; P.pause(); clearInterval(bt); hideTip(); closePop(); GH.syncKey(); GH.renderCD(); requestAnimationFrame(GH.placeMap); requestAnimationFrame(placeOverlays); updateURL(!fromHistory); if (M.sel) setCoordText(M.sel.ra, M.sel.dec); };
+  const go = () => { scene = 'map'; app.dataset.scene = 'map'; TS.show(false); /* the Telescopes panels never sit over the map (Nithil, Sun 21:45) */ P.pause(); clearInterval(bt); hideTip(); closePop(); GH.syncKey(); GH.renderCD(); requestAnimationFrame(GH.placeMap); requestAnimationFrame(placeOverlays); updateURL(!fromHistory); if (M.sel) setCoordText(M.sel.ra, M.sel.dec); };
   if (!instant) Snd.play('tick');
   if (!instant && document.startViewTransition && !set.motion) viewTransition(go); else go();
 }
@@ -1957,7 +1976,11 @@ function teleHeroOpen() { teleHero = false; P.pause(); if (mode !== 'telescopes'
     if (same) { playPatch(); setTimeout(teleHeroOpen, set.motion ? 50 : 900); } else { teleHero = true; wantView = 'telescopes'; playPatch(); } }; }
 // Desktop dock row 2: say in words what the chosen layer shows (review 2, item 10)
 { const seg = $('layerSeg'), hint = () => { const b = seg.querySelector('[aria-pressed="true"]'); $('layerHint').innerHTML = b ? `<b>${esc(b.textContent.toLowerCase())}</b> · ${esc(b.title.charAt(0).toLowerCase() + b.title.slice(1))}` : ''; };
-  hint(); new MutationObserver(hint).observe(seg, { attributes: true, subtree: true, attributeFilter: ['aria-pressed'] }); }
+  hint(); new MutationObserver(hint).observe(seg, { attributes: true, subtree: true, attributeFilter: ['aria-pressed'] });
+  // Simple mode hides the layer keys and FLAGS (.x-only): back to the picture itself, flag legend closed
+  onExpert(on => { if (on) return; const img = seg.querySelector('[data-layer=image]');
+    if (img && img.getAttribute('aria-pressed') !== 'true') img.click();
+    if (!$('flagsPop').hidden) { $('flagsPop').hidden = true; $('flagsMore').setAttribute('aria-expanded', 'false'); } }); }
 // Wide screens show the details panel's copper Play key beside the dock, so the dock's is plain there (review 2, item 8)
 { const ph = matchMedia('(max-width: 1099px)'), f = () => $('mdPlay').classList.toggle('primary', ph.matches); f(); ph.addEventListener('change', f); }
  $('mapBack').onclick = () => toMap(false);
@@ -2028,7 +2051,7 @@ function busyNote() { // calm inline note under the search box, with the saved s
 }
 
 /* ---------- start ---------- */
-window.__app = { skymap, V, M }; // debugging hook (read-only use)
+window.__app = { skymap, V, M, TS, GH }; // debugging hook (read-only use; page-check reads the Telescopes rings)
 function init() {
   $('pins').innerHTML = TARGETS.map(t => `<button class="pin" data-k="${t.key}" aria-label="${esc(t.name)}, ${esc(t.id)}"></button>`).join('');
   pinEls = [...$('pins').querySelectorAll('.pin')];

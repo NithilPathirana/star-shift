@@ -29,13 +29,16 @@ test('the SIA image list asks exactly the collections in releases.json', async (
   assert.deepEqual(asked, releases.map(r => r.collection));
 });
 
+// the 2MASS and AllWISE image services (Telescopes view), cited from DataCite: not SPHEREx releases
+const OTHER_IMAGE_DOIS = new Set(['10.26131/IRSA121', '10.26131/IRSA153']);
+
 test('every page that credits SPHEREx images cites every release DOI and no other IRSA DOI', () => {
   const want = new Set(releases.map(r => r.doi));
   const pages = readdirSync(WEB).filter(f => f.endsWith('.html'));
   let crediting = 0;
   for (const f of pages) {
     const html = readFileSync(new URL(f, WEB), 'utf8');
-    const dois = new Set(html.match(DOI) || []);
+    const dois = new Set((html.match(DOI) || []).filter(d => !OTHER_IMAGE_DOIS.has(d)));
     for (const d of dois) assert.ok(want.has(d), `${f} cites ${d}, which is not in releases.json`);
     if (!dois.size) continue;
     crediting++;
@@ -73,7 +76,7 @@ test('complete image list (a4b): SIA + TAP merged by exposure and detector, rele
 
 test('README cites the same DOIs', () => {
   const md = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
-  const dois = new Set(md.match(DOI) || []);
+  const dois = new Set((md.match(DOI) || []).filter(d => !OTHER_IMAGE_DOIS.has(d)));
   for (const r of releases) assert.ok(dois.has(r.doi), `README misses ${r.doi}`);
   for (const d of dois) assert.ok(releases.some(r => r.doi === d), `README cites ${d}, not in releases.json`);
 });

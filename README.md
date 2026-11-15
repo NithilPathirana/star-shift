@@ -79,13 +79,14 @@ the image queries (`web/core/irsa.js`) and every credit line use it (`tests/rele
   Explorer (SPHEREx), which is a joint project of the Jet Propulsion Laboratory and the California
   Institute of Technology, and is funded by the National Aeronautics and Space Administration."
 - **Gaia DR3**: ESA Gaia mission and DPAC (Gaia Collaboration, Vallenari et al. 2023, DOI 10.1051/0004-6361/202243940). Queried live from ESA's Gaia archive; the pre-saved R Draconis field list comes from the VizieR copy of Gaia DR3 (catalogue I/355/gaiadr3, CDS Strasbourg, via its Harvard mirror), same columns and cone, because ESA's archive was unreachable when it was saved (15 Nov 2026).
+- **Astropy** (Astropy Collaboration 2013, 2018, 2022): reference values for the sky-position (WCS) tests.
 - **SIMBAD** astronomical database, CDS, Strasbourg (Wenger et al. 2000, DOI 10.1051/aas:2000332); asked through the Harvard mirror.
 - **JPL Solar System Dynamics** (NASA/JPL): Small-Body Identification API, Small-Body Database, Horizons,
   and "Approximate Positions of the Planets" (E. M. Standish).
 - **Hipparcos** (ESA), new reduction (van Leeuwen 2007, DOI 10.1051/0004-6361:20078357), via the ESA Gaia archive.
 - **2MASS**: Two Micron All Sky Survey, a joint project of the University of Massachusetts and IPAC/Caltech,
-  funded by NASA and the NSF; images via IRSA.
-- **AllWISE**: NASA's Wide-field Infrared Survey Explorer (UCLA and JPL/Caltech) and NEOWISE; images via IRSA.
+  funded by NASA and the NSF; images via IRSA (2MASS All-Sky Atlas Image Service, DOI [10.26131/IRSA121](https://doi.org/10.26131/IRSA121)).
+- **AllWISE**: NASA's Wide-field Infrared Survey Explorer (UCLA and JPL/Caltech) and NEOWISE; images via IRSA (AllWISE Atlas (L3a) Coadd Images, DOI [10.26131/IRSA153](https://doi.org/10.26131/IRSA153)).
 - **ATRAN** sky-transmission curves: Lord, S. D., 1992, NASA Technical Memorandum 103957; data courtesy of
   Gemini Observatory (`web/data/atran/README.md`).
 - Methods follow the IRSA SPHEREx tutorial notebooks (cutouts, spectral WCS).

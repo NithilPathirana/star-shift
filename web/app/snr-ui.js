@@ -5,7 +5,10 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 
 import { fetchCutout, fetchCutoutLayers } from '../core/irsa.js';
-import { aperturePhotometry, detectorCounts, snrText, csvRow, CSV_HEAD, SNR_DEFAULT_R, PIXEL_ARCSEC, SKY_LIMITED_SIMPLE, mostlyBlanked } from './snr.js';
+import { separationArcsec } from '../core/motion.js';
+import { gridToWorld } from '../core/align.js';
+import { measure as measureLC, lightcurve, lightOnSky, pickSaved } from './lightcurve/logic.js';
+import { aperturePhotometry, detectorCounts, snrText, csvRow, CSV_HEAD, SNR_DEFAULT_R, PIXEL_ARCSEC, SKY_LIMITED_SIMPLE, mostlyBlanked, nearTarget, notTargetFor } from './snr.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const cutCache = new Map();   // uri|centre -> Promise<cutout>
@@ -47,18 +50,21 @@ export async function measureFrame(f, ra, dec, { r = SNR_DEFAULT_R, base, onResu
   return second;
 }
 
-const SIMPLE_WHY = 'It compares the light in a small circle here with the random flicker of the sky around it; above about 5 the spot is clearly real, and adding more images of the same spot raises it.';
+// Judging panel round 9: the "adding more images raises it" clause only for a detection (it contradicted
+// "stacking doesn't create a source" on a non-detection)
+export const SIMPLE_WHY = 'It compares the light in a small circle here with the random flicker of the sky around it; above about 5 the spot is clearly real, and adding more images of the same spot raises it.';
+export const SIMPLE_WHY_NONE = 'It compares the light in a small circle here with the random flicker of the sky around it.';
 
 // HTML for one result (both modes; expert.js shows one). opts: { counts, name, csv: true for the Copy key, pending,
 // stack: true when the picture measured is a season stack (measured on its own pixels; no projection) }
-export function snrHTML(res, { counts = {}, name = '', when = '', csv = true, pending = false, stack = false, notTarget = null } = {}) {
-  const { p, meta } = res, t = snrText(p, counts, { detector: meta.detector, stack, notTarget });
+export function snrHTML(res, { counts = {}, name = '', when = '', csv = true, pending = false, stack = false, notTarget = null, verdict = null } = {}) {
+  const { p, meta } = res, t = snrText(p, counts, { detector: meta.detector, stack, notTarget, verdict });
   const src = !p.ok ? '' : stack ? 'noise from the stacked picture\'s own sky scatter'
     : p.noiseFrom === 'variance+sky' ? 'noise from the VARIANCE layer (which includes the star\'s own photon noise) and the sky scatter'
     : pending ? 'sky scatter only for now; asking the archive for the VARIANCE layer…' : 'sky scatter only (the VARIANCE layer could not be loaded)';
   const row = csvRow(p, { ...meta, target: name }, counts);
   return `<p class="snr-line" data-snr="${p.ok ? p.snr.toFixed(2) : esc(p.reason)}"><b>${esc(t.line)}</b>${p.ok ? `<span class="s-only"> ${esc(t.simple.slice(t.line.length).trim())}</span>` : ''}</p>
-    ${p.ok ? `<p class="snr-why s-only">${esc(SIMPLE_WHY)}</p>` : ''}
+    ${p.ok ? `<p class="snr-why s-only">${esc(t.detection ? SIMPLE_WHY : SIMPLE_WHY_NONE)}</p>` : ''}
     <div class="snr-x x-only">
       ${p.ok ? `<p class="snr-st">${esc(t.simple.slice(t.line.length).trim())}</p>` : ''}
       <ul class="snr-f num">${t.expert.slice(p.ok ? 0 : 1).map(l => `<li>${esc(l)}</li>`).join('')}</ul>
@@ -124,7 +130,8 @@ export function createSnrPanel(el, { frame, frames, seasonOf, starAt, name, base
       const data = Float64Array.from(s.data, v => (v == null ? NaN : v));
       const sat = mostlyBlanked(s.members, pos[0], pos[1]) || await satInMost(s.members, f => spot || starAt(f));
       const p = sat ? { ok: false, reason: 'saturated' } : aperturePhotometry({ nx: s.n, ny: s.n, data }, pos[0], pos[1], { r });
-      return `<div class="snr-stk"><p class="snr-sn"><b>${esc(s.label)}</b></p>${snrHTML({ p, meta: {} }, { stack: true, csv: false, when: s.label, notTarget: spot ? null : notTarget(s.dets || []) })}</div>`;
+      const atStar = !spot || (s.exp && Math.hypot(pos[0] - s.exp[0], pos[1] - s.exp[1]) <= r + 1); // a click on the star counts as the star
+      return `<div class="snr-stk"><p class="snr-sn"><b>${esc(s.label)}</b></p>${snrHTML({ p, meta: {} }, { stack: true, csv: false, when: s.label, notTarget: atStar ? notTarget(s.dets || []) : null })}</div>`;
     }));
     if (my === token) paint(blocks.join(''), what);
   }
@@ -149,9 +156,10 @@ export function createSnrPanel(el, { frame, frames, seasonOf, starAt, name, base
     const counts = detectorCounts(frames(), f, seasonOf);
     if (el.dataset.img !== what || !el.querySelector('.snr-line')) paint('<p class="muted">Measuring…</p>', what);
     const when = f.date ? `${String(f.date).slice(0, 10)}` : '';
+    const sp = starAt(f), atStar = !spot || (sp && nearTarget(separationArcsec(spot[0], spot[1], sp[0], sp[1]), r)); // a click on the star counts as the star
     try {
       await measureFrame(f, pos[0], pos[1], { r, base, isCurrent: () => my === token,
-        onResult: (res) => { if (my === token) paint(snrHTML(res, { counts, name: name(), when, notTarget: spot ? null : notTarget([f.detector]), pending: res.p.ok && res.p.noiseFrom === 'sky' && !varDone(f) }), what); } });
+        onResult: (res) => { if (my === token) paint(snrHTML(res, { counts, name: name(), when, notTarget: atStar ? notTarget([f.detector]) : null, pending: res.p.ok && res.p.noiseFrom === 'sky' && !varDone(f) }), what); } });
     } catch (e) {
       if (my === token) paint(`<p class="muted">Could not load this image's pixels to measure (${esc(e.message || e)}). Try another image.</p>`, what);
     }
@@ -169,11 +177,34 @@ export function createSnrPanel(el, { frame, frames, seasonOf, starAt, name, base
  * Spot's verdict card: one SNR line for the suspect's dot, on the middle image of the season it was
  * found in. stack: the season stack ({ frames }), allFrames: every loaded frame. Resolves to HTML.
  */
-export async function spotSnrHTML(stack, img, allFrames, ra, dec, { base, label = '' } = {}) {
+export async function spotSnrHTML(stack, img, allFrames, ra, dec, opts = {}) {
+  const m = await spotSnrMeasure(stack, img, allFrames, ra, dec, opts);
+  return m ? spotSnrRender(m, opts.verdict) : '';
+}
+// Measured once per suspect; spotSnrRender draws it with the verdict of the moment (round 9: they must agree).
+// grid + key/name: the field's target, so a dot on WISE 0855 below 3.8 µm says whose light it is (Brightness panel rule).
+export async function spotSnrMeasure(stack, img, allFrames, ra, dec, { base, label = '', grid = null, key = '', name = '' } = {}) {
   let last = null;
   await measureFrame(img, ra, dec, { base, onResult: (res) => { last = res; } });
-  if (!last) return '';
+  if (!last) return null;
   const same = (f) => f.detector === img.detector;
   const counts = { nSeason: stack.frames.filter(same).length, nAll: allFrames.filter(same).length };
-  return snrHTML(last, { counts, when: label, csv: true });
+  let notTarget = null;
+  if (grid && img.expected && name) {
+    const [tra, tdec] = gridToWorld(grid, img.expected[0], img.expected[1]);
+    if (nearTarget(separationArcsec(ra, dec, tra, tdec), last.p.r)) notTarget = notTargetFor(await targetGroups(allFrames, grid, key, name), [img.detector], name);
+  }
+  return { res: last, counts, label, notTarget };
+}
+export const spotSnrRender = (m, verdict = null) => snrHTML(m.res, { counts: m.counts, when: m.label, csv: true, notTarget: m.notTarget, verdict });
+
+// The Brightness panel's per-band groups for a set of frames (lightcurve/logic.js, same rule), with the saved
+// Gaia neighbour (proof.json) named for a band whose light sits off the target.
+let proofP = null;
+async function targetGroups(frames, grid, key, name) {
+  const lc = lightcurve(measureLC(frames, grid));
+  proofP ||= fetch(new URL('../data/proof.json', import.meta.url)).then(r => (r.ok ? r.json() : null)).catch(() => null);
+  const t = (await proofP)?.targets?.find(q => q.key === key || q.name === name || q.label === name);
+  for (const g of lc.groups) if (g.absent && g.detect?.state === 'offset') g.src = pickSaved(t?.extra?.neighbours || [], lightOnSky(g.detect, grid));
+  return lc.groups;
 }

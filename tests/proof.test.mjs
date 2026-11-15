@@ -177,3 +177,22 @@ test('why sentence: other verdicts follow the same pattern (verdict first, one r
   const nm = { type: 'motion', verdict: 'NOT MEASURABLE', why: 'fit', counts: { blanked: 2, fitted: 50, limitFrac: 0.9 } };
   assert.equal(whySentence(nm), 'Not measurable: the fit could not run.');
 });
+
+// Judging round 8, item 3: ONE brightness formatter for the Proof row and the viewer plate (proof/logic.js)
+test('brightness lead: RW Aur and R Dra lines equal the Proof row text and badge', async () => {
+  const { brightnessLead, magParts, magGroups, badgeText, verdictSigma } = await import('../web/app/proof/logic.js');
+  const d = JSON.parse(readFileSync(new URL('../web/data/proof.json', import.meta.url), 'utf8'));
+  const bt = k => d.targets.find(t => t.key === k).tests.find(x => x.type === 'brightness');
+  const rw = bt('rw-aur'), lead = brightnessLead(rw);
+  assert.equal(lead.text, '0.72 ± 0.07 mag fainter at 3.8–5.0 µm');
+  assert.equal(lead.badge, 'CHANGE SEEN 11.2σ');
+  // the Proof row's first group cell is built from the same parts, and its badge from the same call
+  const all = magGroups(rw), m = magParts(all[0], all.length > 1);
+  assert.equal(m.val + m.unit, lead.text);
+  assert.equal(badgeText(rw.verdict, verdictSigma(rw), rw.type), lead.badge);
+  assert.ok(!/[−-]\s*[−-]|--/.test(all.map(x => { const p = magParts(x, true); return p.val + p.unit; }).join(' ')), 'no double minus');
+  const rd = brightnessLead(bt('r-dra'));
+  assert.match(rd.text, /^Too bright for SPHEREx/);
+  assert.equal(rd.badge, 'NOT MEASURABLE');
+  assert.equal(brightnessLead(d.targets.find(t => t.key === 'barnard').tests[0]), null); // motion tests have no brightness lead
+});

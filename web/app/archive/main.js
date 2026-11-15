@@ -8,7 +8,9 @@ import { wavelengthAt } from '../../core/wave.js';
 import { propagate } from '../../core/motion.js';
 import { DEFAULT_BANDS, BAND_NOTE, bandName } from '../bands.js';
 import { toRows, seasonsOf, sortRows, filterRows, paginate, rowsToCSV, summarizeFlags, targetViewerUrl, FLAG_KINDS, flagText, bandAt } from './logic.js';
-import '../expert.js'; // Simple / Expert: .x-only columns and details, .s-only plain-words twins
+import { isExpert } from '../expert.js'; // Simple / Expert: .x-only columns and details, .s-only plain-words twins
+// Simple mode names the archive in plain words; Expert keeps IRSA (judging round 8, item 4)
+const FULL = () => (isExpert() ? "IRSA's full table" : "the archive's full list");
 import { base, initShell, resolve, listPosition, targetLine, motionHtml, download, slug, esc, cutoutSizeDeg, cutoutCenter } from './shell.js';
 
 const $ = (id) => document.getElementById(id);
@@ -45,7 +47,7 @@ async function load(q) {
     $('tName').textContent = tl.name; $('tCoords').textContent = tl.coords;
     $('tPm').innerHTML = motionHtml(t, tl);
     document.title = `${tl.name} · Observation Archive · Star Shift`;
-    $('count').textContent = 'Asking IRSA for the SPHEREx images of this spot…';
+    $('count').textContent = `Asking ${isExpert() ? 'IRSA' : "NASA's archive"} for the SPHEREx images of this spot…`;
     const p = listPosition(t);
     phase = 'list';
     dog = setTimeout(() => { stalled = true; ctrl.abort(); }, LIST_STALL_MS);
@@ -71,8 +73,8 @@ async function load(q) {
     $('rows').innerHTML = '';
     $('count').textContent = '';
     if (phase === 'name') { showEmpty(e.message, !e.notFound); return; } // SIMBAD's own words, not IRSA's
-    showEmpty(stalled ? `The NASA archive isn't answering: IRSA sent no image list in ${LIST_STALL_MS / 1000} seconds. It is often busy; Try again asks again.`
-      : 'The NASA archive isn\'t answering: IRSA could not send the image list. It is often busy; try again in a minute.', true);
+    showEmpty(stalled ? `The NASA archive isn't answering: ${isExpert() ? 'IRSA' : 'it'} sent no image list in ${LIST_STALL_MS / 1000} seconds. It is often busy; Try again asks again.`
+      : `The NASA archive isn't answering: ${isExpert() ? 'IRSA' : 'it'} could not send the image list. It is often busy; try again in a minute.`, true);
   }
 }
 
@@ -94,9 +96,9 @@ function tapNote() {
   const t = S.tap;
   if (!t) return '';
   const miss = S.missing ? ` (${S.missing}, one release, didn't answer the quick list)` : '';
-  if (t.state === 'asking') return ` · checking IRSA's full table for more${miss}…`;
-  if (t.state === 'failed') return ` · IRSA's full table did not answer; this is the quick list${miss}`;
-  return t.added ? ` · ${t.added.toLocaleString()} of them only in IRSA's full table (TAP), added` : ' · checked against IRSA\'s full table';
+  if (t.state === 'asking') return ` · checking ${FULL()} for more${miss}…`;
+  if (t.state === 'failed') return ` · ${FULL()} did not answer; this is the quick list${miss}`;
+  return t.added ? ` · ${t.added.toLocaleString()} of them only in ${FULL()}${isExpert() ? ' (TAP)' : ''}, added` : ` · checked against ${FULL()}`;
 }
 
 function skeleton(n) {

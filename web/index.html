@@ -259,9 +259,9 @@
       <div class="seg well" role="group" aria-label="View" id="viewSeg"><span class="seg-thumb"></span><button class="seg-btn" data-mode="play" aria-pressed="true">Time</button><button class="seg-btn" data-mode="compare" aria-pressed="false">Compare</button><button class="seg-btn" data-mode="blink" aria-pressed="false">Blink</button><button class="seg-btn" data-mode="telescopes" aria-pressed="false" title="The same patch from SPHEREx, AllWISE and 2MASS">Telescopes</button></div></div>
     <div class="viewer-only group speed"><span class="group-l">Speed</span>
       <div class="seg well" role="group" aria-label="Speed" id="speedSeg"><span class="seg-thumb"></span><button class="seg-btn" data-fps="2" aria-pressed="false">Slow</button><button class="seg-btn" data-fps="4" aria-pressed="true">Normal</button><button class="seg-btn" data-fps="8" aria-pressed="false">Fast</button></div><button class="key hold-key" id="holdKey" type="button" aria-pressed="false" title="Hold one band"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M1.5 12.5h13"/><rect x="5" y="5" width="6" height="5" rx="1.2"/></svg><span class="hk-l">All bands</span></button></div>
-    <div class="viewer-only group layer-group"><span class="group-l layers-l">Layers</span>
+    <div class="viewer-only group layer-group x-only"><span class="group-l layers-l">Layers</span>
       <div class="layers"><div class="seg well lseg" role="group" aria-label="What the stage shows" id="layerSeg"><span class="seg-thumb"></span><button class="seg-btn" data-layer="image" aria-pressed="true" title="The picture itself">IMAGE</button><button class="seg-btn" data-layer="variance" aria-pressed="false" title="How uncertain each pixel is">VARIANCE</button><button class="seg-btn" data-layer="zodi" aria-pressed="false" title="Glow from dust in our Solar System (the archive's model)">ZODI</button><button class="seg-btn" data-layer="wave" aria-pressed="false" title="The wavelength each pixel was measured at">WAVE</button></div><i class="lsep" aria-hidden="true"></i><span class="flags-split"><button class="key" id="flagsBtn" aria-pressed="true" title="Pixels the archive marked as contaminated">FLAGS</button><button class="key flags-more" id="flagsMore" aria-haspopup="dialog" aria-expanded="false" aria-label="Flag legend and filter" title="Flag legend and filter">▾</button></span></div></div>
-    <p class="viewer-only layer-hint" id="layerHint" aria-live="polite"></p>
+    <p class="viewer-only layer-hint x-only" id="layerHint" aria-live="polite"></p>
   </footer>
 </div>
 
@@ -340,12 +340,15 @@
   </dl>
   <p class="note">"No significant motion" means the measured shift is no bigger than its own error bars.</p>
   <h3>Can't load?</h3>
-  <p class="note">NASA's archive (IRSA) may be busy. Use the 5 NASA targets (Barnard's Star, Epsilon Indi B, WISE 0855, RW Aurigae, R Draconis): their images are saved with the app, so they open even when the archive is down.</p>
+  <p class="note">NASA's archive<span class="x-only"> (IRSA)</span> may be busy. Use the 5 NASA targets (Barnard's Star, Epsilon Indi B, WISE 0855, RW Aurigae, R Draconis): their images are saved with the app, so they open even when the archive is down.</p>
   <p class="note"><a href="source.zip" download>Download the source code</a> · open source under the MIT licence. <button class="linkish" type="button" data-open-about>About Star Shift</button></p>
 </div>
 <div class="pop glass" id="about" role="dialog" aria-label="About Star Shift" hidden>
   <h2>About Star Shift</h2>
   <p class="about-pitch">Every six months, NASA's SPHEREx photographs the whole sky. Star Shift lets anyone flip through those photos, catch what moved, and prove it's real.</p>
+  <!-- Two slots for the TEAM's own words only (Master, 15 Nov). Hidden until the team writes them. Never fill with AI text. -->
+  <section class="team-slot" id="aboutWhatsNew" data-team-words="pending" hidden><h3>What's new here</h3></section>
+  <section class="team-slot" id="aboutTriedBy" data-team-words="pending" hidden><h3>Tried by real people</h3></section>
   <section class="team-words" aria-label="In the team's own words"><!-- b5: the team's own words, copied exactly from README.md; do not edit -->
   <h3>Who is this for?</h3>
   <p class="team-q">"Curious people, people that don't know and know about astronomy, people who are and aren't experienced in this field."</p>
@@ -371,6 +374,15 @@
   </section>
   <h3>Data and credits</h3>
   <p class="note">Images: NASA SPHEREx via IRSA: Data Release 1 (DR1) spectral images (DOI 10.26131/IRSA678) and Quick Release 3 (QR3) spectral images (DOI 10.26131/IRSA662). Each viewer image is a 150″ cutout, lined up north up, 6.15″ per pixel; flags come from the archive's own quality mask. Star names and motions: SIMBAD (CDS, Strasbourg) and Gaia DR3 (ESA). Asteroids: NASA/JPL. Full references on the <a href="proof.html">Proof</a> page.</p>
+  <p class="note">Sky maths (WCS) checked in our tests against Astropy (Astropy Collaboration 2013, 2018, 2022). Each viewer image is a fixed 150″ cutout; a field-of-view choice is planned, not yet available.</p>
+  <h3>Honest limits</h3>
+  <ul class="note">
+    <li>NASA's image archive (IRSA) can be slow or busy; the saved stars always work.</li>
+    <li>Only about 3 SPHEREx seasons exist so far, so motion and distance (parallax) measurements are limited.</li>
+    <li>"Your photo" was tested on computer-made star fields; real photos may not solve.</li>
+    <li>Every viewer image is a fixed 2.5′ (150″) cutout; a larger field is not available yet.</li>
+  </ul>
+  <p class="note">Also: 2MASS All-Sky Atlas Image Service, DOI 10.26131/IRSA121; AllWISE Atlas (L3a) Coadd Images, DOI 10.26131/IRSA153 (both via IRSA). Gaia DR3: Gaia Collaboration, Vallenari et al. 2023, A&amp;A 674, A1.</p>
   <h3>AI use</h3>
   <p class="note">AI (Super Intelligence, SI): all code was written by AI models (Claude, by Anthropic; a few modules by OpenAI Codex) under the team's direction. The team chose the idea, checked the science and approved the design.</p>
   <p class="note ai-credit">Logo: SI-generated with ChatGPT; small version and favicon redrawn as SVG by Claude.</p>

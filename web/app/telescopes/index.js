@@ -8,6 +8,7 @@ import { gridToWorld, makeGrid } from '../../core/align.js';
 import { hasMotion } from '../../core/ghost.js';
 import { fieldFor, skyToScreen, imageAffine, nearestPixel, positionsAt, yearOf, stretch, pxPerArcsec, NOMINAL } from './geometry.js';
 import { SURVEYS, loadSurvey } from './surveys.js';
+import { findPreset, PRESETS } from '../presets.js';
 
 const IV = (a) => `rgba(255,246,232,${a})`;
 // the look on <html> (access.js): the default look draws the ice ramp, navy and its yellow ring; 'classic' keeps the warm grey and copper
@@ -36,9 +37,13 @@ export function createTelescopes(ctx) {
 
   const curFrame = () => V.F[Math.min(P.i, V.F.length - 1)] || null;
   const fixedPos = () => (V.grid ? { ra: V.grid.ra0, dec: V.grid.dec0 } : V.target ? { ra: V.target.ra, dec: V.target.dec } : null);
+  // the target's catalogue motion: the Ghost's star, the loaded target, or (a named target whose
+  // record has no motion yet, e.g. a re-open) the preset's own catalogue record
   function motionStar() {
     const s = ctx.GH?.G?.star; if (s && hasMotion(s)) return s;
-    return V.target && hasMotion(V.target) ? V.target : null;
+    if (V.target && hasMotion(V.target)) return V.target;
+    const p = (V.query?.type === 'name' && findPreset(V.query.name)) || (V.target?.presetKey && PRESETS.find(x => x.key === V.target.presetKey));
+    return p && hasMotion(p.target) ? p.target : null;
   }
   // epochs: real header dates once known; nominal survey years until then
   function epochs() {
@@ -162,6 +167,7 @@ export function createTelescopes(ctx) {
     const view = { ...fld, sizeArcsec: fld.sizeArcsec / zoom };
     const star = motionStar(), fx = fixedPos(), ep = epochs();
     const pos = Object.fromEntries(ORDER.map(id => [id, star && Number.isFinite(ep[id]) ? positionsAt(star, fx, [ep[id]])[0] : fx]));
+    T.rings = { ...pos, moving: !!star }; // read by deploy/page-check.mjs
     const f = curFrame();
     for (const id of ORDER) {
       const fig = panels.querySelector(`[data-s="${id}"]`), cv = fig.querySelector('canvas'), msg = fig.querySelector('.tele-msg');

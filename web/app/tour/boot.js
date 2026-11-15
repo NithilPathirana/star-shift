@@ -9,7 +9,7 @@ import { chapterForPage, chapterById, readProgress, shouldAutoResume, canResume,
 import { shouldOffer, remember, offerAllowed, OFFER_MS, PHONE_MAX, reducedMotion } from './steps.js';
 import { start, end, running, getStore, currentPage, currentScene, debugRects, canRun } from './engine.js';
 import { needsTutorial, markTutorial, isDeepLink, readTutorials } from './progress.js';
-import { mountSettings, mountAsk } from '../consent-ui.js';
+import { mountSettings, mountAsk, showConsentChip } from '../consent-ui.js';
 
 const $ = id => document.getElementById(id);
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -260,30 +260,31 @@ function showChip(ch) {
   });
   document.body.append(chip); placeChip();
 }
-// Docked under the Tour key, over the side panel and never over the image (judges' a5): when the stage leaves no room
-// beside it (phones, narrow windows), the chip becomes the last row of the top bar instead.
+// Never over content (Judging panel round 9): the chip is never position:fixed. Desktop: docked in the top bar,
+// just before the Tour key; if the bar has no room for it there, it becomes the bar's last row instead (in flow).
+// Phones: always that last row of the top bar, so it pushes the page down rather than covering a heading.
 function placeChip() {
   if (!chip) return;
-  const bar = document.querySelector('.topbar');
+  const bar = document.querySelector('.topbar'), acts = bar?.querySelector('.top-actions'), key = $('tourPageKey');
   chip.dataset.story = document.documentElement.dataset.story || ''; chip.hidden = false;
-  if (chip.parentNode !== document.body) document.body.append(chip);
-  chip.classList.remove('in-bar', 'stack'); chip.style.maxWidth = ''; padInsp(0);
-  const k = $('tourPageKey')?.getBoundingClientRect(), tb = bar?.getBoundingClientRect();
-  const ref = k && k.width > 2 ? k : tb;
-  const right = Math.max(8, Math.round(innerWidth - (tb ? tb.right : ref ? ref.right : innerWidth - 12)));
-  chip.style.top = Math.round((ref ? ref.bottom : 56) + 8) + 'px'; chip.style.right = right + 'px';
-  const st = stageRect();
-  if (st && st.width > 2 && hits(chip.getBoundingClientRect(), st)) {
-    const room = innerWidth - right - st.right - 8;
-    if (room >= 220) { chip.classList.add('stack'); chip.style.maxWidth = room + 'px'; }
-    if (hits(chip.getBoundingClientRect(), st) && bar) { chip.classList.add('in-bar'); chip.style.top = chip.style.right = ''; chip.style.maxWidth = ''; bar.append(chip);
-      // phones: while the first-screen story is up, its own Tour key sits beside the CTA; a chip row in the bar
-      // would push the CTA below the fold, so it waits until the story leaves
-      chip.hidden = chip.dataset.story === 'on' && [...document.querySelectorAll('.story-tour')].some(e => e.getClientRects().length > 0);
-      return; }
+  chip.classList.remove('in-bar', 'stack', 'docked'); chip.style.top = chip.style.right = chip.style.maxWidth = ''; padInsp(0);
+  if (!bar) { chip.hidden = true; return; } // no top bar on this page: the Tour key elsewhere does the job
+  chip.remove(); // measured without it
+  const go = chip.querySelector('.tour-chip-go'), small = chip.classList.contains('small');
+  if (!isPhone() && acts) {
+    if (go) go.textContent = small ? 'Quick tour' : 'New here? Quick tour';
+    const h0 = bar.offsetHeight;
+    chip.classList.add('docked');
+    if (chip.parentNode !== acts) acts.insertBefore(chip, key && acts.contains(key) ? key : acts.firstChild);
+    const over = bar.offsetHeight > h0 + 2 || bar.scrollWidth > bar.clientWidth + 1 || acts.scrollWidth > acts.clientWidth + 1;
+    if (!over) return;
+    chip.classList.remove('docked');
   }
-  const p = $('insp')?.getBoundingClientRect(), r = chip.getBoundingClientRect();
-  if (p && p.width > 2 && hits(r, p)) padInsp(Math.ceil(r.bottom + 8 - p.top));
+  if (go) go.textContent = small ? 'Quick tour of this page' : 'New here? Quick tour of this page';
+  chip.classList.add('in-bar'); bar.append(chip);
+  // phones: while the first-screen story is up, its own Tour key sits beside the CTA; a chip row in the bar
+  // would push the CTA below the fold, so it waits until the story leaves
+  chip.hidden = chip.dataset.story === 'on' && [...document.querySelectorAll('.story-tour')].some(e => e.getClientRects().length > 0);
 }
 function checkAuto() {
   const ch = chapterForPage(page, { scene: currentScene(), notebookOpen: nbOpen() });
@@ -300,6 +301,7 @@ function checkAuto() {
 async function autoTutorials() {
   mountSettings();
   mountAsk(); // no consent bar: a small inline ask the first time something optional is changed
+  showConsentChip(); // and a small chip at the bottom so a first visit can always choose (never over the stage)
   if (page === 'index.html') { // once the map is ready (or failed) and no loader is on screen
     const t0 = performance.now();
     while (performance.now() - t0 < 30000 && !((window.__app?.skymap?.aladin || ($('stMap') && !$('stMap').hidden) || performance.now() - t0 > 5000) && $('stLoading')?.hidden !== false) && currentScene() !== 'viewer') await wait(150);

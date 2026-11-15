@@ -160,6 +160,24 @@ export const shownVerdict = (v, type) => (type === 'brightness' && v === 'AGREES
 export const badgeText = (v, sigma, type) => { const s = shownVerdict(v, type); return v !== 'NOT MEASURABLE' && Number.isFinite(sigma) ? `${s} ${(+sigma).toFixed(1)}σ` : s; };
 export const verdictSigma = (t) => (t.verdict === 'NOT MEASURABLE' ? null : t.type === 'motion' ? t.diff?.sigma ?? null : mainGroup(t)?.sigma ?? null);
 
+// ONE brightness formatter for the Proof row and the viewer's result plate (judging round 8, item 3):
+// same rounding, and the sign written once, as a word ("0.72 ± 0.07 mag fainter"), never "−-0.72".
+export function magParts(g, withBand) {
+  return { val: `${Math.abs(g.value).toFixed(2)} ± ${g.err.toFixed(2)}`, unit: ` mag ${g.value > 0 ? 'fainter' : 'brighter'}${withBand ? ` at ${plainBand(g.name)}` : ''}` };
+}
+export const magGroups = (t) => { const g = mainGroup(t); return g ? [g, ...(t.measured?.groups || []).filter(x => x.ok && x.err > 0 && x !== g)] : []; };
+// A brightness test's lead line: { text, badge }, e.g. RW Aurigae "0.72 ± 0.07 mag fainter at 3.8–5.0 µm" + "CHANGE SEEN 11.2σ";
+// R Draconis "Too bright for SPHEREx: …" + "NOT MEASURABLE" (the start of proof.json's own limit text).
+export function brightnessLead(t) {
+  if (!t || t.type !== 'brightness') return null;
+  const all = magGroups(t);
+  if (t.verdict === 'NOT MEASURABLE' || !all.length) {
+    return { text: t.limit ? t.limit.replace(/, leaving[^]*$/, '').replace(/\.$/, '') : 'No clear brightness change can be measured here', badge: badgeText('NOT MEASURABLE', null, 'brightness'), verdict: 'NOT MEASURABLE' };
+  }
+  const p = magParts(all[0], all.length > 1);
+  return { text: p.val + p.unit, badge: badgeText(t.verdict, verdictSigma(t), 'brightness'), verdict: t.verdict };
+}
+
 // The Proof row's "Why": one plain sentence, verdict in words first, then the one reason. Built only
 // from proof.json's numbers for this test (spec-proof-flags.md 1b); no σ, no brackets.
 export function whySentence(t, target, minYr = 0.7) {

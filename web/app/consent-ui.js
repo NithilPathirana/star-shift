@@ -154,6 +154,69 @@ export function mountAsk() {
   addEventListener('resize', placeAsk);
 }
 
+/* ---------- the consent chip (Nithil, Sun 21:55): a first visit can always choose ---------- */
+// Small, at the bottom, never over the stage, the result plate or a verdict: bottom-left, else bottom-right, else
+// in flow as the top bar's last row. Hidden while a tour is open; gone for good once a choice is saved.
+const KEEP = 'h1, h2, h3, .rail, #stage, #resultPlate, #verdict, .sm-verdict, #rpRes, .transport, .tl, .dock, #cdPlay, #mdPlay, .story-go, .story';
+let cc = null, ccIv = 0;
+function placeCC() {
+  if (!cc) return;
+  if (consentDecided()) return closeCC();
+  cc.hidden = document.documentElement.dataset.tour === 'on';
+  if (cc.hidden) return;
+  const guards = () => [...document.querySelectorAll(KEEP)].filter(e => !cc.contains(e)).map(visible).filter(Boolean);
+  const free = () => { const r = cc.getBoundingClientRect(); return !guards().some(g => hits(r, g)); };
+  if (cc.parentNode !== document.body) document.body.append(cc);
+  cc.classList.remove('in-bar', 'right', 'foot', 'on-map'); cc.style.bottom = '';
+  if (onMap()) return;
+  if (free()) return;
+  cc.classList.add('right'); if (free()) return;
+  cc.classList.remove('right');
+  // no free corner: in flow as the top bar's last row (never over content)
+  const bar = document.querySelector('.topbar');
+  if (bar) { cc.classList.add('in-bar'); bar.append(cc); } else cc.classList.add('foot');
+}
+// Phones, sky-map scene (coding lead, round 9): over the lower part of the sky picture, above the dock, clear of
+// the hero card, its CTA, the map readout and any heading; a row in the top bar would push the CTA below the fold
+const MAPKEEP = 'h1, h2, h3, .story, .story-go, .story-tour, #mapRead, .coords, .dock, .topbar, #mdPlay, .transport';
+function onMap() {
+  const st = innerWidth <= 699 && $('app')?.dataset.scene === 'map' && $('stage') && visible($('stage'));
+  if (!st) return false;
+  const clash = () => { const r = cc.getBoundingClientRect(); return [...document.querySelectorAll(MAPKEEP)].filter(e => !cc.contains(e)).map(visible).filter(g => g && hits(r, g)); };
+  cc.classList.add('on-map');
+  let bottom = innerHeight - Math.min(st.bottom, innerHeight) + 8;
+  for (let k = 0; k < 4; k++) {
+    cc.style.bottom = Math.round(bottom) + 'px';
+    const r = cc.getBoundingClientRect(), c = clash();
+    if (r.top < st.top) break;
+    if (!c.length) return true;
+    bottom = innerHeight - Math.min(...c.map(g => g.top)) + 8; // lift it above whatever it touched
+  }
+  cc.classList.remove('on-map'); cc.style.bottom = ''; return false;
+}
+function closeCC() {
+  clearInterval(ccIv); removeEventListener('resize', placeCC);
+  cc?.remove(); cc = null;
+}
+export function showConsentChip() {
+  if (cc || consentDecided()) return;
+  cc = document.createElement('div');
+  cc.className = 'ss-cc glass'; cc.id = 'ssCC'; cc.setAttribute('role', 'region'); cc.setAttribute('aria-label', 'Privacy choice');
+  cc.innerHTML = `<span class="ss-cc-t">Privacy: nothing personal is stored</span>
+    <button class="ssc-link" type="button" data-cc="accept">Accept all</button><span aria-hidden="true">·</span>
+    <button class="ssc-link" type="button" data-cc="reject">Reject optional</button><span aria-hidden="true">·</span>
+    <button class="ssc-link" type="button" data-cc="custom">Customise</button>`;
+  cc.addEventListener('click', e => {
+    const b = e.target.closest('[data-cc]'); if (!b) return;
+    e.stopPropagation();
+    if (b.dataset.cc === 'custom') { if ($('clarityBtn')) openPrivacy(); return; }
+    C()?.choose(b.dataset.cc === 'accept'); closeAsk(null); closeCC(); syncSettings();
+  });
+  document.body.append(cc);
+  addEventListener('resize', placeCC); ccIv = setInterval(placeCC, 500); placeCC();
+  addEventListener('star-shift-consent', () => { if (consentDecided()) closeCC(); });
+}
+
 /* ---------- Clarity → Privacy & tutorials ---------- */
 function syncSettings() {
   const s = document.querySelector('#sscSet [data-consent]');

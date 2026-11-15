@@ -75,14 +75,14 @@ async function load(q) {
 // Live stars (judging panel a10, the Spot rule): when IRSA sends nothing new for STALL_MS, or answers
 // "busy" BUSY_503 times in a row, stop, say so, keep the dots already measured, and offer Retry.
 // The five demo targets answer from web/prebaked/ at once.
-const STALL_MS = 18000, BUSY_503 = 30;
+const STALL_MS = 18000, STALL_LIST_MS = 60000, BUSY_503 = 30; // the image list itself can take 20-25 s on a busy night
 function watch(ctrl) {
   const t0 = S.lastArrive = Date.now();
   const h = setInterval(() => {
     if (ctrl !== S.ctrl || ctrl.signal.aborted) return clearInterval(h);
     const now = Date.now();
     if (S.listed && !S.running && !S.queue.length) { S.lastArrive = now; return; } // idle: nothing asked
-    if (now - S.lastArrive >= STALL_MS || (S.busy >= BUSY_503 && now - t0 >= STALL_MS)) { clearInterval(h); archiveDown(ctrl); }
+    if (now - S.lastArrive >= (S.listed ? STALL_MS : STALL_LIST_MS) || (S.busy >= BUSY_503 && now - t0 >= STALL_MS)) { clearInterval(h); archiveDown(ctrl); }
   }, 500);
 }
 function lose(im) { S.failed++; S.queued.delete(im.uri); S.lost.push(im); } // "Retry" or "Measure more" may ask again
