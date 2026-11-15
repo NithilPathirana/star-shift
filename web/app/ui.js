@@ -28,7 +28,7 @@ import { CLARITY_KEY, readClarity } from './prefs.js'; // Clarity defaults (soun
 import './story.js'; // b1: first-screen story on the cold-open map (story.css)
 import { fitPlaceholder, surpriseTarget } from './picktips.js'; // quick-pick tips, search placeholder, "Surprise me"
 import { motionVerdict, paDelta } from './proof/logic.js'; // the Proof page's verdict rule, for the result plate
-import { groupOfDet, groupByDets, centreMasked, bestGroup, counterText, plannedIndexOf, resultState, storyCaption, shareParams, verdictClass, VIEW_MODES } from './viewerbits.js';
+import { groupOfDet, groupByDets, centreMasked, bestGroup, counterText, plannedIndexOf, resultState, storyCaption, shareParams, verdictClass, VIEW_MODES, earlyBlinkReady } from './viewerbits.js';
 
 const R = window.MockRender;
 const $ = id => document.getElementById(id), root = document.documentElement;
@@ -573,10 +573,14 @@ function loaderNeeded(elapsed) {
   return (V.planned - done) * (elapsed / done) >= LOADER_MIN_LEFT;
 }
 let ldReveal = 0, ldLeaving = null;
-function leaveLoader() {
+function leaveLoader(quick) {
   const L = $('stLoading'); if (L.hidden || !V.scan) return 0;
   const scan = V.scan; V.scan = null; clearTimeout(ldReveal);
   if (L.classList.contains('ld-wait')) { L.hidden = true; L.classList.remove('ld-wait'); scan.destroy(); return 0; } // never seen: no exit
+  if (quick) { // b2 early Blink: no exit clip, the loader fades (200 ms, live.css) over the first picture
+    L.style.opacity = '0'; ldLeaving = { scan, t: setTimeout(() => { ldLeaving = null; L.hidden = true; L.style.opacity = ''; scan.destroy(); }, 220) };
+    return 0;
+  }
   const ms = scan.done(); // AstroLoader returns its exit time; ScanLoader returns nothing
   const wait = set.motion ? 0 : (ms ?? 400);
   ldLeaving = { scan, t: setTimeout(() => { ldLeaving = null; L.hidden = true; scan.destroy(); }, wait) };
@@ -627,7 +631,7 @@ function load(query, label) {
   P.i = 0; shown = -1; arriveCount = 0;
   holdForLoad(); holdKey(); plateKey = '';
   clearInterval(stallTimer); stallTimer = setInterval(() => { if (ctl.signal.aborted || V.status !== 'loading') clearInterval(stallTimer); else stallCheck(); }, 1000);
-  $('stLoading').classList.remove('leaving');
+  $('stLoading').classList.remove('leaving'); $('stLoading').style.opacity = ''; // a quick leave (b2) fades it by style
   // a loader still fading out from the last load shares #scanLoader: finish it now, or its late
   // destroy() would wipe (and hide) the new one
   if (ldLeaving) { clearTimeout(ldLeaving.t); ldLeaving.scan.destroy(); ldLeaving = null; }
@@ -642,6 +646,16 @@ function load(query, label) {
     onRetry: () => { Snd.play('click'); if (V.query) load(V.query, V.name); },
   });
   showState('stLoading'); $('thin').hidden = false; buildTimeline(); progress(); draw(); onFrame(0); // thin line from the start: the loader may never show
+  // b2: a preset blinks its first and last seasons as soon as both have a few images (data.js endsFirst
+  // fetches them first), so a slow link shows the hop long before the last image; the stacks take in
+  // each new image, and the caption waits for the full fit (updatePlate only writes it when ready).
+  let early = !!holdPreset() && !wantView && !Number.isFinite(holdMjd);
+  const blinkEarly = () => {
+    if (mode === 'blink' || mode === 'compare') { restack(); return; }
+    if (!early || mode !== 'play' || P.playing) return;
+    restack(); if (!earlyBlinkReady(V.stacks, V.plannedMjds)) { V.stacks = []; return; }
+    early = false; leaveLoader(true); setMode('blink');
+  };
   const emit = (e) => {
     if (ctl.signal.aborted) return;
     if (e.type === 'RESOLVED') { V.target = e.target; GH.forTarget(e.target); V.name = label || e.target.name || PATCH_NAME; V.scan?.set({ target: loaderName(V.name) }); }
@@ -662,7 +676,7 @@ function load(query, label) {
       V.scan?.add(f);
       const keep = V.F[P.i]; V.FK = CX.filter(V.FA); V.F = shownFrames(); if (keep) P.i = Math.max(0, V.F.indexOf(keep));
       CX.ensureLayers();
-      progress(); rebuildSoon();
+      progress(); rebuildSoon(); blinkEarly();
     } else if (e.type === 'FRAME_FAILED') { V.failed++; progress(); }
     else if (e.type === 'RETRY_WAIT') { V.retries++; progress(); setTimeout(() => { if (!ctl.signal.aborted) progress(); }, STALL_MS + 100); }
     else if (e.type === 'DONE') finish();

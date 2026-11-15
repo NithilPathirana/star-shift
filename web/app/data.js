@@ -25,6 +25,14 @@ export function spread(items, max) {
   return Array.from({ length: max }, (_, k) => items[Math.round((k * (items.length - 1)) / (max - 1))]);
 }
 
+// Fetch order (b2): first, last, second, second-last, … of a time-sorted list, so the first and last
+// seasons fill in together and the viewer can blink them before the middle images arrive.
+export function endsFirst(items) {
+  const out = [];
+  for (let i = 0, j = items.length - 1; i <= j; i++, j--) { out.push(items[i]); if (j !== i) out.push(items[j]); }
+  return out;
+}
+
 // Cutout side (deg) that still fills a north-up square of `fovArcmin` at any rotation.
 export function cutoutSizeDeg(fovArcmin) {
   return +Math.min(0.5, (fovArcmin / 60) * Math.SQRT2 + (3 * PIXEL) / 3600).toFixed(4);
@@ -174,7 +182,7 @@ export async function run(query, settings, { base, fetchFn = prebakedFetch, sign
     firstDate: all.length ? mjdToDate(all[0].mjdStart) : null, lastDate: all.length ? mjdToDate(all[all.length - 1].mjdStart) : null,
   } });
   if (!chosen.length) return;
-  await mapLimit(chosen, concurrency, async (im) => {
+  await mapLimit(endsFirst(chosen), concurrency, async (im) => {
     if (signal?.aborted) return;
     try {
       const frame = await loadFrame(im, target, grid, settings, { base, fetchFn, signal, tables, onRetry: () => emit({ type: 'RETRY_WAIT' }) });

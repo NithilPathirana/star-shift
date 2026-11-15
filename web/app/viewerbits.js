@@ -84,6 +84,15 @@ export function storyCaption(name, mo, mjdA, mjdB) {
   return { t, d, px, text: `${name} moved ${d.toFixed(1)}″ in ${t.toFixed(1)} years, about ${px.toFixed(1)} pixels.` };
 }
 
+// b2: can a preset's Blink start before every image is in? Yes once the season stacks of the images so
+// far reach the plan's first and last season (each end within tolDays of the plan's first/last date) and
+// each of the two has at least `min` images. stacks: [{ start: Date, end: Date, count }]; mjds: planned MJDs.
+export function earlyBlinkReady(stacks, mjds, min = 3, tolDays = 45) {
+  if (!stacks || stacks.length < 2 || !mjds?.length) return false;
+  const a = stacks[0], b = stacks[stacks.length - 1], mjd = d => d.getTime() / 864e5 + 40587;
+  return a.count >= min && b.count >= min && mjd(a.start) - Math.min(...mjds) <= tolDays && Math.max(...mjds) - mjd(b.end) <= tolDays;
+}
+
 // The share link: target (q, or ra + dec), scene, view mode and the image date.
 export function shareParams({ q, ra, dec, scene, mode, mjd }) {
   const p = new URLSearchParams();
