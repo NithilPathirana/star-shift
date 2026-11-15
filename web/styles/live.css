@@ -397,6 +397,15 @@ html[data-motion=reduce] .state.loader2 { transition: none; }
   .tools::-webkit-scrollbar { display: none; }
 }
 @media (min-width: 700px) and (max-height: 720px) {
-  .tools { gap: 2px; padding: 4px; }
+  /* short windows (1366x640): the rail starts 12 px from the stage top, beside the chip, with 36 px keys, 4 px gaps
+     and no "fit" label, so the last key (Ghost) is never cut off */
+  .tools { top: 12px; max-height: calc(100% - 24px); gap: 4px; padding: 4px; }
   .tools .glass-btn { width: 36px; height: 36px; }
+  .tools .zoomlvl { display: none; }
+}
+/* compass: the loading line and the layer legend start right of it; with the Ghost bar open it moves above the bar */
+@media (min-width: 700px) {
+  .loading-thin { left: 136px; }
+  .lgd { left: 136px; max-width: calc(100% - 260px); }
+  #stage:has(#ghostBar:not([hidden])) .compass { bottom: 62px; }
 }

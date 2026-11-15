@@ -182,7 +182,12 @@ html[data-contrast=more] .well{border-color:var(--edge-strong);box-shadow:inset 
 .chip .sep{color:var(--stage-muted)}
 .flag{position:absolute;right:var(--pad-r,24px);top:14px;height:30px;display:flex;align-items:center;padding:0 12px;border-radius:999px;font-size:.8125rem;font-weight:600;color:#F3CFA6;background:rgba(227,168,107,.14);opacity:0;transition:opacity 150ms}
 .mode-blink .flag{opacity:1}
-.compass{position:absolute;left:76px;bottom:12px;color:var(--stage-muted)}
+/* compass (sky view: north up, east left): two labelled arrows, ivory with a dark halo so it reads on any background */
+.compass{position:absolute;left:76px;bottom:10px;z-index:2;overflow:visible;color:var(--stage-text);filter:drop-shadow(0 0 1px rgba(21,17,14,.95)) drop-shadow(0 0 3px rgba(21,17,14,.7))}
+.compass .cp-ax{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.compass .cp-hd{fill:currentColor}
+.compass text{fill:currentColor;font:600 11px/1 var(--font-num);letter-spacing:0}
+.compass .cp-n{fill:var(--ring)}
 .scalebar{position:absolute;right:var(--pad-r,24px);bottom:16px;display:flex;align-items:center;gap:8px;font-size:.75rem;color:var(--stage-muted)}
 .scalebar i{display:block;height:2px;background:var(--stage-muted)}
 /* tool rail floats in the stage's left margin, never over pixels */
