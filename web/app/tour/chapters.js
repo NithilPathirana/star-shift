@@ -202,10 +202,11 @@ export function nextChapter(id, dir = 1) {
   return i < 0 ? null : L[i + dir] || null;
 }
 
-/** The file name of a page path: '/web/' and '/' are index.html. */
+/** The file name of a page path: '/web/' and '/' are index.html. Cloudflare serves /proof.html as /proof (a 307
+ *  to the clean URL), so a last segment without an extension gets '.html' back (live "Tour this page" did nothing). */
 export function pageOf(pathname = '') {
-  const f = String(pathname).split(/[?#]/)[0].split('/').pop();
-  return f || 'index.html';
+  const f = decodeURIComponent(String(pathname).split(/[?#]/)[0].split('/').pop() || '');
+  return !f ? 'index.html' : f.includes('.') ? f : f + '.html';
 }
 /** The chapter "Tour this page" opens: index.html has two (sky map, time-lapse); notebook only when its dialog is open. */
 export function chapterForPage(page, { scene = 'map', notebookOpen = false } = {}) {

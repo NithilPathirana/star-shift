@@ -33,6 +33,9 @@ test('wording: short titles, plain sentences, no discovery claims, asteroids are
 test('which page runs which chapter', () => {
   assert.equal(pageOf('/'), 'index.html');
   assert.equal(pageOf('/web/spot.html'), 'spot.html');
+  assert.equal(pageOf('/proof'), 'proof.html'); // Cloudflare's clean URLs (live)
+  assert.equal(pageOf('/archive?q=Vega'), 'archive.html');
+  assert.equal(pageOf('/index'), 'index.html');
   assert.equal(chapterForPage('index.html', { scene: 'map' }).id, 'map');
   assert.equal(chapterForPage('index.html', { scene: 'viewer' }).id, 'viewer');
   assert.equal(chapterForPage('neo.html').id, 'neo');
