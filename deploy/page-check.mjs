@@ -37,7 +37,24 @@ const CDP_TIMEOUT_MS = 30000, TOTAL_TIMEOUT_MS = 9 * 60 * 1000;
 let browserProc = null;
 setTimeout(() => { console.error(`page check could not run: no result after ${TOTAL_TIMEOUT_MS / 60000} min (browser stuck)`); try { browserProc?.kill(); } catch { /* gone */ } process.exit(2); }, TOTAL_TIMEOUT_MS).unref();
 
+// Judging panel round 5, item 1 (deploy-lag guard): every key module answers 200, and on a deploy the live
+// /version.json names the commit just deployed (deploy.sh sets EXPECT_SHA), so a stale or partial deploy fails loudly
+const MODULES = ['/app/ui.js', '/app/seasons.js', '/app/distances.js', '/app/gaia-overlay.js', '/app/spot/colour.js', '/app/spot/botha.js',
+  '/app/spot/logic.js', '/app/proof/logic.js', '/app/diffview.js', '/app/erender.js', '/app/astro-loader.js', '/data/proof.json', '/data/botha-check.json', '/data/spot-botha.json'];
+async function preflight() {
+  const bad = [];
+  for (const m of MODULES) { try { const r = await fetch(base + m, { cache: 'no-store' }); if (r.status !== 200) bad.push(`${m} ${r.status}`); } catch (e) { bad.push(`${m} ${e.message}`); } }
+  if (process.env.EXPECT_SHA) {
+    try { const v = await (await fetch(base + '/version.json', { cache: 'no-store' })).json();
+      if (!v.sha || !String(process.env.EXPECT_SHA).startsWith(v.sha.slice(0, 7)) && !v.sha.startsWith(process.env.EXPECT_SHA)) bad.push(`live /version.json is ${v.sha}, expected ${process.env.EXPECT_SHA}`);
+    } catch (e) { bad.push(`live /version.json unreadable (${e.message})`); }
+  }
+  return bad;
+}
+
 async function run() {
+  const pre = await preflight();
+  if (pre.length) { console.error('page check FAILED before the browser: ' + pre.join('; ')); process.exit(1); }
   const exe = process.env.BROWSER || BROWSERS.find(p => existsSync(p));
   if (!exe) throw new Error('No Chrome/Edge found (set BROWSER=path)');
   const port = 9300 + Math.floor(Math.random() * 600), dir = mkdtempSync(join(tmpdir(), 'pagecheck-'));

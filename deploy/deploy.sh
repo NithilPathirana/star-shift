@@ -18,10 +18,13 @@ echo "deploy: $REV — npm test"
 LOG="$(mktemp)"; npm test --silent > "$LOG" 2>&1 || { grep -E "^✖|^ℹ (pass|fail)" "$LOG" | head; echo "deploy: npm test FAILED, nothing deployed"; exit 1; }
 grep -E "^ℹ (pass|fail)" "$LOG"
 node deploy/prepare-assets.mjs > "$LOG" 2>&1 || { tail -5 "$LOG"; echo "deploy: prepare-assets FAILED, nothing deployed"; exit 1; }
+# build stamp (Judging panel round 5, item 1): the live page check compares it with the commit just deployed
+FULL="$(git rev-parse HEAD)"; printf '{"sha":"%s","builtAt":"%s"}
+' "$FULL" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > web/version.json
 WRANGLER_SEND_METRICS=false CI=1 npx --yes wrangler@4 deploy > "$LOG" 2>&1 || { tail -8 "$LOG"; echo "deploy: wrangler FAILED"; exit 1; }
 grep -E "Version ID" "$LOG"
 echo "deploy: live page check on $LIVE"
-node deploy/page-check.mjs "$LIVE" > "$LOG" 2>&1 || { grep -E "FAIL|could not" "$LOG" | head; echo "deploy: LIVE PAGE CHECK FAILED after deploying $REV"; exit 2; }
+EXPECT_SHA="$FULL" node deploy/page-check.mjs "$LIVE" > "$LOG" 2>&1 || { grep -E "FAIL|could not" "$LOG" | head; echo "deploy: LIVE PAGE CHECK FAILED after deploying $REV"; exit 2; }
 tail -1 "$LOG"
 node deploy/smoke-test.mjs "$LIVE" | grep -E "passed|FAIL" || true   # IRSA-route rows can fail while IRSA itself is down
 echo "deploy: $REV is live"

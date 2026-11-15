@@ -52,3 +52,4 @@ design/loader/v5c/inspect/
 design/loader/v5c/src/
 design/loader/v5c/tools/*.log
 design/loader/v5c/tools/__pycache__/
+web/version.json
