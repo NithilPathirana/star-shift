@@ -57,6 +57,17 @@
         <p class="sm-fband" id="fBand" hidden></p>
       </div>
       <p class="pg-lede sm-purpose"><b>Find a dot that moved between seasons.</b> Star Shift checks whether it is a known star (still or moving), a known asteroid (JPL), a detector glitch or a dot seen only once. If nothing explains it, it is worth reporting to Backyard Worlds or the Minor Planet Center. Star Shift never sends anything itself.</p>
+      <section class="pg-lede sm-how" aria-labelledby="howH">
+        <h2 id="howH">How Spot decides</h2>
+        <p>Each example opens a field with a ring already placed, and the checks run live, just as for your own click. These fields are saved with the app, so they work offline.</p>
+        <ul class="sm-how-list">
+          <li><a href="spot.html?field=barnard&amp;click=269.44625,4.768778">Known star</a> <span>ring on Barnard's Star itself</span></li>
+          <li><a href="spot.html?field=r-dra&amp;click=248.158583,66.755111">Not a separate dot</a> <span>ring 2 pixels from R Draconis, on its glow</span></li>
+          <li><a href="spot.html?field=r-dra&amp;click=248.183667,66.748611">Likely artefact</a> <span>a smudge in the R Draconis field</span></li>
+          <li><a href="spot.html?field=eps-indi-b&amp;click=331.116292,-56.811278">Nothing here</a> <span>empty sky beside Epsilon Indi B</span></li>
+          <li><span class="sm-how-k">Known asteroid</span> <span>Spot asks JPL at each season's middle image; to see an asteroid JPL predicts in one SPHEREx image, open <a href="neo.html">Asteroids</a></span></li>
+        </ul>
+      </section>
     </section>
 
     <nav class="sm-steps" id="steps" aria-label="Steps">

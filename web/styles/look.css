@@ -942,3 +942,7 @@ html:where(:not([data-ax-look=classic]))[data-glass=solid] .pl-place{background:
 :where(html:not([data-ax-look=classic])) .sm-empty:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
 :where(html:not([data-ax-look=classic])) .sm-empty.quiet:focus-visible{outline:none}
 :where(html:not([data-ax-look=classic])) .sm-fband{color:var(--copper-ink)}
+:where(html:not([data-ax-look=classic])) .sm-how h2{color:var(--ink)}
+:where(html:not([data-ax-look=classic])) .sm-how-list li > a,:where(html:not([data-ax-look=classic])) .sm-how-k{color:var(--copper-ink)}
+:where(html:not([data-ax-look=classic])) .sm-how-k{color:var(--ink)}
+:where(html:not([data-ax-look=classic])) .sm-how-list span a{color:var(--copper-ink)}

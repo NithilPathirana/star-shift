@@ -18,7 +18,7 @@ import {
   LOAD_SETTINGS, MAX_SUSPECTS, QUICK, fieldByKey, pickSurprise, nearestField, fmtDay, seasonRange, fmtPos,
   ARTEFACT_KINDS, flagsAtSpot, evaluateFlags, decideSeasons, seasonPresence, STATE_WORD, checkTitle,
   initChecklist, checklistStep, decideVerdict, summaryText, REPORT_LINKS, ASTEROID_HALF_WIDTH_DEG, offsetText, fieldCentre, passDistance,
-  plainCheckText, simpleBodyName, STAR_MATCH_ARCSEC, ASTEROID_MATCH_ARCSEC, dotAt, wingPeak, separatePeaks, fieldBand, framesForField, STAR_TIE_ARCSEC,
+  plainCheckText, simpleBodyName, parseClick, STAR_MATCH_ARCSEC, ASTEROID_MATCH_ARCSEC, dotAt, wingPeak, separatePeaks, fieldBand, framesForField, STAR_TIE_ARCSEC,
 } from './logic.js';
 import { fetchFieldStars, starCheckAt, fetchFieldAsteroids, asteroidCheckAt } from './checks.js';
 import { pickTip, fitPlaceholder } from '../picktips.js'; // chip tips (NASA's challenge targets), search placeholder
@@ -71,6 +71,7 @@ function buildPicker() {
 }
 function choose(f, push = true) {
   if (!f) return;
+  if (push) S.pendingClick = null; // a field picked by hand gets no example click
   if (push) history.pushState(null, '', '?field=' + encodeURIComponent(f.key));
   loadField(f);
 }
@@ -196,6 +197,7 @@ function finishField(f, frames, partial = false) {
   fieldStars(); fieldAsteroids(); // ask the catalogues and JPL for the whole patch now, before any click
   if (S.failed) toast(`${S.loaded} images are in. ${S.failed} couldn't be fetched (IRSA busy).`);
   S.show = 0; startBlink(); layout(); steps();
+  placeClick();
 }
 function oneSeason(f) {
   const c = propagate(f.target, 61000), near = nearestField(c.ra, c.dec);
@@ -652,10 +654,20 @@ async function searchField(text, push = true) {
   if (push) history.pushState(null, '', '?' + (q.type === 'name' ? 'q=' + encodeURIComponent(q.name) : `ra=${q.ra.toFixed(5)}&dec=${q.dec.toFixed(5)}`));
   loadField({ key: 'q', label: t.name || `Typed position ${formatRA(t.ra)} ${formatDec(t.dec)}`, target: t, query: q });
 }
-$('searchForm').addEventListener('submit', (e) => { e.preventDefault(); searchField($('q').value); });
+$('searchForm').addEventListener('submit', (e) => { e.preventDefault(); S.pendingClick = null; searchField($('q').value); });
 
+// A click from the address (logic.js parseClick): placed once the field's seasons are stacked.
+function placeClick() {
+  const c = S.pendingClick; S.pendingClick = null;
+  if (!c || !S.ready) return;
+  const [gx, gy] = worldToGrid(S.grid, c.ra, c.dec), n = S.grid.n;
+  if (!(gx >= -0.5 && gx <= n - 0.5 && gy >= -0.5 && gy <= n - 0.5)) { toast('That example spot is outside this field.'); return; }
+  S.show = c.season; draw();
+  addSuspect(+gx.toFixed(2), +gy.toFixed(2));
+}
 function fromURL() {
   const p = new URLSearchParams(location.search);
+  S.pendingClick = parseClick(p);
   const f = fieldByKey(p.get('field') || '');
   if (f) return loadField(f);
   if (p.get('q')) { $('q').value = p.get('q'); return searchField(p.get('q'), false); }

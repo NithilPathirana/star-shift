@@ -203,3 +203,14 @@ html:not([data-expert=on]) .sm-sv{text-align:left}
 @media (max-width:700px){.sm-clear{min-height:44px;padding:0 14px}.sm-sbtn{min-height:44px}}
 /* WISE 0855: the wavelengths Spot blinks, and why (judging panel A4) */
 .sm-fband{margin-top:4px;font-size:.875rem;color:var(--copper-ink);font-weight:500}
+/* "How Spot decides" (item b12): one live example per verdict, each a pre-placed click */
+.sm-head .sm-how{flex:1 1 100%;max-width:none;margin-top:var(--s2)}
+.sm-how h2{font-size:.9375rem;font-weight:600;color:var(--ink);margin:0 0 2px}
+.sm-how p{margin:0 0 6px}
+.sm-how-list{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 18px}
+.sm-how-list li{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 6px;min-width:0}
+.sm-how-list li > a,.sm-how-k{display:inline-flex;align-items:center;min-height:24px;font-weight:600;color:var(--copper-ink)}
+.sm-how-k{color:var(--ink)}
+.sm-how-list span a{font-weight:600;color:var(--copper-ink)}
+.sm-how-list span{font-size:.8125rem}
+@media (max-width:700px){.sm-how-list{flex-direction:column;gap:2px}.sm-how-list li > a{min-height:44px}}

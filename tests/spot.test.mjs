@@ -430,3 +430,22 @@ test('Master\'s rule exception: a SEPARATE peak with a real dip between it and t
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) one.data[j * n + i] += 80 * Math.exp(-((i - 12) ** 2 + (j - 12) ** 2) / (2 * 1.2 ** 2));
   assert.equal(L.separatePeaks(one, { x: 12, y: 12 }, { x: 12, y: 13.4 }), false);
 });
+
+// ---------- "How Spot decides" (item b12): a pre-placed click from the address
+test('parseClick: click=ra,dec (first season unless on=latest); junk and impossible positions give null', () => {
+  const P = (q) => L.parseClick(new URLSearchParams(q));
+  assert.deepEqual(P('field=barnard&click=269.44625,4.768778'), { ra: 269.44625, dec: 4.768778, season: 0 });
+  assert.deepEqual(P('field=eps-indi-b&click=331.116292,-56.811278&on=latest'), { ra: 331.116292, dec: -56.811278, season: 1 });
+  assert.deepEqual(P('click=248.1586%2066.7551'), { ra: 248.1586, dec: 66.7551, season: 0 }, 'a space works too');
+  assert.equal(P('field=barnard'), null);
+  for (const bad of ['click=', 'click=12', 'click=1,2,3', 'click=abc,4', 'click=360,0', 'click=-1,0', 'click=10,91', 'click=10,-90.5', 'click=1e3,4', 'click=Infinity,0'])
+    assert.equal(P(bad), null, bad);
+  assert.equal(L.parseClick(null), null);
+});
+test('the "How Spot decides" links on spot.html are real fields with sky positions parseClick accepts', () => {
+  const html = readFileSync(new URL('../web/spot.html', import.meta.url), 'utf8');
+  const links = [...html.matchAll(/href="spot\.html\?([^"]+)">([^<]+)<\/a>/g)].map(m => ({ q: new URLSearchParams(m[1].replace(/&amp;/g, '&')), label: m[2] }));
+  assert.deepEqual(links.map(l => l.label), ['Known star', 'Not a separate dot', 'Likely artefact', 'Nothing here']);
+  for (const l of links) { assert.ok(L.fieldByKey(l.q.get('field')), l.label); assert.ok(L.parseClick(l.q), l.label); }
+  assert.ok(!/discover|new planet/i.test(html.slice(html.indexOf('id="howH"'), html.indexOf('</section>', html.indexOf('id="howH"')))));
+});

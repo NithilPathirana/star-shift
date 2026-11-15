@@ -42,6 +42,20 @@ export const SURPRISE = [
 export const ALL_FIELDS = [...QUICK, ...SURPRISE];
 export const fieldByKey = (k) => ALL_FIELDS.find(f => f.key === k) || null;
 
+// A pre-placed click from the page address ("How Spot decides" examples, item b12):
+// spot.html?field=barnard&click=269.4521,4.7393[&on=latest]. click = sky RA,Dec in degrees, measured
+// in the first season unless on=latest. null when absent or not a real sky position.
+export function parseClick(params) {
+  const raw = params?.get?.('click');
+  if (!raw) return null;
+  const m = String(raw).trim().split(/\s*[, ]\s*/);
+  if (m.length !== 2 || !m.every(v => /^[+-]?(\d+\.?\d*|\.\d+)$/.test(v))) return null;
+  const ra = +m[0], dec = +m[1];
+  if (!(ra >= 0 && ra < 360 && dec >= -90 && dec <= 90)) return null;
+  const on = String(params.get('on') || '').toLowerCase();
+  return { ra, dec, season: on === 'latest' || on === '2' ? 1 : 0 };
+}
+
 // Detectors Spot stacks for a field (judging panel A4): a preset with motionDetectors (WISE 0855:
 // 5–6, the only detectors where it shows) is blinked on those alone, so the dot you see is the
 // brown dwarf and not a Gaia G 16.3 star 7.8″ away that fills the shorter wavelengths. null = all.
