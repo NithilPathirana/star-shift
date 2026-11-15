@@ -1538,7 +1538,7 @@ $('insp').addEventListener('click', e => {
 const hm = d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); // 24-hour HH:MM, as on the planetarium
 const dayTag = d => { const a = new Date(); a.setHours(0, 0, 0, 0); const b = new Date(d); b.setHours(0, 0, 0, 0); const k = Math.round((b - a) / 864e5); return k === 0 ? 'today' : k === 1 ? 'tomorrow' : k === -1 ? 'yesterday' : b.toLocaleDateString(); };
 const PLACES = { london: [51.507, -0.128], paris: [48.857, 2.352], 'new york': [40.713, -74.006], 'los angeles': [34.052, -118.244], tokyo: [35.676, 139.650],
-  sydney: [-33.869, 151.209], colombo: [6.927, 79.861], kandy: [7.291, 80.636], galle: [6.053, 80.221], jaffna: [9.661, 80.026], wennappuwa: [7.349, 79.851],
+  sydney: [-33.869, 151.209], colombo: [6.927, 79.861], kandy: [7.291, 80.636], galle: [6.053, 80.221], jaffna: [9.661, 80.026],
   negombo: [7.209, 79.838], mumbai: [19.076, 72.878], delhi: [28.614, 77.209], chennai: [13.083, 80.270], singapore: [1.352, 103.820], dubai: [25.205, 55.271],
   'cape town': [-33.925, 18.424], 'são paulo': [-23.551, -46.633], 'sao paulo': [-23.551, -46.633], berlin: [52.520, 13.405], madrid: [40.417, -3.704], toronto: [43.653, -79.383] };
 const obs = { on: false, loc: null, msg: '', err: false }; let obsTimer = null;
