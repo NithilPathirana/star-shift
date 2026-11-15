@@ -30,6 +30,7 @@ import { diffImage, diffStar, diffCaption, drawDiff, diffLegend } from './diffvi
 import { CLARITY_KEY, readClarity } from './prefs.js'; // Clarity defaults (sounds off)
 import './story.js'; // b1: first-screen story on the cold-open map (story.css)
 import { fitPlaceholder, surpriseTarget } from './picktips.js'; // quick-pick tips, search placeholder, "Surprise me"
+import { DISTANCES } from './distances.js'; // cited Gaia DR3 parallaxes (tools/fetch_distances.mjs)
 import { motionVerdict, paDelta } from './proof/logic.js'; // the Proof page's verdict rule, for the result plate
 import { groupOfDet, groupByDets, centreMasked, bestGroup, counterText, plannedIndexOf, resultState, storyCaption, shareParams, verdictClass, VIEW_MODES, earlyBlinkReady, heldFitText, groupById } from './viewerbits.js';
 
@@ -1240,9 +1241,11 @@ function motionDial(pa) { // 64 px, north up, east left, fixed-length arrow
 function motionHTML(sel, t, cat, gaia, same, looking) {
   const preset = !!t?.preset;
   const pmFrom = gaia || (cat && (cat.pmra || cat.pmdec) ? cat : null);
-  const plxFrom = gaia && gaia.plx > 0 ? gaia : (cat?.plx > 0 ? cat : null);
+  // RW Aurigae: SIMBAD's system entry still has the old Hipparcos parallax; the cited Gaia DR3 one wins (distances.js)
+  const dd = DISTANCES[t?.preset?.key], cited = dd ? { plx: dd.plx, plxErr: dd.plxErr, cite: dd.cite } : null;
+  const plxFrom = cited || (gaia && gaia.plx > 0 ? gaia : (cat?.plx > 0 ? cat : null));
   const rvFrom = gaia && Number.isFinite(gaia.rv) ? gaia : (cat && Number.isFinite(cat.rv) ? cat : null);
-  const srcName = r => r === gaia ? 'Gaia DR3' : preset ? 'SIMBAD (built-in)' : 'SIMBAD';
+  const srcName = r => r?.cite ? r.cite : r === gaia ? 'Gaia DR3' : preset ? 'SIMBAD (built-in)' : 'SIMBAD';
   const k = pmFrom ? kinematics({ ra: sel.ra, dec: sel.dec, pmra: pmFrom.pmra, pmdec: pmFrom.pmdec, pmraErr: pmFrom.pmraErr, pmdecErr: pmFrom.pmdecErr,
     plx: plxFrom?.plx, plxErr: plxFrom?.plxErr, rv: rvFrom?.rv }) : null;
   let more = '', h = '';
@@ -1261,7 +1264,7 @@ function motionHTML(sel, t, cat, gaia, same, looking) {
       row('Angular speed across the sky', `${k.arcsecYr.toFixed(k.arcsecYr < 0.1 ? 4 : 2)}″/yr · 1 pixel every ${fYears(k.yrPerPix)} years`, 'calc', null, 'x-only') +
       row('Shift in SPHEREx images', `one image pixel every ${fYears(k.yrPerPix)} years`, 'calc', null, 's-only');
     if (k.dist) {
-      h += row('Parallax', `${nf(plxFrom.plx, 3)}${pm(plxFrom.plxErr, 3)} mas`, 'cat', null, 'x-only') +
+      h += row('Parallax', `${nf(plxFrom.plx, 3)}${pm(plxFrom.plxErr, 3)} mas${plxFrom.cite ? ` · ${esc(plxFrom.cite)}` : ''}`, 'cat', null, 'x-only') +
         row('Distance (1000 / parallax)', `${k.dist.pc < 100 ? k.dist.pc.toFixed(3) : nf(k.dist.pc, 0)} pc · ${k.dist.ly < 100 ? k.dist.ly.toFixed(2) : nf(k.dist.ly, 0)} ly`, 'calc',
           ent(`${name}distance (1000 / parallax)${k.dist.weak ? ', unreliable: parallax under 5× its error' : ''}`, +k.dist.pc.toFixed(k.dist.pc < 100 ? 3 : 0), 'pc', '', `Worked out from the ${srcName(plxFrom)} parallax`, 'COMPUTED'), 'x-only') +
         row('Distance', `about ${k.dist.ly < 10 ? k.dist.ly.toFixed(1) : nf(Math.round(k.dist.ly), 0)} light years`, 'calc', null, 's-only');
