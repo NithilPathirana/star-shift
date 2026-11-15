@@ -84,6 +84,7 @@ html[data-motion=reduce] .rk, html[data-motion=reduce] .thin-rk { transition: no
 @media (hover:hover) and (pointer:fine){.track:hover .ghost{opacity:1}.track:hover .thumb{transform:scale(1.06)}.track.grab .ghost{opacity:0}}
 .serr{position:absolute;left:0;top:calc(100% + 12px);z-index:25;display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:min(560px,calc(100vw - 2*var(--gap)));padding:10px 12px;border-radius:12px;background:#F7F3ED;border:1px solid rgba(255,255,255,.7);box-shadow:var(--sh-contact),0 10px 24px -10px rgba(60,40,24,.4);font-size:.8125rem}
 .serr::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--coral);flex:none}
+.serr > span:first-child{flex:1 1 220px;min-width:0} /* the message wraps beside the dot, never leaving it alone on a line (Full function test map2-2) */
 .serr .key{min-height:32px;padding:0 10px;font-size:.8125rem}
 .search { position: relative; }
 .rk-art { -webkit-mask: linear-gradient(90deg, transparent 0, #000 18%); mask: linear-gradient(90deg, transparent 0, #000 18%); }

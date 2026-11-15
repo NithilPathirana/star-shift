@@ -65,7 +65,9 @@ async function load(q) {
     enqueue(pickImages(ims, perDet()));
   } catch (e) {
     if (e.name === 'AbortError' || ctrl.signal.aborted) return; // a newer search, or the watchdog (its own message)
-    if (e.notFound || !S.target) { setStatus(e.notFound ? e.message : `Could not find the star: ${e.message}`); return; }
+    if (e.notFound || !S.target) { // no star: drop the previous star's heading, motion line and tab title (Full function test)
+      S.target = null; $('tName').textContent = String(q?.name || q?.text || q || '').trim() || 'No star'; $('tCoords').textContent = ''; $('tPm').innerHTML = ''; document.title = 'Spectral Explorer · Star Shift';
+      setStatus(e.notFound ? e.message : `Could not find the star: ${e.message}`); return; }
     setStatus(''); archiveDown(ctrl, true);
   }
 }
