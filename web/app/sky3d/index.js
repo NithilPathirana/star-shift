@@ -64,12 +64,13 @@ vec4 fillCore(vec2 base) {
   }
   return hits >= 5 ? vec4(best, 1.0) : vec4(0.0);
 }
-vec3 sharpColor() {
+vec4 sharpColor() { // .a = coverage: 0 in a coverage gap (transparent texel) unless a star core is filled
   vec2 base = floor(vUv * texSize) + 0.5;
   vec4 c0 = textureLod(map, base / texSize, 0.0);
-  if (lum(c0) <= 0.02) { vec4 f = fillCore(base); if (f.a > 0.5) return f.rgb; }
+  if (lum(c0) <= 0.02) { vec4 f = fillCore(base); if (f.a > 0.5) return vec4(f.rgb, 1.0); }
   // Linear filtering must not pull a bright texel towards a neighbouring blank core (dark dots).
-  return nearest > 0.5 ? c0.rgb : (lum(c0) > 0.3 && fillSteps > 2 ? max(texture(map, vUv).rgb, c0.rgb) : texture(map, vUv).rgb);
+  vec3 c = nearest > 0.5 ? c0.rgb : (lum(c0) > 0.3 && fillSteps > 2 ? max(texture(map, vUv).rgb, c0.rgb) : texture(map, vUv).rgb);
+  return vec4(c, step(0.5, c0.a));
 }
 vec3 softColor() {
   vec2 p = vUv * texSize, o = floor(p / cellPx) * cellPx, lo = o + 0.5, hi = o + cellPx - 0.5, k = floor(p);
@@ -83,16 +84,17 @@ vec3 softColor() {
   return pow(acc / wsum, vec3(1.0 / 2.2)) * (1.0 - bp) + bp;
 }
 void main() {
-  vec3 c = sharpColor();
+  vec4 s = sharpColor(); vec3 c = s.rgb;
   if (soft > 0.0) c = mix(c, softColor(), soft);
-  outColor = vec4(c, alpha);
+  outColor = vec4(c, alpha * s.a); // gaps stay transparent, so the stage colour shows through
 }`;
 const COMP_VS = `out vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
 const COMP_FS = `out vec4 outColor; uniform sampler2D tex; uniform float alpha; uniform vec3 tint; uniform float sat; uniform float bp; in vec2 vUv;
 void main() {
-  vec3 c = max(texture(tex, vUv).rgb - bp, 0.0) / (1.0 - bp);
+  vec4 t = texture(tex, vUv); // premultiplied by the tile pass's coverage; transparent in gaps
+  vec3 c = max(t.rgb / max(t.a, 1e-4) - bp, 0.0) / (1.0 - bp);
   float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-  outColor = vec4(mix(vec3(l), c, sat) * tint, alpha);
+  outColor = vec4(mix(vec3(l), c, sat) * tint, alpha * t.a);
 }`;
 const STAR_VS = STEREO + `uniform float uScale; uniform float uAlpha; uniform float uMagLim;
 in vec3 aColor; in float aMag; out vec3 vColor; out float vA; out float vSpan;
@@ -630,7 +632,7 @@ export class Sky3D {
         }
         for (const e of extra) { e.mesh.material.uniforms.alpha.value = Math.min(1, (now - e.born) / TILE_FADE_MS); e.mesh.material.uniforms.nearest.value = nearest; sc.add(e.mesh); }
       }
-      r.setRenderTarget(this.rt); r.setClearColor(0x000000, 1); r.clear(); r.render(sc, cam);
+      r.setRenderTarget(this.rt); r.setClearColor(0x000000, 0); r.clear(); r.render(sc, cam); // transparent: gaps show the stage
       r.setRenderTarget(null);
       const u = this.compMat.uniforms;
       if (L.additive) { this.compMat.blending = THREE.AdditiveBlending; u.alpha.value = a; u.tint.value.set(...L.rgb); u.sat.value = 0; u.bp.value = SKY_FLOOR * ramp; }
