@@ -24,6 +24,8 @@ const PAGES = [
   ['/?cta', 7000],
   // IRSA outage (Sun 15 Nov): IRSA's relay routes fail; the status pill shows, a search for a non-saved name gets the calm note, the error screen has its saved-target chips
   ['/?irsa-down', 8000],
+  // extra 4 (spec-team-extras.md): Spot's Barnard example -> "Prepare a report" -> the report holds RA/Dec and the share link
+  ['/spot.html?field=barnard&click=269.44625,4.768778', 6000],
   // Your photo -> the sky (judges' suggestion C): the committed synthetic test image must solve, verified, in the browser
   ['/photo.html?sample', 6000],
   // fresh profile (Judging panel round 7): no consent bar and no tutorial modal; the hero card and CTA stay, with only the
@@ -208,6 +210,15 @@ async function run() {
         const n = await ev("(async () => { const q = document.getElementById('q'); q.value = 'Altair'; document.querySelector('form.search').requestSubmit(); await new Promise(r => setTimeout(r, 1200)); const e = document.getElementById('serr'); return { note: !e.hidden && e.classList.contains('calm'), chips: e.querySelectorAll('button[data-n]').length, saved: document.querySelectorAll('#openSaved button[data-n]').length }; })()");
         if (!n.note || n.chips < 5) errs.push(`IRSA blocked: no calm search note with the saved stars (${JSON.stringify(n)})`);
         if (n.saved < 5) errs.push(`the error screen lacks its saved-target chips (${n.saved})`);
+      }
+      if (path.startsWith('/spot.html?field=barnard&click=')) {
+        const ev = async (x) => (await send('Runtime.evaluate', { expression: x, returnByValue: true }, s)).result?.result?.value || {};
+        const REP = "(() => { const b = document.getElementById('prepRep'), r = document.getElementById('report'), t = document.getElementById('sum')?.textContent || '';"
+          + " if (b && r.hidden) b.click(); return { key: !!b, open: !r.hidden && r.getClientRects().length > 0, radec: /RA \\d\\dh \\d\\dm [\\d.]+s, Dec [+−]\\d\\d°/.test(t),"
+          + " link: /spot\\.html\\?field=barnard&click=26\\d\\.\\d+,4\\.\\d+/.test(t), irsa: /irsa\\.ipac\\.caltech\\.edu\\/ibe\\/data\\/spherex\\//.test(t), json: !!document.getElementById('repJson') }; })()";
+        let r = {};
+        for (let k = 0; k < 25; k++) { r = await ev(REP); if (r.open && r.radec && r.link) break; await sleep(1000); }
+        if (!r.key || !r.open || !r.radec || !r.link || !r.irsa || !r.json) errs.push(`Spot's "Prepare a report" did not give a report with RA/Dec, IRSA links and the share link (${JSON.stringify(r)})`);
       }
       if (path === '/photo.html?sample') { // a verified solve: centre near Orion's belt, and the SPHEREx key points there
         let d = {};

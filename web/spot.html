@@ -121,12 +121,21 @@
         <div class="sm-sheet-head"><b id="sheetTitle">Verify</b><button class="key" id="sheetClose" type="button">Close</button></div>
         <section class="glass sm-verdict" id="verdict" aria-live="polite" hidden></section>
         <section class="well sm-panel sm-report" id="report" aria-labelledby="repH" hidden>
-          <h2 id="repH">How to report it</h2>
+          <h2 id="repH" tabindex="-1">Report this find</h2>
+          <p class="sm-note" id="repPractice" hidden></p>
+          <p class="sm-note" id="repCaveat"></p>
+          <div class="sm-vkeys" role="group" aria-label="Report formats">
+            <button class="key" id="repByw" type="button">Copy for Backyard Worlds</button>
+            <button class="key" id="repMpc" type="button">Copy in MPC-style notes</button>
+            <button class="key" id="repJson" type="button">Download JSON</button>
+          </div>
+          <p class="sm-note">"MPC-style notes" is a plain list of the same facts, not the Minor Planet Center's 80-column format. Each report holds the sky position in every season, the dates (MJD), detectors and bands, the four checks, the colour estimate, the IRSA image links and <a id="repShare" href="spot.html">a link that reopens this field with this ring</a>.</p>
+          <div class="sm-sumhead"><b>Where and how to report</b></div>
           <ul class="sm-links" id="repLinks"></ul>
-          <div class="sm-sumhead"><b>Summary to paste</b><button class="key" id="copy" type="button">Copy</button></div>
-          <p class="sm-note s-only">Ready to paste: the ring's sky position, the two seasons' dates, the image IDs and what each check found. Expert mode shows it in full.</p>
+          <div class="sm-sumhead"><b>Full report (Markdown)</b><button class="key" id="copy" type="button">Copy</button></div>
+          <p class="sm-note s-only">Expert mode shows the full report here; the keys above copy or save it in Simple mode too.</p>
           <pre class="sm-sum num x-only" id="sum" tabindex="0"></pre>
-          <p class="sm-note">Star Shift never sends anything itself: you decide whether to report and where. The summary holds only sky positions, dates, image IDs and check results, nothing about you.</p>
+          <p class="sm-note">Star Shift never sends anything itself: you decide whether to report and where. The report holds only sky positions, dates, image IDs and check results, nothing about you.</p>
         </section>
         <section class="well sm-panel" aria-labelledby="susH">
           <div class="sm-sushead"><h2 id="susH">Suspects <span class="dim num" id="susCount">0 of 5</span></h2><button class="key sm-clear" id="clearAll" type="button" aria-label="Clear all suspects" hidden>Clear all</button></div>

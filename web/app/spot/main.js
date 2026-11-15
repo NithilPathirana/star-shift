@@ -17,7 +17,7 @@ import { notebookAdd, openNotebook } from '../notebook/notebook.js';
 import {
   LOAD_SETTINGS, MAX_SUSPECTS, QUICK, fieldByKey, pickSurprise, nearestField, fmtDay, seasonRange, fmtPos,
   ARTEFACT_KINDS, flagsAtSpot, evaluateFlags, decideSeasons, seasonPresence, STATE_WORD, checkTitle,
-  initChecklist, checklistStep, decideVerdict, summaryText, REPORT_LINKS, ASTEROID_HALF_WIDTH_DEG, offsetText, fieldCentre, passDistance,
+  initChecklist, checklistStep, decideVerdict, ASTEROID_HALF_WIDTH_DEG, offsetText, fieldCentre, passDistance,
   plainCheckText, simpleBodyName, parseClick, STAR_MATCH_ARCSEC, ASTEROID_MATCH_ARCSEC, dotAt, wingPeak, separatePeaks, fieldBand, framesForField, STAR_TIE_ARCSEC,
   PIXEL_ARCSEC, starLabel,
 } from './logic.js';
@@ -27,6 +27,7 @@ import { pickTip, fitPlaceholder } from '../picktips.js'; // chip tips (NASA's c
 import { isExpert } from '../expert.js'; // Simple / Expert: .x-only and .s-only twins below
 import { BOTHA_KEY, BOTHA_URL, bothaFrames, bothaGrid, bothaColour, bothaCard } from './botha.js'; // "Known asteroid" example: one night
 import { spotSnrHTML } from '../snr-ui.js'; // spec A: signal-to-noise line on the verdict card
+import { buildReport, reportMarkdown, bywText, mpcNotes, reportFileName, HOW_TO, CAVEAT } from './report.js'; // extra 4: "Report this find"
 
 // Both twins in the page; CSS from expert.js shows one. Identical texts render once.
 const twin = (simple, expert) => (simple === expert ? expert : `<span class="s-only">${simple}</span><span class="x-only">${expert}</span>`);
@@ -320,7 +321,7 @@ function addSuspect(x, y) {
   // as well as to the ring. Neither: the ring alone.
   const k = S.show ? 1 : 0, d = dotAt(blinked()[k], x, y) || wingPeak(blinked()[k], x, y);
   const dot = d ? (([dra, ddec]) => ({ ra: dra, dec: ddec, x: d.x, y: d.y, snr: d.snr, part: !!d.part, k }))(gridToWorld(S.grid, d.x, d.y)) : null;
-  const s = { id: nextId++, n, x, y, ra, dec, dot, check: initChecklist(), lines: {}, verdict: null, token: null };
+  const s = { id: nextId++, n, x, y, ra, dec, on: k, dot, check: initChecklist(), lines: {}, verdict: null, token: null };
   S.suspects.push(s); S.suspects.sort((a, b) => a.n - b.n);
   select(s.id); openSheet();
   runChecks(s);
@@ -498,7 +499,7 @@ function renderSide() {
   for (const b of $('sus').querySelectorAll('[data-rm]')) b.onclick = (e) => removeSuspect(+b.dataset.rm, e.detail === 0); // detail 0 = keyboard press
   if (focusId) $('sus').querySelector(`[data-id="${focusId}"]`)?.focus();
   const s = selected();
-  $('checkPanel').hidden = !s; $('report').hidden = s?.verdict?.kind !== 'unexplained';
+  $('checkPanel').hidden = !s; $('report').hidden = !(s?.reportOpen && s.verdict && s.verdict.kind !== 'pending');
   $('sheetTitle').textContent = s ? `Suspect ${s.n}` : 'Suspects';
   if (!s) { $('verdict').hidden = true; return; }
   $('chkN').textContent = s.n;
@@ -608,17 +609,38 @@ function paintThumbs(s) {
   }
 }
 
-function seasonInfo(st, i, s) {
-  const found = (s.lines.seasons?.per || [])[S.stacks.indexOf(st)]?.found;
-  const wls = st.frames.map(f => f.wavelengthUm).filter(Number.isFinite);
-  return { label: i === 0 ? 'First season' : 'Latest season', startDate: st.startDate, endDate: st.endDate, mjd: st.mjd, count: st.count,
-    wl: wls.length ? [Math.min(...wls), Math.max(...wls)] : null, obsids: st.frames.map(f => f.obsid),
-    found: found ? (([ra, dec]) => ({ ra, dec }))(gridToWorld(S.grid, found.x, found.y)) : null };
+// Extra 4, "Report this find" (report.js): every season as an epoch, with the dot's measured place in it
+// (the seasons check), its images and their IRSA cutout links. Built fresh each time the verdict re-renders.
+function reportFor(s) {
+  const per = s.lines.seasons?.per || [];
+  const epochs = S.stacks.map((st, i) => {
+    const f = per[i]?.found;
+    return { label: st.label, mjd: st.mjd, frames: st.frames, found: f ? (([ra, dec]) => ({ ra, dec }))(gridToWorld(S.grid, f.x, f.y)) : null };
+  });
+  return buildReport({ field: { key: S.field.key, label: S.field.label, query: S.field.query, centre: { ra: S.grid.ra0, dec: S.grid.dec0 } },
+    suspect: s, epochs, lines: s.check.lines, verdict: s.verdict, pageHref: location.href,
+    colour: s.colour ? { text: s.colour.text, ratio: ratioText(s.colour) ? `${ratioText(s.colour)}, Fν 3.8–5.0 µm over 0.75–2.4 µm` : '' } : null });
 }
-function summaryFor(s) {
-  return summaryText({ fieldLabel: S.field.label, centre: { ra: S.grid.ra0, dec: S.grid.dec0 }, suspect: s,
-    seasons: blinked().map((st, i) => seasonInfo(st, i, s)), lines: s.check.lines, verdict: s.verdict,
-    colourLine: s.colour ? `${COLOUR_LABEL}: ${s.colour.text}${ratioText(s.colour) ? ` (${ratioText(s.colour)}, Fν 3.8–5.0 µm over 0.75–2.4 µm)` : ''}. Supporting evidence only.` : '' });
+function fillReport(s) {
+  const r = s.report = reportFor(s);
+  $('repPractice').hidden = !r.practice;
+  $('repPractice').innerHTML = `<b>Practice report.</b> Star Shift explained this suspect (${esc(r.verdict.title)}), so there is nothing to report. The keys below show what a real report holds.`;
+  $('repCaveat').textContent = CAVEAT;
+  $('repLinks').innerHTML = HOW_TO.map(l => `<li><a href="${l.href}" target="_blank" rel="noopener">${esc(l.name)}</a> ${esc(l.forWhat)}. ${esc(l.steps)}</li>`).join('');
+  $('sum').textContent = reportMarkdown(r);
+  $('repShare').href = r.shareLink;
+}
+async function copyText(txt, btn, label, what) {
+  let ok = false;
+  try { await navigator.clipboard.writeText(txt); ok = true; } catch {
+    try { // older or locked-down browsers
+      const ta = Object.assign(document.createElement('textarea'), { value: txt }); ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.append(ta); ta.select(); ok = document.execCommand('copy'); ta.remove();
+    } catch { ok = false; }
+  }
+  if (!ok) { toast('Copy was blocked by the browser. Use "Download JSON", or switch on Expert to select the full report.'); return; }
+  btn.textContent = 'Copied'; toast(`${what} copied. Star Shift has not sent it anywhere.`);
+  setTimeout(() => { btn.textContent = label; }, 1600);
 }
 function notebookEntry(s) {
   const v = s.verdict, [A, B] = blinked();
@@ -669,7 +691,10 @@ function renderVerdict(s) {
     <div class="sm-snr" id="smSnr">${snrCard(s)}</div>
     ${retry ? `<div class="sm-vkeys">${retry}</div>` : ''}
     <div class="sm-record"><p><b>Record it.</b> Save this suspect's position, the two seasons, the four checks and the verdict to your lab notebook (kept on this device).</p>
-      <div class="sm-vkeys"><button class="key primary" type="button" id="saveNb">Save to notebook</button><button class="key" type="button" id="openNb">Open notebook</button></div></div>`;
+      <div class="sm-vkeys"><button class="key primary" type="button" id="saveNb">Save to notebook</button><button class="key" type="button" id="openNb">Open notebook</button></div></div>
+    <div class="sm-record"><p>${v.kind === 'unexplained' ? '<b>Report it?</b> Prepare a report (positions, dates, images, checks and a link back here) to paste or download. You decide where it goes; Star Shift never sends it.'
+      : '<b>Practice a report.</b> The checks explained this one, so there is nothing to report, but you can see what a report holds.'}</p>
+      <div class="sm-vkeys"><button class="key${v.kind === 'unexplained' ? ' primary' : ''}" type="button" id="prepRep" aria-controls="report" aria-expanded="${!!s.reportOpen}">Prepare a report</button></div></div>`;
   for (const b of el.querySelectorAll('[data-vretry]')) b.onclick = () => runChecks(s, b.dataset.vretry);
   $('saveNb').onclick = () => {
     try { notebookAdd(notebookEntry(s)); s.saved = true; $('saveNb').textContent = 'Saved to notebook'; toast(`Suspect ${s.n} saved to your notebook.`); }
@@ -677,20 +702,25 @@ function renderVerdict(s) {
   };
   if (s.saved) $('saveNb').textContent = 'Saved to notebook';
   $('openNb').onclick = () => openNotebook();
-  if (v.kind === 'unexplained') {
-    $('repLinks').innerHTML = REPORT_LINKS.map(l => `<li><a href="${l.href}" target="_blank" rel="noopener">${esc(l.name)}</a> ${esc(l.forWhat)}.</li>`).join('');
-    $('sum').textContent = summaryFor(s);
-  }
+  $('prepRep').onclick = () => {
+    s.reportOpen = true; fillReport(s); renderSide();
+    const rep = $('report'); rep.scrollIntoView({ behavior: reduce() ? 'auto' : 'smooth', block: 'start' });
+    $('repH').focus({ preventScroll: true });
+  };
+  if (s.reportOpen) fillReport(s);
 }
-$('copy').onclick = async () => {
-  const txt = $('sum').textContent;
-  try { await navigator.clipboard.writeText(txt); $('copy').textContent = 'Copied'; }
-  catch {
-    if (!isExpert()) { toast('Copy was blocked. Switch on Expert to see the summary and select it.'); return; }
-    const r = document.createRange(); r.selectNodeContents($('sum')); getSelection().removeAllRanges(); getSelection().addRange(r); $('copy').textContent = 'Selected: press Ctrl+C';
-  }
-  setTimeout(() => { $('copy').textContent = 'Copy'; }, 1600);
+const report = () => selected()?.report;
+$('repByw').onclick = () => { const r = report(); if (r) copyText(bywText(r), $('repByw'), 'Copy for Backyard Worlds', 'The Backyard Worlds text is'); };
+$('repMpc').onclick = () => { const r = report(); if (r) copyText(mpcNotes(r), $('repMpc'), 'Copy in MPC-style notes', 'The MPC-style notes are'); };
+$('repJson').onclick = () => {
+  const r = report(); if (!r) return;
+  try {
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([JSON.stringify(r, null, 2)], { type: 'application/json' })), download: reportFileName(r) });
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast(`Downloading ${reportFileName(r)}. Nothing was sent anywhere.`);
+  } catch { toast('The download was blocked by the browser.'); }
 };
+$('copy').onclick = () => copyText($('sum').textContent, $('copy'), 'Copy', 'The full report is');
 
 /* ------------------------------------------------------------------ stepper */
 function steps() {
