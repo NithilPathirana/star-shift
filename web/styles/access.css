@@ -1,0 +1,137 @@
+/* Colours and accessibility (web/app/access.js). Load this stylesheet LAST, after e.css and the page styles.
+   Part 1: what the options do to the whole app (attributes on <html>). Part 2: the panel itself.
+   AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+
+/* ===== 1a. Browser surfaces follow the palette (always on) ===== */
+html{accent-color:var(--copper);caret-color:var(--copper);scrollbar-color:var(--edge-strong) transparent}
+
+/* ===== 1b. A changed palette: the few places that were written as fixed colours ===== */
+html[data-ax-colors]:not([data-ax-colors=off]) ::selection{background:color-mix(in oklab,var(--copper-deco) 36%,transparent)}
+html[data-ax-colors]:not([data-ax-colors=off]) .key.primary,
+html[data-ax-colors]:not([data-ax-colors=off]) .switch[aria-checked=true]{border-color:color-mix(in oklab,var(--copper) 70%,#000)}
+html[data-ax-colors]:not([data-ax-colors=off]) .key.primary{box-shadow:inset 0 1px 0 color-mix(in oklab,var(--copper-key) 60%,#fff),var(--sh-contact),var(--sh-near)}
+html[data-ax-colors]:not([data-ax-colors=off]) :is(.tag-calc,.tag.comp){background:var(--ax-p-tint,rgba(194,122,67,.15))}
+html[data-ax-colors]:not([data-ax-colors=off]) :is(.pf-stage,.sp-stage) .tag.comp{color:var(--ring);background:color-mix(in oklab,var(--ring) 16%,transparent)}
+html[data-ax-colors]:not([data-ax-colors=off]) .pf-stage .tag.obs{color:var(--cross);background:color-mix(in oklab,var(--cross) 16%,transparent)}
+html[data-ax-colors]:not([data-ax-colors=off]) :is(#mapWrap,.pin,.hit):focus-visible{outline-color:var(--ring);box-shadow:none}
+@media (min-width:700px){ /* the result chip sits on the dark stage on wide screens */
+  html[data-ax-colors]:not([data-ax-colors=off]) .rp-v.agrees{color:var(--cross);border-color:color-mix(in oklab,var(--cross) 50%,transparent)}
+  html[data-ax-colors]:not([data-ax-colors=off]) .rp-v.differs{color:var(--ax-t-glow,#E0907A);border-color:color-mix(in oklab,var(--ax-t-glow,#E0907A) 50%,transparent)}
+  html[data-ax-colors]:not([data-ax-colors=off]) .rp-v.limit{border-color:color-mix(in oklab,var(--ring) 50%,transparent)}
+}
+
+/* ===== 1c. Text ===== (size is the app's own "Larger text" switch, 115%; beyond that the browser's zoom is the honest tool) */
+html[data-ax-face=system]{--font-ui:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+html[data-ax-face=wide] :where(p,li,dd,dt,td,th,small,figcaption,h1,h2,h3,label,.foot,.note,.opt,.ax-l){font-family:Verdana,"DejaVu Sans",Tahoma,Geneva,sans-serif} /* reading text only: the keys are too tight for a wider face */
+html[data-ax-leading=roomy] :where(p,li,dd,td,small,figcaption,.foot,.note){line-height:1.75}
+html[data-ax-spacing=wide] :where(p,li,dd,dt,td,th,small,figcaption,h1,h2,h3,label,.foot,.note){letter-spacing:.045em;word-spacing:.14em}
+html[data-ax-bold=on]{--muted:var(--ink-2)}
+html[data-ax-bold=on] body{font-weight:500}
+html[data-ax-bold=on] :where(p,small,dd,td,li,label,input){font-weight:500}
+
+/* ===== 1d. Seeing ===== */
+html[data-ax-soft=on]{--shell:#DCD4C8;--shell-hi:#E8E1D6;--shell-lo:#CEC5B8;--light:rgba(244,236,224,1);--well-top:#CCC3B5;--well-bot:#D9D1C5;
+  --glass-tint:rgba(238,231,221,.62);--glass-tint-2:rgba(232,224,213,.48);--muted:#574C43;--color-bg:#E8E1D6;--color-surface:#EFE9E0;--color-surface-2:#F1EBE3}
+html[data-ax-soft=on] .pop{--glass-tint:rgba(236,229,219,.96);--glass-tint-2:rgba(231,223,212,.95)}
+html[data-ax-links=on] a{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+html[data-ax-shapes=on] :is(.key,.pick,.nav-btn,.ax-preset){border-color:var(--ink-2)}
+html[data-ax-shapes=on] :is(.seg-btn,.ax-seg button){box-shadow:inset 0 0 0 1px var(--edge-strong)}
+html[data-ax-focus=on] :focus-visible{outline:3.5px solid var(--focus)!important;outline-offset:3px!important;box-shadow:0 0 0 7px var(--shell-hi)!important}
+html[data-ax-focus=on] :is(.stage,.pf-stage,.sp-stage) :focus-visible{outline-color:var(--ring)!important;box-shadow:0 0 0 7px rgba(21,17,14,.9)!important}
+
+/* marks, not colour alone: one drawn mark per meaning, in the text's own colour */
+html[data-ax-marks=on] :is(.rp-v.agrees,.rp-v.differs,.rp-v.nm,.rp-v.limit,.pf-chip.v-agree,.pf-chip.v-differ,.pf-chip.v-none,.pf-chip.v-limit,.tag-obs,.tag-calc,.tag.obs,.tag.comp,.tag.cat,.ax-sp-ok,.ax-sp-no)::before{
+  content:"";display:inline-block;width:.82em;height:.82em;margin-right:.34em;vertical-align:-.07em;background:currentColor;
+  -webkit-mask:var(--ax-m) center/contain no-repeat;mask:var(--ax-m) center/contain no-repeat}
+html[data-ax-marks=on] :is(.rp-v.agrees,.pf-chip.v-agree,.ax-sp-ok){--ax-m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5l2.6 2.6L10 3.4' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+html[data-ax-marks=on] :is(.rp-v.differs,.pf-chip.v-differ,.ax-sp-no){--ax-m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 2.5l7 7M9.5 2.5l-7 7' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")}
+html[data-ax-marks=on] :is(.rp-v.nm,.pf-chip.v-none){--ax-m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6h7' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")}
+html[data-ax-marks=on] :is(.rp-v.limit,.pf-chip.v-limit){--ax-m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M1.8 7.2c1.4-3 2.9-3 4.2-1.2s2.8 1.8 4.2-1.2' fill='none' stroke='%23000' stroke-width='1.9' stroke-linecap='round'/%3E%3C/svg%3E")}
+html[data-ax-marks=on] :is(.tag-obs,.tag.obs){--ax-m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='3.2'/%3E%3C/svg%3E")}
+html[data-ax-marks=on] :is(.tag-calc,.tag.comp){--ax-m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='3.3' fill='none' stroke='%23000' stroke-width='1.8'/%3E%3C/svg%3E")}
+html[data-ax-marks=on] .tag.cat{--ax-m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 3.4h7M2.5 6h7M2.5 8.6h7' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E")}
+
+/* ===== 1e. Touch ===== */
+html[data-ax-targets=on] :is(.key,.pick){min-height:44px;min-width:44px}
+html[data-ax-targets=on] :is(.seg-btn,.ax-seg button){height:44px}
+html[data-ax-targets=on] .switch::before{content:"";position:absolute;inset:-9px -6px}
+
+/* ===== 2. The panel: a side sheet, not a modal, so the page behind recolours while you choose ===== */
+.ax{position:fixed;inset:12px 12px 12px auto;margin:0;width:min(408px,calc(100vw - 24px));height:auto;max-height:none;padding:0;z-index:60;overflow:hidden;
+  border:1px solid var(--edge-strong);border-radius:var(--r-glass,20px);background:var(--shell-hi);color:var(--ink);font-family:var(--font-ui);font-size:.875rem;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 30px 56px -20px rgba(40,26,14,.5),0 6px 14px -4px rgba(40,26,14,.2);
+  opacity:0;transform:translateX(20px);transition:opacity 160ms var(--ease-out,ease-out),transform 280ms var(--ease-out,ease-out)}
+.ax[open]{display:flex;flex-direction:column}
+.ax.in{opacity:1;transform:none}
+html[data-motion=reduce] .ax{transition:none;transform:none}
+.ax-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 12px 11px 18px;border-bottom:1px solid var(--edge)}
+.ax-head h2{font:700 1.0625rem/1.2 var(--font-ui);letter-spacing:-.012em;text-wrap:balance}
+.ax-body{flex:1;min-height:0;overflow:hidden auto;overscroll-behavior:contain;padding:0 18px 20px;scrollbar-width:thin}
+.ax-body section + section{margin-top:20px;border-top:1px solid var(--edge)}
+.ax h3{margin:16px 0 6px;font:700 .9375rem/1.3 var(--font-ui);letter-spacing:-.005em;color:var(--ink)}
+.ax-p{max-width:46ch;font-size:.8125rem;line-height:1.5;color:var(--ink-2)}
+
+.ax-presets{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.ax-preset{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:9px;padding:11px 12px 12px;text-align:left;border-radius:13px;
+  border:1px solid var(--edge);background:linear-gradient(180deg,#FCFAF6,#EFE9E0);box-shadow:var(--sh-contact);color:var(--ink);
+  transition:transform var(--t-press,140ms) var(--ease-out,ease-out),box-shadow var(--t-toggle,180ms)}
+.ax-preset:active{transform:scale(.98)}
+.ax-preset[aria-checked=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink),var(--sh-near)}
+.ax-preset[aria-checked=true]::after{content:"";position:absolute;top:10px;right:10px;width:16px;height:16px;border-radius:50%;background:var(--ink)
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.4 8.3l2.4 2.4 4.8-5' fill='none' stroke='%23FFF8F0' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/16px no-repeat}
+.ax-dots{display:flex;padding-left:5px}
+.ax-dots i{width:20px;height:20px;margin-left:-5px;border-radius:50%;box-shadow:0 0 0 2px #F6F1EA,inset 0 1px 1px rgba(255,255,255,.35)}
+.ax-pn{font:600 .8125rem/1.25 var(--font-ui)}
+.ax-pn small{display:block;margin-top:2px;font:400 .75rem/1.35 var(--font-ui);color:var(--muted)}
+
+.ax-picks{margin-top:14px;border-top:1px solid var(--edge)}
+.ax-pick{display:grid;grid-template-columns:46px minmax(0,1fr) auto;align-items:center;gap:12px;min-height:54px;border-bottom:1px solid var(--edge);cursor:pointer}
+.ax-pick input{-webkit-appearance:none;appearance:none;width:46px;height:32px;padding:0;border:1px solid var(--edge-strong);border-radius:9px;background:none;cursor:pointer;
+  box-shadow:inset 0 1px 2px rgba(60,40,24,.28),0 1px 0 rgba(255,255,255,.8)}
+.ax-pick input::-webkit-color-swatch-wrapper{padding:0}
+.ax-pick input::-webkit-color-swatch{border:0;border-radius:8px}
+.ax-pick input::-moz-color-swatch{border:0;border-radius:8px}
+.ax-hex{font:500 .75rem/1 var(--font-num);font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.ax-l{font-weight:500;line-height:1.3}
+.ax-l small{display:block;margin-top:1px;font-size:.75rem;font-weight:400;line-height:1.35;color:var(--muted)}
+.ax-note{margin-top:10px;padding:8px 10px;border-radius:9px;font-size:.75rem;line-height:1.45;color:var(--ink-2);background:rgba(84,62,42,.08)}
+
+/* the specimen: real parts of the instrument, seen through each kind of colour vision */
+.ax-spec{margin:14px 0 8px;padding:12px 12px 8px;border-radius:14px;border:1px solid var(--edge);background:var(--shell);box-shadow:inset 0 1px 2px rgba(60,40,24,.16)}
+.ax-spec figcaption{margin-bottom:4px;font:600 .8125rem/1.3 var(--font-ui)}
+.ax-sp-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:34px}
+.ax-sp-row + .ax-sp-row{border-top:1px solid var(--edge)}
+.ax-sp-name{font-size:.75rem;line-height:1.3;color:var(--ink-2)}
+.ax-sp-set{display:flex;align-items:center;gap:6px;flex:none}
+.ax-sp-key{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:7px;font:600 .75rem/1 var(--font-ui);color:var(--on-copper);
+  background:linear-gradient(180deg,var(--copper-key),var(--copper));box-shadow:var(--sh-contact)}
+.ax-sp-tag{display:inline-flex;align-items:center;height:22px;padding:0 6px;border-radius:4px;font:700 .75rem/1 var(--font-ui);letter-spacing:.03em}
+.ax-sp-ok{color:var(--sage-ink);background:var(--sage-tint)}
+.ax-sp-no{color:var(--coral);box-shadow:inset 0 0 0 1px currentColor}
+.ax-sp-stage{position:relative;width:46px;height:24px;border-radius:7px;background:var(--stage)}
+.ax-sp-ring{position:absolute;left:8px;top:5px;width:14px;height:14px;border-radius:50%;border:1.5px dashed var(--ring)}
+.ax-sp-cross{position:absolute;right:9px;top:6px;width:12px;height:12px;
+  background:linear-gradient(var(--cross),var(--cross)) center/100% 1.5px no-repeat,linear-gradient(var(--cross),var(--cross)) center/1.5px 100% no-repeat}
+.ax-fine{margin-top:6px;font-size:.75rem;line-height:1.4;color:var(--muted)}
+
+.ax-row{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:46px;padding:4px 0}
+.ax-row.ax-stack{display:block;padding:8px 0 10px}
+.ax-seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;margin-top:7px;padding:3px;border-radius:12px}
+.ax-seg button{height:34px;padding:0 6px;border-radius:9px;font:600 .8125rem/1 var(--font-ui);color:var(--ink-2);white-space:nowrap;
+  transition:color var(--t-toggle,180ms),background var(--t-toggle,180ms),box-shadow var(--t-toggle,180ms)}
+.ax-seg button[aria-pressed=true]{color:var(--ink);background:linear-gradient(180deg,#FCFAF6,#EFE9E0);box-shadow:var(--sh-contact),var(--sh-near)}
+.ax-foot{display:flex;align-items:center;gap:8px;padding:10px 12px 12px 18px;border-top:1px solid var(--edge);background:var(--shell)}
+.ax-foot p{flex:1;font-size:.75rem;color:var(--muted)}
+
+/* the way in, inside the app's own Clarity panel */
+.pop .ax-open{width:100%;margin-top:14px;justify-content:flex-start;gap:9px}
+
+/* phone: a sheet from the bottom, leaving the top of the page in view */
+@media (max-width:699px){
+  .ax{inset:auto 0 0 0;width:100%;max-height:82dvh;border-radius:22px 22px 0 0;border-bottom:0;transform:translateY(28px);padding-bottom:env(safe-area-inset-bottom)}
+  .ax-body{padding:0 16px 18px}
+  .ax-head{padding-left:16px}
+  .ax-foot{padding-left:16px}
+}
+html[data-contrast=more] .ax{border-color:var(--ink)}
+html[data-contrast=more] :is(.ax-preset,.ax-spec,.ax-pick input){border-color:var(--edge-strong)}
