@@ -31,7 +31,7 @@ Given by Nithil on Sat 14 Nov 2026 (21:13): the name is **Star Shift** and the l
 
 The small cut and the favicon are derivatives drawn by the Design Studio. **Approved for the header and the favicon by Nithil (Sat 14 Nov 21:21) and by Kurucharan, the team designer (Sat 14 Nov 21:22, via the UI/UX chat).**
 
-**Logo credit (Master, Sun 15 Nov 09:04): one wording everywhere.** "Logo: AI-generated (SI) with ChatGPT; small version and favicon redrawn as SVG by Claude." The badge beside the symbol reads **SI** (the Space Apps FAQ calls AI "Super Intelligence"), at the same size and contrast as the old "AI" mark. The line must be visible, not tooltip-only, wherever the logo appears: the app (map credit and About), the pitch deck, the thumbnail still and the design files.
+**Logo credit (Master, Sun 15 Nov 09:04): one wording everywhere.** "Logo: SI-generated with ChatGPT; small version and favicon redrawn as SVG by Claude." The badge beside the symbol reads **SI** (the Space Apps FAQ calls AI "Super Intelligence"), at the same size and contrast as the old "AI" mark. The line must be visible, not tooltip-only, wherever the logo appears: the app (map credit and About), the pitch deck, the thumbnail still and the design files.
 
 **Rules**
 - **Name:** "Star Shift", two words, both capitalised. Set in Instrument Sans 700 at 16 px next to the symbol. No tagline is locked in.
@@ -524,13 +524,13 @@ History: rocket loaders v1 and v2 were dropped by Nithil at ~20:15 for a code-bu
 
 The videos are full-frame with their own sky, so there is no alpha channel, and MP4 is the fallback format (not animated WebP).
 
-**The picture** (AI-generated: modelled and rendered by Claude in Blender 5.2, Cycles)
+**The picture** (SI-generated, SI = AI: modelled and rendered by Claude in Blender 5.2, Cycles)
 - An astronaut in a realistic EVA-style suit with a gold visor rides a two-stage rocket with two side boosters.
 - Direction E colours only: ivory hull and suit, copper rings and engine bells, sage bands, warm graphite. The flame runs ivory → copper.
 - Background: the real NASA SPHEREx all-sky map (IRSA DR1), shown through the app's copper image scale.
 - Motion is slow and weighty: a slow camera drift around the rider, a few degrees of sway, a breathing flame, dust motes streaming past. Nothing bounces.
 - No NASA or agency logos, insignia or lettering, no real spacecraft likeness, no face (the visor is opaque).
-- A small **"AI-generated" mark is baked into the bottom-right corner of every frame** and the stills, so recordings keep it. The raw frames in `_build/` have no mark: never publish them.
+- A small **"SI-generated" mark is baked into the bottom-right corner of every frame** and the stills, so recordings keep it. The raw frames in `_build/` have no mark: never publish them.
 
 **Screen** (the component draws all of this; `.al` fills the stage)
 - The loop with `object-fit: cover`, fading in over the still (240 ms) once it plays.
@@ -539,7 +539,7 @@ The videos are full-frame with their own sky, so there is no alpha channel, and 
 - A **2 px hairline** along the bottom edge (`--ring`), scaled with real progress. Nothing rides a bar.
 - **Slow / retry:** a dark glass pill above the line ("IRSA is slow. 5 of 60 kept. Retrying 3 images" + **Retry now**). The video pauses until loading resumes.
 - **After 8 images:** a copper **Start watching** key rises in (300 ms).
-- **Caption, bottom-left, always visible:** "Animation: AI-generated (made by Claude in Blender) · Background: NASA SPHEREx all-sky map (IRSA)", 11 px `#EDE5DA` on a `rgba(11,9,7,.62)` scrim.
+- **Caption, bottom-left, always visible:** "Animation: SI-generated (made by Claude in Blender) · Background: NASA SPHEREx all-sky map (IRSA)", 11 px `#EDE5DA` on a `rgba(11,9,7,.62)` scrim.
 - **Exit** (Start watching, or the last image arriving): the text and hairline fade out (150 ms), the 1.5 s exit clip plays once on top (the rocket pulls away and the frame fades to the stage colour), then the loader fades out over 400 ms into the flip-book. `done()` returns the wait in ms: 1900 with the clip, 400 if the clip is not ready or the whole load took under 4 s (cached data: decoration never lengthens a short wait), 0 with Reduce motion. The flip-book starts playing when the loader has gone, not under it.
 - **Reduce motion:** the still, the same text and hairline, an instant cut. No video is loaded.
 - **If the media cannot load:** the component hands over to the scan loader (17b) when the page has it, replaying the images that already arrived.

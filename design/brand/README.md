@@ -9,7 +9,7 @@ Given by Nithil on Sat 14 Nov 2026. The rules are in `design/DESIGN.md` section 
 | `favicon.svg` | The small cut on an ivory tile, for the browser tab. Derivative, approved with the small cut |
 | `size-test-original-vs-small.png` | Both versions at 20-128 px on ivory and on the dark stage: why the small cut exists, and why the symbol never goes on dark |
 
-**Credit (one wording everywhere, Master, Sun 15 Nov):** "Logo: AI-generated (SI) with ChatGPT; small version and favicon redrawn as SVG by Claude."
+**Credit (one wording everywhere, Master, Sun 15 Nov):** "Logo: SI-generated with ChatGPT; small version and favicon redrawn as SVG by Claude."
 
 - The badge beside the symbol reads **SI** (Space Apps calls AI "Super Intelligence"; confirmed from the FAQ by Submission Check).
 - The credit line must be **visible** wherever the logo is shown (app, pitch deck, thumbnail still, design files). A tooltip alone is not enough.
