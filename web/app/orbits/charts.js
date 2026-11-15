@@ -31,61 +31,184 @@ function marker(shape, x, y, color, filled, size = 5) {
   return node('circle', { cx: x, cy: y, r: size, ...common });
 }
 
-export function renderOrbitPlot(container, objects, { mode = 'inner', now = new Date(), selectedId = null } = {}) {
+// Zoomable orbit diagram (Claude, Anthropic, for team Proper Motion): drawn in screen pixels, so labels keep their size;
+// wheel or pinch zooms towards the pointer, drag pans, +/−/Reset keys, and a scale bar in au that follows the zoom.
+const ZOOM_MIN = 0.3, ZOOM_MAX = 2000;
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function niceAu(raw) {
+  const p = 10 ** Math.floor(Math.log10(raw));
+  return [5, 2, 1].map(m => m * p).find(v => v <= raw) || p;
+}
+const fmtAu = v => (v >= 1 ? String(v) : String(Number(v.toPrecision(1))));
+
+function setupOrbitStage(container) {
   container.replaceChildren();
-  const width = 920, height = 520, cx = width / 2, cy = height / 2;
+  container.classList.add('orbit-zoomable');
+  const svg = node('svg', { class: 'orbit-svg', role: 'img', tabindex: '0' });
+  const keys = document.createElement('div');
+  keys.className = 'orbit-zoom-keys';
+  keys.setAttribute('role', 'group');
+  keys.setAttribute('aria-label', 'Zoom the orbit diagram');
+  const st = { svg, view: { z: 1, cx: 0, cy: 0 }, pointers: new Map(), anim: 0 };
+  const home = () => animateTo(st, { z: 1, cx: 0, cy: 0 });
+  for (const [text, label, act] of [['+', 'Zoom in', () => zoomBy(st, 1.6)], ['−', 'Zoom out', () => zoomBy(st, 1 / 1.6)], ['Reset', 'Reset zoom and pan', home]]) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'key stage-key orbit-zoom-key'; b.textContent = text; b.setAttribute('aria-label', label);
+    b.addEventListener('click', act);
+    keys.append(b);
+  }
+  container.append(svg, keys);
+
+  const local = e => { const m = svg.getScreenCTM(); return m ? new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse()) : { x: 0, y: 0 }; };
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    cancelAnimationFrame(st.anim);
+    const k = e.deltaMode === 1 ? 0.05 : e.deltaMode === 2 ? 1 : 0.0015;
+    zoomAt(st, local(e), Math.exp(-e.deltaY * k));
+  }, { passive: false });
+  svg.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    cancelAnimationFrame(st.anim);
+    st.pointers.set(e.pointerId, local(e));
+    try { svg.setPointerCapture(e.pointerId); } catch { /* synthetic pointers */ }
+    svg.classList.add('dragging');
+  });
+  svg.addEventListener('pointermove', e => {
+    if (!st.pointers.has(e.pointerId)) return;
+    const before = [...st.pointers.values()];
+    st.pointers.set(e.pointerId, local(e));
+    const after = [...st.pointers.values()];
+    if (after.length === 1) { panBy(st, after[0].x - before[0].x, after[0].y - before[0].y); return; }
+    const mid = ps => ({ x: (ps[0].x + ps[1].x) / 2, y: (ps[0].y + ps[1].y) / 2 });
+    const dist = ps => Math.hypot(ps[0].x - ps[1].x, ps[0].y - ps[1].y) || 1;
+    const m0 = mid(before), m1 = mid(after);
+    panBy(st, m1.x - m0.x, m1.y - m0.y, false);
+    zoomAt(st, m1, dist(after) / dist(before));
+  });
+  const end = e => { st.pointers.delete(e.pointerId); if (!st.pointers.size) svg.classList.remove('dragging'); };
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+  svg.addEventListener('keydown', e => {
+    const acts = { '+': () => zoomBy(st, 1.6), '=': () => zoomBy(st, 1.6), '-': () => zoomBy(st, 1 / 1.6), '0': home,
+      ArrowLeft: () => panBy(st, 40, 0), ArrowRight: () => panBy(st, -40, 0), ArrowUp: () => panBy(st, 0, 40), ArrowDown: () => panBy(st, 0, -40) };
+    if (acts[e.key]) { e.preventDefault(); acts[e.key](); }
+  });
+  if ('ResizeObserver' in window) new ResizeObserver(() => drawOrbit(st)).observe(svg);
+  return st;
+}
+
+function size(st) { return { W: st.svg.clientWidth, H: st.svg.clientHeight }; }
+function scaleOf(st, W, H, z = st.view.z) { return (Math.min(W, H) / 2 - 34) / st.span * z; }
+function clampView(st, v) {
+  const lim = Math.max(st.span, st.maxQ) * 1.5;
+  return { z: Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, v.z)), cx: Math.min(lim, Math.max(-lim, v.cx)), cy: Math.min(lim, Math.max(-lim, v.cy)) };
+}
+function setView(st, v) { st.view = clampView(st, v); drawOrbit(st); }
+function panBy(st, dx, dy, draw = true) {
+  const { W, H } = size(st); if (!W || !H) return;
+  const s = scaleOf(st, W, H);
+  st.view = clampView(st, { ...st.view, cx: st.view.cx - dx / s, cy: st.view.cy + dy / s });
+  if (draw) drawOrbit(st);
+}
+// Zoom by factor f, keeping the world point under p (diagram px) fixed.
+function zoomAt(st, p, f) {
+  const { W, H } = size(st); if (!W || !H || !Number.isFinite(f)) return;
+  const s0 = scaleOf(st, W, H);
+  const wx = st.view.cx + (p.x - W / 2) / s0, wy = st.view.cy - (p.y - H / 2) / s0;
+  const z = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, st.view.z * f));
+  const s1 = scaleOf(st, W, H, z);
+  setView(st, { z, cx: wx - (p.x - W / 2) / s1, cy: wy + (p.y - H / 2) / s1 });
+}
+function zoomBy(st, f) { animateTo(st, { ...st.view, z: st.view.z * f }); }
+// A short eased zoom for the keys; none at all with reduced motion.
+function animateTo(st, target) {
+  cancelAnimationFrame(st.anim);
+  target = clampView(st, target);
+  if (reduceMotion()) { setView(st, target); return; }
+  const from = { ...st.view }, t0 = performance.now(), dur = 200;
+  const step = now => {
+    const t = Math.min(1, (now - t0) / dur), e = 1 - (1 - t) ** 3;
+    const z = Math.exp(Math.log(from.z) + (Math.log(target.z) - Math.log(from.z)) * e);
+    setView(st, { z, cx: from.cx + (target.cx - from.cx) * e, cy: from.cy + (target.cy - from.cy) * e });
+    if (t < 1) st.anim = requestAnimationFrame(step);
+  };
+  st.anim = requestAnimationFrame(step);
+}
+
+export function renderOrbitPlot(container, objects, { mode = 'inner', now = new Date(), selectedId = null } = {}) {
+  const st = container._orbit || (container._orbit = setupOrbitStage(container));
   const earth = BUILT_IN_BY_NAME.get('earth');
   const plotted = objects.some(item => item.id === earth.id) ? objects : [earth, ...objects];
   const maxQ = Math.max(1.1, ...plotted.map(item => item.centralBody === 'Earth' ? 1.01 : (item.aAu || 0) * (1 + (item.eccentricity || 0))));
   const span = mode === 'inner' ? 2.2 : maxQ * 1.12;
-  const scale = (Math.min(width, height) / 2 - 34) / span;
-  const x = value => cx + value * scale;
-  const y = value => cy - value * scale;
-  const jd = dateToJulian(now);
-  const svg = node('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': `Top-down orbital paths, ${mode === 'inner' ? 'inner Solar System' : 'fit all selected objects'}` });
+  if (st.mode !== mode || st.span !== span || st.resetNext) { cancelAnimationFrame(st.anim); st.view = { z: 1, cx: 0, cy: 0 }; st.resetNext = false; }
+  Object.assign(st, { mode, span, maxQ, earth, objects, jd: dateToJulian(now), selectedId });
+  st.svg.setAttribute('aria-label', `Top-down orbital paths, ${mode === 'inner' ? 'inner Solar System' : 'fit all selected objects'}. Wheel or pinch to zoom, drag to pan.`);
+  drawOrbit(st);
+}
+// The Inner system / Fit all keys reset the zoom even when the mode is unchanged.
+export function resetOrbitView(container) { if (container._orbit) container._orbit.resetNext = true; }
 
-  for (const radius of [0.5, 1, 2, 5, 10, 20, 30].filter(value => value < span)) {
-    svg.append(node('circle', { cx, cy, r: radius * scale, class: radius === 1 ? 'earth-guide' : 'orbit-grid' }));
-    const label = node('text', { x: cx + radius * scale + 5, y: cy - 5, class: 'chart-label' });
-    label.textContent = `${radius} au`;
-    svg.append(label);
+function drawOrbit(st) {
+  const { svg } = st;
+  const { W, H } = size(st);
+  if (!W || !H || !st.earth) return;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.replaceChildren();
+  const s = scaleOf(st, W, H), { cx: vx, cy: vy } = st.view;
+  const x = value => W / 2 + (value - vx) * s;
+  const y = value => H / 2 - (value - vy) * s;
+  const sx = x(0), sy = y(0);
+  const inView = (px, py, m = 20) => px > -m && px < W + m && py > -m && py < H + m;
+  const pathOf = points => points.map((point, index) => `${index ? 'L' : 'M'}${x(point.x).toFixed(1)} ${y(point.y).toFixed(1)}`).join(' ');
+
+  const reach = Math.max(st.span, st.maxQ) * 1.2;
+  let nextLabelX = sx + 48; // ring labels sit on one line: skip any that would overlap the Sun's or the previous one
+  for (const radius of [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 30, 50]) {
+    const r = radius * s;
+    if (radius > reach || r < 22 || r > 6 * Math.max(W, H)) continue;
+    svg.append(node('circle', { cx: sx, cy: sy, r, fill: 'none', class: radius === 1 ? 'earth-guide' : 'orbit-grid' }));
+    if (sx + r + 5 >= nextLabelX && inView(sx + r + 5, sy - 5, 0)) {
+      nextLabelX = sx + r + 5 + 52;
+      const label = node('text', { x: sx + r + 5, y: sy - 5, class: 'chart-label' });
+      label.textContent = `${fmtAu(radius)} au`;
+      svg.append(label);
+    }
   }
 
-  const earthPath = orbitPoints(earth, jd);
-  svg.append(node('path', { d: earthPath.map((point, index) => `${index ? 'L' : 'M'}${x(point.x).toFixed(2)} ${y(point.y).toFixed(2)}`).join(' '), class: 'planet-orbit' }));
+  svg.append(node('path', { d: pathOf(orbitPoints(st.earth, st.jd)), class: 'planet-orbit' }));
 
-  objects.forEach((object, index) => {
+  st.objects.forEach((object, index) => {
     const style = SERIES[index % SERIES.length];
-    const points = orbitPoints(object, jd);
+    const points = orbitPoints(object, st.jd);
     if (!points.length) return;
-    const path = node('path', {
-      d: points.map((point, pointIndex) => `${pointIndex ? 'L' : 'M'}${x(point.x).toFixed(2)} ${y(point.y).toFixed(2)}`).join(' '),
-      fill: 'none', stroke: style.color, 'stroke-width': 1.5, 'stroke-dasharray': style.dash,
-      class: 'object-orbit',
-    });
+    const path = node('path', { d: pathOf(points), fill: 'none', stroke: style.color, 'stroke-width': 1.5, 'stroke-dasharray': style.dash, class: 'object-orbit' });
     path.append(node('title'));
     path.firstChild.textContent = `${object.name} orbit · ${object.source}`;
     svg.append(path);
-    const current = rawPosition(object, jd);
-    if (current && Math.abs(current.x) <= span * 1.1 && Math.abs(current.y) <= span * 1.1) {
-      svg.append(marker(style.marker, x(current.x), y(current.y), style.color, object.id === selectedId, 4.5));
+    const current = rawPosition(object, st.jd);
+    if (current && inView(x(current.x), y(current.y))) {
+      svg.append(marker(style.marker, x(current.x), y(current.y), style.color, object.id === st.selectedId, 4.5));
       const label = node('text', { x: x(current.x) + 8, y: y(current.y) - 8, fill: style.color, class: 'orbit-name' });
       label.textContent = object.name;
       svg.append(label);
     }
   });
 
-  svg.append(node('circle', { cx, cy, r: 5, class: 'sun-mark' }));
-  const sun = node('text', { x: cx + 10, y: cy + 4, class: 'orbit-name sun-name' });
-  sun.textContent = 'Sun';
-  svg.append(sun);
-  const barAu = span > 12 ? 5 : span > 4 ? 1 : 0.5;
-  const barY = height - 24;
-  svg.append(node('line', { x1: 28, y1: barY, x2: 28 + barAu * scale, y2: barY, class: 'scale-bar' }));
-  const scaleLabel = node('text', { x: 28, y: barY - 8, class: 'chart-label' });
-  scaleLabel.textContent = `${barAu} au`;
+  if (inView(sx, sy)) {
+    svg.append(node('circle', { cx: sx, cy: sy, r: 5, class: 'sun-mark' }));
+    const sun = node('text', { x: sx + 10, y: sy + 4, class: 'orbit-name sun-name' });
+    sun.textContent = 'Sun';
+    svg.append(sun);
+  }
+  const barAu = niceAu(Math.min(140, W * 0.3) / s);
+  const barY = H - 18, barX = 16;
+  svg.append(node('rect', { x: barX - 8, y: barY - 26, width: Math.max(barAu * s, 56) + 16, height: 34, rx: 6, class: 'scale-back' }));
+  svg.append(node('line', { x1: barX, y1: barY, x2: barX + barAu * s, y2: barY, class: 'scale-bar' }));
+  const scaleLabel = node('text', { x: barX, y: barY - 8, class: 'chart-label scale-label' });
+  scaleLabel.textContent = `${fmtAu(barAu)} au`;
   svg.append(scaleLabel);
-  container.append(svg);
 }
 
 function scaleFor(values, start, end, logarithmic) {

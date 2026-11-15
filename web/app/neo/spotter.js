@@ -37,6 +37,8 @@ const bothaCheckP = loadBothaCheck(AbortSignal.timeout(10000)).then((check) => {
   bothaCheck = check; bothaWords = bothaCheckText(check);
   const note = $('botha-check-note');
   if (bothaWords && note) note.replaceChildren(...twin(bothaWords.expert, bothaWords.simple));
+  const lead = $('neo-lede-check'); // page lead: the measured count, or the prediction-only words stay
+  if (bothaWords && lead) lead.textContent = `, ${bothaWords.lead}`;
 });
 
 function element(name, className, text) {

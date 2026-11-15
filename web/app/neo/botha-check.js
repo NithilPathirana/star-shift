@@ -7,7 +7,7 @@
 const fix1 = (v) => Number(v).toFixed(1);
 const monthName = (ym) => new Date(`${ym}-15T12:00:00Z`).toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 
-// { simple, expert, rowSimple, rowExpert } or null when the check does not support the wording.
+// { simple, expert, lead, rowSimple, rowExpert } or null when the check does not support the wording.
 export function bothaCheckText(check) {
   const s = check?.summary, c = check?.control;
   if (check?.verdict !== 'seen' || !s || !c || !Array.isArray(check.exposures) || !Array.isArray(c.images)) return null;
@@ -20,6 +20,7 @@ export function bothaCheckText(check) {
   return {
     simple: `The SPHEREx images taken then show a dot at that exact place in ${s.seen} of ${s.measured} pictures, and nothing there in ${c.measured} pictures of the same sky from other dates, so it is not a star that is always there.`,
     expert: `Our check (tools/botha_check.mjs): at JPL’s place seen from SPHEREx at each image’s mid-time, a dot in ${s.seen} of ${s.measured} images${dets ? ` (${dets})` : ''}, S/N ${fix1(s.snrMin)}–${fix1(s.snrMax)} in a ${check.method?.apertureRadiusPx ?? 1.5} px aperture, peak ${fix1(Math.min(...offs))}–${fix1(Math.max(...offs))} px from the prediction; the same sky in ${c.measured} images from ${months}: none${ctlSnr.length ? ` (S/N at most ${fix1(Math.max(...ctlSnr))})` : ''}.`,
+    lead: `and the SPHEREx images show a dot there (${s.seen} of ${s.measured})`,
     rowSimple: `SPHEREx images show a dot here (${s.seen} of ${s.measured})`,
     rowExpert: `Dot at this place in ${s.seen} of ${s.measured} SPHEREx images, S/N ${fix1(s.snrMin)}–${fix1(s.snrMax)}`,
   };

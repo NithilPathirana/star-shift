@@ -128,6 +128,15 @@
 .chart-stage .stage-key { min-height: 34px; color: var(--stage-text) !important; background: var(--ink) !important; border-color: rgba(255,235,210,.28); box-shadow: none !important; }
 .chart-stage .stage-key[aria-pressed="true"] { background: var(--ink-2) !important; color: #F3CFA6 !important; }
 .orbit-chart { min-height: 420px; }
+/* zoomable orbit diagram (Claude): drawn in screen px; touch-action only on the diagram */
+.orbit-chart.orbit-zoomable { position: relative; display: block; min-height: 0; }
+.orbit-chart svg.orbit-svg { display: block; width: 100%; height: clamp(300px, 62vh, 560px); max-height: none; overflow: hidden; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.orbit-chart svg.orbit-svg.dragging { cursor: grabbing; }
+.orbit-chart svg.orbit-svg:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 6px; }
+.orbit-zoomable .chart-label, .orbit-zoomable .orbit-name { font-size: 12px; }
+.orbit-zoomable .scale-back { fill: var(--stage); opacity: .88; }
+.orbit-zoom-keys { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
+.orbit-zoom-keys .orbit-zoom-key { min-width: 34px; justify-content: center; font-size: .875rem; }
 .planet-orbit { fill: none; stroke: rgba(255,246,232,.25); stroke-width: 1; }
 .sun-mark { fill: #FFF6E8; }
 .orbit-name { font: 500 11px/1 var(--font-num); }
@@ -176,6 +185,8 @@
   .section-heading { align-items: start; flex-direction: column; }
   .caught-heading .predict-note { flex: 0 1 auto; } /* the 360 px basis became a height in the column */
   .orbit-chart { min-height: 300px; }
+  .orbit-chart svg.orbit-svg { height: clamp(280px, 92vw, 440px); }
+  .orbit-zoom-keys .orbit-zoom-key { min-width: 44px; min-height: 44px; }
   .spotter-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .spotter-controls .primary { min-height: 44px; }
 }

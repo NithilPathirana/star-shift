@@ -1,7 +1,7 @@
 // AI-written (OpenAI Codex) for Star Shift, NASA Space Apps 2026
 import { AU_KM } from './kepler.js';
 import { BUILT_IN_BY_NAME, deriveObject, findBuiltIn, objectFromSbdb } from './model.js';
-import { renderOrbitPlot, renderScatter, SERIES } from './charts.js';
+import { renderOrbitPlot, resetOrbitView, renderScatter, SERIES } from './charts.js';
 
 const $ = id => document.getElementById(id);
 const LD_KM = 384_400;
@@ -257,6 +257,7 @@ $('object-search').addEventListener('submit', event => {
 
 document.querySelectorAll('[data-orbit-mode]').forEach(button => button.addEventListener('click', () => {
   state.orbitMode = button.dataset.orbitMode;
+  resetOrbitView($('orbit-chart'));
   document.querySelectorAll('[data-orbit-mode]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
   renderCharts();
 }));
