@@ -75,6 +75,8 @@ test('share link keeps target, scene, view mode and image date', () => {
   assert.equal(shareParams({ q: "Barnard's Star", scene: 'viewer', mode: 'blink', mjd: 61000.123 }).toString(), 'q=Barnard%27s+Star&scene=viewer&view=blink');
   assert.equal(shareParams({ ra: 10, dec: -5, scene: 'viewer', mode: 'play', mjd: 61000.12346 }).toString(), 'ra=10.00000&dec=-5.00000&scene=viewer&mjd=61000.1235');
   assert.equal(shareParams({ q: 'WISE 0855', scene: 'map' }).toString(), 'q=WISE+0855');
+  // Full function test #15: the detector picks the exact image (all six share an exposure time) and the held band is kept
+  assert.equal(shareParams({ q: "Barnard's Star", scene: 'viewer', mode: 'play', mjd: 60914.27691, det: 5, band: 'd56' }).toString(), 'q=Barnard%27s+Star&scene=viewer&mjd=60914.2769&det=5&band=d56');
   assert.equal(shareParams({ q: "Barnard's Star", scene: 'viewer', mode: 'play', mjd: 61000.5, band: 'all' }).toString(), 'q=Barnard%27s+Star&scene=viewer&mjd=61000.5000&band=all');
   assert.equal(shareParams({ q: 'WISE 0855', scene: 'map', band: 'd56' }).toString(), 'q=WISE+0855');
 });

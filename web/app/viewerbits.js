@@ -113,13 +113,13 @@ export function heldFitText({ shown, label, mo, heldDets, name }) {
 
 // The share link: target (q, or ra + dec), scene, view mode, the image date and, when it is not the
 // target's default, the held band (band=d56, or band=all for every band).
-export function shareParams({ q, ra, dec, scene, mode, mjd, band }) {
+export function shareParams({ q, ra, dec, scene, mode, mjd, det, band }) {
   const p = new URLSearchParams();
   if (q) p.set('q', q); else if (Number.isFinite(ra) && Number.isFinite(dec)) { p.set('ra', ra.toFixed(5)); p.set('dec', dec.toFixed(5)); }
   if (scene === 'viewer') {
     p.set('scene', 'viewer');
     if (mode && mode !== 'play') p.set('view', mode);
-    if (Number.isFinite(mjd) && (!mode || mode === 'play')) p.set('mjd', mjd.toFixed(4));
+    if (Number.isFinite(mjd) && (!mode || mode === 'play')) { p.set('mjd', mjd.toFixed(4)); if (det != null && det !== '') p.set('det', String(det)); } // all six detectors share an exposure time
     if (band) p.set('band', band);
   }
   return p;

@@ -646,9 +646,9 @@ $('copyInsp').onclick = e => { const p = curPos(); if (p) copyText(e.currentTarg
 function shareURL() {
   const q = V.query, f = V.F[Math.min(P.i, V.F.length - 1)], t = M.sel?.t;
   const name = q?.type === 'name' ? (t?.simbad && t.simbad.name === q.name && t.name ? t.name : q.name) : null; // "Vega", not "alf Lyr"
-  const held = HOLD.on && HOLD.group ? HOLD.group.id : null, band = held === bandDefault() ? null : held || 'all'; // only when not the default
+  const held = HOLD.on && HOLD.group ? HOLD.group.id : null, band = held || 'all'; // always: the opener must hold the same band (Full function test #15)
   const p = shareParams({ q: name, ra: q?.type === 'coords' ? q.ra : null, dec: q?.type === 'coords' ? q.dec : null,
-    scene, mode, mjd: !P.playing && f ? f.mjd : null, band });
+    scene, mode, mjd: !P.playing && f ? f.mjd : null, det: !P.playing && f && f.det !== 'stack' ? f.det : null, band });
   return `${location.origin}${location.pathname}?${p}`;
 }
 $('shareInsp').onclick = e => {
