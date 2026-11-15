@@ -93,7 +93,7 @@ function composite(stacks, R, n) {
 
 function page({ w, h, img, seasons, square, move }) {
   const legend = seasons.map(s => `<li><i style="background:${s.c}"></i><span>${s.dates}</span><small>${s.n} images</small></li>`).join('');
-  const imgPx = square ? 814 : 550, imgL = square ? (w - imgPx) / 2 : 40, imgT = square ? 40 : 40;
+  const imgPx = square ? 770 : 550, imgL = square ? (w - imgPx) / 2 : 40, imgT = square ? 40 : 40;
   const cell = imgPx / CROP;
   return `<!doctype html><html><head><meta charset="utf-8">
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -117,6 +117,8 @@ li small{font-size:14px;color:#B5A898}
 .br{display:inline-flex;align-items:center;gap:8px}
 .br img{width:48px;height:48px;display:block}
 .br em{font-style:normal;color:#EDE5DA}
+.lg{display:block;${square ? 'flex-basis:100%;text-align:right;margin-top:8px;font-size:16px' : 'margin-top:6px;font-size:14px'};color:#B5A898}
+.cr{${square ? 'flex-wrap:wrap' : ''}}
 .ai{display:inline-block;font:600 12px/1.3 "IBM Plex Mono",Consolas,monospace;letter-spacing:.03em;color:#B5A898;border:1px solid currentColor;border-radius:4px;padding:0 3px}
 </style></head><body>
 <img class="im" src="data:image/png;base64,${img.toString('base64')}" alt="">
@@ -128,7 +130,7 @@ li small{font-size:14px;color:#B5A898}
 ${square ? '' : `<p class="lede">The same ${(CROP * 6.15 / 60).toFixed(1)}′ patch of sky, each season's images stacked and tinted. Where the seasons overlap the light adds up to white; the copper edge (first season) and the blue edge (last) show the star moving ${move}.</p>`}
 <ul>${legend}</ul>
 </div>
-<div class="cr"><span><b>Data: NASA SPHEREx via IRSA</b></span>${square ? '' : '<br>'}<span class="br"><img src="${LOGO}" alt=""><em>Star Shift</em><span class="ai" title="Logo: AI-generated (Super Intelligence, SI)">SI</span>· team Proper Motion · NASA Space Apps 2026</span></div>
+<div class="cr"><span><b>Data: NASA SPHEREx via IRSA</b></span>${square ? '' : '<br>'}<span class="br"><img src="${LOGO}" alt=""><em>Star Shift</em><span class="ai" title="Logo: AI-generated (Super Intelligence, SI)">SI</span>· team Proper Motion · NASA Space Apps 2026</span><span class="lg">Logo: AI-generated (SI)</span></div>
 </body></html>`;
 }
 
