@@ -114,4 +114,21 @@ export function parseSbIdent(payload, { date = null, kind = null } = {}) {
   });
 }
 
+// The Small-Body Database search string for a sb_ident name. SBDB rejects the full name with its
+// parentheses ("541093 (2018 RJ4)" -> HTTP 400), so send the number, else the designation:
+// "541093 (2018 RJ4)" -> "541093", "(2013 AA145)" -> "2013 AA145", "C/2020 F3 (NEOWISE)" -> "C/2020 F3",
+// "29P/Schwassmann-Wachmann 1" -> "29P". AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+export function sbdbQuery(name) {
+  const s = String(name || '').trim();
+  let m = /^(\d+)(?:\s|$)/.exec(s);
+  if (m) return m[1];
+  m = /^\(([^)]+)\)$/.exec(s);
+  if (m) return m[1].trim();
+  m = /^(\d+[PI])(?:-[A-Z]+)?\//.exec(s);
+  if (m) return m[1];
+  m = /^([PCDXAI]\/\d{4} [A-Z]{1,2}\d*)/.exec(s);
+  if (m) return m[1];
+  return s.replace(/\s*\([^)]*\)\s*$/, '').trim() || s;
+}
+
 export { DEFAULT_DATES };

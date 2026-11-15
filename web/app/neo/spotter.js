@@ -1,6 +1,6 @@
 // AI-written (OpenAI Codex) for Star Shift, NASA Space Apps 2026
 import {
-  DEFAULT_DATES, buildSbIdentParams, observationDates, parseSbIdent,
+  DEFAULT_DATES, buildSbIdentParams, observationDates, parseSbIdent, sbdbQuery,
 } from './sb-ident.js';
 import { prebakedFetch } from '../../core/prebaked.js'; // the five demo targets answer from web/prebaked/ (Claude)
 import { SPHEREX_VISIBLE_V } from '../spot/logic.js'; // Spot's own faintness rule (Claude)
@@ -67,13 +67,13 @@ function coordinateToDegrees(value, isRa) {
   return (match[1] === '-' ? -total : total) * (isRa ? 15 : 1);
 }
 
-async function fetchIdentification(date, kind) {
+async function fetchIdentification(date, kind, signal) {
   const base = { ...view, date, kind };
-  const first = await prebakedFetch(`/jpl/sb_ident?${buildSbIdentParams(base)}`);
+  const first = await prebakedFetch(`/jpl/sb_ident?${buildSbIdentParams(base)}`, { signal });
   if (first.ok) return { rows: parseSbIdent(await first.json(), { date, kind }), retried: false };
 
   // JPL's current docs reject MPC 500 even though the product brief requests it.
-  const retry = await prebakedFetch(`/jpl/sb_ident?${buildSbIdentParams({ ...base, observer: 'geocentric-state' })}`);
+  const retry = await prebakedFetch(`/jpl/sb_ident?${buildSbIdentParams({ ...base, observer: 'geocentric-state' })}`, { signal });
   if (!retry.ok) throw new Error(`${date} ${kind === 'a' ? 'asteroids' : 'comets'}: MPC 500 returned HTTP ${first.status}; geocentric retry returned HTTP ${retry.status}`);
   return { rows: parseSbIdent(await retry.json(), { date, kind }), retried: true };
 }
@@ -117,7 +117,7 @@ function renderRows(rows) {
     const add = element('button', 'key compact-key', 'Add to comparison');
     add.type = 'button';
     add.addEventListener('click', () => {
-      window.dispatchEvent(new CustomEvent('starshift:add-orbit-object', { detail: { query: item.name } }));
+      window.dispatchEvent(new CustomEvent('starshift:add-orbit-object', { detail: { query: sbdbQuery(item.name), label: item.name } }));
       activateTab('orbits', true);
     });
     actions.append(timeLapse, add);
@@ -133,20 +133,47 @@ function dateRange() {
   return view.dates.filter(date => (!from || date >= from) && (!to || date <= to));
 }
 
+// A hung JPL never leaves the page silent (Full function test neo-2): after SLOW_MS the status says
+// JPL isn't answering yet and offers Retry while the request keeps going (a new field can take 1-2
+// minutes, then the relay caches it); after GIVE_UP_MS it stops. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+const SLOW_MS = 20000, GIVE_UP_MS = 150000;
+let currentRun = null;
+
+function spotterStatus(text, isError = false, retry = false) {
+  const status = $('spotter-status');
+  status.replaceChildren(document.createTextNode(text));
+  status.classList.toggle('error', isError);
+  if (retry) {
+    const button = element('button', 'key compact-key status-retry', 'Retry');
+    button.type = 'button';
+    button.addEventListener('click', () => { loadSpotter().catch(spotterFailed); });
+    status.append(' ', button);
+  }
+}
+
 async function loadSpotter() {
+  currentRun?.abort();
+  const run = new AbortController();
+  currentRun = run;
   const dates = dateRange();
   if (!dates.length) {
     renderRows([]);
-    $('spotter-status').textContent = 'No supplied SPHEREx observation dates fall inside this date range. Add dates with the dates= URL parameter.';
-    $('spotter-status').classList.add('error');
+    spotterStatus('No supplied SPHEREx observation dates fall inside this date range. Add dates with the dates= URL parameter.', true);
     return;
   }
-  $('spotter-status').classList.remove('error');
-  $('spotter-status').textContent = `Checking ${dates.length} distinct SPHEREx observation date${dates.length === 1 ? '' : 's'} with JPL…`;
-  const requests = dates.flatMap(date => ['a', 'c'].map(kind => fetchIdentification(date, kind)));
-  const results = await Promise.allSettled(requests);
+  $('spotter-count').textContent = '—';
+  spotterStatus(`Checking ${dates.length} distinct SPHEREx observation date${dates.length === 1 ? '' : 's'} with JPL…`);
+  const signal = AbortSignal.any([run.signal, AbortSignal.timeout(GIVE_UP_MS)]);
+  const slow = setTimeout(() => {
+    if (currentRun === run) spotterStatus('NASA/JPL isn’t answering yet. A field nobody has asked about can take a minute or two; still waiting.', true, true);
+  }, SLOW_MS);
+  let results;
+  try {
+    results = await Promise.allSettled(dates.flatMap(date => ['a', 'c'].map(kind => fetchIdentification(date, kind, signal))));
+  } finally { clearTimeout(slow); }
+  if (currentRun !== run) return; // Retry started a newer run
   const rows = results.flatMap(result => result.status === 'fulfilled' ? result.value.rows : []);
-  const failures = results.filter(result => result.status === 'rejected').map(result => result.reason.message);
+  const failures = results.filter(result => result.status === 'rejected').map(result => result.reason?.message || String(result.reason));
   const retried = results.filter(result => result.status === 'fulfilled' && result.value.retried).length;
   renderRows(rows.sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name)));
   if (failures.length) {
@@ -154,15 +181,20 @@ async function loadSpotter() {
     console.warn('JPL field checks failed:', failures);
     const allFailed = failures.length === results.length;
     if (allFailed) $('spotter-count').textContent = 'No answer';
-    $('spotter-status').textContent = allFailed
-      ? 'NASA/JPL’s asteroid service isn’t answering right now, so we can’t say which asteroids are in this field. This does not mean there are none. Please try again later.'
-      : `Showing ${rows.length} match${rows.length === 1 ? '' : 'es'}, but NASA/JPL didn’t answer for ${failures.length} of ${results.length} checks, so some may be missing. Please try again later.`;
-    $('spotter-status').classList.add('error');
+    spotterStatus(allFailed
+      ? 'NASA/JPL isn’t answering right now, so we can’t say which asteroids are in this field. This does not mean there are none.'
+      : `Showing ${rows.length} match${rows.length === 1 ? '' : 'es'}, but NASA/JPL didn’t answer for ${failures.length} of ${results.length} checks, so some may be missing.`, true, true);
   } else if (retried) {
-    $('spotter-status').textContent = `Loaded ${rows.length} matches. JPL rejected MPC code 500, so ${retried} checks used an equivalent geocentric state-vector retry.`;
+    spotterStatus(`Loaded ${rows.length} matches. JPL rejected MPC code 500, so ${retried} checks used an equivalent geocentric state-vector retry.`);
   } else {
-    $('spotter-status').textContent = `Loaded ${rows.length} known asteroids and comets predicted inside this field.`;
+    spotterStatus(`Loaded ${rows.length} known asteroids and comets predicted inside this field.`);
   }
+}
+
+function spotterFailed(error) {
+  console.warn('JPL field check failed:', error);
+  $('spotter-count').textContent = 'No answer';
+  spotterStatus('NASA/JPL isn’t answering right now, so we can’t say which asteroids are in this field.', true, true);
 }
 
 function activateTab(name, updateUrl = false) {
@@ -201,9 +233,4 @@ $('spotter-to').value = params.get('to') || view.dates.at(-1) || DEFAULT_DATES.a
 $('spotter-dates').textContent = view.dates.join(' · ');
 $('spotter-dates-plain').textContent = view.dates.map(plainMonth).join(' · ');
 activateTab(params.get('tab') === 'orbits' ? 'orbits' : 'spotter');
-loadSpotter().catch(error => {
-  console.warn('JPL field check failed:', error);
-  $('spotter-count').textContent = 'No answer';
-  $('spotter-status').textContent = 'NASA/JPL’s asteroid service isn’t answering right now, so we can’t say which asteroids are in this field. Please try again later.';
-  $('spotter-status').classList.add('error');
-});
+loadSpotter().catch(spotterFailed);

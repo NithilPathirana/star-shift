@@ -39,9 +39,15 @@ function utc(date) {
   return date.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }).replace(',', ' ·');
 }
 
-function setStatus(message, isError = false) {
-  $('neo-status').textContent = message;
+function setStatus(message, isError = false, retry = false) {
+  $('neo-status').replaceChildren(document.createTextNode(message));
   $('neo-status').classList.toggle('error', isError);
+  if (retry) { // (Claude) Full function test neo-2
+    const button = element('button', 'key compact-key status-retry', 'Retry');
+    button.type = 'button';
+    button.addEventListener('click', () => load());
+    $('neo-status').append(' ', button);
+  }
 }
 
 function td(label, content, className = '', title = '') {
@@ -237,13 +243,16 @@ async function openObject(designation, selectedId = null) {
   if (!drawer.open) drawer.showModal();
   try {
     const query = new URLSearchParams({ sstr: designation, 'phys-par': '1', 'ca-data': '1', 'ca-body': 'Earth', 'full-prec': '1' });
-    const response = await fetch(`/jpl/sbdb?${query}`);
+    const response = await fetch(`/jpl/sbdb?${query}`, { signal: AbortSignal.timeout(20000) });
     if (!response.ok) throw new Error(`relay returned HTTP ${response.status}`);
     const payload = await response.json();
     if (payload.list) throw new Error('the designation matched more than one object');
     renderDrawer(parseSbdb(payload));
   } catch (error) {
-    $('drawer-body').replaceChildren(element('p', '', `Object details could not be loaded: ${error.message}.`));
+    console.warn('SBDB details failed:', error); // plain words on the page (Claude)
+    $('drawer-body').replaceChildren(element('p', '', /more than one/.test(error.message)
+      ? 'JPL matched more than one object to this name, so details can’t be shown here.'
+      : 'NASA/JPL’s Small-Body Database isn’t answering right now. Please close this and try again in a minute.'));
   }
 }
 
@@ -259,15 +268,25 @@ function bindTable(tableId, attribute, sortKey, render) {
   });
 }
 
+let loadRun = null;
 async function load() {
   const recentStart = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
   const baseCad = { 'dist-max': '0.05', body: 'Earth', diameter: 'true', fullname: 'true' };
   const upcomingQuery = new URLSearchParams({ ...baseCad, 'date-min': 'now', 'date-max': '+60' });
   const recentQuery = new URLSearchParams({ ...baseCad, 'date-min': recentStart, 'date-max': 'now' });
+  // A hung JPL never leaves this section on "Loading…" (Full function test neo-2): a note with Retry
+  // after 20 s while the request keeps going, and a stop after 90 s. (Claude)
+  loadRun?.abort();
+  const run = new AbortController();
+  loadRun = run;
+  setStatus('Loading current NASA/JPL data…');
+  const signal = AbortSignal.any([run.signal, AbortSignal.timeout(90000)]);
+  const slow = setTimeout(() => { if (loadRun === run) setStatus('NASA/JPL isn’t answering yet; still waiting.', true, true); }, 20000);
   try {
     const [upcomingResponse, recentResponse, sentryResponse] = await Promise.all([
-      fetch(`/jpl/cad?${upcomingQuery}`), fetch(`/jpl/cad?${recentQuery}`), fetch('/jpl/sentry'),
-    ]);
+      fetch(`/jpl/cad?${upcomingQuery}`, { signal }), fetch(`/jpl/cad?${recentQuery}`, { signal }), fetch('/jpl/sentry', { signal }),
+    ]).finally(() => clearTimeout(slow));
+    if (loadRun !== run) return;
     for (const response of [upcomingResponse, recentResponse, sentryResponse]) {
       if (!response.ok) throw new Error(`relay returned HTTP ${response.status}`);
     }
@@ -283,8 +302,9 @@ async function load() {
     $('freshness').replaceChildren(element('span', 'tag tag-jpl', 'JPL'), element('span', '', freshnessText));
     setStatus(`Loaded ${state.approaches.length} close approaches and ${state.risks.length.toLocaleString('en-US')} Sentry objects.`);
   } catch (error) {
+    if (loadRun !== run) return; // Retry started a newer load
     console.warn('NASA/JPL threat data failed:', error); // details for us; plain words for the page (Claude)
-    setStatus('NASA/JPL’s asteroid service isn’t answering right now, so the current close approaches and impact-risk list can’t be shown. Please try again later.', true);
+    setStatus('NASA/JPL isn’t answering right now, so the current close approaches and impact-risk list can’t be shown.', true, true);
     for (const id of ['summary-torino-note', 'summary-closest-note']) $(id).textContent = 'Not available right now.';
     $('freshness').replaceChildren(element('span', 'tag tag-jpl', 'JPL'), element('span', '', 'NASA/JPL not answering right now'));
   }

@@ -184,11 +184,30 @@ function addObject(object) {
   renderAll();
 }
 
-async function loadJpl(query) {
-  setStatus(`Looking up “${query}” in the JPL Small-Body Database…`);
+// Plain-words lookup errors (Full function test neo-1). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+class LookupError extends Error {}
+const SBDB_TIMEOUT_MS = 20000;
+async function sbdbFetch(params) {
+  for (let attempt = 0; ; attempt++) {
+    let response;
+    try {
+      response = await fetch(`/jpl/sbdb?${params}`, { signal: AbortSignal.timeout(SBDB_TIMEOUT_MS) });
+    } catch (error) {
+      console.warn('SBDB lookup failed:', error);
+      throw new LookupError('NASA/JPL’s Small-Body Database isn’t answering right now. Please try again in a minute');
+    }
+    if (response.ok) return response;
+    // the relay says 502/503 when JPL is busy or refuses the name: ask once more, then explain
+    if (attempt === 0 && (response.status === 502 || response.status === 503)) { await new Promise(r => setTimeout(r, 1200)); continue; }
+    console.warn('SBDB lookup failed: relay HTTP', response.status);
+    throw new LookupError(`NASA/JPL’s Small-Body Database didn’t return “${params.get('sstr')}”. It may be busy, or it may not know that name. Please try again, or type its number or designation`);
+  }
+}
+
+async function loadJpl(query, label = query) {
+  setStatus(`Looking up “${label}” in the JPL Small-Body Database…`);
   const params = new URLSearchParams({ sstr: query, 'phys-par': '1', 'ca-data': '1', 'ca-body': 'Earth', 'full-prec': '1' });
-  const response = await fetch(`/jpl/sbdb?${params}`);
-  if (!response.ok) throw new Error(`relay returned HTTP ${response.status}`);
+  const response = await sbdbFetch(params);
   const payload = await response.json();
   if (payload.list?.length) {
     const options = payload.list.slice(0, 8).map(match => {
@@ -206,12 +225,14 @@ async function loadJpl(query) {
 }
 
 function showLookupError(error) {
-  setStatus(`The object could not be loaded: ${error.message}.`, true);
+  if (error instanceof LookupError) { setStatus(`${error.message}.`, true); return; }
+  console.warn('Orbit lookup failed:', error);
+  setStatus(`That object could not be added: ${error.message}.`, true);
 }
 
 window.addEventListener('starshift:add-orbit-object', event => {
   const query = String(event.detail?.query || '').trim();
-  if (query) loadJpl(query).catch(showLookupError);
+  if (query) loadJpl(query, String(event.detail?.label || query)).catch(showLookupError);
 });
 
 function populateControls() {
