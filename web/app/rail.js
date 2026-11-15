@@ -22,6 +22,8 @@ import { expertSwitch } from './expert.js';
     }
     // the logo credit, visible wherever the Pages sheet opens (Submission Check: 'SI' must be spelled out on screen)
     if (pop && !pop.querySelector('.sheet-credit')) pop.append(Object.assign(document.createElement('p'), { className: 'sheet-credit', textContent: 'Logo: AI-generated (SI) with ChatGPT; small version and favicon redrawn as SVG by Claude.' }));
+    // the source download (MIT), built by `npm run source-zip`; the Final Project link stays the site itself
+    if (pop && !pop.querySelector('.sheet-source')) { const s = Object.assign(document.createElement('p'), { className: 'sheet-credit sheet-source' }); s.innerHTML = '<a href="source.zip" download>Download the source code (MIT)</a>'; pop.append(s); }
   };
   if (document.querySelector('link[href$="styles/expert.css"]')) place();
   else { // inject the stylesheet, and place the switch once it has loaded (no unstyled flash)

@@ -63,7 +63,10 @@ export class SkyMap {
   init(ra, dec, fovDeg = 1) {
     if (this.ready) return this.ready;
     this.ready = (async () => {
-      const { default: A } = await import('../vendor/aladin-lite-3.8.2/aladin.js');
+      // Aladin Lite (LGPL) was removed with the switch to the 3D sky (sky3d/); this old map class is no longer
+      // loaded by any page. Kept only for its named exports (simbadCone, otypeName, CHANNEL_UM).
+      throw new Error('The Aladin sky map was removed; the app uses web/app/sky3d/');
+      const { default: A } = {};
       await A.init;
       this.A = A;
       this.aladin = A.aladin(this.el, { ...HIDE, survey: this.surveyURL(this.channel, BASE_TINT), log: false, hipsList: [], fov: fovDeg,

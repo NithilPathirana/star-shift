@@ -4,13 +4,15 @@
 // Usage: npm run source-zip   (commit first: uncommitted edits are not in the zip)
 import { execFileSync } from 'node:child_process';
 import { statSync } from 'node:fs';
+import { EXCLUDE, scan } from './source_scan.mjs';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const out = 'web/source.zip';
-const EXCLUDE = [':(exclude,glob)**/_build/**', ':(exclude,glob)**/*.log', ':(exclude,glob)**/.env*', ':(exclude,glob)**/*.env',
-  ':(exclude,glob)**/.dev.vars', ':(exclude)web/source.zip',
-  ':(exclude)web/prebaked']; // cached archive answers, not source: rebuilt by tools/export_prebaked.mjs
+// EXCLUDE (tools/source_scan.mjs) leaves out build folders, logs, env files and web/prebaked (the cached
+// archive answers, rebuilt by tools/export_prebaked.mjs); the scan checks exactly that file list first
+const problems = scan(root);
+if (problems.length) { console.error('source scan failed, no zip written:\n' + problems.join('\n')); process.exit(1); }
 const dirty = execFileSync('git', ['status', '--porcelain', '--untracked-files=no'], { cwd: root, encoding: 'utf8' }).trim();
 if (dirty) console.warn('note: uncommitted changes are NOT in the zip (it is built from HEAD):\n' + dirty);
 execFileSync('git', ['archive', '--format=zip', '--prefix=star-shift/', '-o', out, 'HEAD', '--', '.', ...EXCLUDE], { cwd: root, stdio: 'inherit' });
