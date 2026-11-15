@@ -13,7 +13,7 @@ import {
   X_RANGE, FEATURES, APERTURES, CUTOUT_DEG, PIXEL_ARCSEC, pickImages, aperturePhotometry, pixelSolidAngle, toMilliJy,
   apertureFlagged, whyNoPhotometry, niceTicks, logTicks, yRange, fmtValue, pointsToCSV, lightCheck,
 } from './logic.js';
-import { pickSource, pickSaved, BLEND_RADIUS } from '../lightcurve/logic.js';
+import { pickSource, pickSaved, BLEND_RADIUS, GROUPS } from '../lightcurve/logic.js';
 import { gaiaCone } from '../../core/resolve.js';
 import { prebakedFetch } from '../../core/prebaked.js';
 import { isExpert, onExpert } from '../expert.js'; // Simple / Expert (Master item 5)
@@ -25,9 +25,11 @@ const SHORT = { 'd-starlight': 'Star', 'd-coolstars': 'Cool', 'd-dust': 'Dust', 
 const S = {
   target: null, images: [], seasons: [], cuts: [], points: [], queue: [], queued: new Set(), done: 0, failed: 0, total: 0,
   aperture: APERTURES[1], season: 'all', log: false, ctrl: null, running: 0, hover: null,
-  inflight: new Set(), lost: [], lastArrive: 0, busy: 0, listed: false, checkKey: '',
+  inflight: new Set(), lost: [], lastArrive: 0, busy: 0, listed: false, checkKey: '', otherDets: new Map(), otherSrc: {},
 };
-const FRESH = () => ({ inflight: new Set(), lost: [], busy: 0, listed: false, checkKey: '' });
+const FRESH = () => ({ inflight: new Set(), lost: [], busy: 0, listed: false, checkKey: '', otherDets: new Map(), otherSrc: {} });
+const OTHER = '#8F857A'; // grey: a dot whose light is another source's (checkLight)
+const isOther = (p) => S.otherDets.has(p.detector);
 let tables = null;
 const tablesReady = fetch('core/data/spectral_wcs.json').then(r => r.json()).then(t => { tables = t; }).catch(() => {});
 
@@ -110,8 +112,13 @@ async function checkLight() {
   const key = `${t?.ra},${t?.dec}:${cuts.length}`;
   if (!t || key === S.checkKey) return;
   S.checkKey = key;
-  const lines = [];
-  for (const g of lightCheck(cuts, t)) {
+  const lines = [], groups = lightCheck(cuts, t);
+  // Panel round 2, A3: every dot of a group whose light is not the target's is drawn grey and hollow
+  // ("light from another source"); the same rule as the viewer's "Not detected here" row.
+  S.otherDets = new Map();
+  for (const g of groups) if (g.detect.state === 'offset' && g.sky) for (const d of GROUPS.find(q => q.id === g.id).dets) S.otherDets.set(d, g.id);
+  renderKey(); draw();
+  for (const g of groups) {
     if (g.detect.state !== 'offset' || !g.sky) continue;
     let src = null;
     if (t.presetKey) src = pickSaved(await savedNeighbours(t.name), g.sky); // demo targets: no network needed
@@ -121,9 +128,10 @@ async function checkLight() {
         .then(rows => pickSource(rows, g.sky)).catch(() => null) || pickSaved(await savedNeighbours(t.name), g.sky);
     }
     if (S.checkKey !== key) return; // another star since
+    S.otherSrc[g.id] = src;
     const where = g.id === 'short' ? 'Below 3.8 µm' : 'From 3.8 to 5 µm';
     const who = src ? `a background star (Gaia G ${src.g.toFixed(1)}, ${src.sepArcsec.toFixed(1)}″ away)` : `another source, centred ${g.sky.offArcsec.toFixed(1)}″ away`;
-    lines.push(`${where} the light here is ${who}, not ${esc(t.name || 'this star')}.` +
+    lines.push(`${where} the light here is ${who}, not ${esc(t.name || 'this star')}: those dots are grey and hollow.` +
       `<span class="x-only"> Light centre ${g.sky.offArcsec.toFixed(1)}″ (${(g.detect.offPx).toFixed(1)} px) from the predicted position, median of ${g.detect.hits} of ${g.detect.n} clean images${src?.id ? `; ${esc(src.id)}` : ''}.</span>`);
   }
   if (S.checkKey !== key) return;
@@ -252,7 +260,8 @@ function renderKey() {
   const dot = (filled, shape = 'circle') => `<svg width="14" height="14" viewBox="-7 -7 14 14"><g fill="${filled ? '#EDE5DA' : '#15110E'}" stroke="#EDE5DA" stroke-width="1.4">${shapePath(shape, 0, 0, 4.5)}</g></svg>`;
   const used = new Set(S.points.map(p => p.season));
   const seasons = S.seasons.filter(s => used.has(s.i) && (S.season === 'all' || S.season === s.i));
-  $('key').innerHTML = `<span>${dot(true)} clean aperture</span><span>${dot(false)} flagged pixels in the aperture</span>` +
+  const other = pts.some(isOther) ? `<span><svg width="14" height="14" viewBox="-7 -7 14 14"><circle r="4.5" fill="#15110E" stroke="${OTHER}" stroke-width="1.4"/></svg> light from another source</span>` : '';
+  $('key').innerHTML = `<span>${dot(true)} clean aperture</span><span>${dot(false)} flagged pixels in the aperture</span>` + other +
     seasons.map(s => `<span>${dot(true, SHAPES[s.i % SHAPES.length])} ${esc(s.label)}</span>`).join('') +
     `<span class="dim">Colour = band (wavelength) · ${esc(BAND_NOTE)}</span>`;
   const nFlag = pts.filter(p => p.flagged).length;
@@ -387,7 +396,8 @@ function draw() {
     if (!Number.isFinite(y) || y < m.t - 4 || y > m.t + ph + 4) continue;
     placed.push({ p, x, y });
     const shape = SHAPES[Math.max(0, p.season) % SHAPES.length];
-    const st = p.flagged ? `fill="#15110E" stroke="${p.color}" stroke-width="1.5"` : `fill="${p.color}" stroke="rgba(11,9,7,.6)" stroke-width=".75"`;
+    const st = isOther(p) ? `fill="#15110E" stroke="${OTHER}" stroke-width="1.5" data-other="1"`
+      : p.flagged ? `fill="#15110E" stroke="${p.color}" stroke-width="1.5"` : `fill="${p.color}" stroke="rgba(11,9,7,.6)" stroke-width=".75"`;
     s += `<g ${st}>${shapePath(shape, x, y, W < 700 ? 3 : 3.6)}</g>`; // ~6 px markers on a phone-width chart
   }
   if (S.hover) {
@@ -407,6 +417,7 @@ function showTip(h, ev) {
   tip.innerHTML = (isExpert()
     ? `<b>${fmtValue(p.mJy)} mJy</b> ± ${fmtValue(p.errMJy)} (background)<br>λ ${p.um.toFixed(3)} µm · D${p.detector} · ${esc(bandName(bandAt(p.um)) || (p.band ?? ''))}<br>${p.date} ${p.time} UTC${s ? ` · ${esc(s.label)}` : ''}<br>`
     : `<b>${fmtValue(p.mJy)} mJy</b><br>${p.um.toFixed(2)} µm · ${esc(bandName(bandAt(p.um)) || (p.band ?? ''))}<br>${plainDay}<br>`) +
+    (isOther(p) ? `Light from another source${(src => (src ? ` (Gaia G ${src.g.toFixed(1)}, ${src.sepArcsec.toFixed(1)}″ away)` : ''))(S.otherSrc[S.otherDets.get(p.detector)])}, not ${esc(S.target?.name || 'this star')}<br>` : '') +
     (p.flagged ? `Flagged in aperture: ${p.kinds.map(k => ({ cosmic: 'cosmic ray', overflow: 'overflow', scatter: 'scattered light', other: 'other' }[k])).join(', ')}<br>` : '') +
     `<span style="color:#B5A898">Click to open this image in the viewer</span>`;
   tip.hidden = false;
