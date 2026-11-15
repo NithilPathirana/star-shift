@@ -10,7 +10,7 @@ Type any sky position (or a star name) and see every SPHEREx image of that spot,
 > working under the team's direction. The team chose the idea, checked the science and approved the design.
 > Files carry an "AI-written code" header.
 >
-> Logo: AI-generated (SI) with ChatGPT; small version and favicon redrawn as SVG by Claude.
+> Logo: SI-generated with ChatGPT; small version and favicon redrawn as SVG by Claude.
 
 ## The web app (`web/`)
 - `index.html` + `styles/tokens.css` (all colours, type, spacing, radii, motion as CSS variables) + `styles/app.css`.

@@ -5,7 +5,7 @@
 // Writes evidence/still_barnard_1200x630.png (social/thumbnail) and evidence/still_barnard_1080.png.
 // The picture is real data, not AI-generated; credit "Data: NASA SPHEREx via IRSA". The Star Shift symbol
 // (web/brand/favicon.svg: the small cut on its ivory tile, never recoloured) sits beside the "Star Shift"
-// line with the small SI mark (Space Apps' word for AI), because the logo is AI-generated (DESIGN.md, thumbnail still).
+// line with the small SI mark (Space Apps' word for AI), because the logo is SI-generated (DESIGN.md, thumbnail still).
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 //
 // Usage: (server running on 8787) node tools/export_still.mjs [--crop 13]
@@ -130,7 +130,7 @@ li small{font-size:14px;color:#B5A898}
 ${square ? '' : `<p class="lede">The same ${(CROP * 6.15 / 60).toFixed(1)}′ patch of sky, each season's images stacked and tinted. Where the seasons overlap the light adds up to white; the copper edge (first season) and the blue edge (last) show the star moving ${move}.</p>`}
 <ul>${legend}</ul>
 </div>
-<div class="cr"><span><b>Data: NASA SPHEREx via IRSA</b></span>${square ? '' : '<br>'}<span class="br"><img src="${LOGO}" alt=""><em>Star Shift</em><span class="ai" title="Logo: AI-generated (Super Intelligence, SI)">SI</span>· team Proper Motion · NASA Space Apps 2026</span><span class="lg">Logo: AI-generated (SI)</span></div>
+<div class="cr"><span><b>Data: NASA SPHEREx via IRSA</b></span>${square ? '' : '<br>'}<span class="br"><img src="${LOGO}" alt=""><em>Star Shift</em><span class="ai" title="Logo: SI-generated (SI = Super Intelligence)">SI</span>· team Proper Motion · NASA Space Apps 2026</span><span class="lg">Logo: SI-generated</span></div>
 </body></html>`;
 }
 
