@@ -363,9 +363,40 @@ export function detectNear(stack, x, y, { search = DETECT_SEARCH_PX, minSnr = DE
     if (Number.isFinite(v) && v > best) { best = v; bx = i; by = j; }
   }
   if (best === -Infinity) return null;
+  // A dot is its own peak: no neighbour brighter and none masked. On the glow of a brighter source the
+  // brightest pixel near the ring is just its wing (E2E, Sun 15 Nov: empty sky beside RW Aur and the
+  // edge of R Dra read as "present in 3 of 3 seasons").
+  if (!isPeak(stack, bx, by)) return null;
   const c = centroid(stack, bx, by, 2);
   if (!c || !(c.snr >= minSnr) || Math.hypot(c.x - x, c.y - y) > search + 0.5) return null;
   return { x: c.x, y: c.y, snr: c.snr };
+}
+
+function isPeak(stack, x, y) {
+  const n = stack.n, v = stack.data[y * n + x];
+  for (let j = y - 1; j <= y + 1; j++) for (let i = x - 1; i <= x + 1; i++) {
+    if ((i === x && j === y) || i < 0 || j < 0 || i >= n || j >= n) continue;
+    const w = stack.data[j * n + i];
+    if (!Number.isFinite(w) || w > v) return false;
+  }
+  return true;
+}
+// Walk uphill from (x, y) to the top of whatever the spot sits on (masked pixels count as the top:
+// a saturated core). Returns { x, y } of that top, or null if (x, y) is already a peak.
+export function glowSource(stack, x, y) {
+  const n = stack.n; let cx = Math.round(x), cy = Math.round(y), moved = false;
+  for (let step = 0; step < 4 * n; step++) {
+    const v = stack.data[cy * n + cx]; let bx = cx, by = cy, bv = v, masked = false;
+    for (let j = cy - 1; j <= cy + 1; j++) for (let i = cx - 1; i <= cx + 1; i++) {
+      if (i < 0 || j < 0 || i >= n || j >= n || (i === cx && j === cy)) continue;
+      const w = stack.data[j * n + i];
+      if (!Number.isFinite(w)) { masked = true; bx = i; by = j; break; }
+      if (w > bv) { bv = w; bx = i; by = j; }
+    }
+    if (bx === cx && by === cy) break;
+    cx = bx; cy = by; moved = true; if (masked) break;
+  }
+  return moved ? { x: cx, y: cy } : null;
 }
 
 // stacks: [{ label, n, data }]; pointsFor(k): candidate grid positions in season k (the ring, plus a
@@ -373,17 +404,23 @@ export function detectNear(stack, x, y, { search = DETECT_SEARCH_PX, minSnr = DE
 export function seasonPresence(stacks, pointsFor) {
   const per = stacks.map((s, i) => {
     let found = null;
-    for (const [x, y] of pointsFor(i)) { const d = detectNear(s, x, y); if (d && (!found || d.snr > found.snr)) found = d; }
-    return { label: s.label, found };
+    const pts = pointsFor(i);
+    for (const [x, y] of pts) { const d = detectNear(s, x, y); if (d && (!found || d.snr > found.snr)) found = d; }
+    // no dot: is the ring on the glow of a brighter source more than the search radius away?
+    let glow = null;
+    if (!found && pts.length) { const [x, y] = pts[0], g = glowSource(s, x, y); if (g && Math.hypot(g.x - x, g.y - y) > DETECT_SEARCH_PX) glow = { ...g, arcsec: Math.hypot(g.x - x, g.y - y) * PIXEL_ARCSEC }; }
+    return { label: s.label, found, glow };
   });
   return { per, k: per.filter(p => p.found).length, N: per.length };
 }
 export function decideSeasons(pres) {
   const { k, N } = pres;
   if (k >= 2) return { status: 'clear', ...pres, text: `Present in ${k} of ${N} seasons.` };
-  return { status: 'explained', ...pres,
-    text: k === 1 ? `Seen as a clear dot in only 1 of ${N} seasons.` : `Not a clear dot in any of the ${N} seasons.`,
-    reason: k === 1 ? `it shows as a clear dot in only 1 of ${N} seasons` : `it is not a clear dot in any of the ${N} seasons` };
+  const glows = pres.per.filter(p => !p.found && p.glow), g = glows.length > pres.per.length / 2 ? glows[0].glow : null;
+  const glowTxt = g ? ` The ring sits on the glow of a brighter source about ${Math.round(g.arcsec)}″ away, not on a separate dot.` : '';
+  return { status: 'explained', ...pres, glow: !!g,
+    text: (k === 1 ? `Seen as a clear dot in only 1 of ${N} seasons.` : `Not a clear dot in any of the ${N} seasons.`) + glowTxt,
+    reason: g ? `the ring sits on the glow of a brighter source about ${Math.round(g.arcsec)}″ away` : k === 1 ? `it shows as a clear dot in only 1 of ${N} seasons` : `it is not a clear dot in any of the ${N} seasons` };
 }
 
 // ---------------------------------------------------------------- checklist state machine
@@ -454,7 +491,9 @@ export function decideVerdict(state) {
   const fp = by.flags.status === 'explained' ? [] : (by.flags.data?.per || []).filter(p => p.flagged);
   if (why.length && fp.length) why.push(`The archive also flags this spot in ${fp.map(p => `${p.flagged} of ${p.n} images of the ${p.label.toLowerCase()}`).join(' and ')}.`);
   if (why.length) {
-    return decided({ kind: 'artefact', title: 'Likely artefact', sub: '', body: ['This is most likely not a real object.', 'Here is why.'],
+    const onGlow = by.seasons.status === 'explained' && by.seasons.data?.glow;
+    return decided({ kind: 'artefact', title: onGlow ? 'Not a separate dot' : 'Likely artefact', sub: '',
+      body: onGlow ? ['This spot is the outer glow of a brighter source nearby, not an object of its own.', 'Here is why.'] : ['This is most likely not a real object.', 'Here is why.'],
       evidence: why, notRun, decidedBy: by.flags.status === 'explained' ? 'flags' : 'seasons' });
   }
   if (running.length) return { kind: 'pending', running }; // "Unexplained" waits for every check

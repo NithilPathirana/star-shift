@@ -224,6 +224,21 @@ test('a dot is found near the ring; seasons present decide the check', () => {
   assert.equal(one.status, 'explained'); assert.match(one.text, /only 1 of 2 seasons/);
 });
 
+test('the glow beside a bright star is not a dot (E2E Sun 15 Nov: RW Aur / R Dra halo read as present in 3 of 3)', () => {
+  const n = 25, glow = (dot) => { const data = new Float32Array(n * n); for (let j = 0; j < n; j++) for (let i = 0; i < n; i++)
+    data[j * n + i] = 1 + ((j * n + i) * 7919 % 13) / 100 + 3000 * Math.exp(-((i - 12) ** 2 + (j - 12) ** 2) / (2 * 2.5 ** 2)) + 200 / (1 + ((i - 12) ** 2 + (j - 12) ** 2) / 4);
+    data[12 * n + 12] = NaN; // saturated, masked core
+    if (dot) for (const [dx, dy, v] of [[0, 0, 400], [1, 0, 120], [-1, 0, 120], [0, 1, 120], [0, -1, 120]]) data[(dot[1] + dy) * n + dot[0] + dx] += v;
+    return { n, data, label: 'S' }; };
+  assert.equal(L.detectNear(glow(null), 12, 5), null, 'the wing of the star is not a dot');
+  const d = L.decideSeasons(L.seasonPresence([glow(null), glow(null), glow(null)], () => [[12, 5]]));
+  assert.equal(d.status, 'explained'); assert.equal(d.glow, true); assert.match(d.text, /glow of a brighter source about 43″ away/);
+  assert.ok(L.detectNear(glow([4, 12]), 4, 12), 'a real compact dot on the far glow is still found');
+  const v = L.decideVerdict({ lines: [{ id: 'flags', status: 'clear', text: '', data: { per: [] } }, { id: 'star', status: 'clear', text: '' },
+    { id: 'asteroid', status: 'clear', text: '' }, { id: 'seasons', status: 'explained', text: d.text, data: d }] });
+  assert.equal(v.title, 'Not a separate dot'); assert.notEqual(v.kind, 'unexplained');
+});
+
 // ---------- summary and words
 test('the report summary holds the sky facts and nothing about the user', () => {
   const s = finished({ flags: 'clear', star: 'clear', asteroid: 'clear', seasons: 'clear' });
