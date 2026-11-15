@@ -85,11 +85,9 @@ export function createTelescopes(ctx) {
     return out;
   }
 
-  function hatch(g, w, h, dpr) {
-    g.fillStyle = '#211b16'; g.fillRect(0, 0, w, h);
-    g.strokeStyle = '#6b5d50'; g.lineWidth = 1 * dpr; g.beginPath();
-    for (let x = -h; x < w; x += 7 * dpr) { g.moveTo(x, h); g.lineTo(x + h, 0); }
-    g.stroke();
+  // outside the SPHEREx cutout: the same calm flat no-data fill as the viewer (erender.js), no hatching
+  function hatch(g, w, h) {
+    g.fillStyle = '#100D0B'; g.fillRect(0, 0, w, h);
   }
 
   function sizePanels() {
@@ -203,7 +201,7 @@ export function createTelescopes(ctx) {
     if (id === 'spherex') {
       cap.innerHTML = `<b>SPHEREx</b> ${chip('SPACE')} in orbit · ${dateOf(f?.date)} · ${f?.um ? f.um.toFixed(2) + ' µm' : '—'}${f?.det ? ` (D${f.det})` : ''} · ${px || '6.15″ pixels'}`;
       const cut = V.grid ? Math.round(V.grid.n * V.grid.scale) : null, wide = cut && T.field && T.field.sizeArcsec / (ctx.zoom?.() || 1) > cut + 1;
-      sub.textContent = f ? `Follows the flip-book: image ${P.i + 1} of ${V.F.length}, on the viewer's 6.15″ grid.${wide ? ` The SPHEREx cutout is ${cut}″ wide; the hatched area is outside it.` : ''}` : '';
+      sub.textContent = f ? `Follows the flip-book: image ${P.i + 1} of ${V.F.length}, on the viewer's 6.15″ grid.${wide ? ` The SPHEREx cutout is ${cut}″ wide; the darker area is outside it.` : ''}` : '';
       return;
     }
     const r = T.res[id], d = r?.data, m = d?.meta;
