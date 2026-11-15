@@ -451,6 +451,8 @@ html[data-motion=reduce] .state.loader2 { transition: none; }
 
 /* Work order 7: band colours always come with text (timeline head, map key) */
 #tlDate { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+@container dock (max-width: 520px) { .transport { flex: 0 1 auto; min-width: 0; } .counter { min-width: 0; overflow-wrap: anywhere; } } /* "Last season · 17 images" (A7) wraps instead of widening the dock */
+@container dock (max-width: 520px) { .tl-head { flex-wrap: wrap; white-space: normal; row-gap: 2px; } #tlDate { margin-left: auto; white-space: nowrap; } } /* Larger text on a phone: the season and the date wrap, never widen the page */
 .tl-band { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-ui, inherit); font-weight: 600; color: var(--ink-2); }
 .tl-band i { width: 10px; height: 10px; border-radius: 3px; background: var(--rc); box-shadow: 0 0 0 1px rgba(40,28,18,.25); flex: none; }
 .tl-band::after { content: "·"; margin-left: 3px; color: var(--muted); font-weight: 400; }
@@ -492,6 +494,7 @@ html[data-motion=reduce] .state.loader2 { transition: none; }
 .rp-res > .s-only > span:not([class]) { font: 500 .8125rem/1.4 var(--font-ui); }
 .rp-res .nw { white-space: nowrap; } /* a "·" moves to the next line with its tag, never dangles at a line end */
 .nb-plus.nb-pos { width: auto; height: 28px; margin-top: 10px; padding: 0 10px; border-radius: 999px; white-space: nowrap; font-size: .75rem; } /* "+ Notebook": no orphan "+" (A11) */
+@media (max-width: 699px) { .nb-plus.nb-pos { height: 44px; padding: 0 14px; } .nb-plus.nb-pos::before { left: 0; width: 100%; height: 30px; margin: -15px 0 0; border-radius: 999px; } }
 .rp.measuring .rp-res { background-image: linear-gradient(90deg, rgba(227,168,107,.22) var(--p, 0%), transparent var(--p, 0%)); }
 .rp-res.swap { animation: rp-swap 160ms var(--ease-out); }
 @keyframes rp-swap { from { opacity: 0; } }
