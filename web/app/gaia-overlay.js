@@ -86,7 +86,7 @@ export function createGaiaOverlay({ cv, sw, note, base, view }) {
     svg.innerHTML = `<g fill="none" stroke="rgba(0,0,0,.55)" stroke-width="3">${pts.map(p => `<circle ${p}/>`).join('')}</g>`
       + `<g fill="none" stroke="#8BE9FF" stroke-width="1.4">${pts.map(p => `<circle ${p}/>`).join('')}</g>`;
     svg.dataset.n = marks.length;
-    say(marks.length ? `${marks.length} Gaia DR3 star${marks.length === 1 ? '' : 's'} circled, moved from 2016 to this image's date.` : 'No Gaia DR3 star bright enough in this patch.');
+    say(marks.length ? `${marks.length} Gaia DR3 star${marks.length === 1 ? '' : 's'} circled, moved from 2016 to this image's date. Gaia sees visible light: many of them are too faint at these infrared wavelengths to show as a dot.` : 'No Gaia DR3 star bright enough in this patch.');
   }
 
   function set(v) {
