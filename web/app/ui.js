@@ -324,8 +324,17 @@ function refilter() {
   if (V.status === 'ready') { restack(); remeasure(); if (mode !== 'play' && mode !== 'telescopes' && V.stacks.length < 2) setMode('play'); }
   if (!V.F.length && V.FA.length) toast('Every image is hidden by the flag filter. Untick a box under FLAGS to bring them back.');
   buildTimeline(); // sets V.seasons for the count below
-  $('d-n').textContent = `${V.F.length} shown of ${V.total}${V.FA.length > V.F.length ? ` · ${V.FA.length - V.F.length} hidden by flags` : ''} · ${V.seasons.length} season${V.seasons.length === 1 ? '' : 's'}`;
+  $('d-n').textContent = countText();
   onFrame(P.i);
+}
+// The "Images" line (Master item 1): up to SETTINGS.max images spread evenly over time out of all IRSA found
+// (data.js spread()), then what the user's flag filter hides and what failed.
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+function countText() {
+  const got = V.FA.length, hid = got - V.F.length, s = V.seasons.length;
+  const head = V.planned < V.total ? `${got} of ${V.total} images used (spread evenly over time to keep it quick)`
+    : V.failed ? `${got} of ${V.total} images used` : `All ${got} images used`;
+  return `${head}${V.failed ? ` · ${V.failed} couldn't be fetched` : ''}${hid > 0 ? ` · ${hid} hidden by your flag filter` : ''} · ${s} season${s === 1 ? '' : 's'}`;
 }
 function step(d) { if (mode !== 'play') setMode('play'); P.pause(); const before = seasonOf(P.i); P.set(P.i + d, true); Snd.play(seasonOf(P.i) !== before ? 'season' : 'scrub'); }
 // startViewTransition with its promises handled: a transition that is skipped or aborted (another
@@ -491,14 +500,16 @@ function load(query, label) {
       restack(); // seasons stacked from the images the flag filter keeps
       remeasure();
       buildTimeline(); findOther(); // buildTimeline sets V.seasons for the count below
-      $('d-n').textContent = `${V.F.length} shown of ${V.total}${V.FA.length > V.F.length ? ` · ${V.FA.length - V.F.length} hidden by flags` : ''} · ${V.seasons.length} season${V.seasons.length === 1 ? '' : 's'}`;
+      $('d-n').textContent = countText();
       // ?mjd= (Archive/Spectrum "Play" links): show the image nearest that date and stay paused there
       const held = Number.isFinite(holdMjd) && V.F.length > 0;
       if (held) { const m = holdMjd; holdMjd = null; let b = 0; V.F.forEach((f, k) => { if (Math.abs(f.mjd - m) < Math.abs(V.F[b].mjd - m)) b = k; }); P.pause(); P.set(b, true); }
       onFrame(P.i); Snd.play('confirm');
       // V.FA = every image loaded; V.F = the ones the user's flag filter keeps (QA, Sun: say so, so the counts match Proof)
+      // Master item 1: say that up to 120 images are used, spread evenly in time, out of all IRSA found
       const hid = V.FA.length - V.F.length, hidTxt = hid > 0 ? ` ${hid} hidden by your flag filter (FLAGS ▾ to change).` : '';
-      toast(V.failed ? `${V.FA.length} images are in.${hidTxt} ${V.failed} couldn't be fetched (IRSA busy); Retry later fills them.` : `All ${V.FA.length} images are in.${hidTxt}`);
+      const usedTxt = V.planned < V.total ? `${V.FA.length} of the ${V.total} images IRSA has here are in (spread evenly over time to keep it quick).` : V.failed ? `${V.FA.length} of ${V.total} images are in.` : `All ${V.FA.length} images are in.`;
+      toast(`${usedTxt}${hidTxt}${V.failed ? ` ${V.failed} couldn't be fetched (IRSA busy); Retry later fills them.` : ''}`);
       setTimeout(() => { if (!set.motion && !P.playing && !held) P.play(); }, leaveWait);
     } else if (e.type === 'ERROR' || e.type === 'NOT_FOUND') {
       V.status = 'error'; $('thin').hidden = true;
