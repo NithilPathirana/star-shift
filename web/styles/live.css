@@ -441,3 +441,6 @@ html[data-motion=reduce] .state.loader2 { transition: none; }
   .mb-row { margin-top: 6px; }
   .mb-row .key, .be-see { min-height: 44px; }
 }
+/* 'To see it' line in the Where to look box (web/app/seeit.js) */
+.cd-look .cd-look-see{margin:6px 0 0;font-weight:600;font-size:.8125rem;color:var(--ink)}
+.cd-look .cd-look-see[data-see=faint]{color:var(--copper-ink)}

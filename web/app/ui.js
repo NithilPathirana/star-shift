@@ -18,7 +18,8 @@ import { isExpert } from './expert.js';
 import { propagate, separationArcsec, mjdToDate } from '../core/motion.js';
 import { gridToWorld } from '../core/align.js';
 import { createContam } from './contam-ui.js';
-import { ringObject, ringAt } from './ringobj.js'; // whose dashed ring, and where (patch bug, Sun 15 Nov)
+import { ringObject, ringAt } from './ringobj.js';
+import { seeItWith } from './seeit.js'; // can you actually see it (V magnitude), apart from 'is it up' // whose dashed ring, and where (patch bug, Sun 15 Nov)
 import { createGhost } from './ghost-ui.js';
 import { createLightcurve } from './lightcurve/index.js'; // brightness-vs-date strip (info panel)
 import { createCleanBlink } from './cleanblink.js'; // Blink: hide overlays, zoom on the star
@@ -1091,18 +1092,32 @@ function lookShort(ra, dec) {
   const { lat, lon } = lookPlace(), { alt, az } = altAz(ra, dec, lat, lon, new Date());
   return `${alt > 0 ? `${dirWord(az)}, ${alt.toFixed(0)}° up` : 'below the horizon'} now ${lookFrom().replace(/^From /, 'from ')}`;
 }
-function lookHTML(ra, dec) {
+// what we know about seeing an object with your own eyes: a demo star's catalogue V (presets.js) or a
+// SIMBAD name lookup's V; undefined (no line) for a clicked patch or an object whose V we never fetched
+function visOf(t) {
+  if (!t) return undefined;
+  if (t.preset) return t.preset.vis ?? null;
+  if (t.presetKey) return PRESETS.find(p => p.key === t.presetKey)?.vis ?? null;
+  const s = t.simbad || (t.source === 'SIMBAD' ? t : null);
+  return s && 'vmag' in s ? (Number.isFinite(s.vmag) ? { v: s.vmag, source: 'SIMBAD' } : null) : undefined;
+}
+function seeHTML(vis) {
+  if (vis === undefined) return '';
+  const s = seeItWith(vis);
+  return `<p class="cd-look-see" data-see="${s.level}">${esc(s.simple)}<span class="x-only"> ${esc(s.expert)}.</span></p>`;
+}
+function lookHTML(ra, dec, vis) {
   const w = whereToLook(ra, dec);
-  return `<div class="cd-look" role="note"><p class="cd-look-h">${esc(w.head)}</p>${w.day ? `<p class="cd-look-d">${esc(w.day)}</p>` : ''}
+  return `<div class="cd-look" role="note"><p class="cd-look-h">${esc(w.head)}</p>${w.day ? `<p class="cd-look-d">${esc(w.day)}</p>` : ''}${seeHTML(vis)}
     <p class="cd-look-n">${obs.loc ? '' : 'Colombo is the default place. '}Times in your time zone. <button type="button" class="fl-link" data-look-place>Change place</button></p></div>`;
 }
 let lookTimer = 0;
 function renderLook() {
   clearInterval(lookTimer);
-  const s = M.sel; if (s && $('cdLook')) $('cdLook').innerHTML = lookHTML(s.ra, s.dec);
+  const s = M.sel; if (s && $('cdLook')) $('cdLook').innerHTML = lookHTML(s.ra, s.dec, visOf(s.t));
   // a moving star: its position now (as on the map and the planetarium), not the time-lapse centre
   const vt = V.target && (V.target.pmra || V.target.pmdec) ? propagate(V.target, NOW_MJD) : V.grid && { ra: V.grid.ra0, dec: V.grid.dec0 };
-  if (vt && $('vLook')) $('vLook').innerHTML = lookHTML(vt.ra, vt.dec);
+  if (vt && $('vLook')) $('vLook').innerHTML = lookHTML(vt.ra, vt.dec, visOf(V.target));
   lookTimer = setInterval(renderLook, 60000);
 }
 // "Change place": switch the Observer section on and put the cursor in its place field

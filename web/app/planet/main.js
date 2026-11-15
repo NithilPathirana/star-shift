@@ -12,6 +12,7 @@ import './jpl-small.js'; // registers the JPL Horizons provider for Ceres, Palla
 import { answer as tonightAnswer, starAnswer } from './tonight.js';
 import { propagate } from '../../core/motion.js';
 import { findPreset } from '../presets.js';
+import { seeItWith } from '../seeit.js'; // can you actually see it (V magnitude), apart from 'is it up'
 import { resolveName } from '../../core/resolve.js';
 
 const $ = (id) => document.getElementById(id);
@@ -249,9 +250,11 @@ function starTonight(sel, t) {
   return stVal;
 }
 let ansKey = '', ansMsg = null;
-function showAnswer(head, detail, verdict) {
+function showAnswer(head, detail, verdict, see) {
   const el = $('answer'); el.hidden = !head; if (!head) return;
   el.dataset.verdict = verdict || ''; $('ansHead').textContent = head; $('ansDetail').textContent = detail || '';
+  // 'is it up' (above) is kept apart from 'can you actually see it' (web/app/seeit.js)
+  const se = $('ansSee'); if (se) { se.hidden = !see; se.dataset.see = see?.level || ''; se.innerHTML = see ? `${esc(see.simple)}<span class="x-only"> ${esc(see.expert)}.</span>` : ''; }
 }
 function renderAnswer() {
   const sel = S.sel;
@@ -261,7 +264,12 @@ function renderAnswer() {
   if (key === ansKey) return; ansKey = key;
   const body = sel.kind === 'moon' || sel.kind === 'planet';
   if (sel.kind === 'star' || sel.kind === 'point') { // one definition with the viewer (sky.js): dark = Sun below -12°, best = highest while dark
-    try { const a = starTonight(sel, t).ans; showAnswer(a.head, a.detail + (S.place.tz ? '' : ' Times are local solar time.'), a.verdict); }
+    // V known for demo stars, SIMBAD lookups and catalogue stars (Hipparcos V); none for a typed position
+    const vis = sel.vis !== undefined ? sel.vis : Number.isFinite(sel.mag) ? { v: sel.mag, source: 'Hipparcos' } : undefined;
+    try { const a = starTonight(sel, t).ans, see = vis === undefined ? null : seeItWith(vis);
+      // 'Yes' answers 'is it up'; for an object nobody can see without an infrared telescope, say only that it is up
+      const head = see?.level === 'faint' ? a.head.replace(/^Yes, /, 'Up in the sky, ') : a.head;
+      showAnswer(head, a.detail + (S.place.tz ? '' : ' Times are local solar time.'), a.verdict, see); }
     catch { showAnswer('Could not work out tonight for this place', '', 'msg'); }
     return;
   }
@@ -280,10 +288,10 @@ async function openFromQuery() {
     if (body) { select(body); face(S.sel); return; }
     const p = findPreset(q);
     // a moving demo star at its mid-Nov 2026 position (MJD 61360), exactly where the viewer and map put it
-    if (p) { const n = propagate(p.target, 61360); t = { name: p.target.name, ra: n.ra, dec: n.dec, plx: p.target.plx }; }
+    if (p) { const n = propagate(p.target, 61360); t = { name: p.target.name, ra: n.ra, dec: n.dec, plx: p.target.plx, vis: p.vis ?? null }; }
     else {
       ansMsg = { head: `Looking up “${q}”…`, detail: 'Asking SIMBAD for its position.' }; renderAnswer();
-      try { const r = await resolveName(q, { signal: AbortSignal.timeout(15000) }); if (r && Number.isFinite(r.ra)) t = { name: r.name, ra: r.ra, dec: r.dec }; } catch { /* below */ }
+      try { const r = await resolveName(q, { signal: AbortSignal.timeout(15000) }); if (r && Number.isFinite(r.ra)) t = { name: r.name, ra: r.ra, dec: r.dec, vis: Number.isFinite(r.vmag) ? { v: r.vmag, source: 'SIMBAD' } : null }; } catch { /* below */ }
       if (!t) { ansMsg = { head: `We couldn't find “${q}”`, detail: 'SIMBAD did not know this name or did not answer. Pick an object on the sky instead.' }; if (!S.sel) renderAnswer(); return; }
     }
   } else if (qp.has('ra') && qp.has('dec') && Number.isFinite(ra) && Number.isFinite(dec) && Math.abs(dec) <= 90) {
@@ -292,7 +300,7 @@ async function openFromQuery() {
   if (!t) return;
   ansMsg = null;
   if (S.sel) return; // the user already picked something while we were looking it up
-  select({ kind: 'star', key: 'q:' + t.ra.toFixed(5) + ',' + t.dec.toFixed(5), name: t.name, ra: t.ra, dec: t.dec, mag: null, fromQuery: true, query: q || null, plx: t.plx ?? null });
+  select({ kind: 'star', key: 'q:' + t.ra.toFixed(5) + ',' + t.dec.toFixed(5), name: t.name, ra: t.ra, dec: t.dec, mag: null, fromQuery: true, query: q || null, plx: t.plx ?? null, vis: t.vis });
   face(S.sel);
   if (innerWidth < 700) toggleInsp(true); // phone: the answer lives in the details sheet, so open it once
 }
