@@ -1,7 +1,7 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 // Observation Archive: pure table logic (no DOM), so it runs in Node tests and the browser.
-// Rows come from the SPHEREx image list (web/core/irsa.js listImages); images: NASA SPHEREx
-// via IRSA (DOIs 10.26131/IRSA652, 10.26131/IRSA662).
+// Rows come from the SPHEREx image list (web/core/irsa.js); images: NASA SPHEREx via IRSA
+// (releases and DOIs: web/data/releases.json).
 
 import { DEFAULT_BANDS } from '../bands.js';
 import { IRSA } from '../../core/irsa.js';

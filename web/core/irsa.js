@@ -60,14 +60,36 @@ export function parseVOTable(xml) {
   return rows;
 }
 
-// SIA lists the same images as the TAP query (DR1 + QR3 collections are disjoint; checked on
-// Barnard's Star: 239 + 119 = 358 = TAP) but answers in ~2.5 s, while IRSA TAP took 18-48 s on
-// 14 Nov 2026. Both collections are asked in parallel.
-export const SIA_COLLECTIONS = ['spherex_dr1', 'spherex_qr3'];
+// The SPHEREx releases we ask IRSA for, with their DOIs: web/data/releases.json is the ONE list
+// used by the queries below and by every credit line (tests/releases.test.mjs checks the HTML).
+let releasesP = null;
+export function loadReleases() {
+  releasesP ||= (async () => {
+    const url = new URL('../data/releases.json', import.meta.url);
+    if (url.protocol === 'file:') { const { readFile } = await import('node:fs/promises'); return JSON.parse(await readFile(url, 'utf8')); }
+    const res = await globalThis.fetch(url);
+    if (!res.ok) throw new Error(`releases.json HTTP ${res.status}`);
+    return res.json();
+  })().catch((e) => { releasesP = null; throw e; });
+  return releasesP;
+}
+// 'spherex_dr1' -> 'dr1', the folder IRSA puts that release's files in (ibe/data/spherex/dr1/...)
+export const releaseFolder = (collection) => String(collection).replace(/^spherex_/, '');
+// "NASA SPHEREx via IRSA: DR1 spectral images (DOI 10.26131/IRSA678), QR3 ... (DOI ...)"
+export function creditText(releases) {
+  return 'NASA SPHEREx via IRSA: ' + releases.map(r => `${r.label} (DOI ${r.doi})`).join(' and ');
+}
+
+// SIA answers in ~2.5 s (IRSA TAP took 18-48 s on 14 Nov 2026), and DR1 + QR3 are disjoint,
+// so both collections are asked in parallel. But SIA can miss images that TAP lists (seen near
+// the north ecliptic pole, R Draconis, 15 Nov 2026): listImagesComplete() merges in TAP.
+// IRSA's proxy answers 502 now and then (15 Nov 2026): one quick retry before giving up.
 export async function listImagesSIA(ra, dec, { base = IRSA, fetchFn = prebakedFetch, signal } = {}) {
-  const lists = await Promise.all(SIA_COLLECTIONS.map(async (c) => {
+  const releases = await loadReleases();
+  const lists = await Promise.all(releases.map(async ({ collection: c }) => {
     const url = `${base}/SIA?COLLECTION=${c}&POS=circle+${(+ra).toFixed(6)}+${(+dec).toFixed(6)}+0.0005&RESPONSEFORMAT=VOTABLE`;
-    const res = await fetchFn(url, { signal });
+    let res = await fetchFn(url, { signal });
+    if (res.status === 502 || res.status === 503) { res.body?.cancel?.().catch(() => {}); await sleep(1000, signal); res = await fetchFn(url, { signal }); }
     if (!res.ok) throw new Error(`SIA HTTP ${res.status}`);
     const xml = await res.text();
     if (!xml.includes('<VOTABLE')) throw new Error('SIA: not a VOTable');

@@ -269,7 +269,7 @@ test('banned words and things never appear on the page', () => {
   assert.doesNotMatch(src, /\b(discovered|new planet|you found a new object|confetti|badges?|leaderboards?|day streak|points)\b/i); // "Streak" alone is an archive flag kind
   const html = readFileSync(new URL('../web/spot.html', import.meta.url), 'utf8');
   assert.match(html, /<span class="ai-mark rail-ai"/); assert.match(html, /<span class="ai-mark top-ai"/);
-  assert.match(html, /Logo: AI-generated \(SI\) with ChatGPT; small version and favicon redrawn as SVG by Claude\./);
+  assert.match(html, /Logo: SI-generated with ChatGPT; small version and favicon redrawn as SVG by Claude\./);
   assert.match(html, /class="nav-btn nav-demote" href="planetarium.html" title="Can I see it tonight\?"/);
   assert.match(html, /href="spot.html" aria-current="page"/);
   assert.doesNotMatch(html, /<img[^>]+(nasa|spherex)[^>]*>/i, 'no agency logos');

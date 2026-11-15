@@ -3,7 +3,7 @@
 **Open it:** LIVE_URL_GOES_HERE (no login) · **Source:** `source.zip` on the site (built with `npm run source-zip`) · **Licence:** MIT ([LICENSE](LICENSE))
 
 Team **Proper Motion** (Colombo, Sri Lanka) – NASA Space Apps Challenge 2026, challenge *Planet X and SPHEREx*.
-Type any sky position (or a star name) and see every SPHEREx image of that spot, lined up, as a little movie.
+Type any sky position (or a star name) and see the SPHEREx images of that spot, lined up, as a little movie.
 
 > **AI use (required disclosure): AI (Super Intelligence, SI).** All code in this repository was written by AI models
 > (Claude, by Anthropic; a few modules, such as the Asteroids page, the lab notebook and the JPL relay route, by OpenAI Codex)
@@ -42,9 +42,34 @@ Double-click `start.vbs` (no console window; opens the browser). `stop.vbs` stop
 Needs Node.js 20+. Or run `node server/server.mjs` in a terminal.
 
 ## Data and credits
-- SPHEREx data from the NASA/IPAC Infrared Science Archive (IRSA), Caltech/IPAC.
-  This publication makes use of data products from SPHEREx, a NASA Medium Explorer mission.
-  DOIs: QR2 [10.26131/IRSA652](https://doi.org/10.26131/IRSA652), QR3 [10.26131/IRSA662](https://doi.org/10.26131/IRSA662).
-- SIMBAD database (CDS, Strasbourg; Harvard mirror). Gaia DR3 (ESA, Gaia DPAC).
+The SPHEREx releases the app asks for, with their DOIs, live in one file, `web/data/releases.json`;
+the image queries (`web/core/irsa.js`) and every credit line use it (`tests/releases.test.mjs` checks the pages).
+- **NASA SPHEREx** spectral images from the NASA/IPAC Infrared Science Archive (IRSA), Caltech/IPAC:
+  Data Release 1 (DR1) spectral images, DOI [10.26131/IRSA678](https://doi.org/10.26131/IRSA678), and
+  Quick Release 3 (QR3) spectral images, DOI [10.26131/IRSA662](https://doi.org/10.26131/IRSA662)
+  (DOIs as given on IRSA's SPHEREx DR1 and QR documentation pages). "This publication makes use of data
+  products from the Spectro-Photometer for the History of the Universe, Epoch of Reionization and Ices
+  Explorer (SPHEREx), which is a joint project of the Jet Propulsion Laboratory and the California
+  Institute of Technology, and is funded by the National Aeronautics and Space Administration."
+- **Gaia DR3**: ESA Gaia mission and DPAC (Gaia Collaboration, Vallenari et al. 2023, DOI 10.1051/0004-6361/202243940).
+- **SIMBAD** astronomical database, CDS, Strasbourg (Wenger et al. 2000, DOI 10.1051/aas:2000332); asked through the Harvard mirror.
+- **JPL Solar System Dynamics** (NASA/JPL): Small-Body Identification API, Small-Body Database, Horizons,
+  and "Approximate Positions of the Planets" (E. M. Standish).
+- **Hipparcos** (ESA), new reduction (van Leeuwen 2007, DOI 10.1051/0004-6361:20078357), via the ESA Gaia archive.
+- **2MASS**: Two Micron All Sky Survey, a joint project of the University of Massachusetts and IPAC/Caltech,
+  funded by NASA and the NSF; images via IRSA.
+- **AllWISE**: NASA's Wide-field Infrared Survey Explorer (UCLA and JPL/Caltech) and NEOWISE; images via IRSA.
+- **ATRAN** sky-transmission curves: Lord, S. D., 1992, NASA Technical Memorandum 103957; data courtesy of
+  Gemini Observatory (`web/data/atran/README.md`).
 - Methods follow the IRSA SPHEREx tutorial notebooks (cutouts, spectral WCS).
 - NASA and SPHEREx names are used only to describe the data; no NASA or mission logos are used.
+
+## Third-party licences
+Bundled in `web/vendor/` (each folder keeps the library's own LICENSE file):
+
+| Library | Version | Licence | Copyright |
+|---|---|---|---|
+| [three.js](https://threejs.org/) | 0.186.1 | MIT | 2010-2026 three.js authors |
+| [Astronomy Engine](https://github.com/cosinekitty/astronomy) | 2.1.19 | MIT | 2019-2023 Don Cross |
+
+Everything else in this repository is the team's own code under the MIT licence ([LICENSE](LICENSE)).

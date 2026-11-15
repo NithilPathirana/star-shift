@@ -1,7 +1,7 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 // Spectral Explorer: pure logic (no DOM). Picks images, measures the target in each cutout
 // with aperture photometry, and lays out the chart. Data: NASA SPHEREx via IRSA
-// (DOIs 10.26131/IRSA652, 10.26131/IRSA662).
+// (releases and DOIs: web/data/releases.json).
 
 import { kindMasksOf } from '../archive/logic.js';
 

@@ -18,7 +18,7 @@ export const SURVEY_PATHS = [
   /^\/ibe\/data\/twomass\/allsky\/allsky\/\d{6}[ns]\/s\d{3}\/image\/ki\d{7}\.fits\.gz$/,
   /^\/ibe\/data\/wise\/allwise\/p3am_cdd\/\d{2}\/\d{4}\/\d{4}[pm]\d{3}_ac51\/\d{4}[pm]\d{3}_ac51-w[12]-int-3\.fits$/,
 ];
-const SIA_COLLECTIONS = ['spherex_dr1', 'spherex_qr3', 'spherex_qr2', 'twomass_allsky', 'wise_allwise'];
+const SIA_COLLECTIONS = ['spherex_dr1', 'spherex_qr3', 'twomass_allsky', 'wise_allwise']; // SPHEREx: web/data/releases.json
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',

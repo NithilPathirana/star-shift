@@ -1,0 +1,4 @@
+[
+ {"collection": "spherex_dr1", "label": "Data Release 1 (DR1) spectral images", "doi": "10.26131/IRSA678"},
+ {"collection": "spherex_qr3", "label": "Quick Release 3 (QR3) spectral images", "doi": "10.26131/IRSA662"}
+]
