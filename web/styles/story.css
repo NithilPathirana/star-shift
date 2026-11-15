@@ -4,6 +4,7 @@
    and cleared by web/app/story.js on the first map touch, search, preset, scene change or tour. */
 
 html:not([data-story=on]) .story{display:none!important}
+html[data-cta] .story-go{visibility:hidden} /* until story.js names the ?q target (judging round 4, item 3) */
 .story-a,.story-b,.story-c{margin:0}
 .story-a{text-wrap:pretty}
 .story.leaving{opacity:0;transform:translateY(-4px);transition:opacity 180ms var(--ease-out),transform 180ms var(--ease-out)}

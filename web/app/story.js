@@ -3,8 +3,15 @@
 // The story is in index.html and shown by html[data-story="on"] (set inline, so it is there at first paint).
 // This module only takes it away (first map touch, search focus, preset, scene change, tour) and wires its keys.
 // Stateless: no storage, it shows on every load that lands on the map.
+import { findPreset } from './presets.js';
+import { isExpert } from './expert.js';
 const root = document.documentElement, $ = id => document.getElementById(id);
-const BARNARD = "Barnard's Star", DEMO = "index.html?q=Barnard%27s%20Star&scene=viewer";
+// Judging round 4, item 3: the CTA follows ?q. A preset in ?q is named and played; any other ?q or ?ra=&dec=
+// gets "Play this patch"; no target in the address keeps Barnard's Star.
+const QP = new URLSearchParams(location.search), QTEXT = QP.get('q') || (QP.get('ra') && QP.get('dec') ? 'coords' : '');
+const CTA = QTEXT ? (QP.get('q') && findPreset(QP.get('q'))) || null : findPreset("Barnard's Star");
+const VERB = { 'rw-aur': 'change', 'r-dra': 'change' }; // the two variable stars barely move; they brighten and fade
+let driving = false; // true while the CTA presses a quick pick itself, so the quick-pick listener doesn't play it twice
 const on = () => root.dataset.story === 'on';
 const reduced = () => root.dataset.motion === 'reduce' || matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -15,26 +22,50 @@ export function leaveStory() {
   setTimeout(() => { root.dataset.story = 'off'; els.forEach(e => e.classList.remove('leaving')); }, reduced() ? 0 : 180);
 }
 
-// "Watch Barnard's Star move": select it on the map, then play it, in the page; a full load of the
-// demo link if the map is not ready (or the selection never arrives).
-function watchBarnard() {
-  leaveStory();
-  const app = window.__app, isB = () => app?.M?.sel?.t?.name === BARNARD;
-  if (!app?.skymap?.aladin) { location.assign(DEMO); return; }
-  const play = () => $('cdPlay')?.click();
-  if (isB()) { play(); return; }
-  const pick = [...document.querySelectorAll('.pick')].find(b => b.textContent.trim() === BARNARD);
-  if (!pick) { location.assign(DEMO); return; }
-  pick.click();
+// The CTA: select its target on the map, then play it, in the page; a full load of the viewer link if the
+// map is not ready (or the selection never arrives). p = a preset, or null for the ?q / ?ra=&dec= patch.
+function viewerLink(p) {
+  if (p) return `index.html?q=${encodeURIComponent(p.label)}&scene=viewer`;
+  const q = new URLSearchParams(location.search); q.set('scene', 'viewer'); return `index.html?${q}`;
+}
+function waitThenPlay(isT, fallback, ms) {
   const t0 = performance.now();
   const iv = setInterval(() => {
-    if (isB()) { clearInterval(iv); setTimeout(play, 300); }
-    else if (performance.now() - t0 > 6000) { clearInterval(iv); location.assign(DEMO); }
+    if (isT()) { clearInterval(iv); setTimeout(() => { if ($('app')?.dataset.scene === 'map') $('cdPlay')?.click(); }, 300); } // not if something else opened the viewer meanwhile
+    else if (performance.now() - t0 > ms) { clearInterval(iv); fallback?.(); }
   }, 100);
+}
+function watchTarget(p) {
+  leaveStory();
+  const app = window.__app, link = viewerLink(p);
+  const isT = () => (p ? app?.M?.sel?.t?.key === p.key : !!app?.M?.sel);
+  if (!app?.skymap?.aladin) { location.assign(link); return; }
+  if (isT()) { $('cdPlay')?.click(); return; }
+  if (p) {
+    const pick = [...document.querySelectorAll('.pick')].find(b => findPreset(b.textContent)?.key === p.key);
+    if (!pick) { location.assign(link); return; }
+    driving = true; try { pick.click(); } finally { driving = false; }
+  }
+  waitThenPlay(isT, () => location.assign(link), p ? 6000 : 15000); // a searched name waits for SIMBAD
+}
+
+// Quick picks (judging round 4, item 3): in Simple mode one click plays the star, the same path as the CTA;
+// Expert mode keeps select-first (Play this patch over time). ui.js's own .pick handler does the selecting.
+function onPick(e) {
+  const b = e.target.closest?.('.pick');
+  if (!b || driving || !e.isTrusted || isExpert()) return; // !isTrusted: the tour's own pick.click() keeps its own Play
+  const p = findPreset(b.textContent), app = window.__app;
+  if (!p || !app?.skymap?.aladin) return;
+  waitThenPlay(() => app?.M?.sel?.t?.key === p.key, null, 8000);
 }
 
 function init() {
-  document.querySelectorAll('.story-go').forEach(b => { b.onclick = watchBarnard; });
+  document.querySelectorAll('.story-go').forEach(b => {
+    if (QTEXT) { const name = CTA ? `Watch ${CTA.label} ${VERB[CTA.key] || 'move'}` : 'Play this patch'; b.firstChild.textContent = name + ' '; }
+    b.onclick = () => watchTarget(CTA);
+  });
+  delete root.dataset.cta; // index.html hides the CTA's text until it names the ?q target (no flash of Barnard's Star)
+  document.addEventListener('click', onPick); // bubbles after ui.js's .pick onclick has started the selection
   document.querySelectorAll('.story-tour').forEach(b => {
     b.onclick = () => { leaveStory(); if (window.StarShiftTour?.full) window.StarShiftTour.full(b); else $('tourPageKey')?.click(); };
   });

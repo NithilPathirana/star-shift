@@ -92,7 +92,7 @@
           <p class="story-c">Start with NASA's five test targets, or search any star.</p>
           <button type="button" class="key primary story-go">Watch Barnard's Star move <span aria-hidden="true">→</span></button>
         </section>
-        <script>document.documentElement.dataset.story = /[?&]scene=viewer/.test(location.search) ? 'off' : 'on';</script>
+        <script>document.documentElement.dataset.story = /[?&]scene=viewer/.test(location.search) ? 'off' : 'on'; if (/[?&](q|ra)=/.test(location.search)) document.documentElement.dataset.cta = 'wait'; /* story.js names the ?q target, then clears it */</script>
         <div class="mb-key" id="mapBandsKey" hidden><!-- IR band ranges painted on the map (band-editor agent) -->
           <p class="mb-t">Coloured by your IR band ranges</p>
           <p class="mb-note" id="mapBandsNote"></p>
