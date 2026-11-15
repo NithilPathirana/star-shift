@@ -24,6 +24,7 @@ import { createGhost } from './ghost-ui.js';
 import { createLightcurve } from './lightcurve/index.js'; // brightness-vs-date strip (info panel)
 import { createCleanBlink } from './cleanblink.js'; // Blink: hide overlays, zoom on the star
 import { createTelescopes } from './telescopes/index.js'; // Telescope compare (DESIGN.md 31a)
+import { CLARITY_KEY, readClarity } from './prefs.js'; // Clarity defaults (sounds off)
 
 const R = window.MockRender;
 const $ = id => document.getElementById(id), root = document.documentElement;
@@ -40,12 +41,9 @@ const tablesReady = fetch('core/data/spectral_wcs.json').then(r => r.json()).the
 loadConstellations().then(() => { if (M.sel) renderCD(); }).catch(() => {}); // fill in the Constellation row once it can
 
 /* ---------- Clarity settings (remembered, default from the OS) ---------- */
-const KEY = 'tgi-clarity-v1';
-const set = Object.assign({
-  motion: mq('(prefers-reduced-motion: reduce)'), glass: mq('(prefers-reduced-transparency: reduce)'),
-  contrast: mq('(prefers-contrast: more)'), text: false, sound: !mq('(prefers-reduced-motion: reduce)'),
-  hatch: true, ring: true, str: 'auto', ramp: 'copper',
-}, (() => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } })());
+const KEY = CLARITY_KEY; // sounds are off until the visitor turns them on (prefs.js)
+const set = readClarity((() => { try { return localStorage.getItem(KEY); } catch { return null; } })(),
+  { reduceMotion: mq('(prefers-reduced-motion: reduce)'), reduceTransparency: mq('(prefers-reduced-transparency: reduce)'), moreContrast: mq('(prefers-contrast: more)') });
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(set)); } catch { /* private mode */ } };
 function applySettings() {
   root.dataset.motion = set.motion ? 'reduce' : 'full';
@@ -65,7 +63,7 @@ function applySettings() {
 const Snd = { ctx: null, last: 0, clocks: {},
   wake() { if (!this.ctx) { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { /* no audio */ } } else if (this.ctx.state === 'suspended') this.ctx.resume(); },
   play(type) {
-    if (!set.sound || !this.ctx) return; const now = performance.now();
+    if (!set.sounds || !this.ctx) return; const now = performance.now();
     const group = /^zoom/.test(type) ? 'zoom' : type === 'scrub' ? 'scrub' : /^season/.test(type) ? 'season' : 'ui';
     const gap = { zoom: 150, scrub: 35, season: 250, ui: 45 }[group]; if (now - (this.clocks[group] || 0) < gap) return; this.clocks[group] = now;
     const c = this.ctx, t = c.currentTime;
