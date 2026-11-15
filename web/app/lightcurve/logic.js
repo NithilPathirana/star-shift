@@ -177,12 +177,12 @@ export function saturatedNote(lc, name = '') {
   const links = [];
   if (!/^RW Aur/i.test(name)) links.push({ text: 'See RW Aurigae →', href: 'index.html?q=RW%20Aurigae&scene=viewer' });
   links.push({ text: 'How we know →', href: 'proof.html' });
-  return { text: `Too bright for SPHEREx: the centre is saturated in ${all}, so its brightness can't be measured here.`, links };
+  return { text: `Too bright for SPHEREx: ${all} have a masked pixel within ${AP_ARCSEC}″ of the star, so its brightness can't be measured here.`, links };
 }
 
 // Plain-language lines for the panel (kept here so the test checks the exact wording).
 export function message(lc, name = 'This object') {
-  if (lc.status === 'saturated') return `${name} is saturated in every SPHEREx image here, so its brightness cannot be measured.`;
+  if (lc.status === 'saturated') return `${name} has a masked pixel within ${AP_ARCSEC}″ of its centre in every SPHEREx image here, so its brightness cannot be measured.`;
   if (lc.status === 'empty') return 'No images yet.';
   if (lc.status === 'absent') return `${name} is not detected at its predicted position in these SPHEREx images, so its brightness cannot be measured.`;
   if (lc.status === 'none') return `No image of ${name} has an unmasked centre and a first-season image at the same wavelength to compare with, so no brightness change can be shown.`;

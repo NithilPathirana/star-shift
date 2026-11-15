@@ -76,14 +76,14 @@ test('a star saturated in every image says so plainly (R Draconis)', () => {
   const lc = lightcurve(measure(seasons3(() => 1000, { maskAll: true }), grid));
   assert.equal(lc.status, 'saturated');
   assert.equal(lc.plotted, 0);
-  assert.equal(message(lc, 'R Draconis'), 'R Draconis is saturated in every SPHEREx image here, so its brightness cannot be measured.');
+  assert.equal(message(lc, 'R Draconis'), 'R Draconis has a masked pixel within 15″ of its centre in every SPHEREx image here, so its brightness cannot be measured.');
   assert.match(skippedText(lc), /^0 of 36 images plotted · 36 skipped: a masked pixel within 15″/);
 });
 
 test('a9: the saturated dead end says why, with the counts from the data, and where to go', () => {
   const lc = lightcurve(measure(seasons3(() => 1000, { maskAll: true }), grid));
   const n = saturatedNote(lc, 'R Draconis');
-  assert.equal(n.text, "Too bright for SPHEREx: the centre is saturated in all 36 images, so its brightness can't be measured here.");
+  assert.equal(n.text, "Too bright for SPHEREx: all 36 images have a masked pixel within 15″ of the star, so its brightness can't be measured here.");
   assert.deepEqual(n.links.map(l => l.href), ['index.html?q=RW%20Aurigae&scene=viewer', 'proof.html']);
   assert.deepEqual(saturatedNote(lc, 'RW Aurigae').links.map(l => l.text), ['How we know →'], 'never links a star to itself');
   assert.equal(saturatedNote(lightcurve(measure(seasons3(() => 1000), grid)), 'X'), null);

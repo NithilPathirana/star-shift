@@ -278,7 +278,7 @@
      "verdict": "AGREES",
      "why": null,
      "shiftPx": 1.864,
-     "limit": "The star carries the archive's saturation flag in 120 of 120 images, and its centre is blanked in 81 of the 120 fitted images, so its centre is found from the unsaturated edge pixels; images with a blanked centre count for less in the fit because their positions scatter more. The long-wavelength detectors alone give 10.52 ± 0.28″/yr, the short ones 9.40 ± 0.82″/yr. The speed agrees, but the direction is 5.7° off (349.9° measured, 355.6° catalogue): about 1.0″/yr sideways, 3.1σ. Likely because the star carries the saturation flag in 120 of 120 images and its centre is blanked in 81 of the 120 fitted, so the position comes from the star's edges, which can lean to one side; the 0.15″/yr floor comes from faint field stars and does not cover that. It stays off with the long-wavelength detectors alone (348.9°) and with every flagged image hidden (349.4°), so it is systematic, not noise.",
+     "limit": "The star carries the archive's saturation flag in 120 of 120 images, and its centre is blanked in 81 of the 120 fitted images, so its centre is found from the unsaturated edge pixels; images with a blanked centre count for less in the fit because their positions scatter more. The long-wavelength detectors alone give 10.52 ± 0.28″/yr, the short ones 9.40 ± 0.82″/yr. The speed agrees, but the direction is 5.7° off (349.9° measured, 355.6° catalogue): about 1.0″/yr sideways, 3.1σ. Most likely because the star carries the saturation flag in 120 of 120 images and its centre is blanked in 81 of the 120 fitted, so the position comes from the star's edges, which can lean to one side; the 0.15″/yr floor comes from faint field stars and does not cover that. It stays off with the long-wavelength detectors alone (348.9°) and with every flagged image hidden (349.4°), so it is systematic, not noise.",
      "chart": {
       "kind": "motion",
       "pa": 355.58,
@@ -3983,7 +3983,7 @@
      "measured": null,
      "diff": null,
      "verdict": "NOT MEASURABLE",
-     "limit": "Too bright for SPHEREx: 120 of 120 images have a masked (saturated) pixel within 15″ of the star, leaving 0 usable comparisons, too few to measure a change.",
+     "limit": "Too bright for SPHEREx: 120 of 120 images have a masked pixel within 15″ of the star, leaving 0 usable comparisons, too few to measure a change.",
      "chart": null
     }
    ]

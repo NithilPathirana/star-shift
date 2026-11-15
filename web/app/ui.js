@@ -558,7 +558,7 @@ function motionCheck() {
 // Plain words for a not-measurable fit: { head, note } (head = the row value, note = the detail).
 function notMeasurableText(mc, mo) {
   const all = mo.maskedFrames === mo.frames;
-  const satHead = `the star's centre is saturated in ${all ? 'every image' : `${mo.maskedFrames} of the ${mo.frames} measured images`}`;
+  const satHead = `the star's centre is blanked in ${all ? `all ${mo.frames} measured images` : `${mo.maskedFrames} of the ${mo.frames} measured images`}`; // 'saturated' is the Proof page's flag count
   const t = V.target, catYr = t && (t.pmra || t.pmdec) ? totalPM(t.pmra, t.pmdec) / 1000 : null;
   const slowTxt = mc.slow && catYr != null ? `its catalogue motion, ${catYr.toFixed(2)}″/yr, moves it only ${mc.shiftPx.toFixed(3)} of a 6.15″ pixel over these ${mo.span.toFixed(1)} years` : '';
   // the fit's number is Expert detail; Simple keeps the plain sentence (and the honest "not a real motion")

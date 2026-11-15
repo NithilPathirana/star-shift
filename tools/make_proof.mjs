@@ -308,7 +308,7 @@ for (const p of PRESETS) {
         verdict: bv.verdict,
         limit: ok.length
           ? `Only images with no masked pixel within ${(APERTURE * PIXEL_ARCSEC).toFixed(0)}″ of the star count, each compared with first-season images from the same detector at the same wavelength: ${usable} of ${frames.length} images qualify (${masked} have a masked pixel within ${(APERTURE * PIXEL_ARCSEC).toFixed(0)}″ of the star; the rest have no first-season match). The catalogue gives no amplitude at these wavelengths, so only the fact of a change is tested.${ctl}`
-          : `Too bright for SPHEREx: ${masked} of ${frames.length} images have a masked (saturated) pixel within ${(APERTURE * PIXEL_ARCSEC).toFixed(0)}″ of the star, leaving ${usable} usable comparisons, too few to measure a change.`,
+          : `Too bright for SPHEREx: ${masked} of ${frames.length} images have a masked pixel within ${(APERTURE * PIXEL_ARCSEC).toFixed(0)}″ of the star, leaving ${usable} usable comparisons, too few to measure a change.`,
         chart: ok.length ? { kind: 'brightness', groups: groups.map(g => ({ name: g.name, points: g.points, seasons: g.bySeason })) } : null,
       });
     }
