@@ -1037,3 +1037,25 @@ html:where(:not([data-ax-look=classic]))[data-glass=solid] .pl-place{background:
 :where(html:not([data-ax-look=classic])) .sm-how-list li > a,:where(html:not([data-ax-look=classic])) .sm-how-k{color:var(--copper-ink)}
 :where(html:not([data-ax-look=classic])) .sm-how-k{color:var(--ink)}
 :where(html:not([data-ax-look=classic])) .sm-how-list span a{color:var(--copper-ink)}
+/* from photo.css */
+:where(html:not([data-ax-look=classic])) .ph-private b{color:var(--sage-ink)}
+:where(html:not([data-ax-look=classic])) .ph-plot{border-radius:12px}
+:where(html:not([data-ax-look=classic])) .ph-drop{color:var(--stage-text);border:1.5px dashed rgba(246,249,254,.3);border-radius:12px;background:rgba(250,252,255,.03)}
+:where(html:not([data-ax-look=classic])) .ph-drop svg{color:var(--ring)}
+:where(html:not([data-ax-look=classic])) .ph-drop.over{border-color:var(--ring);background:rgba(234,244,47,.1)}
+:where(html:not([data-ax-look=classic])) .ph-drop .key.ph-dark{background:rgba(250,252,255,.1);color:var(--stage-text);border-color:rgba(246,249,254,.28);box-shadow:none}
+:where(html:not([data-ax-look=classic])) .ph-scope{color:var(--stage-muted)}
+:where(html:not([data-ax-look=classic])) .ph-key .ph-sw{border-radius:50%;border:2px solid}
+:where(html:not([data-ax-look=classic])) .ph-key .ph-sw-m{border-color:#EAF42F}
+:where(html:not([data-ax-look=classic])) .ph-key .ph-sw-c{border-color:rgba(243,246,251,.55);border-width:1px!important}
+:where(html:not([data-ax-look=classic])) .ph-key .ph-sw-p{border-color:#7FD1FF;border-radius:2px!important}
+:where(html:not([data-ax-look=classic])) .ph-file{opacity:0}
+:where(html:not([data-ax-look=classic])) .ph-file:focus-visible + .ph-row label{outline:2.5px solid var(--focus);outline-offset:3px}
+:where(html:not([data-ax-look=classic])) .ph-dl dt{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .ph-dl dd{color:var(--ink)}
+:where(html:not([data-ax-look=classic])) .ph-go{text-decoration:none}
+:where(html:not([data-ax-look=classic])) .ph-sel{border-radius:9px;border:1px solid var(--edge);background:#FBFDFF;color:var(--ink)}
+:where(html:not([data-ax-look=classic])) .ph-sel:focus-visible{outline:2.5px solid var(--focus);outline-offset:2px}
+:where(html:not([data-ax-look=classic])) .ph-err{color:var(--coral)}
+:where(html:not([data-ax-look=classic])) #result[data-solved=true] #resTxt b{color:var(--sage-ink)}
+:where(html:not([data-ax-look=classic])) #result[data-solved=fail] #resTxt b{color:var(--copper-ink)}

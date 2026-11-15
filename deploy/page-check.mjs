@@ -24,6 +24,8 @@ const PAGES = [
   ['/?cta', 7000],
   // IRSA outage (Sun 15 Nov): IRSA's relay routes fail; the status pill shows, a search for a non-saved name gets the calm note, the error screen has its saved-target chips
   ['/?irsa-down', 8000],
+  // Your photo -> the sky (judges' suggestion C): the committed synthetic test image must solve, verified, in the browser
+  ['/photo.html?sample', 6000],
   // fresh profile (spec-tutorials-consent.md): the consent bar first, then the sky map's tutorial after Accept; and a
   // deep link (consent given, no tutorial seen yet) gets only the small "Quick tour of this page" chip. Kept last: they clear storage.
   ['/', 9000, 'fresh'], ['/index.html?q=Epsilon%20Indi%20B&scene=viewer', 10000, 'deep'],
@@ -55,7 +57,7 @@ setTimeout(() => { console.error(`page check could not run: no result after ${TO
 // /version.json names the commit just deployed (deploy.sh sets EXPECT_SHA), so a stale or partial deploy fails loudly
 const MODULES = ['/app/ui.js', '/app/seasons.js', '/app/distances.js', '/app/gaia-overlay.js', '/app/spot/colour.js', '/app/spot/botha.js',
   '/app/spot/logic.js', '/app/proof/logic.js', '/app/diffview.js', '/app/erender.js', '/app/astro-loader.js', '/data/proof.json', '/data/botha-check.json', '/data/spot-botha.json',
-  '/app/consent.js', '/app/consent-ui.js', '/app/lightcurve/make.js', '/app/lightcurve/maker.js'];
+  '/app/consent.js', '/app/consent-ui.js', '/app/lightcurve/make.js', '/app/lightcurve/maker.js', '/app/photo/solve.js', '/app/photo/main.js', '/data/photo-test.png'];
 async function preflight() {
   const bad = [];
   for (const m of MODULES) { try { const r = await fetch(base + m, { cache: 'no-store' }); if (r.status !== 200) bad.push(`${m} ${r.status}`); } catch (e) { bad.push(`${m} ${e.message}`); } }
@@ -202,6 +204,15 @@ async function run() {
         const n = await ev("(async () => { const q = document.getElementById('q'); q.value = 'Altair'; document.querySelector('form.search').requestSubmit(); await new Promise(r => setTimeout(r, 1200)); const e = document.getElementById('serr'); return { note: !e.hidden && e.classList.contains('calm'), chips: e.querySelectorAll('button[data-n]').length, saved: document.querySelectorAll('#openSaved button[data-n]').length }; })()");
         if (!n.note || n.chips < 5) errs.push(`IRSA blocked: no calm search note with the saved stars (${JSON.stringify(n)})`);
         if (n.saved < 5) errs.push(`the error screen lacks its saved-target chips (${n.saved})`);
+      }
+      if (path === '/photo.html?sample') { // a verified solve: centre near Orion's belt, and the SPHEREx key points there
+        let d = {};
+        for (let k = 0; k < 20; k++) {
+          d = (await send('Runtime.evaluate', { expression: "(() => { const r = document.getElementById('result'), g = document.getElementById('goViewer'); return { s: r?.dataset.solved, t: document.getElementById('resTxt')?.textContent || '', go: !!g && !g.hidden && /ra=8[34][.][0-9]+&dec=[12][.]/.test(g.href) }; })()", returnByValue: true }, s)).result?.result?.value || {};
+          if (d.s === 'true' || d.s === 'fail') break;
+          await sleep(1000);
+        }
+        if (d.s !== 'true' || !d.go) errs.push(`Your photo: the test image did not solve (${JSON.stringify(d).slice(0, 160)})`);
       }
       if (path === '/index.html#about') { // the hash must survive the viewer's address rewrite and open About
         let d = {};

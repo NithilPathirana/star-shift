@@ -1,0 +1,43 @@
+/* AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+/* Your photo -> the sky (web/photo.html). Builds on pages.css (sp-layout, sp-stage, panel). */
+.ph-private b{color:var(--sage-ink)}
+.ph-plot{position:relative;flex:1;min-height:0;margin:10px 14px 8px;border-radius:12px;overflow:hidden}
+.ph-plot canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair;touch-action:manipulation}
+.ph-plot canvas:not(.on){visibility:hidden}
+.ph-drop{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;
+  color:var(--stage-text);border:1.5px dashed rgba(255,235,210,.3);border-radius:12px;background:rgba(255,245,230,.03)}
+.ph-drop svg{color:var(--ring)}
+.ph-drop.over{border-color:var(--ring);background:rgba(227,168,107,.1)}
+.ph-drop[hidden]{display:none}
+.ph-drop-t{font-size:1rem}
+.ph-drop-k{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.ph-drop .key.ph-dark{background:rgba(255,245,230,.1);color:var(--stage-text);border-color:rgba(255,235,210,.28);box-shadow:none}
+.ph-scope{max-width:44ch;font-size:.8125rem;line-height:1.5;color:var(--stage-muted)}
+.ph-plot .sp-status{left:12px;top:12px}
+.ph-key .ph-sw{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid}
+.ph-key .ph-sw-m{border-color:#FFD84A}
+.ph-key .ph-sw-c{border-color:rgba(237,229,218,.55);border-width:1px!important}
+.ph-key .ph-sw-p{border-color:#7FD1FF;border-radius:2px!important;transform:rotate(45deg) scale(.85)}
+.ph-file{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.ph-file:focus-visible + .ph-row label{outline:2.5px solid var(--focus);outline-offset:3px}
+.ph-row{display:flex;flex-wrap:wrap;gap:8px}
+.ph-row label.key{cursor:pointer}
+.ph-dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:.8125rem}
+.ph-dl dt{color:var(--muted);font-weight:600}
+.ph-dl dd{color:var(--ink);overflow-wrap:anywhere}
+.ph-go{text-decoration:none;justify-content:center;text-align:center;white-space:normal;line-height:1.3;padding-top:8px;padding-bottom:8px}
+.ph-hint{display:grid;gap:6px}
+.ph-sel{height:34px;border-radius:9px;border:1px solid var(--edge);background:#FBF8F3;color:var(--ink);font:inherit;font-size:.875rem;padding:0 8px;min-width:0;width:100%}
+.ph-sel:focus-visible{outline:2.5px solid var(--focus);outline-offset:2px}
+.ph-lu{display:grid;gap:6px}
+.ph-err{font-size:.8125rem;color:var(--coral)}
+#result[data-solved=true] #resTxt b{color:var(--sage-ink)}
+#result[data-solved=fail] #resTxt b{color:var(--copper-ink)}
+@media (max-width:1100px){.ph-stage{min-height:0}.ph-plot{flex:none;height:min(62vh,560px)}.ph-plot.has{height:auto;aspect-ratio:var(--ar,3/2);max-height:75vh}}
+@media (max-width:700px){
+  .ph-plot{height:min(70vh,440px);margin:8px}
+  .ph-plot.has{height:auto}
+  .ph-sel{height:44px}
+  .ph-hint .field.small{height:44px}
+  .ph-scope{font-size:.75rem}
+}

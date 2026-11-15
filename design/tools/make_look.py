@@ -178,7 +178,7 @@ parts = []
 # expert.css is added by script after everything else, and access.css is the sheet that imports look.css, so the copies of
 # those two go into look-late.css, which access.js adds at the end of <head> (and after expert.css when that arrives).
 ORDER = ['tokens.css', 'e.css', 'live.css', 'pages.css', 'scan-loader.css', 'astro-loader.css', 'tour.css', 'story.css', 'neo.css',
-         'planetarium.css', 'notebook.css', 'proof.css', 'spot.css']
+         'planetarium.css', 'notebook.css', 'proof.css', 'spot.css', 'photo.css']
 LATE = ['access.css', 'expert.css']   # access.css imports look.css, so copies of its own rules must come after it too
 NOT_LOADED = {'app.css', 'look.css', 'look-late.css'}
 have = {os.path.basename(f) for f in glob.glob(os.path.join(SRC, '*.css'))} - NOT_LOADED
