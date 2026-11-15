@@ -1356,6 +1356,9 @@ function playPatch() {
   setTimeout(() => toViewer(false, same ? null : () => load(query, t ? t.name : PATCH_NAME)), set.motion ? 0 : 250);
 }
 $('cdPlay').onclick = playPatch; $('mdPlay').onclick = playPatch;
+// Desktop dock row 2: say in words what the chosen layer shows (review 2, item 10)
+{ const seg = $('layerSeg'), hint = () => { const b = seg.querySelector('[aria-pressed="true"]'); $('layerHint').innerHTML = b ? `<b>${esc(b.textContent.toLowerCase())}</b> · ${esc(b.title.charAt(0).toLowerCase() + b.title.slice(1))}` : ''; };
+  hint(); new MutationObserver(hint).observe(seg, { attributes: true, subtree: true, attributeFilter: ['aria-pressed'] }); }
 // Wide screens show the details panel's copper Play key beside the dock, so the dock's is plain there (review 2, item 8)
 { const ph = matchMedia('(max-width: 1099px)'), f = () => $('mdPlay').classList.toggle('primary', ph.matches); f(); ph.addEventListener('change', f); }
  $('mapBack').onclick = () => toMap(false);
