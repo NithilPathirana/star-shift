@@ -41,12 +41,37 @@ function topKeys() {
   k.className = 'key tour-page-key'; k.id = 'tourPageKey'; k.type = 'button';
   k.innerHTML = `${ICON}<span class="tp-l">Tour</span>`;
   k.setAttribute('aria-label', 'Tour this page'); k.title = 'A short guided tour of this page';
-  k.onclick = e => { e.stopPropagation(); tourThisPage(k); };
-  const r = document.createElement('button');
-  r.className = 'key tour-resume-key'; r.id = 'tourResumeKey'; r.type = 'button'; r.hidden = true;
-  r.onclick = e => { e.stopPropagation(); resume(r); };
+  // nothing left mid-way: straight into this page's chapter; a tour left mid-way: a small menu (Resume first)
+  k.onclick = e => { e.stopPropagation(); if (k.dataset.resume) toggleMenu(k); else tourThisPage(k); };
   const before = $('clarityBtn') && bar.contains($('clarityBtn')) ? $('clarityBtn') : bar.firstChild;
-  bar.insertBefore(r, before); bar.insertBefore(k, before);
+  bar.insertBefore(k, before);
+}
+let menu;
+function closeMenu() { if (menu && !menu.hidden) { menu.hidden = true; $('tourPageKey')?.setAttribute('aria-expanded', 'false'); } }
+function toggleMenu(k) {
+  if (menu && !menu.hidden) return closeMenu();
+  if (!menu) {
+    menu = document.createElement('div'); menu.className = 'tour-menu glass'; menu.id = 'tourMenu'; menu.setAttribute('role', 'menu'); menu.hidden = true;
+    menu.innerHTML = `<button class="key primary" type="button" role="menuitem" data-tour="resume"></button>
+      <button class="key" type="button" role="menuitem" data-tour="page">Tour this page</button>
+      <button class="key" type="button" role="menuitem" data-tour="full">Take the full tour</button>`;
+    menu.addEventListener('click', e => {
+      const b = e.target.closest('[data-tour]'); if (!b) return;
+      e.stopPropagation(); closeMenu();
+      if (b.dataset.tour === 'page') tourThisPage(k); else if (b.dataset.tour === 'full') fullTour(k); else resume(k);
+    });
+    document.body.append(menu);
+    addEventListener('click', e => { if (!menu.contains(e.target) && e.target !== k) closeMenu(); });
+    addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+    k.setAttribute('aria-controls', 'tourMenu');
+  }
+  const p = readProgress(getStore());
+  menu.querySelector('[data-tour="resume"]').textContent = resumeLabel(p);
+  menu.hidden = false; k.setAttribute('aria-expanded', 'true');
+  const r = k.getBoundingClientRect();
+  menu.style.top = Math.round(r.bottom + 8) + 'px';
+  menu.style.left = Math.round(Math.max(12, Math.min(r.right - menu.offsetWidth, innerWidth - menu.offsetWidth - 12))) + 'px';
+  menu.querySelector('button').focus();
 }
 function sheetKeys() {
   const pop = $('pagesPop');
@@ -89,8 +114,11 @@ function notebookKey() { // a Tour key in the Lab notebook header, whenever the 
 function refreshResume() {
   const p = readProgress(getStore()), ok = canResume(p) && !running();
   const label = ok ? resumeLabel(p) : '';
-  const top = $('tourResumeKey');
-  if (top) { top.hidden = !ok; top.textContent = ok ? 'Resume tour' : ''; top.title = label; top.setAttribute('aria-label', label); }
+  const k = $('tourPageKey');
+  if (k) {
+    if (ok) { k.dataset.resume = '1'; k.title = `${label}, or tour this page`; k.setAttribute('aria-haspopup', 'menu'); k.setAttribute('aria-label', `Tour: ${label.toLowerCase()} or tour this page`); }
+    else { delete k.dataset.resume; k.title = 'A short guided tour of this page'; k.removeAttribute('aria-haspopup'); k.setAttribute('aria-label', 'Tour this page'); closeMenu(); }
+  }
   const sh = document.querySelector('.tour-sheet [data-tour="resume"]');
   if (sh) { sh.hidden = !ok; sh.textContent = label; }
 }
@@ -148,7 +176,7 @@ async function settle() { // let the page draw its first content before a resume
 async function init() {
   css(); topKeys(); sheetKeys(); helpKey(); notebookKey(); refreshResume();
   addEventListener('star-shift-tour-end', () => { refreshResume(); });
-  addEventListener('star-shift-tour-start', () => { hideOffer(); refreshResume(); });
+  addEventListener('star-shift-tour-start', () => { hideOffer(); closeMenu(); refreshResume(); });
   const p = readProgress(getStore());
   if (shouldAutoResume(p, page)) {
     await settle();

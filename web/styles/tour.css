@@ -61,10 +61,14 @@
 .tour-card{max-height:calc(100vh - 24px);overflow:auto}
 
 /* "Tour this page" and "Resume tour" in the top bar (desktop; phones use the Pages sheet) */
-.tour-page-key,.tour-resume-key{gap:6px;white-space:nowrap}
-.tour-resume-key{color:var(--copper-ink,var(--copper));box-shadow:inset 0 0 0 1.5px var(--copper-deco)}
+.tour-page-key{gap:6px;white-space:nowrap;position:relative}
+/* a tour was left mid-way: a copper dot on the key, which then opens a small menu with Resume first */
+.tour-page-key[data-resume]::after{content:"";position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--copper-key,#A85F2A);box-shadow:0 0 0 2px var(--surface,#F8F4EE)}
+.tour-menu{--glass-tint:rgba(248,244,238,.97);--glass-tint-2:rgba(244,239,232,.96);position:fixed;z-index:31;display:grid;gap:8px;padding:12px;width:max-content;max-width:calc(100vw - 24px)}
+.tour-menu[hidden]{display:none}
+.tour-menu>*{position:relative;z-index:3;justify-content:flex-start}
 @container top (max-width:1100px){.tour-page-key .tp-l{display:none}.tour-page-key{width:40px;padding:0;justify-content:center}}
-@media (max-width:699px){.tour-page-key,.tour-resume-key{display:none!important}}
+@media (max-width:699px){.tour-page-key,.tour-menu{display:none!important}}
 
 /* Pages sheet: Tour this page · Take the full tour · Resume */
 .tour-sheet{margin-top:14px;padding-top:12px;border-top:1px solid var(--line,rgba(60,40,24,.14))}
