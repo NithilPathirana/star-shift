@@ -30,9 +30,10 @@ export function createCleanBlink(ctx) {
   // hidden). It follows the chip's own "First season" / "Last season" text, which ui.js rewrites on every flip.
   if (!document.getElementById('cb-season-css')) {
     const st = document.createElement('style'); st.id = 'cb-season-css';
-    st.textContent = '.cb-season{display:none;position:absolute;left:16px;bottom:16px;z-index:3;pointer-events:none;'
+    // bottom-left, just right of the compass (which stays, as does the scale bar: DESIGN.md)
+    st.textContent = '.cb-season{display:none;position:absolute;left:128px;bottom:14px;z-index:3;pointer-events:none;'
       + 'font:500 11px/1 var(--font-num,ui-monospace,monospace);letter-spacing:.02em;color:rgba(255,246,232,.6)}'
-      + '.stage.clean-blink .cb-season{display:block}.stage.clean-blink .compass{visibility:hidden}'
+      + '.stage.clean-blink .cb-season{display:block}'
       + '@media (max-width:699px){.cb-season{left:12px;top:16px;bottom:auto}}';
     document.head.appendChild(st);
   }
