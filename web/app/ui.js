@@ -1151,16 +1151,22 @@ function renderCD() {
   // (b2: a cold Barnard load fetched both image lists at once). Then 20 s to answer.
   const busy = () => (scene === 'viewer' && V.status === 'loading') || (viewerFirst && V.status !== 'ready' && V.status !== 'error');
   const idle = () => new Promise(res => { const t0 = Date.now(), tick = () => (!busy() || Date.now() - t0 > 60000 ? res() : setTimeout(tick, 400)); tick(); });
-  idle().then(() => { if (ctl.signal.aborted) throw new DOMException('Aborted', 'AbortError'); return listImages(s.ra, s.dec, { base: BASE, signal: AbortSignal.any([ctl.signal, AbortSignal.timeout(20000)]) }); }).then(imgs => {
+  // one release failing (QR3 502 while DR1 answered) still lists the rest, with a note (partialOk)
+  idle().then(() => { if (ctl.signal.aborted) throw new DOMException('Aborted', 'AbortError'); return listImages(s.ra, s.dec, { base: BASE, partialOk: true, signal: AbortSignal.any([ctl.signal, AbortSignal.timeout(20000)]) }); }).then(imgs => {
     if (ctl.signal.aborted) return;
-    if (!imgs.length) { $('cdCov').innerHTML = '<p class="quiet">No SPHEREx images cover this point in the released data yet.</p>'; return; }
+    const miss = imgs.missing?.join(' and ');
+    const part = miss ? `<p class="quiet">(one release, ${miss}, didn't answer, so its images are not counted; click the spot again to retry)</p>` : '';
+    if (!imgs.length) { $('cdCov').innerHTML = miss ? `<p class="quiet err">No images from the release that answered; ${miss} didn't answer. Click the spot again to retry.</p>` : '<p class="quiet">No SPHEREx images cover this point in the released data yet.</p>'; return; }
     const d = (m) => mjdToDate(m).toISOString().slice(0, 10), dets = [...new Set(imgs.map(i => i.detector))].sort();
     const wl = `${Math.min(...imgs.map(i => i.bandMinUm || 9)).toFixed(2)}–${Math.max(...imgs.map(i => i.bandMaxUm || 0)).toFixed(2)} µm`;
     const mon = m => { const x = mjdToDate(m); return `${MON[x.getUTCMonth()]} ${x.getUTCFullYear()}`; };
     $('cdCov').innerHTML = row('SPHEREx images', `${imgs.length.toLocaleString()} images`, 'obs') + row('Date span', `${d(imgs[0].mjdStart)} → ${d(imgs[imgs.length - 1].mjdStart)}`, 'obs', null, 'x-only') +
       row('Dates', `${mon(imgs[0].mjdStart)} to ${mon(imgs[imgs.length - 1].mjdStart)}`, 'obs', null, 's-only') +
-      row('Detectors', dets.map(x => 'D' + x).join(', ') + ` · ${wl}`, 'obs', null, 'x-only') + row('Infrared colours', `${wl} (light too red for the eye)`, 'obs', null, 's-only');
-  }).catch(() => { if (!ctl.signal.aborted) $('cdCov').innerHTML = '<p class="quiet err">IRSA did not answer in 20 s. Click the spot again to retry.</p>'; });
+      row('Detectors', dets.map(x => 'D' + x).join(', ') + ` · ${wl}`, 'obs', null, 'x-only') + row('Infrared colours', `${wl} (light too red for the eye)`, 'obs', null, 's-only') + part;
+  }).catch((e) => { // say "20 s" only when it really was the 20 s limit
+    if (ctl.signal.aborted) return;
+    $('cdCov').innerHTML = `<p class="quiet err">${e?.name === 'TimeoutError' ? 'IRSA did not answer in 20 s.' : 'IRSA (the NASA archive) isn\'t answering right now.'} Click the spot again to retry.</p>`;
+  });
   // motion (DESIGN.md 27): catalogue now (SIMBAD / built-in), Gaia DR3 when the Ghost's match arrives
   const pending = !t?.preset && GH.G.mStar, ms = { gaia: null, looking: !!pending };
   const paintMot = repaintMot = () => { // also called by remeasure() when the measured motion changes

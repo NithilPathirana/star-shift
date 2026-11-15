@@ -84,9 +84,11 @@ export function creditText(releases) {
 // so both collections are asked in parallel. But SIA can miss images that TAP lists (seen near
 // the north ecliptic pole, R Draconis, 15 Nov 2026): listImagesComplete() merges in TAP.
 // IRSA's proxy answers 502 now and then (15 Nov 2026): one quick retry before giving up.
+// One release failing (QR3 502 while DR1 answered, 15 Nov) keeps the others' images: the list then
+// carries .missing = ['QR3'] (short release names). All failing throws the first error.
 export async function listImagesSIA(ra, dec, { base = IRSA, fetchFn = prebakedFetch, signal } = {}) {
   const releases = await loadReleases();
-  const lists = await Promise.all(releases.map(async ({ collection: c }) => {
+  const settled = await Promise.allSettled(releases.map(async ({ collection: c }) => {
     const url = `${base}/SIA?COLLECTION=${c}&POS=circle+${(+ra).toFixed(6)}+${(+dec).toFixed(6)}+0.0005&RESPONSEFORMAT=VOTABLE`;
     let res = await fetchFn(url, { signal });
     if (res.status === 502 || res.status === 503) { res.body?.cancel?.().catch(() => {}); await sleep(1000, signal); res = await fetchFn(url, { signal }); }
@@ -95,8 +97,13 @@ export async function listImagesSIA(ra, dec, { base = IRSA, fetchFn = prebakedFe
     if (!xml.includes('<VOTABLE')) throw new Error('SIA: not a VOTable');
     return parseVOTable(xml);
   }));
+  const bad = settled.filter(s => s.status === 'rejected');
+  const abort = bad.find(s => s.reason?.name === 'AbortError');
+  if (abort || bad.length === settled.length) throw (abort || bad[0]).reason;
+  const lists = settled.map(s => (s.status === 'fulfilled' ? s.value : []));
+  const missing = releases.filter((r, i) => settled[i].status === 'rejected').map(r => releaseFolder(r.collection).toUpperCase());
   const prefix = /^https?:\/\/irsa\.ipac\.caltech\.edu\//;
-  return lists.flat()
+  const out = lists.flat()
     .filter(r => (!r.dataproduct_subtype || r.dataproduct_subtype === 'science') && prefix.test(r.access_url))
     .map(r => ({
       uri: r.access_url.replace(prefix, '').replace(/\?.*$/, ''),
@@ -106,6 +113,8 @@ export async function listImagesSIA(ra, dec, { base = IRSA, fetchFn = prebakedFe
       obsid: r.obs_id, quality: null,
     }))
     .sort((a, b) => a.mjdStart - b.mjdStart);
+  if (missing.length) out.missing = missing;
+  return out;
 }
 
 // ---- complete image lists (judging panel a4b) ----------------------------------------------
@@ -160,21 +169,29 @@ export function tapImagesUrl(ra, dec, { base = IRSA, detectors } = {}) {
 
 // All SPHEREx spectral images (releases.json: DR1 + QR3) covering (ra, dec), oldest first.
 // detectors: optional list of 1..6. SIA (fast), plus TAP when completeMode allows (see above);
-// falls back to TAP alone if SIA fails. The array carries .sources = { sia, tap } (counts or null).
+// falls back to TAP alone if SIA fails. The array carries .sources = { sia, tap } (counts or null),
+// and .missing (e.g. ['QR3']) when a release did not answer and TAP did not fill the gap.
 export async function listImages(ra, dec, { detectors, ...opts } = {}) {
   if (!isNum(ra) || !isNum(dec) || dec < -90 || dec > 90) throw new Error('Bad coordinates');
-  const pick = (all) => (detectors?.length ? all.filter(im => detectors.map(Number).includes(im.detector)) : all);
+  const pick = (all) => { // keeps .sources / .missing
+    if (!detectors?.length) return all;
+    return Object.assign(all.filter(im => detectors.map(Number).includes(im.detector)), { sources: all.sources, ...(all.missing ? { missing: all.missing } : {}) });
+  };
   if (opts.useTap === true) return pick(await tapList(ra, dec, opts));
   let withTap = completeMode === 'always';
   if (completeMode === 'prebaked' && (!opts.fetchFn || opts.fetchFn === prebakedFetch)) withTap = await hasPrebaked(tapImagesUrl(ra, dec, opts));
   const tapP = withTap ? tapList(ra, dec, opts).catch((e) => { if (e.name === 'AbortError') throw e; return null; }) : null;
   let sia = null;
   try { sia = await listImagesSIA(ra, dec, opts); } catch (e) { if (e.name === 'AbortError') throw e; }
-  const tapL = tapP ? await tapP : (sia ? null : await tapList(ra, dec, opts)); // SIA failed: TAP alone
+  // SIA failed: TAP alone. One release missing: TAP too, unless the caller takes a partial list (partialOk)
+  let tapL = tapP ? await tapP : (sia ? null : await tapList(ra, dec, opts));
+  if (!tapP && sia?.missing && !opts.partialOk) tapL = await tapList(ra, dec, opts).catch((e) => { if (e.name === 'AbortError') throw e; return null; });
   if (!sia && !tapL) throw new Error('IRSA image lists (SIA and TAP) both failed');
   const all = mergeImageLists([sia || [], tapL || []]);
-  all.sources = { sia: sia?.length ?? null, tap: tapL?.length ?? null };
-  return pick(all);
+  const out = all === sia ? sia.slice() : all; // never tag SIA's own array
+  out.sources = { sia: sia?.length ?? null, tap: tapL?.length ?? null };
+  if (sia?.missing && !tapL) out.missing = sia.missing; // TAP lists every release, so it fills the gap
+  return pick(out);
 }
 
 // For live spots (SIA only): the images IRSA's TAP table lists that SIA did not, so a page can

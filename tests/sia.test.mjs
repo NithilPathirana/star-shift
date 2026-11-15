@@ -2,7 +2,7 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseVOTable, listImagesSIA, listImages } from '../web/core/irsa.js';
+import { parseVOTable, listImagesSIA, listImages, setCompleteMode } from '../web/core/irsa.js';
 import { handle } from '../proxy/worker.js';
 
 const vot = (rows) => `<?xml version="1.0"?><VOTABLE><RESOURCE><TABLE>
@@ -35,6 +35,23 @@ test('listImages falls back to TAP when SIA fails', async () => {
   const list = await listImages(10, 20, { fetchFn, base: 'http://r' });
   assert.equal(list.length, 1);
   assert.ok(seen.some(u => u.includes('/TAP/sync')));
+});
+
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+test('one release failing (QR3 502, DR1 200) keeps DR1 images and says which release is missing', async () => {
+  const seen = [];
+  const fetchFn = async (url) => { seen.push(url); return url.includes('spherex_qr3') ? new Response('bad gateway', { status: 502 })
+    : new Response(vot([[U('dr1', 'b'), '60900.5', '60900.6', 'SPHEREx-D6', '4.4e-06', '5e-06', 'o2', 'science']])); };
+  const sia = await listImagesSIA(10, 20, { fetchFn, base: 'http://r' });
+  assert.deepEqual(sia.map(i => i.uri), ['ibe/data/spherex/dr1/level2/x/b.fits']);
+  assert.deepEqual(sia.missing, ['QR3']);
+  // partialOk (map panel, archive): no slow TAP call, the gap is reported
+  seen.length = 0; setCompleteMode('prebaked'); // as in the browser (Node tools default to 'always')
+  const part = await listImages(10, 20, { fetchFn, base: 'http://r', partialOk: true }).finally(() => setCompleteMode('always'));
+  assert.equal(part.length, 1); assert.deepEqual(part.missing, ['QR3']);
+  assert.ok(!seen.some(u => u.includes('/TAP/')));
+  // both failing still throws
+  await assert.rejects(listImagesSIA(10, 20, { fetchFn: async () => new Response('x', { status: 500 }), base: 'http://r' }), /SIA HTTP 500/);
 });
 
 test('relay allows SPHEREx (any radius) and 2MASS/AllWISE (radius <= 0.1 deg) SIA position searches only', async () => {
