@@ -366,7 +366,7 @@ function updatePlate() {
     // direction (Proof's own chip, a7): shown only when it is not "DIRECTION AGREES", so the viewer is never more confident than Proof
     const dir = mo?.significant !== false && vr?.direction && vr.direction.verdict !== 'DIRECTION AGREES' ? vr.direction : null;
     const dirTxt = dir && cat?.vec ? (() => { const pm = (Math.atan2(mo.pmra, mo.pmdec) * 180 / Math.PI + 360) % 360, pc = (Math.atan2(cat.vec.pmra, cat.vec.pmdec) * 180 / Math.PI + 360) % 360;
-      return `direction ${Math.abs(paDelta(+pm.toFixed(1), +pc.toFixed(1))).toFixed(1)}° off (${pm.toFixed(1)}° vs ${pc.toFixed(1)}°)`; // from the shown angles })() : '';
+      return `direction ${Math.abs(paDelta(+pm.toFixed(1), +pc.toFixed(1))).toFixed(1)}° off (${pm.toFixed(1)}° vs ${pc.toFixed(1)}°)`; })() : ''; // from the shown angles
     const st = resultState({ mo, measurable: mc ? mc.measurable : true, verdict: v, catYr: cat ? cat.value / 1000 : null });
     const tag = vv => `<span class="rp-v ${verdictClass(vv)}">${vv}</span>`;
     if (st.kind === 'fail') { res = `<span class="rp-k">Motion can't be measured here:</span> ${esc(FAIL_WHY[st.reason] || 'too faint to follow')} ${sep} ${how}`; live = `Motion can't be measured here: ${FAIL_WHY[st.reason] || 'too faint to follow'}.`; }
