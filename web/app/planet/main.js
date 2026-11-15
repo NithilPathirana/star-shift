@@ -2,7 +2,7 @@
 // "Sky now" planetarium page (DESIGN.md section 26): wiring for place, time, view, picking.
 // Privacy: the place is kept in memory only. It is never stored, put in the URL or sent.
 import { observer, bodies, packStars, horMatrix, starsToHorizon, starAltAz, altAzToRaDec, vecToAltAz,
-  sunAltitude, lstHours, passTimes, bvColor, starSize, starAlpha } from './astro.js';
+  sunAltitude, lstHours, passTimes, riseSetAlt, bvColor, starSize, starAlpha } from './astro.js';
 import { makeView, unproject, zoomAbout } from './projection.js';
 import { draw } from './render.js';
 import { OBSERVATORIES, NASA_CENTRES, DEFAULT_PLACE, ALL_PRESETS, parsePlace, fmtLat, fmtLon } from './places.js';
@@ -145,8 +145,10 @@ function setPlace(p) {
   if (p.tz) { tz.textContent = p.tz.replace(/_/g, ' '); tz.removeAttribute('title'); }
   else { tz.textContent = 'solar time'; tz.title = 'No time zone is known for typed coordinates, so local times are local mean solar time (UTC + longitude ÷ 15).'; }
   S.view = { ...S.view, az: p.lat < 0 ? 0 : 180, alt: 40 };
-  S.sel = null; renderSel(); recompute();
-  announce(`Sky from ${p.name}`);
+  // keep the picked object: recompute() -> updateSel redoes its panel and answer card for the new place (QA tonight-1)
+  if (!S.sel) renderSel();
+  recompute(); face(S.sel);
+  announce(S.sel ? `Sky from ${p.name}, ${S.sel.name} still selected` : `Sky from ${p.name}`);
 }
 
 /* ---------- selection (details panel) ---------- */
@@ -193,7 +195,8 @@ function renderSel() {
   const sel = S.sel, rows = $('selRows'), play = $('playPatch'), why = $('playWhy');
   if (!sel) {
     $('selKind').textContent = 'Pick something'; $('selName').textContent = 'Click a planet, a star or any spot';
-    $('selHint').hidden = false; rows.hidden = true; play.hidden = true; why.hidden = true; S.dirty = true; return;
+    $('selHint').hidden = false; rows.hidden = true; play.hidden = true; why.hidden = true; S.dirty = true;
+    ansKey = ''; renderAnswer(); return; // nothing picked: the card shows only a lookup message, or hides
   }
   const t = curTime(), isBody = ['sun', 'moon', 'planet', 'small'].includes(sel.kind);
   $('selKind').textContent = { sun: 'Star (our Sun)', moon: 'Moon', planet: 'Planet', small: 'Asteroid or comet', star: 'Star', point: 'Spot on the sky' }[sel.kind];
@@ -279,10 +282,16 @@ function renderAnswer() {
     catch { showAnswer('Could not work out tonight for this place', '', 'msg'); }
     return;
   }
-  const altFn = body ? (d) => bodies(d, obs).find(b => b.key === sel.key)?.alt : (d) => starAltAz(sel.ra, sel.dec, d, obs).alt;
+  const shown = body ? (d) => bodies(d, obs).find(x => x.key === sel.key)?.alt : (d) => starAltAz(sel.ra, sel.dec, d, obs).alt;
+  // near the horizon, use the Rise/Set rows' own horizon (top edge of the Moon, SearchRiseSet refraction) so the times agree
+  const altFn = (d) => { const a = shown(d); return Number.isFinite(a) && Math.abs(a) > 2 ? a : riseSetAlt(sel, d, obs); };
+  // Moon, planets, asteroids: 'can you actually see it' from their V (Astronomy Engine; JPL for asteroids)
+  const v = sel.mag, see = !Number.isFinite(v) ? null
+    : v <= 3 ? { level: 'eye', simple: 'To see it: naked eye.', expert: `V ${v.toFixed(1)} (${sel.kind === 'small' ? 'JPL' : 'Astronomy Engine'})` }
+    : seeItWith({ v, source: sel.kind === 'small' ? 'JPL' : 'Astronomy Engine' });
   try {
     const a = tonightAnswer({ altFn, date: t, obs, place: S.place.id === 'me' ? 'your location' : S.place.name, fmt: (d) => fmtLocal(d, false), stepMin: body ? 6 : 3 });
-    showAnswer(a.head, a.detail + (S.place.tz ? '' : ' Times are local solar time.'), a.verdict);
+    showAnswer(a.head, a.detail + (S.place.tz ? '' : ' Times are local solar time.'), a.verdict, see);
   } catch { showAnswer('Could not work out tonight for this place', '', 'msg'); }
 }
 // Opened with an object (?q=<name> or ?ra=&dec=): find it, select it and turn the sky to it.
@@ -523,17 +532,16 @@ function fillList(ul, list) {
 }
 fillList($('obsList'), OBSERVATORIES); fillList($('nasaList'), NASA_CENTRES);
 $('geoBtn').onclick = (e) => {
-  e.stopPropagation(); const st = $('geoState'); st.classList.remove('pl-err');
-  if (!navigator.geolocation) { st.textContent = 'Location permission was blocked or unavailable. Type a place instead.'; st.classList.add('pl-err'); showTab('coord'); $('coordIn').focus(); return; }
+  e.stopPropagation(); const st = $('geoState'), err = $('coordErr'); st.classList.remove('pl-err'); err.hidden = true;
+  // denied: the reason goes in the Coordinates tab's own message line, which is the tab the user lands on (QA tonight-2)
+  const fail = () => { st.textContent = ''; err.textContent = 'Location permission was blocked or unavailable. Type a place instead.'; err.hidden = false; showTab('coord'); $('coordIn').focus(); };
+  if (!navigator.geolocation) { fail(); return; }
   st.textContent = 'Asking your browser for your location…';
   navigator.geolocation.getCurrentPosition((pos) => {
     const lat = Math.round(pos.coords.latitude * 1000) / 1000, lon = Math.round(pos.coords.longitude * 1000) / 1000;
     let tz = null; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch { /* none */ }
     st.textContent = ''; setPlace({ id: 'me', name: 'My location', country: '', lat, lon, elev: 0, tz }); closePop(true);
-  }, () => {
-    st.textContent = 'Location permission was blocked or unavailable. Type a place instead.'; st.classList.add('pl-err');
-    showTab('coord'); $('coordIn').focus();
-  }, { timeout: 8000, maximumAge: 600000, enableHighAccuracy: false });
+  }, fail, { timeout: 8000, maximumAge: 600000, enableHighAccuracy: false });
 };
 $('coordForm').addEventListener('submit', (e) => {
   e.preventDefault(); const r = parsePlace($('coordIn').value), err = $('coordErr');

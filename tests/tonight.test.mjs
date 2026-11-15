@@ -67,6 +67,25 @@ test('provider: one request per asteroid per day (cached), failures show nothing
   const a = await prov(at('2026-11-14T12:00:00Z')); await prov(at('2026-11-14T13:00:00Z'));
   assert.equal(a.length, BRIGHT.length); assert.equal(calls, BRIGHT.length);
   assert.ok(Math.abs(a[0].ra - 10.5) < 1e-9);
-  const bad = makeProvider({ base: 'http://t2', fetchFn: async () => new Response('down', { status: 502 }) });
+  const bad = makeProvider({ base: 'http://t2', fetchFn: async () => new Response('down', { status: 502 }), retryMs: 0 });
   assert.deepEqual(await bad(at('2026-11-14T12:00:00Z')), []);
+});
+
+test('provider: a 503 from Horizons gets one retry (QA tonight-5)', async () => {
+  const body = { result: `$$SOE\n 2026-Nov-14 00:00, , , 10, 1, 7, 5, 1.6, 1,\n 2026-Nov-15 00:00, , , 11, 2, 7, 5, 1.6, 1,\n$$EOE` };
+  const seen = new Map();
+  const prov = makeProvider({ base: 'http://t3', retryMs: 0, fetchFn: async (u) => {
+    const n = (seen.get(u) || 0) + 1; seen.set(u, n);
+    return n === 1 && /COMMAND=%27[34]/.test(u) ? new Response('busy', { status: 503 }) : new Response(JSON.stringify(body));
+  } });
+  const a = await prov(at('2026-11-14T12:00:00Z'));
+  assert.equal(a.length, BRIGHT.length); // Juno and Vesta come back on the retry
+  assert.deepEqual([...seen.values()].sort(), [1, 1, 2, 2]);
+});
+
+test('up intervals: rise and set edges are bisected, not left on the sample grid (QA tonight-4)', () => {
+  const s = at('2026-01-01T00:00:00Z'), e = at('2026-01-01T10:00:00Z');
+  const r = upIntervals((d) => 30 - Math.abs((d - s) / 3600000 - 4) * 10, s, e, 7); // crosses 0 at 1 h and 7 h
+  assert.ok(Math.abs((r.intervals[0].from - s) / 60000 - 60) < 0.1);
+  assert.ok(Math.abs((r.intervals[0].to - s) / 60000 - 420) < 0.1);
 });

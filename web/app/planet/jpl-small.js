@@ -47,10 +47,13 @@ export function interpolate(rows, ms) {
   return { ra: ((p.ra + dra * f) % 360 + 360) % 360, dec: p.dec + (q.dec - p.dec) * f, mag: p.mag, distAU: p.distAU };
 }
 
-function rowsFor(base, cmd, day, fetchFn) {
+// A busy Horizons (HTTP 5xx, often 503 when four asks arrive at once) or a network error gets one retry after a back-off (QA tonight-5).
+function rowsFor(base, cmd, day, fetchFn, retryMs) {
   const k = `${base}|${cmd}|${day}`;
   if (!cache.has(k)) {
-    const job = fetchFn(horizonsUrl(base, cmd, day), { signal: AbortSignal.timeout(20000) })
+    const once = () => fetchFn(horizonsUrl(base, cmd, day), { signal: AbortSignal.timeout(20000) });
+    const retry = () => new Promise(res => setTimeout(res, retryMs)).then(once);
+    const job = once().then(r => (r.status >= 500 ? retry() : r), () => retry())
       .then(r => (r.ok ? r.json() : null)).then(j => (j?.result ? parseHorizons(j.result) : null)).catch(() => null);
     cache.set(k, job);
     job.then(v => { if (!v) setTimeout(() => cache.delete(k), 5 * 60000)?.unref?.(); }); // failed: try again in 5 minutes, not sooner (unref: never holds Node open in tests)
@@ -58,10 +61,11 @@ function rowsFor(base, cmd, day, fetchFn) {
   return cache.get(k);
 }
 
-export function makeProvider({ base = '', fetchFn = (...a) => fetch(...a) } = {}) {
+export function makeProvider({ base = '', fetchFn = (...a) => fetch(...a), retryMs = 1500 } = {}) {
   return async (date) => {
     const day = dayOf(date), out = [];
-    const lists = await Promise.all(BRIGHT.map(b => rowsFor(base, b.cmd, day, fetchFn)));
+    // retries are staggered (1.5 s, 1.9 s, ...) so they do not all hit Horizons together again
+    const lists = await Promise.all(BRIGHT.map((b, i) => rowsFor(base, b.cmd, day, fetchFn, retryMs && retryMs + i * 400)));
     BRIGHT.forEach((b, i) => { const p = interpolate(lists[i], date.getTime()); if (p) out.push({ name: b.name, ...p }); });
     return out;
   };

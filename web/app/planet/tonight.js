@@ -33,16 +33,23 @@ export function nightWindow(date, obs) {
 }
 
 // Sample altFn(Date) -> degrees from start to end; return the up intervals and the highest point.
+// Rise and set edges are then bisected to ~1 s, so the card's times match the Rise/Set rows (QA tonight-4).
 export function upIntervals(altFn, start, end, stepMin = 2) {
   const out = [], step = stepMin * 60000;
-  let cur = null, best = null;
+  let cur = null, best = null, prev = null;
+  const edge = (lo, hi, upAtHi) => { // horizon crossing between two samples: first up (rise) or last up (set)
+    let a = lo.getTime(), b = hi.getTime();
+    while (b - a > 1000) { const m = (a + b) / 2, v = altFn(new Date(m)); if (Number.isFinite(v) && (v > 0) === upAtHi) b = m; else a = m; }
+    return new Date(upAtHi ? b : a);
+  };
   for (let ms = start.getTime(); ms <= end.getTime() + 1; ms += step) {
     const t = new Date(Math.min(ms, end.getTime())), a = altFn(t);
     if (!Number.isFinite(a)) continue;
     if (a > 0) {
-      if (!cur) { cur = { from: t, to: t }; out.push(cur); } else cur.to = t;
+      if (!cur) { cur = { from: prev ? edge(prev, t, true) : t, to: t }; out.push(cur); } else cur.to = t;
       if (!best || a > best.alt) best = { alt: a, at: t };
-    } else cur = null;
+    } else { if (cur && prev) cur.to = edge(prev, t, false); cur = null; }
+    prev = t;
     if (ms >= end.getTime()) break;
   }
   return { intervals: out, best };

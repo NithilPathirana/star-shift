@@ -96,6 +96,16 @@ export function bodies(date, obs) {
   });
 }
 
+// Altitude (deg) against astronomy-engine's own rise/set horizon (SearchRiseSet: top edge of the Sun and
+// Moon, 34′ of refraction scaled by air density): above 0 exactly when passTimes counts it as risen.
+export function riseSetAlt(target, date, obs) {
+  let body, r = 0;
+  if (target.kind === 'sun' || target.kind === 'moon' || target.kind === 'planet') { body = A.Body[target.key]; r = target.key === 'Moon' ? 1738.1 : target.key === 'Sun' ? 695700 : 0; }
+  else { body = A.Body.Star2; A.DefineStar(body, target.ra / 15, target.dec, 1000); }
+  const t = A.MakeTime(date), od = A.Equator(body, t, obs, true, true);
+  return A.Horizon(t, obs, od.ra, od.dec).altitude + Math.asin(r / (od.dist * AU_KM)) * R2D + 34 / 60 * A.Atmosphere(obs.height).density;
+}
+
 // Altitude of the Sun (deg, refraction on): daytime test.
 export function sunAltitude(date, obs) {
   const t = A.MakeTime(date), od = A.Equator(A.Body.Sun, t, obs, true, true);
