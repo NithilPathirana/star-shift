@@ -123,8 +123,10 @@
       <!-- result plate (judging panel a6 + b2): caption, then the measured chip; ui.js moves it into the dock on phones -->
       <div class="rp viewer-only" id="resultPlate" hidden><p class="rp-cap" id="rpCap" hidden></p><p class="rp-res num" id="rpRes"></p><span class="sr-only" aria-live="polite" id="rpLive"></span></div>
       <div class="lgd num" id="layerLgd" hidden></div>
+      <div class="lgd num df-lgd" id="diffLgd" hidden></div><!-- b6: Compare > Difference legend (diffview.js) -->
       <div class="gh-off num" id="ghostOff" hidden></div>
       <button class="cb-key" id="cleanKey" aria-pressed="false" title="Hide every overlay and zoom in on the star"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="3"/><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/></svg><span class="cb-l">Clean blink</span></button>
+      <button class="cb-key df-key" id="diffKey" aria-pressed="false" title="Difference: last season minus first season. Copper = brighter later, blue = fainter later"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M10 3v8M6 7h8M6 15.5h8"/></svg><span class="df-l">Difference</span></button>
       <div class="gh-bar" id="ghostBar" hidden><span class="gh-end num" id="ghMin">−50 yr</span><input type="range" id="ghRange" min="-50" max="50" step="1" value="0" aria-label="Ghost date, years from this image"><span class="gh-end num" id="ghMax">+50 yr</span><span class="gh-read num" id="ghRead"></span><button class="key" id="ghReset" aria-label="Reset the Ghost to this image's date">Reset</button></div>
       <div class="loading-thin" id="thin" hidden><i id="thinBar"></i></div>
 

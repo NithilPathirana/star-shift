@@ -15,6 +15,8 @@ const PAGES = [
   ['/', 9000], ["/index.html?q=Barnard's%20Star&scene=viewer", 15000], ['/index.html?q=WISE%200855&scene=viewer', 12000],
   ['/proof.html', 5000], ['/spot.html', 6000], ['/archive.html?q=Barnard%27s%20Star', 6000], ['/spectral.html?q=Barnard%27s%20Star', 6000],
   ['/neo.html', 5000], ['/planetarium.html?q=Barnard%27s%20Star', 5000],
+  // the other three demo targets' deep links (Master's freeze gate: all five presets must open in the viewer)
+  ['/index.html?q=Epsilon%20Indi%20B&scene=viewer', 10000], ['/index.html?q=RW%20Aurigae&scene=viewer', 10000], ['/index.html?q=R%20Draconis&scene=viewer', 10000],
 ];
 const BROWSERS = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
   '/usr/bin/google-chrome', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'];
@@ -59,6 +61,11 @@ async function run() {
       await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false }, s);
       await send('Page.navigate', { url: base + path }, s);
       await sleep(wait);
+      if (/scene=viewer/.test(path)) { // the viewer really opened and has images (not just "no errors")
+        const r = await send('Runtime.evaluate', { expression: "(() => ({ scene: document.querySelector('.app')?.dataset.scene, n: document.getElementById('d-n')?.textContent || '' }))()", returnByValue: true }, s);
+        const v = r.result?.result?.value || {};
+        if (v.scene !== 'viewer' || !/\d+ of [\d,]+ images/.test(v.n)) errs.push(`deep link did not open the viewer with images (scene=${v.scene}, "${String(v.n).slice(0, 60)}")`);
+      }
       handlers.splice(handlers.indexOf(h), 1);
       await send('Target.closeTarget', { targetId });
       rows.push({ page: path, result: errs.length ? 'FAIL' : 'PASS', errors: errs.length, archiveBusy: soft.length, first: (errs[0] || soft[0] || '').slice(0, 120) });

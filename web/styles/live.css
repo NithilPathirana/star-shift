@@ -527,3 +527,26 @@ html[data-motion=reduce] .rp-res.swap { animation: none; }
 /* b11: Share this movie, beside Copy coordinates */
 .share { margin-left: 6px; }
 @media (max-width: 699px) { #copyInsp, #shareInsp { min-height: 44px; } }
+/* b6: Compare > Difference (app/diffview.js): one key beside Compare's images (the Clean blink key's place,
+   which shows only in Blink); with it on, one big difference image and a diverging legend */
+.app[data-scene=viewer] .mode-compare .df-key { display: inline-flex; }
+.app[data-scene=viewer] .mode-blink .df-key { display: none; } /* it shares the Clean blink key's look (.cb-key), not its view */
+.df-key[aria-pressed=true] { border-color: var(--ring); box-shadow: inset 0 0 0 1px var(--ring); color: #FFF6E8; }
+.mode-compare.diff-on .screen+.screen { display: none; }
+.stage.diff-on #layerLgd { display: none !important; }
+.lgd.df-lgd { left: auto; right: 14px; top: 56px; bottom: auto; max-width: 264px; justify-content: flex-end; row-gap: 4px; border-radius: 12px; }
+.df-lgd .df-t { flex: 1 0 100%; text-align: right; }
+.df-inl { display: none; }
+/* phone: the image fills the width, so the legend sits under it (in the caption), not over it */
+@media (max-width: 699px) {
+  .lgd.df-lgd { display: none !important; }
+  .df-inl { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 8px; margin-top: 4px; font-size: .75rem; color: var(--stage-text); }
+  .df-inl .df-t { flex: 1 0 100%; text-align: center; color: var(--stage-muted); }
+  .df-inl .df-ramp { display: block; width: 72px; height: 8px; border-radius: 4px; }
+  .df-inl .df-pct { display: none; }
+  /* a round ± key (label kept for screen readers), so it clears the image's top-right corner */
+  .df-key { width: 44px; padding: 0; justify-content: center; }
+  .df-key .df-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+.df-lgd .df-ramp { display: block; width: 96px; height: 8px; border-radius: 4px; }
+.df-lgd .df-t { color: var(--stage-muted); }

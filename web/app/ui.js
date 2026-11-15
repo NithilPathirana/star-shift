@@ -24,6 +24,7 @@ import { createGhost } from './ghost-ui.js';
 import { createLightcurve } from './lightcurve/index.js'; // brightness-vs-date strip (info panel)
 import { createCleanBlink } from './cleanblink.js'; // Blink: hide overlays, zoom on the star
 import { createTelescopes } from './telescopes/index.js'; // Telescope compare (DESIGN.md 31a)
+import { diffImage, diffStar, diffCaption, drawDiff, diffLegend } from './diffview.js'; // b6: Compare > Difference
 import { CLARITY_KEY, readClarity } from './prefs.js'; // Clarity defaults (sounds off)
 import './story.js'; // b1: first-screen story on the cold-open map (story.css)
 import { fitPlaceholder, surpriseTarget } from './picktips.js'; // quick-pick tips, search placeholder, "Surprise me"
@@ -187,10 +188,10 @@ function buildTimeline() {
 }
 let tlRaf = 0; const rebuildSoon = () => { if (!tlRaf) tlRaf = requestAnimationFrame(() => { tlRaf = 0; buildTimeline(); onFrame(P.i); }); };
 
-let mode = 'play', side = 0, bt = null, zoom = 1, panX = 0, panY = 0, cssCell = 16, shown = -1;
+let mode = 'play', side = 0, bt = null, zoom = 1, panX = 0, panY = 0, cssCell = 16, shown = -1, diffOn = false;
 function layout() {
-  const box = $('screens'), two = mode === 'compare', n = V.n;
-  const w = box.clientWidth, h = box.clientHeight - (two ? 28 : 0);
+  const box = $('screens'), two = mode === 'compare' && !diffOn, n = V.n;
+  const w = box.clientWidth, h = box.clientHeight - (mode === 'compare' ? (diffOn && mq('(max-width: 699px)') ? 64 : 28) : 0); // room for the caption (phone Difference: + legend)
   const avail = two ? Math.min((w - 24) / 2, h) : Math.min(w, h);
   const fit = Math.max(3, Math.floor(avail / n));
   cssCell = fit * zoom;
@@ -232,19 +233,44 @@ function info(f, head) {
 }
 function draw() {
   const A = $('cvA'), B = $('cvB'), F = V.F;
-  $('ghostOff').hidden = true;
+  $('ghostOff').hidden = true; $('diffLgd').hidden = true;
   if (mode === 'telescopes') { const f = F[Math.min(P.i, F.length - 1)]; TS.refresh(); TS.draw(); info(f || null); $('chip').innerHTML = CX.chipLead() + '<span>Telescopes · same patch, same scale, north up</span>'; return; }
   if (!F.length) { const c = A.getContext('2d'); c.clearRect(0, 0, A.width, A.height); info(null); $('chip').innerHTML = ''; return; }
   const ex = firstS()?.exp || F[0].exp;
   $('chip').title = ''; $('flag').textContent = ''; // set again below for the view that needs them
   if (mode === 'play' || V.stacks.length < 2) {
     const f = F[Math.min(P.i, F.length - 1)]; CX.drawStage(A, f, V.n, opt(A), true); GH.drawCanvas(A, f, +A.dataset.dev); info(f);
+// b6: Compare > Difference: last-season stack minus first-season stack, one big image (diffview.js)
+function diffNow() { // computed once per pair of season stacks
+  const a = firstS(), b = lastS();
+  if (b._diff?.from !== a) {
+    const img = diffImage(a.d, b.d, V.n), p = a.exp || [V.grid.c, V.grid.c], q = b.exp || p;
+    const sep = Math.hypot(q[0] - p[0], q[1] - p[1]), star = diffStar(img, a.d, [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], 4 + sep / 2);
+    b._diff = { from: a, img, star, cap: diffCaption(star, V.name) };
+  }
+  return b._diff;
+}
+function drawDiffView(A) {
+  const a = firstS(), b = lastS(), D = diffNow(); A._diff = D; // (A._diff: for checks in the console)
+  drawDiff(A, D.img, { cell: +A.dataset.dev, noData: R.NO_DATA });
+  A._shown = { f: { d: D.img.d, det: 'stack' }, marks: false }; // hover: "No SPHEREx image here" on no-data pixels
+  A.setAttribute('aria-label', `Difference image, last season minus first season. ${D.cap}`);
+  $('capA').innerHTML = `<b>${R.fmtMonth(iso(a.start))} → ${R.fmtMonth(iso(b.end))}</b><span class="df-inl">${diffLegend(D.img)}</span>`; // phone: the legend sits here; the one-line caption is the plate's
+  $('diffLgd').innerHTML = diffLegend(D.img); $('diffLgd').hidden = false;
+  $('chip').innerHTML = CX.chipLead() + '<b>Difference</b><span class="sep">·</span><span>last season minus first season</span>';
+  info(lastS(), 'Last season (stacked)');
+}
+function setDiff(on) {
+  diffOn = on; $('diffKey').setAttribute('aria-pressed', String(on)); $('stage').classList.toggle('diff-on', on);
+  Snd.play('click'); layout(); updatePlate();
+}
     const rg = rangeOf(f.um), bl = bandLabel(rg); // "CO₂-ice band · 3.82–4.42 µm": a range, not a detection
     $('chip').title = bl ? bl.tip : '';
     $('chip').innerHTML = CX.chipLead() + (HOLD.on ? `<b class="hold-g" title="Hold one band is on: only detectors ${HOLD.group.dets.join('–')} play">${HOLD.group.label} only</b><span class="sep">·</span>` : '') + `${bl ? `<i class="sw" style="--rc:${rg.c}"></i><span>${esc(bl.name)}</span><span class="sep bl-r">·</span><span class="bl-r">${bl.range}</span><span class="sep">·</span>` : ''}<span>λ ${f.um ? f.um.toFixed(2) : '?'} µm</span><span class="sep bl-d x-only">·</span><span class="bl-d x-only">D${f.det}</span><span class="sep">·</span><span>${R.fmtDate(f.date)}</span>`;
     A.setAttribute('aria-label', `SPHEREx infrared image of ${V.name}, ${R.fmtDate(f.date)}, ${f.um ? f.um.toFixed(2) + ' micrometres' : ''}`);
-  } else if (mode === 'compare') {
-    CX.drawStage(A, firstS(), V.n, opt(A)); cross(A, ex[0], ex[1]); $('capA').innerHTML = `<b>First season</b> · stacked · ${sRange(firstS())}`;
+  } else if (mode === 'compare' && diffOn) drawDiffView(A);
+  else if (mode === 'compare') {
+    A.setAttribute('aria-label', 'First season, stacked'); CX.drawStage(A, firstS(), V.n, opt(A)); cross(A, ex[0], ex[1]); $('capA').innerHTML = `<b>First season</b> · stacked · ${sRange(firstS())}`;
     CX.drawStage(B, lastS(), V.n, opt(B)); cross(B, ex[0], ex[1]); $('capB').innerHTML = `<b>Last season</b> · stacked · ${sRange(lastS())}`;
     $('chip').innerHTML = CX.chipLead() + '<span>Cross = where the star was in the first season</span>'; info(lastS(), 'Right: last season');
   } else {
@@ -392,7 +418,8 @@ function updatePlate() {
   const story = (mode === 'blink' || mode === 'compare') && cap;
   const hf = HOLD.on ? heldFit() : null;
   const holdLine = mode === 'play' && HOLD.on && V.F.length ? `Showing ${HOLD.group.label}: ${esc(HOLD.note)}.${hf ? ' ' + esc(hf.line) : ''} <button type="button" class="rp-all" data-hold-off>Show all bands</button>` : '';
-  const capHTML = story ? `${cap}<span class="rp-cat">${esc(capCat)}</span>` : holdLine;
+  const capHTML = mode === 'compare' && diffOn && V.stacks.length > 1 ? esc(diffNow().cap) // b6: what the Difference shows
+    : story ? `${cap}<span class="rp-cat">${esc(capCat)}</span>` : holdLine;
   const key = [res, capHTML, done].join('|'); if (key === plateKey) return; plateKey = key;
   el.classList.toggle('done', done); el.classList.toggle('measuring', !done); el.classList.toggle('two', res.includes('rp-row'));
   $('rpCap').innerHTML = capHTML; $('rpCap').hidden = !capHTML;
@@ -505,6 +532,7 @@ $('prev').onclick = () => step(-1); $('next').onclick = () => step(1);
 let lastSeason = -1;
 function scrub(x) {
   const F = V.F; if (!F.length) return;
+$('diffKey').onclick = () => setDiff(!diffOn);
   const r = track.getBoundingClientRect(), m = t0 + Math.min(1, Math.max(0, (x - r.left) / r.width)) * (t1 - t0);
   let b = 0; F.forEach((f, k) => { if (Math.abs(f.mjd - m) < Math.abs(F[b].mjd - m)) b = k; });
   if (b === P.i) return; const s = seasonOf(b); if (lastSeason >= 0 && s !== lastSeason) Snd.play('season'); else Snd.play('scrub'); lastSeason = s; P.set(b, true);

@@ -1,0 +1,23 @@
+#!/bin/sh
+# Freeze gate (Master, Sun 15 Nov): every commit must pass npm test, then the headless page check
+# (9 pages + all 5 presets' viewer deep links, no page/console errors) against the local server.
+# One gate at a time (a lock), so parallel agents never run several headless browsers at once.
+# Never bypass it with --no-verify. AI-written (Claude, Anthropic) for team Proper Motion.
+cd "$(git rev-parse --show-toplevel)" || exit 1
+LOCK="$(git rev-parse --git-common-dir)/gate.lock"
+i=0
+while ! mkdir "$LOCK" 2>/dev/null; do
+  i=$((i+1)); if [ $i -gt 300 ]; then echo "gate: lock busy for 10 min ($LOCK); is another commit stuck?"; exit 1; fi
+  sleep 2
+done
+trap 'rmdir "$LOCK" 2>/dev/null' EXIT INT TERM
+echo "gate: npm test ..."
+npm test --silent > "$(git rev-parse --git-common-dir)/gate-test.log" 2>&1
+if [ $? -ne 0 ]; then grep -E "^✖|^ℹ (pass|fail)" "$(git rev-parse --git-common-dir)/gate-test.log" | head -20; echo "gate: npm test FAILED, commit refused"; exit 1; fi
+grep -E "^ℹ (pass|fail)" "$(git rev-parse --git-common-dir)/gate-test.log"
+echo "gate: page check (12 pages, about 2 min) ..."
+node deploy/page-check.mjs http://127.0.0.1:8787 > "$(git rev-parse --git-common-dir)/gate-pages.log" 2>&1
+rc=$?
+tail -3 "$(git rev-parse --git-common-dir)/gate-pages.log"
+if [ $rc -ne 0 ]; then grep -E "FAIL|could not run" "$(git rev-parse --git-common-dir)/gate-pages.log" | head -12; echo "gate: page check FAILED (or the local server at :8787 is down), commit refused"; exit 1; fi
+exit 0
