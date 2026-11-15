@@ -20,3 +20,11 @@ test('the visible credit line uses the exact approved text', () => {
   const html = readFileSync(join(root, 'index.html'), 'utf8');
   assert.match(html, /Logo: SI-generated with ChatGPT; small version and favicon redrawn as SVG by Claude\./);
 });
+
+test('every page in web/ shows the exact per-page SI line (orbits redirect included)', () => {
+  const LINE = "Built with SI tools (Super Intelligence, NASA's term for AI). Logo: SI-generated with ChatGPT; small version and favicon redrawn as SVG by Claude.";
+  const pages = readdirSync(root).filter(n => n.endsWith('.html'));
+  const missing = pages.filter(n => !readFileSync(join(root, n), 'utf8').includes(LINE));
+  assert.deepEqual(missing, [], 'pages without the line');
+  assert.ok(pages.includes('orbits.html'));
+});
