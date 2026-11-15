@@ -467,3 +467,59 @@ html[data-motion=reduce] .state.loader2 { transition: none; }
 .layer-hint { flex: 1 1 0; min-width: 0; margin: 0; font-size: .8125rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .layer-hint b { color: var(--ink-2); font-weight: 600; text-transform: capitalize; }
 @container dock (max-width: 760px) { .layer-hint { display: none; } }
+
+/* ===== Judging panel a6 + b2 (result plate), b3 (Hold one band), b11 (Share), design/spec-judge-fixes.md section 2.
+   AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. ===== */
+.rp { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  width: max-content; max-width: calc(100% - 280px); pointer-events: none; }
+.rp[hidden], .rp-cap[hidden] { display: none; }
+.rp > * { pointer-events: auto; }
+.rp-cap { margin: 0; padding: 2px 10px; border-radius: 8px; background: rgba(21,17,14,.82); font: 500 .875rem/1.35 var(--font-ui); color: var(--stage-text); text-align: center; text-wrap: balance; }
+.rp-res { margin: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0 8px; min-height: 30px; padding: 0 12px; border-radius: 15px;
+  background-color: rgba(30,24,19,.86); border: 1px solid rgba(255,235,210,.14); font: 400 .75rem/1.5 var(--font-num); color: var(--stage-text); }
+.rp-k, .rp .sep { color: var(--stage-muted); }
+.rp-res b { font-weight: 600; }
+.rp-n { color: var(--stage-text); font-variant-numeric: tabular-nums; }
+.rp-res .brk { display: none; }
+.rp.measuring .rp-res { background-image: linear-gradient(90deg, rgba(227,168,107,.22) var(--p, 0%), transparent var(--p, 0%)); }
+.rp-res.swap { animation: rp-swap 160ms var(--ease-out); }
+@keyframes rp-swap { from { opacity: 0; } }
+html[data-motion=reduce] .rp-res.swap { animation: none; }
+.rp-how, .rp-all { color: var(--ring); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.rp-all { padding: 0; margin: 0; border: 0; background: none; font: inherit; cursor: pointer; }
+.rp-how:focus-visible, .rp-all:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 3px; }
+.rp-v { padding: 0 6px; border-radius: 4px; border: 1px solid; font: 600 .75rem/1.5 var(--font-num); letter-spacing: .04em; }
+.rp-v.agrees { color: #9DB89F; border-color: rgba(157,184,159,.5); }
+.rp-v.nm { color: var(--stage-muted); border: 1px dashed rgba(255,235,210,.4); }
+.rp-v.limit { color: var(--ring); border-color: rgba(227,168,107,.5); }
+.rp-v.differs { color: #E0907A; border-color: rgba(224,144,122,.5); }
+.rp.done .rp-cat { display: none; }
+.stage.clean-blink .rp { display: none; }
+@media (min-width: 700px) {
+  /* room under the image for the plate, the same in every mode so the image never resizes */
+  .app[data-scene=viewer] .screens { bottom: 72px; }
+  /* the Clean blink key leaves the bottom centre to the plate */
+  .cb-key { left: auto; right: 14px; top: 11px; bottom: auto; transform: none; }
+}
+@media (max-width: 699px) {
+  /* phone: the plate is the dock's first block (ui.js moves it), light, under the image */
+  .rp { position: static; transform: none; width: auto; max-width: none; flex: 1 1 100%; order: -1; align-items: stretch; gap: 6px; padding: 2px 2px 12px; border-bottom: 1px solid var(--edge); }
+  .rp-cap { padding: 0; background: none; text-align: left; color: var(--ink); }
+  .rp-res { justify-content: flex-start; padding: 0; min-height: 0; background-color: transparent; border: 0; border-radius: 0; color: var(--ink); }
+  .rp-k, .rp .sep { color: var(--muted); }
+  .rp-n { color: var(--ink); }
+  .rp-res .brk { display: block; flex-basis: 100%; height: 0; }
+  .rp.measuring .rp-res { background-image: linear-gradient(90deg, var(--copper) var(--p, 0%), transparent var(--p, 0%)); background-size: 100% 2px; background-position: 0 100%; background-repeat: no-repeat; padding-bottom: 6px; }
+  .rp-how, .rp-all { color: var(--copper-ink); display: inline-block; padding: 12px 0; margin: -12px 0; }
+  .rp-v.agrees { color: var(--sage-ink); background: var(--sage-tint); border-color: transparent; }
+  .rp-v.nm { color: var(--muted); border: 1px dashed var(--edge-strong); }
+  .rp-v.limit { color: var(--copper-ink); border-color: var(--edge-strong); }
+  .rp-v.differs { color: var(--coral); border-color: currentColor; }
+}
+/* b3: Hold one band, beside Speed; the held range leads the stage chip */
+.hold-key { min-height: 34px; padding: 0 10px; gap: 6px; font-size: .75rem; white-space: nowrap; flex: none; }
+.chip .hold-g { color: var(--ring); font-weight: 600; }
+@media (max-width: 699px) { .hold-key { min-height: 44px; } }
+/* b11: Share this movie, beside Copy coordinates */
+.share { margin-left: 6px; }
+@media (max-width: 699px) { #copyInsp, #shareInsp { min-height: 44px; } }

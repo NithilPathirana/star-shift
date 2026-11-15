@@ -58,7 +58,7 @@
     <div class="top-actions">
       <button class="key icon only-sheet" id="infoBtn" aria-label="Image information" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="14" height="14" rx="3"/><path d="M7 8h6M7 12h4"/></svg></button>
       <button class="key pages-key" id="pagesBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="pagesPop">Pages</button>
-      <button class="key" id="clarityBtn" aria-label="Clarity settings" aria-haspopup="dialog" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="7"/><path d="M10 3v14" /><path d="M10 3a7 7 0 0 1 0 14z" fill="currentColor" stroke="none"/></svg><span class="clar-l">Clarity</span></button>
+      <button class="key" id="clarityBtn" aria-label="Clarity settings" title="Clarity: comfort and image settings (less motion, solid glass, more contrast, larger text, sounds, brightness stretch)" aria-haspopup="dialog" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="7"/><path d="M10 3v14" /><path d="M10 3a7 7 0 0 1 0 14z" fill="currentColor" stroke="none"/></svg><span class="clar-l">Clarity</span></button>
       <button class="key icon" id="helpBtn" aria-label="Keyboard shortcuts and help" aria-haspopup="dialog" aria-expanded="false"><span style="font-size:1rem">?</span></button>
     </div>
   </header>
@@ -109,7 +109,7 @@
         <button class="glass-btn" id="zin" aria-label="Zoom in"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="9" r="5.5"/><path d="M13 13l4 4M9 6.5v5M6.5 9h5"/></svg></button>
         <button class="glass-btn" id="zout" aria-label="Zoom out"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="9" r="5.5"/><path d="M13 13l4 4M6.5 9h5"/></svg></button>
         <button class="glass-btn" id="zfit" aria-label="Fit image"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/></svg></button>
-        <span class="zoomlvl num" id="zlvl">fit</span>
+        <span class="zoomlvl num" id="zlvl" title="Zoom level: “fit” means the whole image fits the stage; 2×, 3×, 4× when zoomed in">fit</span>
         <hr>
         <button class="glass-btn" id="bandTool" aria-label="IR band ranges" title="IR band ranges" aria-haspopup="dialog" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 14h16"/><rect x="3" y="7" width="5" height="4" rx="1.2"/><rect x="10" y="5" width="7" height="4" rx="1.2"/><path d="M5 14v2M10 14v2M15 14v2"/></svg></button>
         <button class="glass-btn" id="ringTool" aria-label="Predicted position ring" aria-pressed="true"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="3 2.2"><circle cx="10" cy="10" r="6.5"/></svg></button>
@@ -117,6 +117,8 @@
       </div>
       <svg class="compass" width="40" height="52" viewBox="0 0 40 52" role="img" aria-label="Sky view: north is up, east is left (as seen from Earth looking up)"><title>Sky view: north is up, east is left (as seen from Earth looking up)</title><g aria-hidden="true"><path class="cp-ax" d="M31 41V20M31 41H19"/><path class="cp-hd" d="M31 13l-4.5 8h9zM12 41l7-4.5v9z"/><circle class="cp-hd" cx="31" cy="41" r="2"/><text class="cp-n" x="31" y="10" text-anchor="middle">N</text><text x="5" y="45" text-anchor="middle">E</text></g></svg>
       <div class="scalebar num"><i id="sbar"></i>30″</div>
+      <!-- result plate (judging panel a6 + b2): caption, then the measured chip; ui.js moves it into the dock on phones -->
+      <div class="rp viewer-only" id="resultPlate" hidden><p class="rp-cap" id="rpCap" hidden></p><p class="rp-res num" id="rpRes"></p><span class="sr-only" aria-live="polite" id="rpLive"></span></div>
       <div class="lgd num" id="layerLgd" hidden></div>
       <div class="gh-off num" id="ghostOff" hidden></div>
       <button class="cb-key" id="cleanKey" aria-pressed="false" title="Hide every overlay and zoom in on the star"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="3"/><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/></svg><span class="cb-l">Clean blink</span></button>
@@ -125,9 +127,9 @@
 
       <div class="state loader2" id="stLoading" hidden><div id="scanLoader"></div></div>
       <div class="state error" id="stError" hidden role="alert">
-        <div><h2>The NASA archive (IRSA) isn't answering</h2>
+        <div><h2>The NASA archive isn't answering</h2>
           <p id="errTxt">Some images arrived and are kept. Retry fetches only the missing ones.</p>
-          <div class="row"><button class="key primary" id="retry">Retry</button><button class="key" id="useLoaded">View the images that arrived</button></div></div>
+          <div class="row"><button class="key primary" id="retry">Retry</button><button class="key" id="useLoaded">Use the images loaded</button></div></div>
       </div>
       <div class="state" id="stEmpty" hidden>
         <div><h2>No SPHEREx images cover this spot</h2>
@@ -162,7 +164,7 @@
       <div class="target" id="tName">—</div>
       <div id="vLook"></div>
       <dl class="x-only" style="margin-top:8px"><dt>RA</dt><dd id="ra"></dd><dt>Dec</dt><dd id="dec"></dd></dl>
-      <button class="key copy" id="copyInsp" style="margin-top:10px"><svg class="cp" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5"/><path d="M3 10.5V3.5A1 1 0 0 1 4 2.5h6.5"/></svg><svg class="ok" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3.2 3L13 4.5"/></svg><span class="copy-l">Copy coordinates</span></button><button type="button" class="nb-plus nb-pos" data-nb="pos" aria-label="Add the target position to the lab notebook" title="Add to the lab notebook">+</button>
+      <button class="key copy" id="copyInsp" style="margin-top:10px"><svg class="cp" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5"/><path d="M3 10.5V3.5A1 1 0 0 1 4 2.5h6.5"/></svg><svg class="ok" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3.2 3L13 4.5"/></svg><span class="copy-l">Copy coordinates</span></button><button class="key copy share" id="shareInsp" type="button" style="margin-top:10px" title="Copy a link to this movie: the same star, view and image. Opens without a login."><svg class="cp" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6.5 9.5l3-3M7 4.5l1.2-1.2a2.6 2.6 0 0 1 3.7 3.7L10.7 8.2M9 11.5l-1.2 1.2a2.6 2.6 0 0 1-3.7-3.7L5.3 7.8"/></svg><svg class="ok" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg><span class="share-l">Share this movie</span></button><button type="button" class="nb-plus nb-pos" data-nb="pos" aria-label="Add the target position to the lab notebook" title="Add to the lab notebook">+</button>
     </section>
     <section class="insp-sec">
       <div class="ih"><h3 id="ihead">This image</h3><span class="tag tag-obs">Observed</span></div>
@@ -220,7 +222,7 @@
     <div class="viewer-only group view"><span class="group-l">View</span>
       <div class="seg well" role="group" aria-label="View" id="viewSeg"><span class="seg-thumb"></span><button class="seg-btn" data-mode="play" aria-pressed="true">Time</button><button class="seg-btn" data-mode="compare" aria-pressed="false">Compare</button><button class="seg-btn" data-mode="blink" aria-pressed="false">Blink</button><button class="seg-btn" data-mode="telescopes" aria-pressed="false" title="The same patch from SPHEREx, AllWISE and 2MASS">Telescopes</button></div></div>
     <div class="viewer-only group speed"><span class="group-l">Speed</span>
-      <div class="seg well" role="group" aria-label="Speed" id="speedSeg"><span class="seg-thumb"></span><button class="seg-btn" data-fps="2" aria-pressed="false">Slow</button><button class="seg-btn" data-fps="4" aria-pressed="true">Normal</button><button class="seg-btn" data-fps="8" aria-pressed="false">Fast</button></div></div>
+      <div class="seg well" role="group" aria-label="Speed" id="speedSeg"><span class="seg-thumb"></span><button class="seg-btn" data-fps="2" aria-pressed="false">Slow</button><button class="seg-btn" data-fps="4" aria-pressed="true">Normal</button><button class="seg-btn" data-fps="8" aria-pressed="false">Fast</button></div><button class="key hold-key" id="holdKey" type="button" aria-pressed="false" title="Hold one band"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M1.5 12.5h13"/><rect x="5" y="5" width="6" height="5" rx="1.2"/></svg><span class="hk-l">All bands</span></button></div>
     <div class="viewer-only group layer-group"><span class="group-l layers-l">Layers</span>
       <div class="layers"><div class="seg well lseg" role="group" aria-label="What the stage shows" id="layerSeg"><span class="seg-thumb"></span><button class="seg-btn" data-layer="image" aria-pressed="true" title="The picture itself">IMAGE</button><button class="seg-btn" data-layer="variance" aria-pressed="false" title="How uncertain each pixel is">VARIANCE</button><button class="seg-btn" data-layer="zodi" aria-pressed="false" title="Glow from dust in our Solar System (the archive's model)">ZODI</button><button class="seg-btn" data-layer="wave" aria-pressed="false" title="The wavelength each pixel was measured at">WAVE</button></div><i class="lsep" aria-hidden="true"></i><span class="flags-split"><button class="key" id="flagsBtn" aria-pressed="true" title="Pixels the archive marked as contaminated">FLAGS</button><button class="key flags-more" id="flagsMore" aria-haspopup="dialog" aria-expanded="false" aria-label="Flag legend and filter" title="Flag legend and filter">▾</button></span></div></div>
     <p class="viewer-only layer-hint" id="layerHint" aria-live="polite"></p>

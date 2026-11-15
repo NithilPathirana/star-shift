@@ -26,6 +26,8 @@ import { createCleanBlink } from './cleanblink.js'; // Blink: hide overlays, zoo
 import { createTelescopes } from './telescopes/index.js'; // Telescope compare (DESIGN.md 31a)
 import { CLARITY_KEY, readClarity } from './prefs.js'; // Clarity defaults (sounds off)
 import './story.js'; // b1: first-screen story on the cold-open map (story.css)
+import { motionVerdict } from './proof/logic.js'; // the Proof page's verdict rule, for the result plate
+import { groupOfDet, groupByDets, centreMasked, bestGroup, counterText, plannedIndexOf, resultState, storyCaption, shareParams, verdictClass, VIEW_MODES } from './viewerbits.js';
 
 const R = window.MockRender;
 const $ = id => document.getElementById(id), root = document.documentElement;
@@ -106,7 +108,7 @@ function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add
 /* ======================= FLIP-BOOK (viewer scene) ======================= */
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const V = { // current time-lapse
-  query: null, target: null, grid: null, n: 25, raws: [], F: [], FA: [], /* FA = every frame, F = the ones the flag filter keeps */ stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0,
+  query: null, target: null, grid: null, n: 25, raws: [], F: [], FA: [], FK: [], /* FA = every frame, FK = the ones the flag filter keeps, F = the ones shown (FK, or one band of it while Hold one band is on) */ stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0,
   status: 'idle', ctl: null, motion: null, seasons: [], name: '',
 };
 const iso = d => d.toISOString().slice(0, 19);
@@ -124,6 +126,37 @@ const seasonName = v => { const a = new Date(V.F[v.from].date.slice(0, 10)), b =
 const visits = (F) => { const out = []; let cur = null; F.forEach((f, i) => { if (!cur || f.mjd - F[i - 1].mjd > 60) { cur = { from: i, to: i }; out.push(cur); } else cur.to = i; }); return out; };
 const seasonOf = i => V.seasons.findIndex(v => i >= v.from && i <= v.to);
 
+/* "Hold one band" (judging panel a3/b3): Time playback shows one detector pair only, so the star
+   doesn't flicker between wavelengths. Default on for a preset (presets.js holdBand); the motion fit,
+   the brightness strip and the counts still use every image the flag filter keeps (V.FK).
+   AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+const HOLD = { on: false, group: null, note: '' };
+const shownFrames = () => (HOLD.on && HOLD.group ? V.FK.filter(f => HOLD.group.dets.includes(f.det)) : V.FK);
+const holdPreset = () => (V.query?.type === 'name' ? findPreset(V.query.name) : null);
+function holdForLoad() { // at the start of a load: the preset's band, else off
+  const p = holdPreset(), g = groupByDets(p?.holdBand);
+  Object.assign(HOLD, g ? { on: true, group: g, note: p.holdNote || '' } : { on: false, group: null, note: '' });
+}
+function setHold(on) {
+  if (on && !HOLD.group) { // no preset band: the pair whose images most often show the centre unblanked
+    const b = bestGroup(V.FK.map(f => ({ det: f.det, masked: centreMasked(f.d, V.n, f.exp[0], f.exp[1]) })));
+    if (!b) { toast('Not enough images in any one band yet.'); Snd.play('error'); return; }
+    HOLD.group = b.group; HOLD.note = `its centre is blanked least often here (${b.masked} of ${b.n} images)`;
+  }
+  HOLD.on = !!on;
+  const cur = V.F[P.i]; V.F = shownFrames();
+  if (cur && V.F.length) { let b = 0; V.F.forEach((f, k) => { if (Math.abs(f.mjd - cur.mjd) < Math.abs(V.F[b].mjd - cur.mjd)) b = k; }); P.i = b; } else P.i = 0;
+  if (V.status === 'ready') { restack(); if (mode !== 'play' && mode !== 'telescopes' && V.stacks.length < 2) setMode('play'); }
+  shown = -1; buildTimeline(); holdKey(); updatePlate(); draw(); onFrame(P.i);
+  Snd.play('tick');
+}
+function holdKey() {
+  const k = $('holdKey'); if (!k) return;
+  k.setAttribute('aria-pressed', String(HOLD.on));
+  k.querySelector('.hk-l').textContent = HOLD.on && HOLD.group ? HOLD.group.label : 'All bands';
+  k.title = HOLD.on ? `Playing one band only (detectors ${HOLD.group.dets.join('–')}). Click to show all bands.` : 'Playing every band. Click to hold one band, so the star doesn\'t flicker between wavelengths.';
+}
+
 /* timeline: seasons as raised segments, one tick per image (pending ones faint) */
 let t0 = 0, t1 = 1;
 const pos = m => (m - t0) / (t1 - t0) * 100;
@@ -139,13 +172,13 @@ function buildTimeline() {
   track.innerHTML = V.seasons.map(v => `<div class="season" style="left:calc(${pos(F[v.from].mjd)}% - 8px);width:calc(${pos(F[v.to].mjd) - pos(F[v.from].mjd)}% + 16px)"></div>`).join('') +
     F.map(f => `<i class="tick" style="left:${pos(f.mjd)}%"></i>`).join('') +
     pending.map(m => `<i class="tick pending" style="left:${pos(m)}%"></i>`).join('') +
-    hidden.map(f => `<i class="tick hid" style="left:${pos(f.mjd)}%" title="Hidden: ${esc(CX.whyHidden(f) || 'flag filter')}"></i>`).join('') + '<span class="key thumb" id="thumb"></span>';
+    hidden.map(f => `<i class="tick hid" style="left:${pos(f.mjd)}%" title="${esc(CX.whyHidden(f) ? 'Hidden: ' + CX.whyHidden(f) : V.FK.includes(f) && HOLD.on ? `Another band (showing ${HOLD.group.label} only)` : 'Hidden: flag filter')}"></i>`).join('') + '<span class="key thumb" id="thumb"></span>';
   $('tlLabels').innerHTML = V.seasons.map(v => `<span style="left:${(pos(F[v.from].mjd) + pos(F[v.to].mjd)) / 2}%">${seasonName(v)}</span>`).join('');
   ticks = [...track.querySelectorAll('.tick:not(.pending):not(.hid)')];
   const g = document.createElement('span'); g.className = 'ghost'; g.innerHTML = '<b></b>'; track.appendChild(g);
   track.setAttribute('aria-valuemax', String(Math.max(1, F.length)));
   applyRanges();
-  LC.data(F.map(f => f.raw), V.grid, V.name, V.status === 'loading'); // brightness strip follows the shown images
+  LC.data(V.FK.map(f => f.raw), V.grid, V.name, V.status === 'loading'); // brightness strip: every image the flag filter keeps (all bands, also while one band is held)
 }
 let tlRaf = 0; const rebuildSoon = () => { if (!tlRaf) tlRaf = requestAnimationFrame(() => { tlRaf = 0; buildTimeline(); onFrame(P.i); }); };
 
@@ -168,7 +201,7 @@ function layout() {
 const opt = cv => CB.opt({ ramp: set.ramp, cell: +cv.dataset.dev, ring: set.ring && !!V.ring, ringColor: getComputedStyle(root).getPropertyValue('--ring').trim(),
   maskBg: '#211b16', maskInk: '#6b5d50', stretch: set.str, hatch: set.hatch });
 function cross(cv, fx, fy) {
-  if (CB.on) return; // Clean Blink hides the cross
+  if (CB.on && mode === 'blink') return; // Clean Blink hides the cross (Compare always draws it: its chip says so)
   const c = cv.getContext('2d'), k = +cv.dataset.dev, x = (fx + .5) * k, y = (fy + .5) * k;
   c.strokeStyle = '#9DB89F'; c.lineWidth = Math.max(1.5, k / 10); c.beginPath();
   c.moveTo(x - 3.4 * k, y); c.lineTo(x - 1.2 * k, y); c.moveTo(x + 1.2 * k, y); c.lineTo(x + 3.4 * k, y);
@@ -203,7 +236,7 @@ function draw() {
     const f = F[Math.min(P.i, F.length - 1)]; CX.drawStage(A, f, V.n, opt(A), true); GH.drawCanvas(A, f, +A.dataset.dev); info(f);
     const rg = rangeOf(f.um), bl = bandLabel(rg); // "CO₂-ice band · 3.82–4.42 µm": a range, not a detection
     $('chip').title = bl ? bl.tip : '';
-    $('chip').innerHTML = CX.chipLead() + `${bl ? `<i class="sw" style="--rc:${rg.c}"></i><span>${esc(bl.name)}</span><span class="sep bl-r">·</span><span class="bl-r">${bl.range}</span><span class="sep">·</span>` : ''}<span>λ ${f.um ? f.um.toFixed(2) : '?'} µm</span><span class="sep bl-d x-only">·</span><span class="bl-d x-only">D${f.det}</span><span class="sep">·</span><span>${R.fmtDate(f.date)}</span>`;
+    $('chip').innerHTML = CX.chipLead() + (HOLD.on ? `<b class="hold-g" title="Hold one band is on: only detectors ${HOLD.group.dets.join('–')} play">${HOLD.group.label} only</b><span class="sep">·</span>` : '') + `${bl ? `<i class="sw" style="--rc:${rg.c}"></i><span>${esc(bl.name)}</span><span class="sep bl-r">·</span><span class="bl-r">${bl.range}</span><span class="sep">·</span>` : ''}<span>λ ${f.um ? f.um.toFixed(2) : '?'} µm</span><span class="sep bl-d x-only">·</span><span class="bl-d x-only">D${f.det}</span><span class="sep">·</span><span>${R.fmtDate(f.date)}</span>`;
     A.setAttribute('aria-label', `SPHEREx infrared image of ${V.name}, ${R.fmtDate(f.date)}, ${f.um ? f.um.toFixed(2) + ' micrometres' : ''}`);
   } else if (mode === 'compare') {
     CX.drawStage(A, firstS(), V.n, opt(A)); cross(A, ex[0], ex[1]); $('capA').innerHTML = `<b>First season</b> · stacked · ${sRange(firstS())}`;
@@ -219,9 +252,12 @@ function draw() {
 }
 let tickAnim = null;
 function setCounter(i, animate) {
-  const N = V.F.length, fmt = k => `${String(k + 1).padStart(2, '0')} / ${N}`;
+  // "6 / 120 · 84 loaded" while loading, "15 / 120 (of 358)" when done, "5 / 47" with one band held (viewerbits.js)
+  const N = V.F.length, fmt = k => counterText({ i: k, shown: N, loading: V.status === 'loading', planned: V.planned, loaded: V.FA.length,
+    total: V.total, held: HOLD.on, plannedIndex: plannedIndexOf(V.plannedMjds, V.F[k]?.mjd) });
   cancelAnimationFrame(tickAnim);
-  if (!N) { $('counter').textContent = ''; return; }
+  $('counter').title = HOLD.on ? `Image number in this band (${HOLD.group.label}); ${V.FK.length} images in all bands` : V.status === 'loading' ? `Image number out of the ${V.planned} being loaded` : `Image number out of the ${N} used${V.total > N ? `; IRSA has ${V.total} images of this spot, spread evenly over time we use ${N}` : ''}`;
+  if (!N) { $('counter').textContent = fmt(0); return; }
   if (!animate || set.motion || Math.abs(i - shown) > 12 || shown < 0) { $('counter').textContent = fmt(i); shown = i; return; }
   let cur = shown; const dir = Math.sign(i - cur), stepA = () => { cur += dir; $('counter').textContent = fmt(cur); if (cur !== i) tickAnim = requestAnimationFrame(stepA); };
   shown = i; stepA();
@@ -243,7 +279,7 @@ function onFrame(i, manual) {
   $('tlDate').innerHTML = (rg ? `<span class="tl-band" title="${esc(bandLabel(rg).text)}"><i style="--rc:${rg.c}"></i><span class="tlb-n">${esc(bandName(rg))}</span><span class="tlb-i" aria-hidden="true">${esc(bandInitials(rg))}</span></span>` : '') + `<span>${R.fmtDate(f.date)}</span>`;
   track.setAttribute('aria-valuenow', i + 1); track.setAttribute('aria-valuetext', `Image ${i + 1}, ${R.fmtDate(f.date)}${rg ? ', ' + bandName(rg) : ''}`);
   setCounter(i, manual);
-  LC.mark(i);
+  { const k = V.FK.indexOf(f); if (k >= 0) LC.mark(k); } // the strip lists every kept image, all bands
   $('play').dataset.playing = P.playing; $('play').setAttribute('aria-label', P.playing ? 'Pause' : 'Play');
   $('pi').innerHTML = P.playing ? '<path d="M5 4h3.5v12H5zM11.5 4H15v12h-3.5z" fill="currentColor"/>' : '<path d="M6 4l10 6-10 6z" fill="currentColor"/>';
   if (manual) $('live').textContent = `Image ${i + 1} of ${F.length}, ${R.fmtDate(f.date)}${f.um ? ', ' + f.um.toFixed(2) + ' micrometres' : ''}`;
@@ -260,7 +296,7 @@ const CX = createContam({ $, R, V, P, esc, set, Snd, base: BASE, tables: () => t
   tipAt: (html, x, y) => { clearTimeout(tipT); $('tip').innerHTML = html; placeTip({ left: x - 10, right: x + 10, top: y - 10, height: 20 }); } });
 // Brightness-vs-date strip (lightcurve/) and Clean Blink (cleanblink.js)
 const LC = createLightcurve({ $, esc, colourOf: um => rangeOf(um)?.c,
-  onPick: i => { if (mode === 'compare' || mode === 'blink') setMode('play'); P.pause(); P.set(i, true); Snd.play('scrub'); } });
+  onPick: i => { if (mode === 'compare' || mode === 'blink') setMode('play'); P.pause(); const f = V.FK[i]; if (f && !V.F.includes(f)) setHold(false); P.set(Math.max(0, V.F.indexOf(f)), true); Snd.play('scrub'); } });
 const CB = createCleanBlink({ $, Snd, mode: () => mode, n: () => V.n, cell: () => cssCell, redraw: () => draw(),
   getView: () => ({ zoom, panX, panY }), setView: v => { zoom = v.zoom; if (v.panX != null) { panX = v.panX; panY = v.panY; } layout(); },
   target: () => (firstS()?.exp && lastS()?.exp ? [firstS().exp, lastS().exp] : null) });
@@ -271,11 +307,11 @@ function remeasure() {
   // A preset may say which detectors its motion is measured on (WISE 0855: 5–6, where it shows);
   // the Proof page uses the same images (data.js motionDetectors).
   const preset = V.query?.type === 'name' ? findPreset(V.query.name) : null, dets = motionDetectors(preset);
-  const raws = V.F.map(f => f.raw).filter(f => !dets || dets.includes(f.detector));
+  const raws = V.FK.map(f => f.raw).filter(f => !dets || dets.includes(f.detector)); // every kept image, whatever band is held
   try { V.motion = V.grid && raws.length ? measureMotion(raws, V.grid) : null; } catch { V.motion = null; }
   if (V.motion) V.motion.detectors = dets;
   // only a final fit counts: all planned images tried and at least two observing seasons
-  if (V.motion?.ok && visits(V.F).length < 2) V.motion = { ok: false, frames: V.motion.frames, reason: 'one season only', detectors: dets };
+  if (V.motion?.ok && visits(V.FK).length < 2) V.motion = { ok: false, frames: V.motion.frames, reason: 'one season only', detectors: dets };
   const mc = motionCheck(), mo = V.motion;
   const fitted = mo?.ok && !(mc && !mc.measurable) && mo.significant !== false; // a real, significant motion: Simple gets words, Expert ± numbers
   if (fitted) $('d-meas').innerHTML = `<span class="x-only">${(mo.total / 1000).toFixed(2)} ± ${(mo.totalErr / 1000).toFixed(2)}″/yr</span><span class="s-only">moves about ${plainArcsec(mo.total / 1000)} a year</span> · ${esc(usedText(mo))}`;
@@ -286,12 +322,81 @@ function remeasure() {
     : mo ? (mo.reason === 'one season only' ? 'needs two seasons to measure' : mo.reason === 'too few frames' ? 'too few images to measure' : 'too faint to measure') : '—';
   $('useAll').hidden = !filterHides(mo);
   repaintMot?.();
+  updatePlate();
 }
+
+/* ---------- Result plate (judging panel a6 + b2; design/spec-judge-fixes.md section 2) ----------
+   Under the image (desktop) or first in the dock (phone): one caption line, then the measured chip:
+   "Measuring motion… 45/120", then "Measured here 10.32 ± 0.27″/yr · catalogue 10.39 · AGREES · How we know →".
+   The numbers are the motion panel's fit (V.motion), the same numbers in Simple and Expert; the verdict is
+   the Proof page's rule (proof/logic.js motionVerdict) with the Proof page's catalogue value (proof.json).
+   AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+let proofCat = null; // preset key -> proof.json catalogue motion { value, err, pa, source }
+fetch('data/proof.json').then(r => r.json()).then(d => {
+  proofCat = {}; for (const t of d.targets || []) { const m = (t.tests || []).find(x => x.type === 'motion'); if (m?.expected) proofCat[t.key] = m.expected; }
+  updatePlate();
+}).catch(() => { proofCat = {}; });
+function catalogueMotion() { // { value, err (mas/yr), vec: { pmra, pmdec }, source } or null
+  const p = holdPreset(), pc = p && proofCat?.[p.key];
+  if (pc && Number.isFinite(pc.value)) {
+    const pa = (pc.pa ?? 0) * Math.PI / 180;
+    return { value: pc.value, err: pc.err || 0, vec: Number.isFinite(pc.pa) ? { pmra: pc.value * Math.sin(pa), pmdec: pc.value * Math.cos(pa) } : null, source: pc.source || '' };
+  }
+  const t = V.target; if (!t || !(t.pmra || t.pmdec)) return null;
+  return { value: totalPM(t.pmra, t.pmdec), err: 0, vec: { pmra: t.pmra, pmdec: t.pmdec }, source: t.source || '' };
+}
+const NM_WHY = (mc, mo) => (mc?.saturated ? `centre blanked in ${mo.maskedFrames} of ${mo.frames} images` : mc?.slow ? `moves under one pixel in these ${mo.span.toFixed(1)} years` : 'the fit could not run');
+const FAIL_WHY = { 'one season only': 'needs two seasons of images', 'too few frames': 'too few images' };
+let plateKey = '';
+function updatePlate() {
+  const el = $('resultPlate'); if (!el) return;
+  const loading = V.status === 'loading', mo = V.motion, p = holdPreset();
+  const how = `<a class="rp-how" href="proof.html${p ? '#' + p.key : ''}">How we know <span aria-hidden="true">→</span></a>`, sep = '<span class="sep">·</span>';
+  let res = '', live = '', done = false, cap = '', capCat = '';
+  if (loading || V.status === 'idle') {
+    const n = V.FA.length, N = V.planned || 0, pc = N ? Math.round(100 * n / N) : 0;
+    res = `<span class="rp-k">Measuring motion…</span> <span class="rp-n">${n}/${N || '…'}</span>`; el.style.setProperty('--p', pc + '%');
+  } else if (V.status === 'ready') {
+    done = true;
+    const cat = catalogueMotion(), mc = motionCheck();
+    const v = mo?.ok && cat ? motionVerdict(mo, cat.value, cat.err, mo.span, cat.vec)?.verdict : null;
+    const st = resultState({ mo, measurable: mc ? mc.measurable : true, verdict: v, catYr: cat ? cat.value / 1000 : null });
+    const tag = vv => `<span class="rp-v ${verdictClass(vv)}">${vv}</span>`;
+    if (st.kind === 'fail') { res = `<span class="rp-k">Motion can't be measured here:</span> ${esc(FAIL_WHY[st.reason] || 'too faint to follow')} ${sep} ${how}`; live = `Motion can't be measured here: ${FAIL_WHY[st.reason] || 'too faint to follow'}.`; }
+    else if (st.kind === 'nm') { res = `<span class="rp-k">Motion can't be measured here:</span> ${esc(NM_WHY(mc, mo))} ${sep} ${tag('NOT MEASURABLE')} ${sep} ${how}`; live = `Motion can't be measured here: ${NM_WHY(mc, mo)}. Not measurable.`; }
+    else {
+      res = `<span class="rp-k">Measured here</span> <b>${st.value}</b><span class="brk"></span>${st.cat != null ? ` ${sep} <span class="rp-k">catalogue</span> ${st.cat.toFixed(2)}` : ''}${st.verdict ? ` ${sep} ${tag(st.verdict)}` : ''} ${sep} ${how}`;
+      live = `Measured here ${st.value}${st.cat != null ? `, catalogue ${st.cat.toFixed(2)}″ a year` : ''}${st.verdict ? `, ${st.verdict.toLowerCase()}` : ''}.`;
+    }
+    // b2 caption: preset, measured, significant motion; numbers from the fit over the first-to-last stack dates
+    if (p && st.kind === 'value' && mo.significant !== false && V.stacks.length > 1) {
+      const c = storyCaption(V.name, mo, firstS().mjd, lastS().mjd);
+      if (c) { cap = esc(c.text); if (cat) capCat = ` ${/gaia/i.test(cat.source) ? 'Gaia' : 'The catalogue'} says ${(cat.value / 1000).toFixed(2)}″/yr.`; }
+    }
+  }
+  // the caption slot: the Blink/Compare story, or in Time playback which band is held
+  const story = (mode === 'blink' || mode === 'compare') && cap;
+  const holdLine = mode === 'play' && HOLD.on && V.F.length ? `Showing ${HOLD.group.label}: ${esc(HOLD.note)}. <button type="button" class="rp-all" data-hold-off>Show all bands</button>` : '';
+  const capHTML = story ? `${cap}<span class="rp-cat">${esc(capCat)}</span>` : holdLine;
+  const key = [res, capHTML, done].join('|'); if (key === plateKey) return; plateKey = key;
+  el.classList.toggle('done', done); el.classList.toggle('measuring', !done);
+  $('rpCap').innerHTML = capHTML; $('rpCap').hidden = !capHTML;
+  const r = $('rpRes');
+  if (r.dataset.done !== String(done) && done && !set.motion) { r.classList.add('swap'); setTimeout(() => r.classList.remove('swap'), 170); }
+  r.dataset.done = String(done); r.innerHTML = res;
+  if (live && $('rpLive').textContent !== live) $('rpLive').textContent = live; else if (!done) $('rpLive').textContent = '';
+  el.hidden = false;
+}
+document.addEventListener('click', e => { if (e.target.closest('[data-hold-off]')) setHold(false); });
+// phone: the plate is the first block of the dock; wider: on the stage under the image
+{ const ph = matchMedia('(max-width: 699px)'), place = () => { const el = $('resultPlate'); if (!el) return;
+    if (ph.matches) $('dock').prepend(el); else $('stage').appendChild(el); };
+  place(); ph.addEventListener('change', place); }
 // Master item 11: the default flag filter hides nothing, so by default the fit uses the same images as Proof.
 // When the user's saved filter hides some, say "from 108 of 120 images (your flag filter)" and offer
 // "Use all images (as on Proof)". AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 const fitPool = mo => V.FA.filter(f => !mo?.detectors || mo.detectors.includes(f.det)).length; // images the fit could use
-const filterHides = mo => !!(mo?.ok && V.FA.length > V.F.length && fitPool(mo) > mo.frames);
+const filterHides = mo => !!(mo?.ok && V.FA.length > V.FK.length && fitPool(mo) > mo.frames);
 const usedText = (mo, dets = true) => `${filterHides(mo) ? `from ${mo.frames} of ${fitPool(mo)} images (your flag filter)` : `from ${mo.frames} images`}${dets && mo.detectors ? `, detectors ${detectorText(mo.detectors)}` : ''}`;
 const USE_ALL = '<button type="button" class="fl-link use-all" data-use-all>Use all images (as on Proof)</button>';
 function useAllImages() {
@@ -325,10 +430,10 @@ function notMeasurableText(mc, mo) {
 }
 // Re-apply the "hide images with…" filter, keeping the current image (or the nearest one in time).
 function refilter() {
-  const cur = V.F[P.i]; V.F = CX.filter(V.FA);
+  const cur = V.F[P.i]; V.FK = CX.filter(V.FA); V.F = shownFrames();
   if (cur && V.F.length) { let b = 0; V.F.forEach((f, k) => { if (Math.abs(f.mjd - cur.mjd) < Math.abs(V.F[b].mjd - cur.mjd)) b = k; }); P.i = b; } else P.i = 0;
   if (V.status === 'ready') { restack(); remeasure(); if (mode !== 'play' && mode !== 'telescopes' && V.stacks.length < 2) setMode('play'); }
-  if (!V.F.length && V.FA.length) toast('Every image is hidden by the flag filter. Untick a box under FLAGS to bring them back.');
+  if (!V.FK.length && V.FA.length) toast('Every image is hidden by the flag filter. Untick a box under FLAGS to bring them back.');
   buildTimeline(); // sets V.seasons for the count below
   $('d-n').textContent = countText();
   onFrame(P.i);
@@ -337,7 +442,7 @@ function refilter() {
 // (data.js spread()), then what the user's flag filter hides and what failed.
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 function countText() {
-  const got = V.FA.length, hid = got - V.F.length, s = V.seasons.length;
+  const got = V.FA.length, hid = got - V.FK.length, s = visits(V.FK).length;
   const head = V.planned < V.total ? `${got} of ${V.total} images used (spread evenly over time to keep it quick)`
     : V.failed ? `${got} of ${V.total} images used` : `All ${got} images used`;
   return `${head}${V.failed ? ` · ${V.failed} couldn't be fetched` : ''}${hid > 0 ? ` · ${hid} hidden by your flag filter` : ''} · ${s} season${s === 1 ? '' : 's'}`;
@@ -364,7 +469,7 @@ function setMode(m, withSound) {
     if (m !== 'play') P.pause();
     if (m === 'blink') { side = 0; bt = setInterval(() => { side ^= 1; draw(); }, set.motion ? 1500 : 600); }
     if (m !== 'blink') CB.leave();
-    zoom = 1; layout(); onFrame(P.i);
+    zoom = 1; layout(); onFrame(P.i); updatePlate();
   };
   if (withSound) Snd.play('tick');
   if (document.startViewTransition && !set.motion) viewTransition(apply); else apply();
@@ -372,6 +477,14 @@ function setMode(m, withSound) {
 document.querySelectorAll('[data-mode]').forEach(b => { b.onclick = () => setMode(b.dataset.mode, true); });
 document.querySelectorAll('[data-fps]').forEach(b => { b.onclick = () => { P.fps = +b.dataset.fps; segSelect($('speedSeg'), x => x === b); Snd.play('tick'); }; });
 $('play').onclick = () => { if (mode !== 'play') setMode('play'); P.toggle(); Snd.play('click'); };
+$('holdKey').onclick = () => setHold(!HOLD.on);
+// b8: the wavy line along the image's top edge gets a hover label (contam-ui.js draws it for airglow-flagged images)
+$('cvA').addEventListener('pointermove', e => {
+  const f = V.F[Math.min(P.i, V.F.length - 1)], cv = e.currentTarget;
+  const top = mode === 'play' && f?.raw?.glow?.flagged && e.clientY - cv.getBoundingClientRect().top < Math.max(14, cssCell * 1.2);
+  const t = top ? 'Wavy line: the archive marks this whole image for airglow (faint glow from Earth\'s upper atmosphere), so its background may be brighter. FLAGS ▾ explains each mark.' : '';
+  if (cv.title !== t) cv.title = t;
+});
 $('prev').onclick = () => step(-1); $('next').onclick = () => step(1);
 
 let lastSeason = -1;
@@ -417,6 +530,20 @@ const coordStr = (ra, dec) => `${ra.toFixed(5)} ${dec >= 0 ? '+' : ''}${dec.toFi
 function curPos() { if (scene === 'viewer' && V.grid) return { ra: V.grid.ra0, dec: V.grid.dec0 }; return M.sel || (skymap.aladin ? skymap.center() : null); }
 $('copyTop').onclick = e => { const p = curPos(); if (p) copyText(e.currentTarget, coordStr(p.ra, p.dec)); };
 $('copyInsp').onclick = e => { const p = curPos(); if (p) copyText(e.currentTarget, coordStr(p.ra, p.dec)); };
+// b11 "Share this movie": the full link (target, scene, view mode, and the image when paused); no login needed
+function shareURL() {
+  const q = V.query, f = V.F[Math.min(P.i, V.F.length - 1)];
+  const p = shareParams({ q: q?.type === 'name' ? q.name : null, ra: q?.type === 'coords' ? q.ra : null, dec: q?.type === 'coords' ? q.dec : null,
+    scene, mode, mjd: !P.playing && f ? f.mjd : null });
+  return `${location.origin}${location.pathname}?${p}`;
+}
+$('shareInsp').onclick = e => {
+  const url = shareURL(), b = e.currentTarget, l = b.querySelector('.share-l');
+  try { navigator.clipboard?.writeText(url)?.catch?.(() => {}); } catch { /* ignore */ }
+  b.dataset.url = url; b.classList.add('done'); if (l) l.textContent = 'Link copied';
+  toast('Link copied: opens without login'); Snd.play('confirm');
+  setTimeout(() => { b.classList.remove('done'); if (l) l.textContent = 'Share this movie'; }, 1600);
+};
 function setCoordText(ra, dec) { $('coordTxt').textContent = `${R.fmtRA(ra)}  ${R.fmtDec(dec)}`; }
 
 /* ---------- loading the time-lapse (real progress drives the rocket) ---------- */
@@ -456,10 +583,29 @@ function progress() {
   // Retries stay quiet (the thin line keeps moving); a message only when nothing has arrived for STALL_MS
   const slow = V.retries > 0 && V.status === 'loading' && performance.now() - V.lastArrive > STALL_MS;
   V.scan?.slow(slow ? `The image archive (IRSA) is slow right now. ${V.FA.length} of ${V.planned} images in; still asking for the rest.` : null);
-  if (V.status === 'loading') $('d-meas').textContent = `measuring… (${V.F.length} of ${V.planned || '…'} images)`;
+  if (V.status === 'loading') $('d-meas').textContent = `measuring… (${V.FA.length} of ${V.planned || '…'} images)`;
+  stallCheck();
+  updatePlate();
+}
+/* Live-load watchdog (judging panel a10): no new image for 20 s, or IRSA keeps answering "busy"
+   (8 retries in a row with no image between), and the stage says so, with Retry and
+   "Use the N images loaded". AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+const STALL_HARD_MS = 20000, STALL_RETRIES = 8;
+let stallTimer = 0;
+function stallCheck() {
+  if (V.status !== 'loading' || V.stalled) return;
+  const quiet = performance.now() - V.lastArrive, busy = V.retries - (V.retriesAtArrive || 0);
+  if (quiet < STALL_HARD_MS && busy < STALL_RETRIES) return;
+  V.stalled = true; $('thin').hidden = true; leaveLoader();
+  const n = V.FA.length;
+  $('errTxt').textContent = n ? `No new image for ${Math.round(quiet / 1000)} s${busy >= STALL_RETRIES ? ` (it answered "busy" ${busy} times)` : ''}. ${n} of ${V.planned} images arrived; you can use them, or ask again.`
+    : `Nothing arrived in ${Math.round(quiet / 1000)} s${busy >= STALL_RETRIES ? ` (it answered "busy" ${busy} times)` : ''}. Retry asks again.`;
+  $('retry').hidden = false; $('useLoaded').hidden = !n; $('useLoaded').textContent = `Use the ${n} image${n === 1 ? '' : 's'} loaded`;
+  showState('stError'); Snd.play('error');
 }
 // A coordinate patch's heading (capitalised); the loader's "Finding images of …" keeps it lower case.
 let holdMjd = null; // ?mjd= from the URL: the image to stop on once loading finishes
+let wantView = null; // ?view= from the URL (a shared link): the mode to open once loading finishes
 const PATCH_NAME = 'This patch', loaderName = n => (n === PATCH_NAME ? 'this patch' : n);
 function load(query, label) {
   V.ctl?.abort(); const ctl = V.ctl = new AbortController();
@@ -467,8 +613,10 @@ function load(query, label) {
   TS.show(false); TS.reset();
   CB.leave(); LC.data(null, null, label, true);
   CX.reset();
-  Object.assign(V, { query, target: null, ring: null, grid: null, raws: [], F: [], FA: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, lastArrive: performance.now(), status: 'loading', motion: null, seasons: [], name: label || PATCH_NAME });
+  Object.assign(V, { query, target: null, ring: null, grid: null, raws: [], F: [], FA: [], FK: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, retriesAtArrive: 0, stalled: false, finish: null, lastArrive: performance.now(), status: 'loading', motion: null, seasons: [], name: label || PATCH_NAME });
   P.i = 0; shown = -1; arriveCount = 0;
+  holdForLoad(); holdKey(); plateKey = '';
+  clearInterval(stallTimer); stallTimer = setInterval(() => { if (ctl.signal.aborted || V.status !== 'loading') clearInterval(stallTimer); else stallCheck(); }, 1000);
   $('stLoading').classList.remove('leaving');
   // a loader still fading out from the last load shares #scanLoader: finish it now, or its late
   // destroy() would wipe (and hide) the new one
@@ -498,15 +646,27 @@ function load(query, label) {
       renderLook();
       layout(); buildTimeline(); progress();
     } else if (e.type === 'FRAME') {
-      const f = toF(e.frame); V.raws.push(e.frame); V.lastArrive = performance.now();
+      const f = toF(e.frame); V.raws.push(e.frame); V.lastArrive = performance.now(); V.retriesAtArrive = V.retries;
+      if (V.stalled) { V.stalled = false; $('stError').hidden = true; $('thin').hidden = false; } // the archive answers again
       let k = V.FA.findIndex(x => x.mjd > f.mjd); if (k < 0) k = V.FA.length; V.FA.splice(k, 0, f);
       V.scan?.add(f);
-      const keep = V.F[P.i]; V.F = CX.filter(V.FA); if (keep) P.i = Math.max(0, V.F.indexOf(keep));
+      const keep = V.F[P.i]; V.FK = CX.filter(V.FA); V.F = shownFrames(); if (keep) P.i = Math.max(0, V.F.indexOf(keep));
       CX.ensureLayers();
       progress(); rebuildSoon();
     } else if (e.type === 'FRAME_FAILED') { V.failed++; progress(); }
     else if (e.type === 'RETRY_WAIT') { V.retries++; progress(); setTimeout(() => { if (!ctl.signal.aborted) progress(); }, STALL_MS + 100); }
-    else if (e.type === 'DONE') {
+    else if (e.type === 'DONE') finish();
+    else if (e.type === 'ERROR' || e.type === 'NOT_FOUND') {
+      V.status = 'error'; $('thin').hidden = true;
+      $('errTxt').textContent = e.message + (V.FA.length ? ` ${V.FA.length} images arrived and are kept.` : '');
+      $('retry').hidden = e.type === 'NOT_FOUND'; $('useLoaded').hidden = !V.FA.length; $('useLoaded').textContent = `Use the ${V.FA.length} image${V.FA.length === 1 ? '' : 's'} loaded`;
+      showState('stError'); Snd.play('error');
+    }
+  };
+  // Loading done, or the visitor chose "Use the N images loaded" (then the run is aborted first)
+  const finish = V.finish = () => {
+    {
+      clearInterval(stallTimer); V.stalled = false;
       V.status = 'ready'; $('thin').hidden = true; const leaveWait = leaveLoader();
       if (!V.FA.length) { V.status = 'error'; $('errTxt').textContent = 'No images arrived. The archive is often busy; Retry asks again.'; $('useLoaded').hidden = true; showState('stError'); Snd.play('error'); return; }
       showState(null);
@@ -520,21 +680,24 @@ function load(query, label) {
       onFrame(P.i); Snd.play('confirm');
       // V.FA = every image loaded; V.F = the ones the user's flag filter keeps (QA, Sun: say so, so the counts match Proof)
       // Master item 1: say that up to 120 images are used, spread evenly in time, out of all IRSA found
-      const hid = V.FA.length - V.F.length, hidTxt = hid > 0 ? ` ${hid} hidden by your flag filter (FLAGS ▾ to change).` : '';
+      const hid = V.FA.length - V.FK.length, hidTxt = hid > 0 ? ` ${hid} hidden by your flag filter (FLAGS ▾ to change).` : '';
       const usedTxt = V.planned < V.total ? `${V.FA.length} of the ${V.total} images IRSA has here are in (spread evenly over time to keep it quick).` : V.failed ? `${V.FA.length} of ${V.total} images are in.` : `All ${V.FA.length} images are in.`;
       toast(`${usedTxt}${hidTxt}${V.failed ? ` ${V.failed} couldn't be fetched (IRSA busy); Retry later fills them.` : ''}`);
-      setTimeout(() => { if (!set.motion && !P.playing && !held) P.play(); }, leaveWait);
-    } else if (e.type === 'ERROR' || e.type === 'NOT_FOUND') {
-      V.status = 'error'; $('thin').hidden = true;
-      $('errTxt').textContent = e.message + (V.F.length ? ` ${V.F.length} images arrived and are kept.` : '');
-      $('retry').hidden = e.type === 'NOT_FOUND'; $('useLoaded').hidden = !V.F.length;
-      showState('stError'); Snd.play('error');
+      // b2: a preset opens on the Blink of its first and last season stacks (the hop, with the ring and the caption);
+      // ?view= (a shared link) opens its own mode; anything else plays
+      const want = wantView; wantView = null;
+      setTimeout(() => {
+        if (V.ctl !== ctl) return;
+        if (want && want !== 'play') { setMode(want); return; }
+        if (!want && holdPreset() && !held && V.stacks.length > 1) { P.pause(); setMode('blink'); return; }
+        if (!set.motion && !P.playing && !held) P.play();
+      }, leaveWait);
     }
   };
   tablesReady.then(() => { if (!ctl.signal.aborted) run(query, SETTINGS, { base: BASE, signal: ctl.signal, tables, emit }); });
 }
 $('retry').onclick = () => { Snd.play('click'); if (V.query) load(V.query, V.name); };
-$('useLoaded').onclick = () => { showState(null); Snd.play('click'); };
+$('useLoaded').onclick = () => { Snd.play('click'); if (V.finish && V.FA.length && V.status !== 'ready') { V.ctl?.abort(); V.finish(); } else showState(null); };
 
 /* ---------- popovers + sheets ---------- */
 let openPop = null;
@@ -683,8 +846,11 @@ function placeOverlays() {
   const c = skymap.center(); readout(c.ra, c.dec);
 }
 // RA/Dec is Expert; Simple gets the plain "where to look" twin (Master items 3 and 5)
-function readout(ra, dec) { const t = `<span class="x-only">${R.fmtRA(ra)}  ${R.fmtDec(dec)}</span><span class="s-only">${esc(lookShort(ra, dec))}</span>`; $('mdCursor').innerHTML = t; $('mapRead').innerHTML = `<span class="x-only">FOV ${fovTxt()}</span><span class="sep x-only">·</span><span class="s-only">This spot:</span><span>${t}</span>`; }
-$('mapWrap').addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; if (!skymap.aladin) return; const r = $('mapWrap').getBoundingClientRect(), w = skymap.toWorld(e.clientX - r.left, e.clientY - r.top); if (w) readout(w[0], w[1]); });
+// b8: the dock cell says "Cursor" while the pointer is on the map, "This spot" (the map centre) otherwise
+function readout(ra, dec, atCursor) { const t = `<span class="x-only">${R.fmtRA(ra)}  ${R.fmtDec(dec)}</span><span class="s-only">${esc(lookShort(ra, dec))}</span>`; $('mdCursor').innerHTML = t;
+  const lbl = $('mdCursor').previousElementSibling; if (lbl) { lbl.textContent = atCursor ? 'Cursor' : 'This spot'; lbl.title = atCursor ? 'The sky under your pointer' : 'The centre of the map (move the pointer over the map to read any point)'; } $('mapRead').innerHTML = `<span class="x-only">FOV ${fovTxt()}</span><span class="sep x-only">·</span><span class="s-only">This spot:</span><span>${t}</span>`; }
+$('mapWrap').addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; if (!skymap.aladin) return; const r = $('mapWrap').getBoundingClientRect(), w = skymap.toWorld(e.clientX - r.left, e.clientY - r.top); if (w) readout(w[0], w[1], true); });
+$('mapWrap').addEventListener('pointerleave', () => { if (skymap.aladin) { const c = skymap.center(); readout(c.ra, c.dec); } });
 function mapZoom(f) { if (!skymap.aladin) return; skymap.setFov(skymap.fov() / f); Snd.play(f > 1 ? 'zoomIn' : 'zoomOut'); }
 function mapFit() { if (!skymap.aladin) return; skymap.setFov(60); Snd.play('click'); }
 function flyTo(ra, dec, fovDeg, done) {
@@ -768,7 +934,7 @@ function plainType(code) {
 function showSearchError(text, why) {
   const near = TARGETS.find(x => { const a = x.name.toLowerCase().replace(/[^a-z]/g, ''), b = String(text).toLowerCase().replace(/[^a-z]/g, ''); return b.length > 3 && (a.startsWith(b.slice(0, 4)) || b.startsWith(a.slice(0, 4))); });
   const el = $('serr'); el.hidden = false; $('toast').classList.remove('show'); // the "Looking up..." toast is answered
-  el.innerHTML = `<span>${why ? esc(why) : `Couldn't find “${esc(text)}”.`}</span>${near ? `<button class="key" id="serrFix">Try ${esc(near.name)}</button>` : ''}<span style="color:var(--muted)">or type RA Dec like 269.45 +4.69</span>`;
+  el.innerHTML = `<span>${why ? esc(why) : `Couldn't find “${esc(text)}”.`}</span>${near ? `<button class="key" id="serrFix">Try ${esc(near.name)}</button>` : ''}${why && /coordinates|RA Dec|269\.45/i.test(why) ? '' : '<span style="color:var(--muted)">or type RA Dec like 269.45 +4.69</span>'}`; // one hint only (a11)
   if (near) $('serrFix').onclick = () => { el.hidden = true; $('q').value = near.name; goTo(near.name); };
 }
 $('q').addEventListener('input', () => { $('serr').hidden = true; });
@@ -1397,6 +1563,7 @@ function init() {
   applySettings(); buildTimeline(); layout();
   const qp = new URLSearchParams(location.search);
   if (qp.get('scene') === 'viewer' && qp.get('mjd') && Number.isFinite(+qp.get('mjd'))) holdMjd = +qp.get('mjd');
+  if (qp.get('scene') === 'viewer' && VIEW_MODES.includes(qp.get('view'))) wantView = qp.get('view');
   if (qp.get('ghost') !== null && Number.isFinite(+qp.get('ghost'))) GH.G.pending = { years: +qp.get('ghost'), viewer: qp.get('scene') === 'viewer' };
   const first = TARGETS[0];
   skymap.init(first.ra, first.dec, 10).catch(() => { mapFailed(); }).then(() => { if (!skymap.aladin) return;
