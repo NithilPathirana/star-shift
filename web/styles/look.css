@@ -205,8 +205,8 @@ html:where(:not([data-ax-look=classic]))[data-glass=solid] .tools{background:#1B
 @media (max-width:699px){
   :where(html:not([data-ax-look=classic])) .app[data-scene=map] .scrim{background:rgba(19,31,58,.08)}
 }
-:where(html:not([data-ax-look=classic])) .ai-mark{color:var(--ink-2);border:1px solid currentColor;border-radius:4px}
-:where(html:not([data-ax-look=classic])) .ai-credit{color:var(--ink-2)}
+:where(html:not([data-ax-look=classic])) .ai-mark{color:var(--ink-2);border:1px solid currentColor;border-radius:999px}
+:where(html:not([data-ax-look=classic])) .ai-credit{color:var(--muted)}
 :where(html:not([data-ax-look=classic])) .cd-look{border-radius:12px;background:rgba(254,254,255,.55);border:1px solid var(--edge)}
 :where(html:not([data-ax-look=classic])) .cd-look-h{color:var(--ink)}
 :where(html:not([data-ax-look=classic])) .cd-look-d{color:var(--ink-2)}
