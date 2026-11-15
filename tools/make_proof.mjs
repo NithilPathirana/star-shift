@@ -218,7 +218,9 @@ for (const p of PRESETS) {
       } catch { /* no previous file */ }
     }
     const nb = extra.neighbours?.[0];
-    limit = `Faint at short wavelengths: only the two longest bands (detectors 5–6, 3.8–5.0 µm) were used. With detectors 1–4 the fit gives ${M.short.ok ? `${fmtPm(M.short.total)} ± ${fmtPm(M.short.totalErr)}″/yr` : 'no track'}${nb ? `, because it locks on a background star (Gaia G ${nb.g}) ${nb.sepArcsec}″ away that does not move` : ', locking on light that does not move'}.`;
+    limit = `Faint at short wavelengths: only the two longest bands (detectors 5–6, 3.8–5.0 µm) were used. With detectors 1–4 the fit gives ${M.short.ok ? `${fmtPm(M.short.total)} ± ${fmtPm(M.short.totalErr)}″/yr` : 'no track'}${nb ? `, because it locks on a background star (Gaia G ${nb.g}) ${nb.sepArcsec}″ away that does not move` : ', locking on light that does not move'}.`
+      // Idea Generation / Master (Sun 15 Nov): the neighbour sits inside the measuring circle at every wavelength
+      + (nb ? ` That background star (${nb.sepArcsec}″ away, inside the measuring circle at every wavelength) also blends with it in the long bands; its steady light likely pulls the measured speed low (${fmtPm(m.total)} vs ${fmtPm(cat.total)}″/yr), so this value is a lower estimate.` : '');
   } else if (p.key === 'eps-indi-b') {
     try {
       const a = await resolveName('eps Ind');

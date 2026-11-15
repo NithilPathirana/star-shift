@@ -1,6 +1,6 @@
 {
  "about": "Numbers for web/proof.html, computed by tools/make_proof.mjs from the app pipeline (data.js) on cached SPHEREx cutouts. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.",
- "generated": "2026-11-15T06:46:20.402Z",
+ "generated": "2026-11-15T07:08:24.886Z",
  "settings": {
   "fovArcmin": 2.5,
   "maxImages": 120,
@@ -29,7 +29,7 @@
    ],
    [
     "NOT MEASURABLE",
-    "the catalogue motion is below 0.7″ a year (the smallest motion we call real, at least 3 × the 0.15″/yr floor), so it cannot show in these images, the star's centre is blanked (masked pixels within 2 pixels of it) in 90% or more of the fitted images (the 90% limit), or the fit could not run. A saturation flag alone does not count; only a blanked centre does."
+    "the catalogue motion is below 0.7″ a year (the smallest motion we call real, at least 3 × the 0.15″/yr floor), so it is too small to measure reliably in these images, the star's centre is blanked (masked pixels within 2 pixels of it) in 90% or more of the fitted images (the 90% limit), or the fit could not run. A saturation flag alone does not count; only a blanked centre does."
    ]
   ],
   "direction": [
@@ -1863,7 +1863,7 @@
      },
      "verdict": "AGREES",
      "shiftPx": 1.352,
-     "limit": "Faint at short wavelengths: only the two longest bands (detectors 5–6, 3.8–5.0 µm) were used. With detectors 1–4 the fit gives 0.48 ± 0.44″/yr, because it locks on a background star (Gaia G 16.31) 7.8″ away that does not move.",
+     "limit": "Faint at short wavelengths: only the two longest bands (detectors 5–6, 3.8–5.0 µm) were used. With detectors 1–4 the fit gives 0.48 ± 0.44″/yr, because it locks on a background star (Gaia G 16.31) 7.8″ away that does not move. That background star (7.8″ away, inside the measuring circle at every wavelength) also blends with it in the long bands; its steady light likely pulls the measured speed low (6.53 vs 8.15″/yr), so this value is a lower estimate.",
      "chart": {
       "kind": "motion",
       "pa": 274.74,

@@ -135,6 +135,10 @@ async function checkLight() {
       `<span class="x-only"> Light centre ${g.sky.offArcsec.toFixed(1)}″ (${(g.detect.offPx).toFixed(1)} px) from the predicted position, median of ${g.detect.hits} of ${g.detect.n} clean images${src?.id ? `; ${esc(src.id)}` : ''}.</span>`);
   }
   if (S.checkKey !== key) return;
+  // a background star close enough to sit inside the measuring circle blends with the target at EVERY wavelength,
+  // so the coloured (long-band) dots are the target plus some of that star's light (Idea Generation, Sun 15 Nov)
+  const rAp = S.aperture?.rAp, near = rAp && Object.values(S.otherSrc).find(s => s && s.sepArcsec <= rAp * PIXEL_ARCSEC);
+  if (near) lines.push(`The coloured dots are ${esc(t.name || 'this star')} plus some light from that background star, which sits inside the ${(rAp * PIXEL_ARCSEC).toFixed(0)}″ measuring circle at every wavelength (blended).`);
   $('lightNote').innerHTML = lines.join('<br>');
   $('lightNote').hidden = !lines.length;
 }
@@ -249,7 +253,7 @@ function progress() {
 
 function caption() {
   const a = S.aperture;
-  const simple = `<span class="s-only">Each dot is the star's light in one image: the light within ${(a.rAp * PIXEL_ARCSEC).toFixed(0)}″ of the star, with the sky glow around it taken off. A quick look, not calibrated: dots from different images can disagree a little.</span>`;
+  const simple = `<span class="s-only">Each dot is the light in the measuring circle in one image: the light within ${(a.rAp * PIXEL_ARCSEC).toFixed(0)}″ of the star, with the sky glow around it taken off. A quick look, not calibrated: dots from different images can disagree a little.</span>`;
   return `<span class="tag comp">COMPUTED</span>${simple}<span class="x-only">Each dot: the sum of the pixel values (MJy/sr) whose centres lie within ${a.rAp} px (${(a.rAp * PIXEL_ARCSEC).toFixed(1)}″) of the star's position on that image's date, minus the median of a ${a.rIn}–${a.rOut} px background ring, times each pixel's solid angle (giving mJy). ` +
     `Pixels the archive marks as bad are left out and the sum is scaled up for them. Not done: no aperture (PSF) correction, no colour or cross-image calibration; error bars are not drawn (background scatter only, in the CSV). Wavelength = the image's own value at the star's pixel.</span>`;
 }
