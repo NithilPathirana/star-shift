@@ -47,6 +47,9 @@ const DEFAULT_LABELS = {
 const fmtUm = v => (Number.isFinite(+v) ? (+v).toFixed(2) : '?');
 export function bandRangeText(b) { return `${fmtUm(b?.min)}–${fmtUm(b?.max)} µm`; }
 // Short "<name> band" form (no numbers): for places that already print the wavelength.
+// One wording everywhere a band name is shown (Design review 2, item 1): bandName() gives the
+// '…band' form ('Brown-dwarf band'), and this line sits under any list or key of band names.
+export const BAND_NOTE = 'Names for wavelength ranges, not detections';
 export function bandName(b) {
   if (!b) return '';
   const def = DEFAULT_BANDS.find(d => d.id === b.id && d.name === b.name);
