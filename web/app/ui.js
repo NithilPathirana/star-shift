@@ -567,6 +567,10 @@ function rocketAt(frac) {
 // Loader: Design Studio's code-based ScanLoader (design/loader/scan/), drawn from the real frames.
 // 'astronaut' (Design Studio's video loop, v1.1; falls back to ScanLoader if the video can't play), 'scan' or 'sheet'
 const LOADER = 'astronaut';
+// b2: fetch the loader's still (78 KB) while the page is idle, so a slow first load shows it at once
+// instead of a dark stage while the archive files and the video share the link (same size rule as astro-loader.js)
+if (LOADER === 'astronaut') (window.requestIdleCallback || setTimeout)(() => { const small = matchMedia('(max-width: 900px), (max-height: 560px)').matches || !!navigator.connection?.saveData;
+  new Image().src = `/loader/v1.1/astronaut-still-${small ? 720 : 1080}.webp`; });
 // Clean map -> time-lapse hand-over (DESIGN.md 35): the loader stays invisible while the images fill in
 // behind the thin progress line. LOADER_DECIDE ms in, it fades in only if, at the rate so far, the images
 // still to come would take LOADER_MIN_LEFT ms or more (or nothing has arrived yet). A 2 s load never flashes it.
