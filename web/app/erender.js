@@ -24,8 +24,14 @@
     neutral: [[0, [10, 9, 8]], [1, [250, 248, 245]]],
     cool: [[0, [3, 8, 18]], [0.45, [92, 120, 160]], [1, [244, 247, 252]]],
     heat: [[0, [2, 4, 10]], [0.3, [16, 52, 104]], [0.62, [196, 156, 52]], [0.85, [240, 214, 140]], [1, [255, 252, 240]]],
-    copper: [[0, [12, 9, 7]], [0.28, [62, 28, 14]], [0.58, [176, 100, 48]], [0.82, [232, 182, 120]], [1, [255, 246, 232]]]
+    copper: [[0, [12, 9, 7]], [0.28, [62, 28, 14]], [0.58, [176, 100, 48]], [0.82, [232, 182, 120]], [1, [255, 246, 232]]],
+    // default (blue/white/neon-yellow) look: #050B1A > #0E2A6B > #2F6BE0 > #A9DBFF > #FFFFFF, every channel rises, so luminance rises strictly
+    ice: [[0, [5, 11, 26]], [0.28, [14, 42, 107]], [0.58, [47, 107, 224]], [0.82, [169, 219, 255]], [1, [255, 255, 255]]]
   };
+  // The look on <html> (access.js): 'classic' keeps copper; the default look swaps the copper ramp for ice.
+  R.classic = () => typeof document !== 'undefined' && document.documentElement.dataset.axLook === 'classic';
+  R.lookRamp = name => (name === 'copper' && !R.classic() ? 'ice' : name) || 'grey';
+  R.crossColor = () => (R.classic() ? '#9DB89F' : 'rgba(255,255,255,.7)'); // guide cross: white reads on both ice and the yellow ring
   function ramp(stops, t) {
     for (let i = 1; i < stops.length; i++) {
       if (t <= stops[i][0]) {
@@ -35,22 +41,24 @@
     }
     return stops[stops.length - 1][1];
   }
+  R.rampRGB = (name, t) => ramp(R.ramps[R.lookRamp(name)], t);
   R.rampCss = function (name) {
-    return 'linear-gradient(90deg,' + R.ramps[name].map(([t, c]) => `rgb(${c}) ${t * 100}%`).join(',') + ')';
+    return 'linear-gradient(90deg,' + R.ramps[R.lookRamp(name)].map(([t, c]) => `rgb(${c}) ${t * 100}%`).join(',') + ')';
   };
 
   /* opts: ramp, cell (canvas px per data pixel), ring (bool), ringColor, stretch ('auto'|'linear'|'strong'), noData (fill).
      No-data pixels (masked, saturated cores, cutout past the detector edge) get one calm flat fill a shade
      darker than the stage, never hatching: they are not detector flags (the FLAGS overlay is contam-ui.js).
      maskBg / maskInk / hatch from older callers are ignored here. */
-  R.NO_DATA = '#100D0B'; // stage is #15110E
+  // no data: a shade darker than the stage (#15110E copper look, #0A1121 default look)
+  Object.defineProperty(R, 'NO_DATA', { get: () => (R.classic() ? '#100D0B' : '#060C18'), enumerable: true });
   R.draw = function (canvas, frame, n, opts) {
     const o = Object.assign({ ramp: 'grey', cell: 20, ring: false, ringColor: '#D4AF37', noData: R.NO_DATA }, opts || {});
     const c = o.cell, ctx = canvas.getContext('2d');
-    if (canvas.width !== n * c) { canvas.width = n * c; canvas.height = n * c; }
+    if (canvas.width !== n * c || canvas.height !== n * c) { canvas.width = n * c; canvas.height = n * c; } // width OR height (Compare's second canvas)
     const sm = o.stretch || 'auto', key = '_s_' + sm;
     const s = frame[key] || (frame[key] = R.stretch(frame.d, sm));
-    const stops = R.ramps[o.ramp];
+    const stops = R.ramps[R.lookRamp(o.ramp)];
     for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
       const t = s[y * n + x];
       if (t == null) {

@@ -60,6 +60,7 @@ function applySettings() {
   $('ringSw').setAttribute('aria-checked', set.ring); $('ringTool').setAttribute('aria-pressed', set.ring);
   $('flagsBtn').setAttribute('aria-pressed', set.hatch);
   segSelect($('strSeg'), b => b.dataset.str === set.str); segSelect($('rampSeg'), b => b.dataset.ramp === set.ramp);
+  rampLabel();
   $('d-str').textContent = { auto: 'asinh 2–99.7%', linear: 'linear 2–99.7%', strong: 'asinh×30 5–99%' }[set.str];
   refraction(); requestAnimationFrame(layout);
 }
@@ -219,11 +220,12 @@ function layout() {
 }
 const opt = cv => CB.opt({ ramp: set.ramp, cell: +cv.dataset.dev, ring: set.ring && !!V.ring, ringColor: getComputedStyle(root).getPropertyValue('--ring').trim(),
   maskBg: '#211b16', maskInk: '#6b5d50', stretch: set.str, hatch: set.hatch });
-root.addEventListener('star-shift-colours', () => { if (scene === 'viewer' && V.F.length) draw(); }); // access.js: a new --ring redraws the canvas ring
+function rampLabel() { const b = $('rampSeg')?.querySelector('[data-ramp=copper]'); if (b) b.textContent = R.classic() ? 'Copper' : 'Ice'; } // the copper ramp is ice in the default look (erender.js)
+root.addEventListener('star-shift-colours', () => { rampLabel(); if (scene === 'viewer' && V.F.length) draw(); }); // access.js: a new --ring or look redraws the canvas
 function cross(cv, fx, fy) {
   if (CB.on && mode === 'blink') return; // Clean Blink hides the cross (Compare always draws it: its chip says so)
   const c = cv.getContext('2d'), k = +cv.dataset.dev, x = (fx + .5) * k, y = (fy + .5) * k;
-  c.strokeStyle = '#9DB89F'; c.lineWidth = Math.max(1.5, k / 10); c.beginPath();
+  c.strokeStyle = R.crossColor(); c.lineWidth = Math.max(1.5, k / 10); c.beginPath();
   c.moveTo(x - 3.4 * k, y); c.lineTo(x - 1.2 * k, y); c.moveTo(x + 1.2 * k, y); c.lineTo(x + 3.4 * k, y);
   c.moveTo(x, y - 3.4 * k); c.lineTo(x, y - 1.2 * k); c.moveTo(x, y + 1.2 * k); c.lineTo(x, y + 3.4 * k); c.stroke();
 }

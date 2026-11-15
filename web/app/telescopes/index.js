@@ -10,6 +10,9 @@ import { fieldFor, skyToScreen, imageAffine, nearestPixel, positionsAt, yearOf, 
 import { SURVEYS, loadSurvey } from './surveys.js';
 
 const IV = (a) => `rgba(255,246,232,${a})`;
+// the look on <html> (access.js): the default look draws the ice ramp, navy and its yellow ring; 'classic' keeps the warm grey and copper
+const classic = () => document.documentElement.dataset.axLook === 'classic';
+const ringCol = () => (classic() ? '#E3A86B' : getComputedStyle(document.documentElement).getPropertyValue('--ring').trim() || '#EAF42F');
 const ORDER = ['spherex', 'wise', 'twomass'];
 
 export function createTelescopes(ctx) {
@@ -86,16 +89,20 @@ export function createTelescopes(ctx) {
   // Offscreen image in the survey's own pixels, stretched on its own (asinh 2-99.7%).
   // `src` keys the cache; `values` may be a function (built only on a cache miss); `s` = shared stretch
   function offscreen(id, src, nx, ny, values = src, s = null) {
-    if (T.off[id]?.src === src) return T.off[id].cv;
+    const look = classic() ? 'classic' : 'ice', R = window.MockRender;
+    if (T.off[id]?.src === src && T.off[id].look === look) return T.off[id].cv;
     if (typeof values === 'function') values = values();
     s = s || stretch(values); const cv = document.createElement('canvas'); cv.width = nx; cv.height = ny;
     const g = cv.getContext('2d'), im = g.createImageData(nx, ny);
     for (let i = 0; i < nx * ny; i++) {
       const v = values[i];
       if (v == null || !Number.isFinite(v)) { im.data[4 * i + 3] = 0; continue; }
-      const t = s.map(v); im.data[4 * i] = t; im.data[4 * i + 1] = Math.round(t * 0.965); im.data[4 * i + 2] = Math.round(t * 0.91); im.data[4 * i + 3] = 255;
+      const t = s.map(v);
+      if (look === 'ice' && R?.rampRGB) { const c = R.rampRGB('ice', t / 255); im.data[4 * i] = c[0]; im.data[4 * i + 1] = c[1]; im.data[4 * i + 2] = c[2]; }
+      else { im.data[4 * i] = t; im.data[4 * i + 1] = Math.round(t * 0.965); im.data[4 * i + 2] = Math.round(t * 0.91); }
+      im.data[4 * i + 3] = 255;
     }
-    g.putImageData(im, 0, 0); T.off[id] = { src, cv }; return cv;
+    g.putImageData(im, 0, 0); T.off[id] = { src, cv, look }; return cv;
   }
   // FITS rows run bottom-up; the canvas wants row 0 at the top.
   function fitsRowsTopDown(img) {
@@ -106,7 +113,7 @@ export function createTelescopes(ctx) {
 
   // outside the SPHEREx cutout: the same calm flat no-data fill as the viewer (erender.js), no hatching
   function hatch(g, w, h) {
-    g.fillStyle = '#100D0B'; g.fillRect(0, 0, w, h);
+    g.fillStyle = classic() ? '#100D0B' : '#060C18'; g.fillRect(0, 0, w, h);
   }
 
   function sizePanels() {
@@ -224,14 +231,14 @@ export function createTelescopes(ctx) {
         const lab = String(yearOf(ep[k])), tw = g.measureText(lab).width, side2 = nx >= 0 ? 1 : -1;
         let lx = x + side2 * (nx * 14 * dpr) + (side2 > 0 ? 0 : -tw), ly = y + side2 * ny * 14 * dpr;
         lx = Math.max(2 * dpr, Math.min(side * dpr - tw - 2 * dpr, lx)); ly = Math.max(8 * dpr, Math.min(side * dpr - 8 * dpr, ly));
-        g.fillStyle = 'rgba(21,17,14,.78)'; g.fillRect(lx - 3 * dpr, ly - 8 * dpr, tw + 6 * dpr, 16 * dpr);
-        g.fillStyle = k === id ? '#E3A86B' : IV(0.92); g.fillText(lab, lx, ly + 0.5);
+        g.fillStyle = classic() ? 'rgba(21,17,14,.78)' : 'rgba(6,12,24,.78)'; g.fillRect(lx - 3 * dpr, ly - 8 * dpr, tw + 6 * dpr, 16 * dpr);
+        g.fillStyle = k === id ? ringCol() : IV(0.92); g.fillText(lab, lx, ly + 0.5);
       });
     }
     // the dashed target ring at THIS image's date (fixed 10″ radius, at least 9 px)
     const [gx, gy] = xy(pos[id]), R = Math.max(9, 10 * pxPerArcsec(view, side)) * dpr;
     g.setLineDash([4 * dpr, 3 * dpr]); g.lineWidth = 3.2 * dpr; g.strokeStyle = 'rgba(11,9,7,.5)'; g.beginPath(); g.arc(gx, gy, R, 0, Math.PI * 2); g.stroke();
-    g.lineWidth = 1.6 * dpr; g.strokeStyle = '#E3A86B'; g.beginPath(); g.arc(gx, gy, R, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+    g.lineWidth = 1.6 * dpr; g.strokeStyle = ringCol(); g.beginPath(); g.arc(gx, gy, R, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
   }
 
   const chip = (w) => `<span class="tele-chip">${w}</span>`;

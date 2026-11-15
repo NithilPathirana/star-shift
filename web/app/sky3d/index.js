@@ -17,8 +17,10 @@ import {
 } from './view.js';
 
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
-const BG = 0x0E0B09; // DESIGN.md --stage
-const MW_TINT = [0xE9 / 255, 0xD8 / 255, 0xC2 / 255], DETAIL_TINT = [1.0, 0.965, 0.92]; // warm grey
+// warm grey and brown stage in the first (copper) look; a cool grey on navy in the default look (access.js data-ax-look)
+const classic = () => document.documentElement.dataset.axLook === 'classic';
+const bgCol = () => (classic() ? 0x0E0B09 : 0x0A1121); // DESIGN.md --stage
+const WARM = { mw: [0xE9 / 255, 0xD8 / 255, 0xC2 / 255], detail: [1.0, 0.965, 0.92] }, COOL = { mw: [0.84, 0.9, 1.0], detail: [0.93, 0.965, 1.0] };
 // The SPHEREx HiPS tiles are 8-bit with coarse low levels (0, 35, 58, ...), and the sky background
 // sits right at the 0/35 step, so tiles whose zodiacal background differs slightly come out mostly 0
 // or mostly 35: straight-edged light/dark patches. When zoomed in, the base layer's black point moves
@@ -606,7 +608,7 @@ export class Sky3D {
     this.U.uRot.value.set(...fr.right, ...fr.up, ...fr.f); // rows (Matrix3.set is row-major)
     this.U.uClip.value.set(...clipScale(this._view()));
 
-    r.setRenderTarget(null); r.setClearColor(BG, 1); r.clear();
+    r.setRenderTarget(null); r.setClearColor(bgCol(), 1); r.clear();
     let busy = false;
     const ramp = detailRamp(v.fov), a = imageryAlpha(v.fov), nearest = v.fov < 1 ? 1 : 0;
     let layers = this._layerUrls();
@@ -644,7 +646,7 @@ export class Sky3D {
       if (L.additive) { this.compMat.blending = THREE.AdditiveBlending; u.alpha.value = a; u.tint.value.set(...L.rgb); u.sat.value = 0; u.bp.value = SKY_FLOOR * ramp; }
       else {
         this.compMat.blending = THREE.NormalBlending; u.alpha.value = a;
-        u.tint.value.set(...MW_TINT.map((t, i) => t + (DETAIL_TINT[i] - t) * ramp)); u.sat.value = 0.6 + 0.4 * ramp;
+        const TT = classic() ? WARM : COOL; u.tint.value.set(...TT.mw.map((t, i) => t + (TT.detail[i] - t) * ramp)); u.sat.value = 0.6 + 0.4 * ramp;
         u.bp.value = SKY_FLOOR * ramp; // see SKY_FLOOR
       }
       r.render(this.compScene, cam);

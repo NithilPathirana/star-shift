@@ -2,7 +2,7 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { diffImage, diffStar, diffCaption, diffColor, dirOf, diffLegend } from '../web/app/diffview.js';
+import { diffImage, diffStar, diffCaption, diffColor, dirOf, diffLegend, diffKeyTitle, toLab } from '../web/app/diffview.js';
 
 // a Gaussian star on a flat sky, n x n, centred at (cx, cy)
 function star(n, cx, cy, flux = 100, sky = 5, sigma = 1.2) {
@@ -37,7 +37,8 @@ test('a star that only brightens shows no pair: one colour, the change in per ce
   const s = diffStar(diffImage(a, b, n), a, [10, 10], 5);
   assert.equal(s.kind, 'brighter');
   assert.ok(Math.abs(s.net - 0.4) < 0.05, `net ${s.net}`);
-  assert.match(diffCaption(s, 'RW Aurigae'), /no visible motion.*copper.*40% brighter/);
+  assert.match(diffCaption(s, 'RW Aurigae', true), /no visible motion.*copper.*40% brighter/);
+  assert.match(diffCaption(s, 'RW Aurigae'), /no visible motion.*yellow.*40% brighter/); // default (blue) look
   const f = diffStar(diffImage(a, star(n, 10, 10, 60), n), a, [10, 10], 5);
   assert.equal(f.kind, 'fainter'); assert.match(diffCaption(f, 'X'), /blue.*40% fainter/);
 });
@@ -47,7 +48,8 @@ test('a steady star is "same"; no star light is "unclear"', () => {
   assert.equal(diffStar(diffImage(a, b, n), a, [10, 10], 5).kind, 'same');
   const flat = new Array(n * n).fill(3);
   assert.equal(diffStar(diffImage(flat, flat, n), flat, [10, 10], 5).kind, 'unclear');
-  assert.match(diffCaption(null), /Copper: brighter/);
+  assert.match(diffCaption(null, '', true), /Copper: brighter/);
+  assert.match(diffCaption(null), /Yellow: brighter/);
 });
 
 test('directions on the sky grid (north up, east left)', () => {
@@ -55,12 +57,13 @@ test('directions on the sky grid (north up, east left)', () => {
   assert.equal(dirOf(0, 1), 'south'); assert.equal(dirOf(1, 0), 'west'); assert.equal(dirOf(-1, -1), 'north-east');
 });
 
-test('diverging colours: grey at zero, copper above, blue below, same strength both ways', () => {
-  const z = diffColor(0), up = diffColor(1), dn = diffColor(-1), half = diffColor(0.5), mhalf = diffColor(-0.5);
+test('diverging colours (classic look): grey at zero, copper above, blue below, same strength both ways', () => {
+  const C = t => diffColor(t, true);
+  const z = C(0), up = C(1), dn = C(-1), half = C(0.5), mhalf = C(-0.5);
   assert.deepEqual(z, [52, 46, 41]);
   assert.ok(up[0] > up[2] && half[0] > half[2], 'copper: red over blue');
   assert.ok(dn[2] > dn[0] && mhalf[2] > mhalf[0], 'blue: blue over red');
-  assert.deepEqual(diffColor(5), up, 'clipped at the scale');
+  assert.deepEqual(C(5), up, 'clipped at the scale');
   const lum = c => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
   assert.ok(Math.abs(lum(half) - lum(mhalf)) < 40, 'both sides lift about equally');
 });
@@ -70,4 +73,22 @@ test('legend: plain words, and in Expert the scale ends too', () => {
   assert.match(h, /Later minus earlier/); assert.match(h, />fainter</); assert.match(h, />brighter</);
   assert.match(h, /x-only">colour scale ±0\.012 MJy\/sr/);
   assert.match(diffLegend({ scale: 279.9 }), /±280 MJy/);
+});
+
+test('diverging colours (default blue look): blue #2F6BE0, near-white #F2F4F8, yellow #E8C400, no orange', () => {
+  const hex = c => '#' + c.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+  assert.equal(hex(diffColor(0)), '#F2F4F8');
+  assert.equal(hex(diffColor(-1)), '#2F6BE0');
+  assert.equal(hex(diffColor(1)), '#E8C400');
+  assert.deepEqual(diffColor(-5), diffColor(-1), 'clipped at the scale');
+  const z = toLab([242, 244, 248]), d = c => { const l = toLab(c); return Math.hypot(l[0] - z[0], l[1] - z[1], l[2] - z[2]); };
+  for (const t of [0.02, 0.05, 0.1, 0.2, 0.3]) { // small and medium changes: both sides equally far from white (OKLab)
+    const r = d(diffColor(-t)) / d(diffColor(t));
+    assert.ok(r > 0.8 && r < 1.25, `balance at ${t}: ${r.toFixed(2)}`);
+  }
+  let pu = 0, pd = 0;
+  for (let i = 1; i <= 50; i++) { const u = d(diffColor(i / 50)), w = d(diffColor(-i / 50)); assert.ok(u >= pu && w >= pd, 'each side moves away from white'); pu = u; pd = w; }
+  assert.match(diffKeyTitle(), /Yellow = brighter later, blue = fainter later/);
+  assert.match(diffKeyTitle(true), /Copper = brighter later/);
+  assert.match(diffLegend({ scale: 1 }), /title="Yellow = brighter later/);
 });

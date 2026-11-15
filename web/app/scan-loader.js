@@ -3,7 +3,7 @@
    real SPHEREx cutouts as they arrive. Plain JS, no dependencies.
 
    const L = ScanLoader(container, {
-     mode: 'scan' | 'sheet',            // 'scan' = band-tinted plate + wavelength ruler; 'sheet' = copper contact sheet
+     mode: 'scan' | 'sheet',            // 'scan' = band-tinted plate + wavelength ruler; 'sheet' = contact sheet (ice; copper in the classic look)
      target: "Barnard's Star", total: 60,
      plan: [{ mjd, um }, ...],          // optional: every expected image, drawn as faint pending ticks (um may be missing: date line only)
      bands: [{ name, min, max, c }],    // the user's colour bands (data colours)
@@ -18,6 +18,9 @@
 (function () {
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var COPPER = [[0, [12, 9, 7]], [0.28, [62, 28, 14]], [0.58, [176, 100, 48]], [0.82, [232, 182, 120]], [1, [255, 246, 232]]];
+  var ICE = [[0, [5, 11, 26]], [0.28, [14, 42, 107]], [0.58, [47, 107, 224]], [0.82, [169, 219, 255]], [1, [255, 255, 255]]]; // as erender.js
+  function classic() { return document.documentElement.dataset.axLook === 'classic'; } // access.js look: copper only in the classic look
+  function mono() { return classic() ? COPPER : ICE; }
   function hex(h) { var n = parseInt(h.replace('#', ''), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
   function lerp(stops, t) {
     for (var i = 1; i < stops.length; i++) if (t <= stops[i][0]) {
@@ -38,7 +41,7 @@
     for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) {
       var t = s[y * n + x];
       if (t == null) {
-        c.fillStyle = '#100D0B'; c.fillRect(x * cell, y * cell, cell, cell);
+        c.fillStyle = classic() ? '#100D0B' : '#060C18'; c.fillRect(x * cell, y * cell, cell, cell);
       } else { var rgb = lerp(ramp, t); c.fillStyle = 'rgb(' + (rgb[0] | 0) + ',' + (rgb[1] | 0) + ',' + (rgb[2] | 0) + ')'; c.fillRect(x * cell, y * cell, cell, cell); }
     }
   }
@@ -51,8 +54,8 @@
     var got = [], dead = false, ro = null, revealAt = 0;
     var bandOf = function (um) { for (var i = 0; i < o.bands.length; i++) if (um >= o.bands[i].min && um <= o.bands[i].max) return o.bands[i]; return null; };
     var rampFor = function (um) {             // black -> band colour -> ivory: the image keeps its real brightness structure
-      var b = o.mode === 'scan' && bandOf(um); if (!b) return COPPER;
-      var c = hex(b.c); return [[0, [12, 9, 7]], [0.55, c], [1, [255, 246, 232]]];
+      var b = o.mode === 'scan' && bandOf(um); if (!b) return mono();
+      var c = hex(b.c), k = classic(); return [[0, k ? [12, 9, 7] : [5, 11, 26]], [0.55, c], [1, k ? [255, 246, 232] : [255, 255, 255]]];
     };
     root.classList.add('sl'); root.classList.toggle('sl-reduce', !!o.reducedMotion); root.dataset.mode = o.mode; root.innerHTML = '';
     var main = el('div', 'sl-main'); root.appendChild(main);
@@ -138,7 +141,7 @@
     }
     function addTile(f) {
       if (sheet.children.length >= 120) { sheet.dataset.more = '+' + (got.length - 120) + ' more'; return; }
-      var cv = el('canvas'); paint(cv, f, 3, COPPER); cv.title = fmtDate(f.date) + ' · ' + f.um.toFixed(2) + ' µm'; sheet.appendChild(cv);
+      var cv = el('canvas'); paint(cv, f, 3, mono()); cv.title = fmtDate(f.date) + ' · ' + f.um.toFixed(2) + ' µm'; sheet.appendChild(cv);
     }
     var api = {
       add: function (f) { if (dead) return; got.push(f); if (o.mode === 'scan') showPlate(f); else addTile(f); rails_(); text(); },

@@ -80,10 +80,10 @@ export function createContam(ctx) {
     return t.replace(/MJy\^?2/gi, 'MJy²').replace(/sr\^?2/gi, 'sr²');
   }
   function drawWave(cv, wave, n, c, o, exp) {
-    const g = cv.getContext('2d'); if (cv.width !== n * c) { cv.width = n * c; cv.height = n * c; }
+    const g = cv.getContext('2d'); if (cv.width !== n * c || cv.height !== n * c) { cv.width = n * c; cv.height = n * c; } // width OR height
     for (let i = 0; i < n * n; i++) {
       const rg = ctx.rangeOf(wave[i]);
-      g.fillStyle = rg ? rg.c : '#3a322b'; g.fillRect((i % n) * c, Math.floor(i / n) * c, c, c);
+      g.fillStyle = rg ? rg.c : (R.classic?.() === false ? '#1E2A44' : '#3a322b'); g.fillRect((i % n) * c, Math.floor(i / n) * c, c, c);
     }
     if (o.ring && exp) { g.strokeStyle = o.ringColor; g.lineWidth = Math.max(2, c / 8); g.setLineDash([c * 0.5, c * 0.35]); g.beginPath(); g.arc((exp[0] + .5) * c, (exp[1] + .5) * c, 2.2 * c, 0, Math.PI * 2); g.stroke(); g.setLineDash([]); }
   }
