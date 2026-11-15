@@ -1,52 +1,94 @@
-/* AI-written (OpenAI Codex) for Star Shift, NASA Space Apps 2026 */
+/* AI-written (OpenAI Codex) for Star Shift, NASA Space Apps 2026.
+   Light Star Shift restyle (ivory sheet, ink text, copper accent; DESIGN.md sections 2, 3, 25):
+   AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
 
-.notebook-plus { width: 1.75rem; height: 1.75rem; display: inline-grid; place-items: center; margin-inline-start: var(--space-1); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-1); color: var(--color-text); background: var(--color-surface-2); font: var(--weight-bold) var(--text-md)/1 var(--font-sans); cursor: pointer; }
-.notebook-plus:focus-visible, .notebook-dialog button:focus-visible, .notebook-dialog select:focus-visible, .notebook-dialog textarea:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.notebook-toast { position: fixed; z-index: 1001; left: 50%; bottom: var(--space-5); translate: -50% 1rem; padding: var(--space-2) var(--space-4); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-2); color: var(--color-text); background: var(--color-surface); opacity: 0; pointer-events: none; transition: opacity var(--duration-fast) var(--ease-out), translate var(--duration-fast) var(--ease-out); }
+/* shared key look (e.css .key): top-lit ivory, 1 px edge, three-layer shadow */
+.notebook-plus, .notebook-small-key, .notebook-close {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
+  border: var(--border-width) solid var(--color-border); color: var(--color-text);
+  background: linear-gradient(180deg, #FCFAF6, #E7E0D5);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), inset 0 -1.5px 0 rgba(84,62,42,.10), 0 1px 1px rgba(60,40,24,.22), 0 3px 6px -1px rgba(60,40,24,.16);
+  transition: transform 140ms var(--ease-out), box-shadow 140ms var(--ease-out);
+}
+.notebook-plus:active, .notebook-small-key:active, .notebook-close:active { transform: translateY(1px) scale(.97); background: linear-gradient(180deg, #E6DED2, #F1EBE3); box-shadow: inset 0 1px 3px rgba(60,40,24,.28); }
+@media (hover: hover) and (pointer: fine) { .notebook-small-key:hover, .notebook-close:hover, .notebook-plus:hover { transform: translateY(-1px); } }
+.notebook-plus { width: 1.75rem; height: 1.75rem; margin-inline-start: var(--space-1); padding: 0; border-radius: 50%; color: var(--copper, #8A4719); font: 600 var(--text-sm)/1 var(--font-sans); }
+.notebook-plus:focus-visible, .notebook-dialog :is(button, select, textarea, a):focus-visible { outline: 2.5px solid var(--color-focus); outline-offset: 3px; box-shadow: none; }
+
+/* toast: near-opaque glass, like e.css .toast */
+.notebook-toast { position: fixed; z-index: 1001; left: 50%; bottom: var(--space-5); translate: -50% 1rem; padding: 10px 16px; border: 1px solid rgba(255,255,255,.6); border-radius: 12px;
+  color: var(--color-text); background: linear-gradient(180deg, rgba(248,244,238,.97), rgba(244,239,232,.96)); font: 500 .8125rem/1.3 var(--font-sans);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 1px 2px rgba(60,40,24,.10), 0 6px 12px -6px rgba(60,40,24,.16), 0 18px 36px -14px rgba(60,40,24,.30);
+  opacity: 0; pointer-events: none; transition: opacity var(--duration-fast) var(--ease-out), translate var(--duration-fast) var(--ease-out); }
 .notebook-toast[data-visible="true"] { opacity: 1; translate: -50% 0; }
-.notebook-dialog { width: min(58rem, calc(100vw - 2rem)); max-width: none; height: min(52rem, calc(100dvh - 2rem)); max-height: none; padding: 0; border: var(--border-width) solid var(--color-border); border-radius: var(--radius-3); color: var(--color-text); background: var(--color-bg); box-shadow: 0 1.5rem 4rem rgba(0,0,0,.42); }
-.notebook-dialog::backdrop { background: rgba(0,0,0,.62); }
-.notebook-header, .notebook-manager, .notebook-footer { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--color-border); background: var(--color-surface); }
-.notebook-header { justify-content: space-between; }
-.notebook-header small { color: var(--color-accent); font: var(--weight-bold) var(--text-xs)/1 var(--font-mono); letter-spacing: .08em; }
-.notebook-header h2 { margin: var(--space-1) 0 0; font: var(--weight-bold) var(--text-xl)/var(--leading-tight) var(--font-sans); }
-.notebook-close { width: var(--tap-size); height: var(--tap-size); border: 0; border-radius: var(--radius-2); color: var(--color-text); background: transparent; font-size: var(--text-xl); cursor: pointer; }
+
+/* the dialog: an ivory sheet over a warm scrim */
+.notebook-dialog { width: min(58rem, calc(100vw - 2rem)); max-width: none; height: min(52rem, calc(100dvh - 2rem)); max-height: none; margin: auto; padding: 0; overflow: hidden;
+  border: 1px solid rgba(255,255,255,.65); border-radius: 20px; color: var(--color-text); font-family: var(--font-sans);
+  background: linear-gradient(180deg, #F8F4EE, #F1EBE3);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 1px 2px rgba(60,40,24,.10), 0 6px 12px -6px rgba(60,40,24,.16), 0 24px 48px -16px rgba(60,40,24,.34); }
+.notebook-dialog[open] { display: flex; flex-direction: column; }
+.notebook-dialog::backdrop { background: rgba(40,30,22,.32); }
+.notebook-header, .notebook-manager, .notebook-footer { flex: none; display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); }
+.notebook-header { justify-content: space-between; padding-top: var(--space-4); }
+.notebook-header small { color: var(--color-text-muted); font: 700 var(--text-xs)/1 var(--font-sans); letter-spacing: .08em; }
+.notebook-header h2 { margin: var(--space-1) 0 0; font: 700 1.375rem/var(--leading-tight) var(--font-sans); color: var(--color-text); }
+.notebook-close { width: 40px; height: 40px; padding: 0; border-radius: 11px; font: 400 1.5rem/1 var(--font-sans); }
 .notebook-manager { flex-wrap: wrap; }
 .notebook-picker { min-width: 13rem; flex: 1; }
-.notebook-small-key, .notebook-picker, .notebook-attach select { min-height: 2.25rem; padding: var(--space-2) var(--space-3); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-1); color: var(--color-text); background: var(--color-surface-2); font: var(--weight-medium) var(--text-sm)/1 var(--font-sans); }
-.notebook-small-key { cursor: pointer; }
-.notebook-content { height: calc(100% - 11.5rem); overflow: auto; padding: var(--space-4); }
-.notebook-section + .notebook-section { margin-top: var(--space-5); padding-top: var(--space-5); border-top: var(--border-width) solid var(--color-border); }
-.notebook-section h3 { margin: 0 0 var(--space-3); font: var(--weight-bold) var(--text-lg)/var(--leading-tight) var(--font-sans); }
-.notebook-help, .notebook-empty { color: var(--color-text-muted); font-size: var(--text-sm); }
-.notebook-entries { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--space-3); }
-.notebook-entry { padding: var(--space-3); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-2); background: var(--color-surface); }
-.notebook-entry-head { display: flex; justify-content: space-between; gap: var(--space-2); }
-.notebook-source-tag { color: var(--color-accent); font: var(--weight-bold) var(--text-xs)/1 var(--font-mono); text-transform: uppercase; }
-.notebook-entry-value { margin: var(--space-3) 0 var(--space-2); font: var(--weight-medium) var(--text-md)/1.3 var(--font-mono); }
-.notebook-entry-meta { color: var(--color-text-muted); font-size: var(--text-xs); }
-.notebook-entry-meta a { color: var(--color-accent); }
-.notebook-attach { display: flex; gap: var(--space-2); margin-top: var(--space-3); }
+.notebook-small-key { min-height: 36px; padding: 0 14px; border-radius: 11px; font: 600 var(--text-sm)/1 var(--font-sans); white-space: nowrap; }
+/* recessed wells (e.css .well) for the picker, selects and writing fields */
+.notebook-picker, .notebook-attach select { min-height: 36px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: 11px; color: var(--color-text);
+  background: linear-gradient(180deg, #E4DCD0, #EEE8DF); box-shadow: inset 0 2px 3px rgba(60,40,24,.16), 0 1px 0 rgba(255,255,255,.8); font: 500 var(--text-sm)/1 var(--font-sans); }
+.notebook-content { flex: 1 1 auto; min-height: 0; overflow: auto; padding: var(--space-4); }
+.notebook-section + .notebook-section { margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px solid var(--color-border); }
+.notebook-section h3 { margin: 0 0 var(--space-3); font: 700 var(--text-xs)/1.2 var(--font-sans); letter-spacing: .05em; text-transform: uppercase; color: var(--color-text-muted); }
+.notebook-help, .notebook-empty { margin: 0 0 var(--space-3); color: var(--ink-2, #4A4038); font-size: .8125rem; }
+.notebook-entries { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: var(--space-3); }
+.notebook-entry { display: flex; flex-direction: column; min-width: 0; padding: var(--space-3); border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(60,40,24,.12); cursor: grab; }
+.notebook-entry:active { cursor: grabbing; }
+.notebook-entry-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-2); font-size: var(--text-sm); }
+.notebook-entry-head strong { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+/* source tags as in e.css .tag: copper = computed/catalogue, sage = observed */
+.notebook-source-tag { flex: none; padding: 2px 7px; border-radius: 4px; background: rgba(194,122,67,.15); color: var(--color-accent); font: 700 var(--text-xs)/1.3 var(--font-sans); letter-spacing: .05em; text-transform: uppercase; }
+.notebook-source-tag[data-tag="OBSERVED"] { background: var(--sage-tint, rgba(111,138,114,.17)); color: var(--sage-ink, #3B5240); }
+.notebook-entry-value { margin: var(--space-2) 0; font: 500 .875rem/1.4 var(--font-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.notebook-entry-value[data-long] { font: 400 .8125rem/1.45 var(--font-sans); color: var(--ink-2, #4A4038); } /* sentences read better in sans */
+.notebook-entry-meta { margin: 0; color: var(--color-text-muted); font-size: var(--text-xs); overflow-wrap: anywhere; }
+.notebook-entry-meta a { color: var(--color-accent); text-underline-offset: 2px; }
+.notebook-attach { display: flex; gap: var(--space-2); margin-top: auto; padding-top: var(--space-3); }
 .notebook-attach select { min-width: 0; flex: 1; }
-.notebook-notes, .notebook-template textarea { width: 100%; box-sizing: border-box; padding: var(--space-3); resize: vertical; border: var(--border-width) solid var(--color-border); border-radius: var(--radius-2); color: var(--color-text); background: var(--color-surface); font: var(--weight-normal) var(--text-sm)/var(--leading-normal) var(--font-sans); }
+.notebook-notes, .notebook-template textarea { width: 100%; box-sizing: border-box; padding: var(--space-3); resize: vertical; border: 1px solid var(--color-border); border-radius: 11px; color: var(--color-text);
+  background: #FFFDF9; box-shadow: inset 0 1px 3px rgba(60,40,24,.14); font: 400 var(--text-sm)/var(--leading-normal) var(--font-sans); }
+.notebook-notes::placeholder, .notebook-template textarea::placeholder { color: var(--color-text-muted); }
 .notebook-template { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
-.notebook-template-field { display: grid; gap: var(--space-2); padding: var(--space-3); border: var(--border-width) solid transparent; border-radius: var(--radius-2); }
-.notebook-template-field > span { font-weight: var(--weight-bold); }
-.notebook-template-field small { color: var(--color-text-muted); }
-.notebook-template-field[data-dragover="true"] { border-color: var(--color-accent); background: var(--color-surface); }
-.notebook-footer { justify-content: flex-end; border-top: var(--border-width) solid var(--color-border); border-bottom: 0; }
+.notebook-template-field { display: grid; gap: var(--space-2); padding: var(--space-2); border: 1.5px dashed transparent; border-radius: 12px; font-size: var(--text-sm); }
+.notebook-template-field > span { font-weight: 600; }
+.notebook-template-field small { color: var(--color-text-muted); font-size: var(--text-xs); }
+.notebook-template-field[data-dragover="true"] { border-color: var(--copper-deco, #C27A43); background: rgba(194,122,67,.08); }
+.notebook-footer { justify-content: flex-end; border-top: 1px solid var(--color-border); border-bottom: 0; padding-bottom: var(--space-4); }
+
+/* Viewer "+" capture keys (drawn by live.css): 24 px on desktop (DESIGN.md 25, tap targets) */
+@media (min-width: 700px) { .nb-plus { width: 24px; height: 24px; } }
 
 @media (max-width: 42rem) {
-  .notebook-dialog { width: 100vw; height: 100dvh; border-radius: 0; }
-  .notebook-content { height: calc(100% - 14rem); }
+  .notebook-dialog { width: 100vw; height: 100dvh; border-radius: 0; border: 0; }
   .notebook-template { grid-template-columns: 1fr; }
   .notebook-manager .notebook-picker { flex-basis: 100%; }
+}
+/* phone: every key and field at least 44 px */
+@media (max-width: 699px) {
+  .notebook-close { width: 44px; height: 44px; }
+  .notebook-small-key, .notebook-picker, .notebook-attach select { min-height: 44px; }
+  .notebook-plus { width: 44px; height: 44px; }
+  .notebook-manager .notebook-small-key { flex: 1; }
 }
 
 @media print {
   body > :not(.notebook-dialog) { display: none !important; }
-  .notebook-dialog { position: static; display: block; width: auto; height: auto; overflow: visible; border: 0; color: #000; background: #fff; box-shadow: none; }
+  .notebook-dialog, .notebook-dialog[open] { position: static; display: block; width: auto; height: auto; overflow: visible; border: 0; color: #000; background: #fff; box-shadow: none; }
   .notebook-manager, .notebook-footer, .notebook-close, .notebook-attach { display: none !important; }
   .notebook-content { height: auto; overflow: visible; }
-  .notebook-entry, .notebook-notes, .notebook-template textarea { color: #000; background: #fff; border-color: #777; }
+  .notebook-entry, .notebook-notes, .notebook-template textarea { color: #000; background: #fff; border-color: #777; box-shadow: none; }
 }

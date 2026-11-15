@@ -1,29 +1,29 @@
-/* Design tokens: the ONLY place for colours, type, spacing, radii and motion.
-   Neutral placeholder values. The design session's DESIGN.md replaces these values;
-   component CSS (app.css) only ever uses the variables below.
+/* Shared tokens for the Lab notebook dialog (notebook.css), in the light Star Shift palette
+   (DESIGN.md section 2). Pages also load e.css, which owns the shell, keys and glass; these
+   names are only read by notebook.css (and the old app.css, which no page loads).
    AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* colour. Checked contrast (WCAG): text/bg 15.9, muted/bg 8.2, muted/surface 7.6,
-     accent/bg 9.5, button text/accent 9.3, danger/bg 9.4, warning/surface 10.9 */
-  --color-bg: #0e0f11;
-  --color-surface: #16181b;
-  --color-surface-2: #1e2125;
-  --color-border: #2c3036;
-  --color-text: #e8eaed;
-  --color-text-muted: #a4aab2;
-  --color-accent: #8ab8ff;
-  --color-accent-contrast: #0b1220;
-  --color-danger: #ff9a8f;
-  --color-warning: #f2c46d;
-  --color-focus: #ffd166;
+  /* colour: ivory surfaces, ink text, copper accent. Contrast on --color-surface:
+     text 13.9:1, muted 5.9:1, accent (copper-ink) 7.9:1 */
+  --color-bg: #F6F1EA;          /* --shell-hi */
+  --color-surface: #FBF8F3;     /* card / popover fill */
+  --color-surface-2: #FCFAF6;   /* key top */
+  --color-border: var(--edge, rgba(84,62,42,.26));
+  --color-text: var(--ink, #27211C);
+  --color-text-muted: var(--muted, #655A50);
+  --color-accent: var(--copper-ink, #763A12);   /* small coloured text */
+  --color-accent-contrast: #FFF8F0;     /* --on-copper */
+  --color-danger: #A4452F;      /* --coral */
+  --color-warning: #7A5410;
+  --color-focus: var(--focus, #8A4719);
   --color-marker: #ff6b5e;
-  --color-image-bg: #000000;
+  --color-image-bg: #15110E;    /* --stage */
 
   /* type */
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
+  --font-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-md: 1rem;
@@ -49,7 +49,7 @@
   --radius-2: 8px;
   --radius-3: 12px;
   --border-width: 1px;
-  --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus);
+  --focus-ring: 0 0 0 3px var(--color-bg), 0 0 0 5.5px var(--color-focus);
 
   /* layout */
   --panel-width: 20rem;

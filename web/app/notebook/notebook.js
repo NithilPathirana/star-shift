@@ -44,8 +44,11 @@ function renderEntries(notebook) {
     card.dataset.entryId = entry.id;
     card.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', entry.id));
     const heading = element('div', 'notebook-entry-head');
-    heading.append(element('strong', '', entry.label), element('span', 'notebook-source-tag', entry.tag || entry.source));
+    const tag = element('span', 'notebook-source-tag', entry.tag || entry.source);
+    tag.dataset.tag = String(entry.tag || '').toUpperCase(); // OBSERVED gets the sage tag colour
+    heading.append(element('strong', '', entry.label), tag);
     const value = element('p', 'notebook-entry-value', `${entry.value}${entry.unit ? ` ${entry.unit}` : ''}${entry.uncertainty !== '' ? ` ± ${entry.uncertainty}${entry.unit ? ` ${entry.unit}` : ''}` : ''}`);
+    if (value.textContent.length > 60) value.dataset.long = ''; // a sentence, not a number
     const meta = element('p', 'notebook-entry-meta', entry.source);
     if (entry.context?.url) {
       const link = element('a', '', 'Back to exact view');

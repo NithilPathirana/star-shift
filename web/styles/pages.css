@@ -335,6 +335,5 @@ html[data-motion=reduce] .pf-open svg{transition:none}
   .pg-filters[data-rows] .chip-k{padding:0 9px}
   .pg-filters[data-rows] .fgroup.grow{flex:1 1 160px;max-width:300px}
 }
-/* tokens.css (loaded for the Lab notebook) sets a dark colour scheme; these pages are light, the notebook dialog stays dark */
+/* these pages are light, the Lab notebook dialog too */
 :root{color-scheme:light}
-.notebook-dialog{color-scheme:dark}
