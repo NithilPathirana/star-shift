@@ -470,3 +470,11 @@ test('a still star fainter than G 18 with no clear dot (but some light) is "Noth
   assert.equal(L.decideVerdict({ lines: [flags, star(6.5), ast, seasons] }).kind, 'known-star', 'a saturated bright star stays known');
   assert.equal(L.decideVerdict({ lines: [flags, { ...star(undefined), data: { best: { name: 'R Dra' }, mover: false } }, ast, seasons] }).kind, 'known-star');
 });
+
+test('"Nothing here" waits for the flags check, so it never flips to "Likely artefact" a moment later (Full function test neo2-3)', () => {
+  const seasons = { id: 'seasons', status: 'explained', text: 'No dot stands out', data: { nothing: true } };
+  const lines = f => [f, { id: 'star', status: 'clear', text: '' }, { id: 'asteroid', status: 'clear', text: '' }, seasons];
+  assert.equal(L.decideVerdict({ lines: lines({ id: 'flags', status: 'running', text: '' }) }).kind, 'pending');
+  assert.equal(L.decideVerdict({ lines: lines({ id: 'flags', status: 'clear', text: '', data: { per: [] } }) }).kind, 'nothing');
+  assert.equal(L.decideVerdict({ lines: lines({ id: 'flags', status: 'explained', text: 'flagged', data: { per: [] } }) }).kind, 'artefact');
+});

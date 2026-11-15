@@ -651,6 +651,7 @@ export function decideVerdict(state) {
     if (!mover && !by.star.data?.part) {
       if (!isDone(by.seasons)) return { kind: 'pending', running };
       const sd = by.seasons.data || {}, faint = Number.isFinite(b?.g) && b.g > FAINT_STILL_G && sd.k === 0 && !sd.glow;
+      if (by.seasons.status === 'explained' && (sd.nothing || faint) && !isDone(by.flags)) return { kind: 'pending', running }; // flags may still explain it
       if (by.seasons.status === 'explained' && (sd.nothing || faint) && by.flags.status !== 'explained') {
         return decided({ kind: 'nothing', title: 'Nothing here', sub: '', body: ['No dot stands out from the noise at this spot.',
           `A catalogued star, ${b ? starLabel(b) : 'a faint one'}, sits here, but it is too faint for SPHEREx to show at these wavelengths.`],
@@ -683,6 +684,7 @@ export function decideVerdict(state) {
   if (why.length && fp.length) why.push(`The archive also flags this spot in ${fp.map(p => `${p.flagged} of ${p.n} images of the ${p.label.toLowerCase()}`).join(' and ')}.`);
   if (why.length) {
     const onGlow = by.seasons.status === 'explained' && by.seasons.data?.glow;
+    if (by.seasons.status === 'explained' && by.seasons.data?.nothing && !isDone(by.flags)) return { kind: 'pending', running }; // no flip from 'Nothing here' to 'Likely artefact' when the flags check lands
     if (by.seasons.status === 'explained' && by.seasons.data?.nothing && by.flags.status !== 'explained') {
       return decided({ kind: 'nothing', title: 'Nothing here', sub: '', body: ['No dot stands out from the noise at this spot.', 'Pick a spot where you can see a dot in at least one of the two seasons.'],
         evidence: why, notRun, decidedBy: 'seasons' });
