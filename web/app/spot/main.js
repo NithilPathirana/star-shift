@@ -336,7 +336,14 @@ function fieldStars(force) {
   const c = fieldCentre(S.grid);
   return fieldLookup(`stars|${c.ra},${c.dec}`, () => fetchFieldStars({ centre: c, base: BASE })
     .catch(e => ({ gaia: { ok: false, error: e.message }, simbad: { ok: false, error: e.message } }))
-    .then(r => Object.assign(r, { failed: !r.gaia.ok || !r.simbad.ok })), force);
+    .then(r => { presetNames(r.simbad?.stars); return Object.assign(r, { failed: !r.gaia.ok || !r.simbad.ok }); }), force);
+}
+// SIMBAD's main_id can differ only in case from the field's own name ('Barnard's star'): use the
+// preset / catalogue label as given (Design review 2, item 5). Names only, never positions or motions.
+function presetNames(stars) {
+  const norm = (x) => String(x || '').replace(/[’‘]/g, "'").replace(/\s+/g, ' ').trim().toLowerCase();
+  const labels = [S.field?.label, S.target?.name, ...QUICK.map(f => f.label)].filter(Boolean);
+  for (const st of stars || []) { const hit = labels.find(l => norm(l) === norm(st.name)); if (hit) st.name = hit; }
 }
 function fieldAsteroids(force) {
   const c = fieldCentre(S.grid);

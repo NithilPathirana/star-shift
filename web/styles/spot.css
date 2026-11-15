@@ -36,13 +36,13 @@
 .sm-layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;grid-template-areas:"stage pick" "stage side";grid-template-rows:auto 1fr;gap:var(--gap);align-items:start}
 .sm-pick{grid-area:pick}.sm-stage-wrap{grid-area:stage}.sm-side{grid-area:side}
 .sm-stage-wrap{display:grid;gap:8px;min-width:0}
-.sm-stage{position:relative;border-radius:var(--r-shell);background:var(--stage);color:var(--stage-text);height:clamp(380px,calc(100dvh - 260px),720px);overflow:hidden}
+.sm-stage{position:relative;border-radius:var(--r-shell);background:var(--stage);color:var(--stage-text);height:clamp(360px,calc(100dvh - 274px),720px);overflow:hidden}
 .sm-screen{position:absolute;inset:52px 24px 44px 24px;display:grid;place-items:center}
 .sm-screen canvas{image-rendering:pixelated;cursor:crosshair;display:block}
 .sm-chip{position:absolute;left:16px;top:14px;z-index:2}
 .sm-flag{position:absolute;right:16px;top:14px;z-index:2;padding:6px 11px;border-radius:999px;background:rgba(21,17,14,.82);border:1px solid rgba(255,235,210,.14);font-size:.75rem;color:var(--stage-text)}
 .sm-flag:empty{display:none}
-.sm-stage .compass{left:16px;bottom:8px}
+.sm-stage .compass{left:16px;bottom:10px} /* the Viewer's compass (e.css): N up, E left, copper N */
 .sm-stage .scalebar{right:20px;bottom:14px}
 .sm-state{position:absolute;inset:0;z-index:3;display:grid;place-items:center;padding:24px;background:var(--stage);text-align:center}
 .sm-state[hidden]{display:none}
