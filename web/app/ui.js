@@ -607,8 +607,8 @@ function stallCheck() {
   if (quiet < STALL_HARD_MS && busy < STALL_RETRIES) return;
   V.stalled = true; $('thin').hidden = true; leaveLoader(); updatePlate();
   const n = V.FA.length;
-  $('errTxt').textContent = n ? `No new image for ${Math.round(quiet / 1000)} s${busy >= STALL_RETRIES ? ` (it answered "busy" ${busy} times)` : ''}. ${n} of ${V.planned} images arrived; you can use them, or ask again.`
-    : `Nothing arrived in ${Math.round(quiet / 1000)} s${busy >= STALL_RETRIES ? ` (it answered "busy" ${busy} times)` : ''}. Retry asks again.`;
+  const why = busy >= STALL_RETRIES ? `It answered "busy" ${busy} times in a row` : n ? `No new image for ${Math.round(quiet / 1000)} s` : `Nothing arrived in ${Math.round(quiet / 1000)} s`;
+  $('errTxt').textContent = n ? `${why}. ${n} of ${V.planned} images arrived; you can use them, or ask again.` : `${why}. Retry asks again.`;
   $('retry').hidden = false; $('useLoaded').hidden = !n; $('useLoaded').textContent = `Use the ${n} image${n === 1 ? '' : 's'} loaded`;
   showState('stError'); Snd.play('error');
 }
