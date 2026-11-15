@@ -236,10 +236,10 @@ for (const p of PRESETS) {
   // Direction: say it whenever the direction check is over 2σ (1-D equivalent), with the likely reason from the counts.
   const dv = v.direction;
   if (dv && dv.sigma > 2) {
-    const pas = [['the long-wavelength detectors alone', M.long], ['every flagged image hidden', M.filtersOn]].filter(([, x]) => x.ok && x !== m).map(([w, x]) => `${w} ${x.pa.toFixed(1)}°`);
-    limit += ` ${v.sigma <= 2 ? 'The speed agrees, but the direction' : 'The direction'} is ${Math.abs(paDelta(m.pa, cat.pa)).toFixed(1)}° off (${m.pa.toFixed(1)}° measured, ${cat.pa.toFixed(1)}° catalogue): about ${fmtPm(Math.abs(dv.side), 1)}″/yr sideways, ${dv.sigma.toFixed(1)}σ.`
+    const pas = [['the long-wavelength detectors alone', M.long], ['every flagged image hidden', M.filtersOn]].filter(([, x]) => x.ok && x !== m).map(([w, x]) => `${w} (${x.pa.toFixed(1)}°)`);
+    limit += ` ${v.sigma <= 2 ? 'The speed agrees, but the direction' : 'The direction'} is ${Math.abs(paDelta(+m.pa.toFixed(1), +cat.pa.toFixed(1))).toFixed(1)}° off (${m.pa.toFixed(1)}° measured, ${cat.pa.toFixed(1)}° catalogue): about ${fmtPm(Math.abs(dv.side), 1)}″/yr sideways, ${dv.sigma.toFixed(1)}σ.`
       + (saturated > frames.length / 2 ? ` Likely because the star carries the saturation flag in ${saturated} of ${frames.length} images and its centre is blanked in ${m.maskedFrames} of the ${m.frames} fitted, so the position comes from the star's edges, which can lean to one side; the ${fmtPm(m.sysErr)}″/yr floor comes from faint field stars and does not cover that.` : '')
-      + (pas.length ? ` It stays off with ${pas.join(' and ')}, so it is systematic, not noise.` : '');
+      + (pas.length ? ` It stays off with ${pas.map((s, i) => (i ? 'with ' : '') + s).join(' and ')}, so it is systematic, not noise.` : '');
   }
 
   const tests = [{
@@ -252,7 +252,7 @@ for (const p of PRESETS) {
     expectedVec: { pmra: r2(cat.pmra, 1), pmdec: r2(cat.pmdec, 1) },
     counts,
     diff: m.ok && v.verdict !== 'NOT MEASURABLE' ? { value: r2(m.total - cat.total, 0), sigma: r2(v.sigma, 1), unit: 'mas/yr' } : null,
-    direction: m.ok && dv ? { verdict: dv.verdict, measured: r2(m.pa, 1), catalogue: r2(cat.pa, 1), paDiff: r2(paDelta(m.pa, cat.pa), 1),
+    direction: m.ok && dv ? { verdict: dv.verdict, measured: r2(m.pa, 1), catalogue: r2(cat.pa, 1), paDiff: r2(paDelta(r2(m.pa, 1), r2(cat.pa, 1)), 1), // from the shown angles, so the numbers on the page add up
       east: r2(dv.e, 0), north: r2(dv.n, 0), value: r2(dv.mag, 0), sideways: r2(Math.abs(dv.side), 0), chi2d: r2(dv.chi, 2), sigma: r2(dv.sigma, 1) } : null,
     window: v.window ? { lo: r2(v.window.lo, 0), hi: r2(v.window.hi, 0), paLo: r2(v.window.paLo, 1), paHi: r2(v.window.paHi, 1) } : null,
     verdict: v.verdict, shiftPx: r2(v.shiftPx, 3), limit,
@@ -277,7 +277,7 @@ for (const p of PRESETS) {
       const best = ok.length ? ok.reduce((a, g) => (g.sigma > a.sigma ? g : a)) : null;
       const bv = brightnessVerdict(best ? { ok: true, dmag: best.dmag, dmagErr: best.dmagErr } : null, true);
       const C = barnardBrightness, cg = C?.groups.flatMap(g => g.bySeason.slice(1).map(s => Math.abs(s.dm))) || [];
-      const ctl = C && cg.length ? ` Control: on Barnard's Star, a steady star, the season averages stay within ${Math.max(...cg).toFixed(2)} mag of the first season (only ${C.usable} of its ${C.total} images have an unmasked centre).` : '';
+      const ctl = C && cg.length ? ` Control: on Barnard's Star, a steady star, the season averages stay within ${Math.max(...cg).toFixed(2)} mag of the first season (only ${C.usable} of its ${C.total} images have no masked pixel within ${(APERTURE * PIXEL_ARCSEC).toFixed(0)}″).` : '';
       const period = cat.periodDays ? `Period ${cat.periodDays.toFixed(1)} days` : 'No fixed period';
       tests.push({
         type: 'brightness', test: 'changes brightness',
@@ -287,7 +287,7 @@ for (const p of PRESETS) {
         diff: best ? { sigma: best.sigma, group: best.name, text: 'change divided by its uncertainty' } : null,
         verdict: bv.verdict,
         limit: ok.length
-          ? `Only images with no masked pixel within ${(APERTURE * PIXEL_ARCSEC).toFixed(0)}″ of the star count, each compared with first-season images from the same detector at the same wavelength: ${usable} of ${frames.length} images qualify (${masked} have a saturated, masked centre; the rest have no first-season match). The catalogue gives no amplitude at these wavelengths, so only the fact of a change is tested.${ctl}`
+          ? `Only images with no masked pixel within ${(APERTURE * PIXEL_ARCSEC).toFixed(0)}″ of the star count, each compared with first-season images from the same detector at the same wavelength: ${usable} of ${frames.length} images qualify (${masked} have a masked pixel within ${(APERTURE * PIXEL_ARCSEC).toFixed(0)}″ of the star; the rest have no first-season match). The catalogue gives no amplitude at these wavelengths, so only the fact of a change is tested.${ctl}`
           : `Too bright for SPHEREx: in ${masked} of ${frames.length} images the centre pixels are saturated and masked, leaving ${usable} usable comparisons, too few to measure a change.`,
         chart: ok.length ? { kind: 'brightness', groups: groups.map(g => ({ name: g.name, points: g.points, seasons: g.bySeason })) } : null,
       });
