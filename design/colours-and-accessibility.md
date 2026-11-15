@@ -94,3 +94,7 @@ Nithil, as team leader: 12:40 "change the color scheme to be not AI-generated lo
 - Colours set in scripts (charts) keep their first values. One keyframe animation (`tour-pulse`) keeps its copper glow.
 
 **Not checked in this look:** Spot, Archive, Asteroids, Spectrum and Tonight? by eye (they were seen in the cool-grey try, built the same way), Expert mode, the tour, Increase contrast, Softer light, Safari, Firefox, a real phone.
+
+## Update, Sun 15 Nov 13:55: the astronaut loader matches the new look
+Nithil: "Improve the astronaut animations also." The loader was re-rendered in Blender as scene v4 (blue, white and neon yellow; the rider waves; more sway; speed streaks) and re-encoded with the SI mark. Details: `design/loader/v1.1/README.md`, "Changes, v4". Seen playing in the app at 1366×768 (`design/mockups/shots/loader-v4-in-app-1366x768.jpg`).
+
