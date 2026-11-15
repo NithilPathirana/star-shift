@@ -3,9 +3,12 @@
 Team **Proper Motion** (Colombo, Sri Lanka) – NASA Space Apps Challenge 2026, challenge *Planet X and SPHEREx*.
 Type any sky position (or a star name) and see every SPHEREx image of that spot, lined up, as a little movie.
 
-> **AI use (required disclosure).** All code in this repository was written by an AI model
-> (Claude, by Anthropic) working under the team's direction. The team chose the idea,
-> checked the science and approved the design. Files carry an "AI-written code" header.
+> **AI use (required disclosure): AI (Super Intelligence, SI).** All code in this repository was written by AI models
+> (Claude, by Anthropic; a few modules, such as the Asteroids page, the lab notebook and the JPL relay route, by OpenAI Codex)
+> working under the team's direction. The team chose the idea, checked the science and approved the design.
+> Files carry an "AI-written code" header.
+>
+> Logo: AI-generated (SI) with ChatGPT; small version and favicon redrawn as SVG by Claude.
 
 ## The web app (`web/`)
 - `index.html` + `styles/tokens.css` (all colours, type, spacing, radii, motion as CSS variables) + `styles/app.css`.
