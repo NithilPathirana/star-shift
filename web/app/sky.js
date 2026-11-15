@@ -181,7 +181,7 @@ export function skyTonight(ra, dec, lat, lon, now, { stepMin = 2, wellAlt = WELL
 // at(Date) -> the page's time text (24-hour HH:MM, plus a day word when not today).
 const DIR8 = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
 export const dirWord = az => DIR8[Math.round((((az % 360) + 360) % 360) / 45) % 8];
-export const whereIn = (alt, az) => alt > 85 ? 'almost straight overhead' : `in the ${dirWord(az)}`;
+export const whereIn = (alt, az) => alt > 85 ? ', almost straight overhead' : ` in the ${dirWord(az)}`;
 // kind: 'yes' (well placed) | 'low' | 'set' (set earlier tonight) | 'day' (up only in daylight/twilight) | 'polar' (no dark sky) | 'down' (never rises)
 export function tonightWords(st, dec, lat, at) {
   const { rts, best, now } = st, r = Math.round;
@@ -189,7 +189,7 @@ export function tonightWords(st, dec, lat, at) {
   const bestText = {
     down: 'it never rises above the horizon from here',
     polar: 'there is no dark sky here tonight (the Sun stays less than 12° below the horizon)',
-    yes: best && `best tonight at ${at(best.t)}, ${r(best.alt)}° up ${whereIn(best.alt, best.az)}`,
+    yes: best && `best tonight at ${at(best.t)}, ${r(best.alt)}° up${whereIn(best.alt, best.az)}`,
     low: best && `at most ${r(best.alt)}° up while it is dark tonight, at ${at(best.t)} (under ${WELL_PLACED_ALT}°)`,
     set: st.setEarlier && `it set at ${at(st.setEarlier)} and is not up for the rest of the dark tonight`,
     day: 'it is up only in daylight or twilight tonight',

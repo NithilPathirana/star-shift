@@ -221,6 +221,8 @@ function renderSel() {
   else if (sel.kind === 'star') o += row('Distance', dash(sel.fromQuery ? 'Not looked up on this page' : 'Not in this star list (positions and brightness only)'));
   if (sel.kind === 'point') o += row('Brightness', dash('A spot on the sky, not an object'));
   else if (Number.isFinite(sel.mag)) o += row('Brightness', `mag ${sel.mag.toFixed(sel.kind === 'star' ? 2 : 1)}`);
+  else if (sel.vis) { const e = seeItWith(sel.vis).expert; o += /^V /.test(e) ? row('Brightness', esc(e)) : row('Brightness', dash(e)); } // the same V (and source) as "To see it"
+  else if (sel.vis === null) o += row('Brightness', dash('No visible-light (V) magnitude in the catalogue'));
   else o += row('Brightness', dash('Not given by the source'));
   if (sel.kind === 'moon' && Number.isFinite(sel.phase)) o += row('Lit', `${Math.round(sel.phase * 100)}%`);
   // RA/Dec are Expert detail (as on the viewer); Simple says where they are
@@ -254,7 +256,9 @@ function showAnswer(head, detail, verdict, see) {
   const el = $('answer'); el.hidden = !head; if (!head) return;
   el.dataset.verdict = verdict || ''; $('ansHead').textContent = head; $('ansDetail').textContent = detail || '';
   // 'is it up' (above) is kept apart from 'can you actually see it' (web/app/seeit.js)
-  const se = $('ansSee'); if (se) { se.hidden = !see; se.dataset.see = see?.level || ''; se.innerHTML = see ? `${esc(see.simple)}<span class="x-only"> ${esc(see.expert)}.</span>` : ''; }
+  const se = $('ansSee'); if (se) { se.hidden = !see; se.dataset.see = see?.level || ''; // a variable star's line already carries its V range: Expert then adds only where V comes from
+    const ex = see && /\(it varies, V /.test(see.simple) ? see.expert.replace(/^V [^(]*\(([^)]*)\)$/, 'V from $1') : see?.expert;
+    se.innerHTML = see ? `${esc(see.simple)}<span class="x-only"> ${esc(ex)}.</span>` : ''; }
 }
 function renderAnswer() {
   const sel = S.sel;
