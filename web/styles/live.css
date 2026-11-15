@@ -68,12 +68,12 @@ html[data-motion=reduce] .rk, html[data-motion=reduce] .thin-rk { transition: no
 /* DESIGN.md v3 section 19 (cursor reticle, ripple, ghost tick) and 21 (search error), from design-v1.html */
 /* 19: sky cursor reticle */
 #mapWrap{cursor:crosshair}
-.cur{position:absolute;left:0;top:0;width:28px;height:28px;margin:-14px 0 0 -14px;pointer-events:none;z-index:3;opacity:0;transition:opacity 160ms,width 160ms var(--ease-out),height 160ms var(--ease-out),margin 160ms var(--ease-out)}
-.cur.on{opacity:1}
-.cur svg{width:100%;height:100%;overflow:visible;color:rgba(227,168,107,.8);transition:color 160ms,transform 90ms var(--ease-out)}
-.cur.snap{width:40px;height:40px;margin:-20px 0 0 -20px}
-.cur.snap svg{color:#C27A43}
-.cur.press svg{transform:scale(.85)}
+#cur{position:absolute;left:0;top:0;width:28px;height:28px;margin:-14px 0 0 -14px;pointer-events:none;z-index:3;opacity:0;transition:opacity 160ms,width 160ms var(--ease-out),height 160ms var(--ease-out),margin 160ms var(--ease-out)}
+#cur.on{opacity:1}
+#cur svg{width:100%;height:100%;overflow:visible;color:rgba(227,168,107,.8);transition:color 160ms,transform 90ms var(--ease-out)}
+#cur.snap{width:40px;height:40px;margin:-20px 0 0 -20px}
+#cur.snap svg{color:#C27A43}
+#cur.press svg{transform:scale(.85)}
 .cur-tag{position:absolute;left:calc(100% + 2px);top:calc(100% + 2px);font:500 .75rem/1 var(--font-num);color:#EDE5DA;background:rgba(21,17,14,.82);padding:4px 7px;border-radius:6px;white-space:nowrap}
 .ripple{position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;border:1.5px solid #E3A86B;pointer-events:none;z-index:3;animation:ripple 420ms var(--ease-out) forwards}
 @keyframes ripple{from{transform:scale(1);opacity:.6}to{transform:scale(2.4);opacity:0}}

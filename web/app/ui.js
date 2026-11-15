@@ -271,16 +271,6 @@ function info(f, head) {
   $('d-mask').textContent = fl ? fl.text : `${f.d.filter(v => v == null).length} of ${V.n * V.n}`; $('d-mask').title = fl ? fl.title : 'no-data pixels (stacked)';
   $('d-mjd').textContent = f.mjd ? f.mjd.toFixed(4) : '—';
 }
-function draw() {
-  const A = $('cvA'), B = $('cvB'), F = V.F;
-  GO.place();
-  $('ghostOff').hidden = true; $('diffLgd').hidden = true;
-  if (mode === 'telescopes') { const f = F[Math.min(P.i, F.length - 1)]; TS.refresh(); TS.draw(); info(f || null); $('chip').innerHTML = CX.chipLead() + '<span>Telescopes · same patch, same scale, north up</span>'; return; }
-  if (!F.length) { const c = A.getContext('2d'); c.clearRect(0, 0, A.width, A.height); info(null); $('chip').innerHTML = ''; return; }
-  const ex = firstS()?.exp || F[0].exp;
-  $('chip').title = ''; $('flag').textContent = ''; // set again below for the view that needs them
-  if (mode === 'play' || V.stacks.length < 2) {
-    const f = F[Math.min(P.i, F.length - 1)]; CX.drawStage(A, f, V.n, opt(A), true); GH.drawCanvas(A, f, +A.dataset.dev); info(f);
 // b6: Compare > Difference: last-season stack minus first-season stack, one big image (diffview.js)
 function diffNow() { // computed once per pair of season stacks
   const a = firstS(), b = lastS();
@@ -305,6 +295,16 @@ function setDiff(on) {
   diffOn = on; $('diffKey').setAttribute('aria-pressed', String(on)); $('stage').classList.toggle('diff-on', on);
   Snd.play('click'); layout(); updatePlate();
 }
+function draw() {
+  const A = $('cvA'), B = $('cvB'), F = V.F;
+  GO.place();
+  $('ghostOff').hidden = true; $('diffLgd').hidden = true;
+  if (mode === 'telescopes') { const f = F[Math.min(P.i, F.length - 1)]; TS.refresh(); TS.draw(); info(f || null); $('chip').innerHTML = CX.chipLead() + '<span>Telescopes · same patch, same scale, north up</span>'; return; }
+  if (!F.length) { const c = A.getContext('2d'); c.clearRect(0, 0, A.width, A.height); info(null); $('chip').innerHTML = ''; return; }
+  const ex = firstS()?.exp || F[0].exp;
+  $('chip').title = ''; $('flag').textContent = ''; // set again below for the view that needs them
+  if (mode === 'play' || V.stacks.length < 2) {
+    const f = F[Math.min(P.i, F.length - 1)]; CX.drawStage(A, f, V.n, opt(A), true); GH.drawCanvas(A, f, +A.dataset.dev); info(f);
     const rg = rangeOf(f.um), bl = bandLabel(rg); // "CO₂-ice band · 3.82–4.42 µm": a range, not a detection
     $('chip').title = bl ? bl.tip : '';
     $('chip').innerHTML = CX.chipLead() + (HOLD.on ? `<b class="hold-g" title="Hold one band is on: only detectors ${HOLD.group.dets.join('–')} play">${HOLD.group.label} only</b><span class="sep">·</span>` : '') + `${bl ? `<i class="sw" style="--rc:${rg.c}"></i><span>${esc(bl.name)}</span><span class="sep bl-r">·</span><span class="bl-r">${bl.range}</span><span class="sep">·</span>` : ''}<span>λ ${f.um ? f.um.toFixed(2) : '?'} µm</span><span class="sep bl-d x-only">·</span><span class="bl-d x-only">D${f.det}</span><span class="sep">·</span><span>${R.fmtDate(f.date)}</span>`;
@@ -600,6 +600,7 @@ document.querySelectorAll('[data-mode]').forEach(b => { b.onclick = () => setMod
 document.querySelectorAll('[data-fps]').forEach(b => { b.onclick = () => { P.fps = +b.dataset.fps; segSelect($('speedSeg'), x => x === b); Snd.play('tick'); }; });
 $('play').onclick = () => { if (mode !== 'play') setMode('play'); P.toggle(); Snd.play('click'); };
 $('holdKey').onclick = () => setHold(!HOLD.on);
+$('diffKey').onclick = () => setDiff(!diffOn);
 // b8: the wavy line along the image's top edge gets a hover label (contam-ui.js draws it for airglow-flagged images)
 $('cvA').addEventListener('pointermove', e => {
   const f = V.F[Math.min(P.i, V.F.length - 1)], cv = e.currentTarget;
@@ -612,7 +613,6 @@ $('prev').onclick = () => step(-1); $('next').onclick = () => step(1);
 let lastSeason = -1;
 function scrub(x) {
   const F = V.F; if (!F.length) return;
-$('diffKey').onclick = () => setDiff(!diffOn);
   const r = track.getBoundingClientRect(), m = t0 + Math.min(1, Math.max(0, (x - r.left) / r.width)) * (t1 - t0);
   let b = 0; F.forEach((f, k) => { if (Math.abs(f.mjd - m) < Math.abs(F[b].mjd - m)) b = k; });
   if (b === P.i) return; const s = seasonOf(b); if (lastSeason >= 0 && s !== lastSeason) Snd.play('season'); else Snd.play('scrub'); lastSeason = s; P.set(b, true);

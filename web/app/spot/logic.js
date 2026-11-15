@@ -643,6 +643,16 @@ export function decideVerdict(state) {
   const decided = (v) => ({ ...v, running });
   if (by.star.status === 'explained') {
     const b = by.star.data?.best, mover = by.star.data?.mover;
+    // a still catalogue star at the ring but no dot in any season: it is too faint here, so the answer is "Nothing here"
+    // (Full function test sweep 2: empty sky near a G 19 star was called a "Known still star")
+    if (!mover && !by.star.data?.part) {
+      if (!isDone(by.seasons)) return { kind: 'pending', running };
+      if (by.seasons.status === 'explained' && by.seasons.data?.nothing && by.flags.status !== 'explained') {
+        return decided({ kind: 'nothing', title: 'Nothing here', sub: '', body: ['No dot stands out from the noise at this spot.',
+          `A catalogued star, ${b ? starLabel(b) : 'a faint one'}, sits here, but it is too faint for SPHEREx to show at these wavelengths.`],
+          evidence: [by.seasons.text, by.star.text], notRun, decidedBy: 'seasons' });
+      }
+    }
     const name = b?.name || 'a catalogued star', word = by.star.data?.word || (b ? objectWord(b) : 'star');
     // a still entry is named with its Gaia G magnitude: "Known still star · Gaia DR3 …, G 16.3"
     if (by.star.data?.part) { // Master's rule: the ring is on a catalogued star's glow

@@ -241,10 +241,10 @@ html:where(:not([data-ax-look=classic]))[data-glass=solid] .tools{background:#1B
 :where(html:not([data-ax-look=classic])) #wl::-webkit-slider-thumb{border-radius:6px;border:1px solid var(--edge);background:linear-gradient(90deg, transparent 8px, var(--copper) 8px, var(--copper) 10px, transparent 10px), linear-gradient(180deg, #FCFDFF, #F1F4F9);box-shadow:inset 0 1px 0 #fff, 0 1px 1px rgba(29,44,75,.18), 0 3px 6px -1px rgba(29,44,75,.22)}
 :where(html:not([data-ax-look=classic])) #wl::-moz-range-thumb{border-radius:6px;border:1px solid var(--edge);background:linear-gradient(90deg, transparent 8px, var(--copper) 8px, var(--copper) 10px, transparent 10px), linear-gradient(180deg, #FCFDFF, #F1F4F9);box-shadow:inset 0 1px 0 #fff, 0 1px 1px rgba(29,44,75,.18), 0 3px 6px -1px rgba(29,44,75,.22)}
 :where(html:not([data-ax-look=classic])) #wl:focus-visible{outline:2.5px solid var(--focus);outline-offset:3px;border-radius:6px}
-:where(html:not([data-ax-look=classic])) .cur{opacity:0}
-:where(html:not([data-ax-look=classic])) .cur.on{opacity:1}
-:where(html:not([data-ax-look=classic])) .cur svg{color:rgba(234,244,47,.8)}
-:where(html:not([data-ax-look=classic])) .cur.snap svg{color:#658BDD}
+:where(html:not([data-ax-look=classic])) #cur{opacity:0}
+:where(html:not([data-ax-look=classic])) #cur.on{opacity:1}
+:where(html:not([data-ax-look=classic])) #cur svg{color:rgba(234,244,47,.8)}
+:where(html:not([data-ax-look=classic])) #cur.snap svg{color:#658BDD}
 :where(html:not([data-ax-look=classic])) .cur-tag{color:#F3F6FB;background:rgba(10,17,33,.82);border-radius:6px}
 :where(html:not([data-ax-look=classic])) .ripple{border-radius:50%;border:1.5px solid #EAF42F}
 :where(html:not([data-ax-look=classic])) .ghost{background:rgba(19,66,194,.45);opacity:0}

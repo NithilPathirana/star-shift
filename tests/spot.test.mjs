@@ -449,3 +449,15 @@ test('the "How Spot decides" links on spot.html are real fields with sky positio
   for (const l of links) { assert.ok(L.fieldByKey(l.q.get('field')), l.label); assert.ok(L.parseClick(l.q), l.label); }
   assert.ok(!/discover|new planet/i.test(html.slice(html.indexOf('id="howH"'), html.indexOf('</section>', html.indexOf('id="howH"')))));
 });
+
+test('a still faint catalogue star with no dot in any season gives "Nothing here", not "Known still star" (Full function test sweep 2)', () => {
+  const star = { id: 'star', status: 'explained', text: 'star text', data: { best: { name: 'Gaia DR3 1', g: 19.4 }, mover: false } };
+  const flags = { id: 'flags', status: 'clear', text: '', data: { per: [] } }, ast = { id: 'asteroid', status: 'clear', text: '' };
+  assert.equal(L.decideVerdict({ lines: [flags, star, ast, { id: 'seasons', status: 'running', text: '' }] }).kind, 'pending', 'waits for the seasons check');
+  const v = L.decideVerdict({ lines: [flags, star, ast, { id: 'seasons', status: 'explained', text: 'No dot stands out', data: { nothing: true } }] });
+  assert.equal(v.kind, 'nothing'); assert.match(v.body[1], /G 19\.4.*too faint for SPHEREx/);
+  const seen = L.decideVerdict({ lines: [flags, star, ast, { id: 'seasons', status: 'clear', text: '' }] });
+  assert.equal(seen.kind, 'known-star', 'a visible still star is still a known star');
+  const mover = L.decideVerdict({ lines: [flags, { ...star, data: { best: { name: 'B' }, mover: true } }, ast, { id: 'seasons', status: 'running', text: '' }] });
+  assert.equal(mover.kind, 'known-star', 'a moving star decides at once');
+});

@@ -477,7 +477,7 @@ function evidence(id, d, s) {
   if (id === 'star') {
     const rows = (d.near || []).slice(0, 5);
     const src = [d.gaia && `Gaia DR3 ${d.gaia.ok ? `(${d.gaia.n} stars within 150″)` : 'did not answer'}`, d.simbad && `SIMBAD ${d.simbad.ok ? `(${d.simbad.n} entries within 300″)` : 'did not answer'}`].filter(Boolean).join(' · ');
-    const simpleRows = rows.slice(0, 3).map(r => `<li>${/^Gaia DR3 \d+$/.test(r.name) ? 'A star in Gaia DR3' : `<b>${esc(r.name)}</b> (${esc(r.source)})`}:${r.minSep <= STAR_MATCH_ARCSEC ? 'lands on your ring' : 'lands away from your ring'}${r.pm >= 1 ? ', moves fast' : ''}</li>`).join('');
+    const simpleRows = rows.slice(0, 3).map(r => `<li>${/^Gaia DR3 \d+$/.test(r.name) ? 'A star in Gaia DR3' : `<b>${esc(r.name)}</b> (${esc(r.source)})`}: ${r.minSep <= STAR_MATCH_ARCSEC ? 'lands on your ring' : 'lands away from your ring'}${r.pm >= 1 ? ', moves fast' : ''}</li>`).join('');
     return `<p class="sm-evh">${tagged('CATALOGUE', 'cat')} nearest catalogue entries · predicted places ${tagged('COMPUTED', 'comp')}</p>
       <div class="s-only">${rows.length ? `<ul class="sm-evl">${simpleRows}</ul>` : '<p class="sm-evn">No catalogue entries near the ring.</p>'}
       <p class="sm-evn">Checked against Gaia DR3 and SIMBAD. Each star is moved along its known motion to each season's date; it explains the ring when it lands within about one and a half pixels of it. If more than one does, the one closest to the dot you clicked is named.${d.mover ? ' On the image, a dashed ivory ring marks where the catalogue puts it in the season shown.' : ''}</p></div>

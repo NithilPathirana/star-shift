@@ -76,6 +76,21 @@ async function run() {
           await sleep(1000);
         }
         if (v.scene !== 'viewer' || !/\d+ of [\d,]+ images/.test(v.n)) errs.push(`deep link did not open the viewer with images within ${Math.round(wait / 1000) + 25} s (scene=${v.scene}, "${String(v.n).slice(0, 60)}")`);
+        // Barnard: Compare > Difference must really switch on (its key was dead on live, Judging panel round 3)
+        else if (/Barnard/.test(path)) {
+          // the preset may still be in its early Blink / second season when the counter first shows, so retry for up to 20 s
+          const step = "(() => { const st = document.getElementById('stage'), k = document.getElementById('diffKey'), l = document.getElementById('diffLgd');"
+            + " const d = { p: k?.getAttribute('aria-pressed'), lg: !!l && !l.hidden && l.getClientRects().length > 0 };"
+            + " if (!st.classList.contains('mode-compare')) document.querySelector('#viewSeg [data-mode=compare]')?.click();"
+            + " else if (d.p !== 'true' && k?.getClientRects().length) k.click(); return d; })()";
+          let d = {};
+          for (let k = 0; k < 20; k++) {
+            d = (await send('Runtime.evaluate', { expression: step, returnByValue: true }, s)).result?.result?.value || {};
+            if (d.p === 'true' && d.lg) break;
+            await sleep(1000);
+          }
+          if (d.p !== 'true' || !d.lg) errs.push(`Compare > Difference did not switch on (aria-pressed=${d.p}, legend shown=${d.lg})`);
+        }
       }
       handlers.splice(handlers.indexOf(h), 1);
       await send('Target.closeTarget', { targetId });
