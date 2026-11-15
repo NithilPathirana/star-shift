@@ -391,9 +391,14 @@ function isPeak(stack, x, y) {
 }
 // Walk uphill from (x, y) to the top of whatever the spot sits on (masked pixels count as the top:
 // a saturated core). Returns { x, y } of that top, or null if (x, y) is already a peak.
-export function glowSource(stack, x, y) {
-  const n = stack.n; let cx = Math.round(x), cy = Math.round(y), moved = false;
+// Full function test (Sun 15 Nov): with no distance cap the walk reached a bright star 80″ away from
+// almost any empty-sky click. A star's light only spreads a few pixels (SPHEREx PSF ~6″ = 1 px, wings
+// to ~3 px), so the walk stops at GLOW_MAX_PX: a top further away does not explain this spot.
+export const GLOW_MAX_PX = 3;
+export function glowSource(stack, x, y, maxPx = GLOW_MAX_PX) {
+  const n = stack.n, x0 = Math.round(x), y0 = Math.round(y); let cx = x0, cy = y0, moved = false;
   for (let step = 0; step < 4 * n; step++) {
+    if (Math.hypot(cx - x0, cy - y0) > maxPx + 0.5) return null;
     const v = stack.data[cy * n + cx]; let bx = cx, by = cy, bv = v, masked = false;
     for (let j = cy - 1; j <= cy + 1; j++) for (let i = cx - 1; i <= cx + 1; i++) {
       if (i < 0 || j < 0 || i >= n || j >= n || (i === cx && j === cy)) continue;
@@ -404,7 +409,14 @@ export function glowSource(stack, x, y) {
     if (bx === cx && by === cy) break;
     cx = bx; cy = by; moved = true; if (masked) break;
   }
-  return moved ? { x: cx, y: cy } : null;
+  return moved && Math.hypot(cx - x0, cy - y0) <= maxPx + 0.5 ? { x: cx, y: cy } : null;
+}
+// The stack's sky level and noise: median and 1.4826 × median absolute deviation of its finite pixels.
+export function skyNoise(stack) {
+  const v = Array.from(stack.data).filter(Number.isFinite).sort((a, b) => a - b);
+  if (!v.length) return { sky: 0, sigma: Infinity };
+  const med = v[v.length >> 1], dev = v.map(x => Math.abs(x - med)).sort((a, b) => a - b);
+  return { sky: med, sigma: 1.4826 * dev[dev.length >> 1] || 1e-9 };
 }
 
 // stacks: [{ label, n, data }]; pointsFor(k): candidate grid positions in season k (the ring, plus a
@@ -415,9 +427,16 @@ export function seasonPresence(stacks, pointsFor) {
     const pts = pointsFor(i);
     for (const [x, y] of pts) { const d = detectNear(s, x, y); if (d && (!found || d.snr > found.snr)) found = d; }
     // no dot: is the ring on the glow of a brighter source more than the search radius away?
-    let glow = null;
-    if (!found && pts.length) { const [x, y] = pts[0], g = glowSource(s, x, y); if (g && Math.hypot(g.x - x, g.y - y) > DETECT_SEARCH_PX) glow = { ...g, arcsec: Math.hypot(g.x - x, g.y - y) * PIXEL_ARCSEC }; }
-    return { label: s.label, found, glow };
+    // no dot: is there light above the noise at the ring at all ("nothing here" if not), and if so does it
+    // climb to a brighter source within the PSF wings (GLOW_MAX_PX)?
+    let glow = null, quiet = false;
+    if (!found && pts.length) {
+      const [x, y] = pts[0], { sky, sigma } = skyNoise(s), at = s.data[Math.round(y) * s.n + Math.round(x)];
+      quiet = Number.isFinite(at) && at < sky + 3 * sigma;
+      const g = quiet ? null : glowSource(s, x, y);
+      if (g && Math.hypot(g.x - x, g.y - y) > DETECT_SEARCH_PX) glow = { ...g, arcsec: Math.hypot(g.x - x, g.y - y) * PIXEL_ARCSEC };
+    }
+    return { label: s.label, found, glow, quiet };
   });
   return { per, k: per.filter(p => p.found).length, N: per.length };
 }
@@ -426,6 +445,10 @@ export function decideSeasons(pres) {
   if (k >= 2) return { status: 'clear', ...pres, text: `Present in ${k} of ${N} seasons.` };
   const glows = pres.per.filter(p => !p.found && p.glow), g = glows.length > pres.per.length / 2 ? glows[0].glow : null;
   const glowTxt = g ? ` The ring sits on the glow of a brighter source about ${Math.round(g.arcsec)}″ away, not on a separate dot.` : '';
+  // nothing above the noise in most seasons: there is simply nothing here
+  const nothing = !g && k === 0 && pres.per.filter(p => p.quiet).length > pres.per.length / 2;
+  if (nothing) return { status: 'explained', ...pres, glow: false, nothing: true,
+    text: `No dot stands out from the noise here in any of the ${N} seasons.`, reason: 'no dot stands out from the noise here' };
   return { status: 'explained', ...pres, glow: !!g,
     text: (k === 1 ? `Seen as a clear dot in only 1 of ${N} seasons.` : `Not a clear dot in any of the ${N} seasons.`) + glowTxt,
     reason: g ? `the ring sits on the glow of a brighter source about ${Math.round(g.arcsec)}″ away` : k === 1 ? `it shows as a clear dot in only 1 of ${N} seasons` : `it is not a clear dot in any of the ${N} seasons` };
@@ -500,6 +523,10 @@ export function decideVerdict(state) {
   if (why.length && fp.length) why.push(`The archive also flags this spot in ${fp.map(p => `${p.flagged} of ${p.n} images of the ${p.label.toLowerCase()}`).join(' and ')}.`);
   if (why.length) {
     const onGlow = by.seasons.status === 'explained' && by.seasons.data?.glow;
+    if (by.seasons.status === 'explained' && by.seasons.data?.nothing && by.flags.status !== 'explained') {
+      return decided({ kind: 'nothing', title: 'Nothing here', sub: '', body: ['No dot stands out from the noise at this spot.', 'Pick a spot where you can see a dot in at least one of the two seasons.'],
+        evidence: why, notRun, decidedBy: 'seasons' });
+    }
     return decided({ kind: 'artefact', title: onGlow ? 'Not a separate dot' : 'Likely artefact', sub: '',
       body: onGlow ? ['This spot is the outer glow of a brighter source nearby, not an object of its own.', 'Here is why.'] : ['This is most likely not a real object.', 'Here is why.'],
       evidence: why, notRun, decidedBy: by.flags.status === 'explained' ? 'flags' : 'seasons' });

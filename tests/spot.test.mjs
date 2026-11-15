@@ -244,13 +244,28 @@ test('the glow beside a bright star is not a dot (E2E Sun 15 Nov: RW Aur / R Dra
     data[12 * n + 12] = NaN; // saturated, masked core
     if (dot) for (const [dx, dy, v] of [[0, 0, 400], [1, 0, 120], [-1, 0, 120], [0, 1, 120], [0, -1, 120]]) data[(dot[1] + dy) * n + dot[0] + dx] += v;
     return { n, data, label: 'S' }; };
-  assert.equal(L.detectNear(glow(null), 12, 5), null, 'the wing of the star is not a dot');
-  const d = L.decideSeasons(L.seasonPresence([glow(null), glow(null), glow(null)], () => [[12, 5]]));
-  assert.equal(d.status, 'explained'); assert.equal(d.glow, true); assert.match(d.text, /glow of a brighter source about 43″ away/);
+  assert.equal(L.detectNear(glow(null), 12, 9), null, 'the wing of the star is not a dot');
+  // 3 px (18″) from a saturated star: within the PSF wings, so it is the star's glow
+  const d = L.decideSeasons(L.seasonPresence([glow(null), glow(null), glow(null)], () => [[12, 9]]));
+  assert.equal(d.status, 'explained'); assert.equal(d.glow, true); assert.match(d.text, /glow of a brighter source about 18″ away/);
+  // 7 px away the walk would have to go further than the wings: not called glow (Full function test: 80″ "glows")
+  const far = L.decideSeasons(L.seasonPresence([glow(null), glow(null), glow(null)], () => [[12, 5]]));
+  assert.equal(far.glow, false);
   assert.ok(L.detectNear(glow([4, 12]), 4, 12), 'a real compact dot on the far glow is still found');
   const v = L.decideVerdict({ lines: [{ id: 'flags', status: 'clear', text: '', data: { per: [] } }, { id: 'star', status: 'clear', text: '' },
     { id: 'asteroid', status: 'clear', text: '' }, { id: 'seasons', status: 'explained', text: d.text, data: d }] });
   assert.equal(v.title, 'Not a separate dot'); assert.notEqual(v.kind, 'unexplained');
+});
+
+test('empty sky gets "Nothing here", not a glow from a star far away (Full function test, Sun 15 Nov)', () => {
+  const n = 25, sky = () => { const data = new Float32Array(n * n); for (let j = 0; j < n; j++) for (let i = 0; i < n; i++)
+    data[j * n + i] = 10 + ((j * n + i) * 7919 % 13) / 10 + 5000 * Math.exp(-((i - 3) ** 2 + (j - 3) ** 2) / (2 * 1.2 ** 2));
+    return { n, data, label: 'S' }; };
+  const d = L.decideSeasons(L.seasonPresence([sky(), sky(), sky()], () => [[18, 18]]));
+  assert.equal(d.glow, false); assert.equal(d.nothing, true); assert.match(d.text, /No dot stands out from the noise/);
+  const v = L.decideVerdict({ lines: [{ id: 'flags', status: 'clear', text: '', data: { per: [] } }, { id: 'star', status: 'clear', text: '' },
+    { id: 'asteroid', status: 'clear', text: '' }, { id: 'seasons', status: 'explained', text: d.text, data: d }] });
+  assert.equal(v.kind, 'nothing'); assert.equal(v.title, 'Nothing here');
 });
 
 // ---------- summary and words
