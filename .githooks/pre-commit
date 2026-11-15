@@ -30,7 +30,7 @@ PORT=$((8900 + $$ % 90))
 (cd "$SNAP" && exec node server/server.mjs "$PORT" > "$GITDIR/gate-server.log" 2>&1) &
 SRV=$!
 n=0; until curl -s -o /dev/null "http://127.0.0.1:$PORT/" 2>/dev/null; do n=$((n+1)); [ $n -gt 40 ] && { echo "gate: test server did not start"; exit 1; }; sleep 0.5; done
-echo "gate: page check on the staged files (12 pages, about 2 min) ..."
+echo "gate: page check on the staged files (14 pages, about 4 min) ..."
 (cd "$SNAP" && node deploy/page-check.mjs "http://127.0.0.1:$PORT") > "$PLOG" 2>&1
 rc=$?
 tail -1 "$PLOG"

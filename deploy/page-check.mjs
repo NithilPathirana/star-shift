@@ -19,6 +19,8 @@ const PAGES = [
   ['/index.html?q=Epsilon%20Indi%20B&scene=viewer', 10000], ['/index.html?q=RW%20Aurigae&scene=viewer', 10000], ['/index.html?q=R%20Draconis&scene=viewer', 10000],
   // other pages' About link (full test global-1: it lost its #about and opened nothing)
   ['/index.html#about', 6000],
+  // Judging panel round 4, item 11: the first-screen key plays Barnard's Star through to a verdict on the plate
+  ['/?cta', 7000],
 ];
 // Help and About are two different panels (Nithil: "Help and About open the same thing")
 const POPS = "(() => { const v = id => { const p = document.getElementById(id); return !!p && !p.hidden && p.getClientRects().length > 0; };"
@@ -29,7 +31,7 @@ const BROWSERS = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/P
 const ARCHIVE = /\/(SIA|TAP\/sync|ibe\/|gaia\/|jpl\/|hips\/)|simbad|irsa|gea\.esac|ssd-api|fonts\.g/i;
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 // hard limits so a stuck browser can never hold the commit gate (a hang held it 10 min, Sun 13:02)
-const CDP_TIMEOUT_MS = 30000, TOTAL_TIMEOUT_MS = 6 * 60 * 1000;
+const CDP_TIMEOUT_MS = 30000, TOTAL_TIMEOUT_MS = 9 * 60 * 1000;
 let browserProc = null;
 setTimeout(() => { console.error(`page check could not run: no result after ${TOTAL_TIMEOUT_MS / 60000} min (browser stuck)`); try { browserProc?.kill(); } catch { /* gone */ } process.exit(2); }, TOTAL_TIMEOUT_MS).unref();
 
@@ -87,6 +89,7 @@ async function run() {
           const step = "(() => { const st = document.getElementById('stage'), k = document.getElementById('diffKey'), l = document.getElementById('diffLgd');"
             + " const d = { p: k?.getAttribute('aria-pressed'), lg: !!l && !l.hidden && l.getClientRects().length > 0 };"
             + " if (!st.classList.contains('mode-compare')) document.querySelector('#viewSeg [data-mode=compare]')?.click();"
+            + " else if (!window.__sq) { const A = document.getElementById('cvA'), B = document.getElementById('cvB'); window.__sq = { a: [A.width, A.height], b: [B.width, B.height] }; }"
             + " else if (d.p !== 'true' && k?.getClientRects().length) k.click(); return d; })()";
           let d = {};
           for (let k = 0; k < 20; k++) {
@@ -95,6 +98,19 @@ async function run() {
             await sleep(1000);
           }
           if (d.p !== 'true' || !d.lg) errs.push(`Compare > Difference did not switch on (aria-pressed=${d.p}, legend shown=${d.lg})`);
+          // Judging panel round 4, item 11: Compare's two canvases are square (the 300x150 stretch), and Telescopes
+          // shows 3 panels, each with its image or the IRSA-outage note (never blank)
+          const ev = async (x) => (await send('Runtime.evaluate', { expression: x, returnByValue: true }, s)).result?.result?.value;
+          const sq = await ev('window.__sq || null');
+          if (!sq || sq.a[0] !== sq.a[1] || sq.b[0] !== sq.b[1]) errs.push(`Compare canvases are not square (${JSON.stringify(sq)})`);
+          await ev("document.querySelector('#viewSeg [data-mode=telescopes]')?.click(), 1");
+          let tp = null;
+          for (let k = 0; k < 25; k++) {
+            tp = await ev("(() => { const ps = [...document.querySelectorAll('.tele-p')]; return { n: ps.length, ok: ps.filter(p => p.classList.contains('has-img') || /isn.t answering/.test(p.textContent)).length }; })()");
+            if (tp && tp.n === 3 && tp.ok === 3) break;
+            await sleep(1000);
+          }
+          if (!tp || tp.n !== 3 || tp.ok !== 3) errs.push(`Telescopes did not fill its 3 panels (${JSON.stringify(tp)})`);
         }
       }
       if (path === '/') { // open Help, then About: each must show its own content, never the other's
@@ -105,6 +121,18 @@ async function run() {
         const b = await ev(POPS);
         if (!(a.help && !a.about && a.helpTour && !a.helpTeam)) errs.push(`Help did not open as its own panel (${JSON.stringify(a)})`);
         if (!(b.about && !b.help && b.aboutTeam)) errs.push(`About did not open as its own panel (${JSON.stringify(b)})`);
+      }
+      if (path === '/?cta') {
+        const ev = async (x) => (await send('Runtime.evaluate', { expression: x, returnByValue: true }, s)).result?.result?.value;
+        const clicked = await ev("(() => { const b = [...document.querySelectorAll('.story-go')].find(x => x.getClientRects().length); b?.click(); return !!b; })()");
+        let v = '';
+        for (let k = 0; k < 45 && clicked; k++) {
+          v = await ev("document.getElementById('rpRes')?.textContent || ''") || '';
+          if (/AGREES|DIFFERS|AT THE LIMIT|NOT MEASURABLE/.test(v)) break;
+          await sleep(1000);
+        }
+        if (!clicked) errs.push('the first-screen story key was not on screen');
+        else if (!/AGREES|DIFFERS|AT THE LIMIT|NOT MEASURABLE/.test(v)) errs.push(`the story key did not reach a verdict within 45 s ("${v.slice(0, 80)}")`);
       }
       if (path === '/index.html#about') { // the hash must survive the viewer's address rewrite and open About
         let d = {};
