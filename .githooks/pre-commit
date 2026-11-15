@@ -1,23 +1,38 @@
 #!/bin/sh
 # Freeze gate (Master, Sun 15 Nov): every commit must pass npm test, then the headless page check
-# (9 pages + all 5 presets' viewer deep links, no page/console errors) against the local server.
+# (9 pages + all 5 presets' viewer deep links, no page/console errors). It tests EXACTLY what is being
+# committed: the staged files are copied to a temporary folder (git checkout-index), npm test runs
+# there, and a throwaway local server on a spare port serves that copy for the page check — so another
+# agent's half-saved edit in the shared folder can neither block nor slip past a commit.
 # One gate at a time (a lock), so parallel agents never run several headless browsers at once.
 # Never bypass it with --no-verify. AI-written (Claude, Anthropic) for team Proper Motion.
-cd "$(git rev-parse --show-toplevel)" || exit 1
-LOCK="$(git rev-parse --git-common-dir)/gate.lock"
+ROOT="$(git rev-parse --show-toplevel)" || exit 1
+GITDIR="$(cd "$ROOT" && git rev-parse --absolute-git-dir)"
+LOCK="$(cd "$ROOT" && git rev-parse --git-common-dir)/gate.lock"
+case "$LOCK" in /*|?:*) ;; *) LOCK="$ROOT/$LOCK" ;; esac
 i=0
 while ! mkdir "$LOCK" 2>/dev/null; do
   i=$((i+1)); if [ $i -gt 300 ]; then echo "gate: lock busy for 10 min ($LOCK); is another commit stuck?"; exit 1; fi
   sleep 2
 done
-trap 'rmdir "$LOCK" 2>/dev/null' EXIT INT TERM
-echo "gate: npm test ..."
-npm test --silent > "$(git rev-parse --git-common-dir)/gate-test.log" 2>&1
-if [ $? -ne 0 ]; then grep -E "^✖|^ℹ (pass|fail)" "$(git rev-parse --git-common-dir)/gate-test.log" | head -20; echo "gate: npm test FAILED, commit refused"; exit 1; fi
-grep -E "^ℹ (pass|fail)" "$(git rev-parse --git-common-dir)/gate-test.log"
-echo "gate: page check (12 pages, about 2 min) ..."
-node deploy/page-check.mjs http://127.0.0.1:8787 > "$(git rev-parse --git-common-dir)/gate-pages.log" 2>&1
+SNAP="$(mktemp -d 2>/dev/null || echo "$ROOT/.gate-snap-$$")"
+SRV=""
+cleanup() { [ -n "$SRV" ] && kill "$SRV" 2>/dev/null; sleep 1; rm -rf "$SNAP" 2>/dev/null; rmdir "$LOCK" 2>/dev/null; }
+trap cleanup EXIT INT TERM
+LOG="$GITDIR/gate-test.log"; PLOG="$GITDIR/gate-pages.log"
+echo "gate: copying the staged files ..."
+(cd "$ROOT" && git checkout-index -a -f --prefix="$SNAP/") || { echo "gate: could not copy the staged files"; exit 1; }
+echo "gate: npm test on the staged files ..."
+(cd "$SNAP" && GIT_DIR="$GITDIR" GIT_WORK_TREE="$SNAP" npm test --silent) > "$LOG" 2>&1
+if [ $? -ne 0 ]; then grep -E "^✖|^ℹ (pass|fail)" "$LOG" | sort -u | head -20; echo "gate: npm test FAILED on the staged files, commit refused"; exit 1; fi
+grep -E "^ℹ (pass|fail)" "$LOG"
+PORT=$((8900 + $$ % 90))
+(cd "$SNAP" && exec node server/server.mjs "$PORT" > "$GITDIR/gate-server.log" 2>&1) &
+SRV=$!
+n=0; until curl -s -o /dev/null "http://127.0.0.1:$PORT/" 2>/dev/null; do n=$((n+1)); [ $n -gt 40 ] && { echo "gate: test server did not start"; exit 1; }; sleep 0.5; done
+echo "gate: page check on the staged files (12 pages, about 2 min) ..."
+(cd "$SNAP" && node deploy/page-check.mjs "http://127.0.0.1:$PORT") > "$PLOG" 2>&1
 rc=$?
-tail -3 "$(git rev-parse --git-common-dir)/gate-pages.log"
-if [ $rc -ne 0 ]; then grep -E "FAIL|could not run" "$(git rev-parse --git-common-dir)/gate-pages.log" | head -12; echo "gate: page check FAILED (or the local server at :8787 is down), commit refused"; exit 1; fi
+tail -1 "$PLOG"
+if [ $rc -ne 0 ]; then grep -E "FAIL|could not run" "$PLOG" | head -12; echo "gate: page check FAILED on the staged files, commit refused"; exit 1; fi
 exit 0

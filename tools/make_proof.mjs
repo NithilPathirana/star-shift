@@ -198,7 +198,7 @@ for (const p of PRESETS) {
   const extra = {};
   let limit;
   if (v.verdict === 'NOT MEASURABLE' && v.why === 'slow') {
-    limit = `The catalogue motion (${fmtPm(cat.total)}″/yr) moves it only ${(v.shiftPx * PIXEL_ARCSEC).toFixed(3)}″ (${v.shiftPx.toFixed(3)} of a 6.15″ pixel) over the ${spanYears.toFixed(1)} years of images, far below what one pixel can show.`;
+    limit = `The catalogue motion (${fmtPm(cat.total)}″/yr) moves it only ${(v.shiftPx * PIXEL_ARCSEC).toFixed(3)}″ (${v.shiftPx.toFixed(3)} of a 6.15″ pixel) over the ${spanYears.toFixed(1)} years of images: below the 0.7″/yr we can call real.`;
     if (m.ok) limit += m.significant
       ? ` The fit still finds ${fmtPm(m.total)} ± ${fmtPm(m.totalErr)}″/yr, which is not a real motion: ${saturated > frames.length / 2
         ? `the star carries the saturation flag in ${saturated} of ${frames.length} images and its centre is blanked in ${m.maskedFrames} of the ${m.frames} fitted, so its position comes from the edges of a blanked core.`
@@ -288,7 +288,7 @@ for (const p of PRESETS) {
         verdict: bv.verdict,
         limit: ok.length
           ? `Only images with no masked pixel within ${(APERTURE * PIXEL_ARCSEC).toFixed(0)}″ of the star count, each compared with first-season images from the same detector at the same wavelength: ${usable} of ${frames.length} images qualify (${masked} have a masked pixel within ${(APERTURE * PIXEL_ARCSEC).toFixed(0)}″ of the star; the rest have no first-season match). The catalogue gives no amplitude at these wavelengths, so only the fact of a change is tested.${ctl}`
-          : `Too bright for SPHEREx: in ${masked} of ${frames.length} images the centre pixels are saturated and masked, leaving ${usable} usable comparisons, too few to measure a change.`,
+          : `Too bright for SPHEREx: ${masked} of ${frames.length} images have a masked (saturated) pixel within ${(APERTURE * PIXEL_ARCSEC).toFixed(0)}″ of the star, leaving ${usable} usable comparisons, too few to measure a change.`,
         chart: ok.length ? { kind: 'brightness', groups: groups.map(g => ({ name: g.name, points: g.points, seasons: g.bySeason })) } : null,
       });
     }

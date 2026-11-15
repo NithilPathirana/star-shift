@@ -363,7 +363,10 @@ export function motionMeasurability(m, { catalogueMasYr = null, spanYears = null
   const span = Number.isFinite(spanYears) ? spanYears : m?.span;
   const shiftPx = Number.isFinite(catalogueMasYr) && span > 0 ? (catalogueMasYr / 1000) * span / PIXEL : null;
   const maskedFrac = m?.ok && m.frames > 0 && Number.isFinite(m.maskedFrames) ? m.maskedFrames / m.frames : null;
-  const slow = shiftPx != null && shiftPx < 1;
+  // "Too slow to measure here" is a RATE rule, the same as the significance rule (MIN_MOTION_MASYR and
+  // 3 × the floor): a fit over ~120 images finds sub-pixel shifts (Teegarden's Star: 5.12″/yr Gaia, 0.87 px
+  // over 1.04 years, measured 5.23 ± 0.17″/yr). The old "shift under one pixel" test refused it (panel A5).
+  const slow = Number.isFinite(catalogueMasYr) && catalogueMasYr < Math.max(MIN_MOTION_MASYR, 3 * SYS_FLOOR_MASYR);
   const saturated = maskedFrac != null && maskedFrac >= MASKED_CORE_FRAC;
   const why = slow ? 'slow' : !m?.ok ? 'fit' : saturated ? 'saturated' : null;
   return { measurable: !why, why, slow, saturated, shiftPx, maskedFrac };

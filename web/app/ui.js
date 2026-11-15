@@ -348,7 +348,7 @@ function remeasure() {
   const fitted = mo?.ok && !(mc && !mc.measurable) && mo.significant !== false; // a real, significant motion: Simple gets words, Expert ± numbers
   if (fitted) $('d-meas').innerHTML = `<span class="x-only">${(mo.total / 1000).toFixed(2)} ± ${(mo.totalErr / 1000).toFixed(2)}″/yr</span><span class="s-only">moves about ${plainArcsec(mo.total / 1000)} a year</span> · ${esc(usedText(mo))}`;
   else $('d-meas').textContent = mo?.ok
-    ? (mc && !mc.measurable ? `not measurable here (${mc.saturated ? 'centre saturated' : mc.slow ? 'moves under a pixel' : 'no fit'})`
+    ? (mc && !mc.measurable ? `not measurable here (${mc.saturated ? 'centre saturated' : mc.slow ? 'moves under 0.7″ a year' : 'no fit'})`
       : `no significant motion (< ${(mo.upperLimit / 1000).toFixed(2)}″/yr)`)
       + ` · ${usedText(mo)}`
     : mo ? (mo.reason === 'one season only' ? 'needs two seasons to measure' : mo.reason === 'too few frames' ? 'too few images to measure' : 'too faint to measure') : '—';
@@ -379,7 +379,7 @@ function catalogueMotion() { // { value, err (mas/yr), vec: { pmra, pmdec }, sou
   const t = V.target; if (!t || !(t.pmra || t.pmdec)) return null;
   return { value: totalPM(t.pmra, t.pmdec), err: 0, vec: { pmra: t.pmra, pmdec: t.pmdec }, source: t.source || '' };
 }
-const NM_WHY = (mc, mo) => (mc?.saturated ? `centre blanked in ${mo.maskedFrames} of ${mo.frames} images` : mc?.slow ? `moves under one pixel in these ${mo.span.toFixed(1)} years` : 'the fit could not run');
+const NM_WHY = (mc, mo) => (mc?.saturated ? `centre blanked in ${mo.maskedFrames} of ${mo.frames} images` : mc?.slow ? `its catalogue motion is under the 0.7″ a year we can measure` : 'the fit could not run');
 const FAIL_WHY = { 'one season only': 'needs two seasons of images', 'too few frames': 'too few images' };
 let plateKey = '';
 function updatePlate() {
@@ -1232,7 +1232,7 @@ function nbMeasured() {
   const base = { unit: '″/yr', source: 'SPHEREx images via IRSA, motion fitted in Star Shift', tag: 'OBSERVED' };
   const mc = motionCheck();
   if (mc && !mc.measurable) return { ...base, unit: '', uncertainty: '', value: 'not measurable',
-    label: `${V.name}: motion not measurable in these SPHEREx images (${mc.saturated ? 'centre saturated' : mc.slow ? 'catalogue motion under one pixel over these dates' : 'no fit'}; ${used})` };
+    label: `${V.name}: motion not measurable in these SPHEREx images (${mc.saturated ? 'centre saturated' : mc.slow ? 'catalogue motion under 0.7″ a year' : 'no fit'}; ${used})` };
   return sig ? { ...base, label: `${V.name}: proper motion measured in these SPHEREx images (${used})`, value: +(mo.total / 1000).toFixed(2), uncertainty: +(mo.totalErr / 1000).toFixed(2) }
     : { ...base, label: `${V.name}: no significant motion in these SPHEREx images (${used}); upper limit`, value: `< ${(mo.upperLimit / 1000).toFixed(2)}`, uncertainty: '' };
 }

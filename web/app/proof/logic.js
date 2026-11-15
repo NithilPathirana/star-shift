@@ -13,7 +13,7 @@ export const RULES = {
     ['AGREES', 'the measured speed is within 2 uncertainties (2σ) of the catalogue, and the uncertainty is no more than half the value.'],
     ['AT THE LIMIT', 'between 2σ and 3σ, or the uncertainty is larger than half the value.'],
     ['DIFFERS', 'more than 3σ from the catalogue. Shown as measured, with the likely reason.'],
-    ['NOT MEASURABLE', 'the catalogue motion moves the star less than one 6.15″ pixel over the dates we have, the star\'s centre is blanked (masked pixels within 2 pixels of it) in 90% or more of the fitted images (the 90% limit), or the fit could not run. A saturation flag alone does not count; only a blanked centre does.'],
+    ['NOT MEASURABLE', 'the catalogue motion is below 0.7″ a year (the smallest motion we call real, at least 3 × the 0.15″/yr floor), so it cannot show in these images, the star\'s centre is blanked (masked pixels within 2 pixels of it) in 90% or more of the fitted images (the 90% limit), or the fit could not run. A saturation flag alone does not count; only a blanked centre does.'],
   ],
   // Direction, judged on its own chip beside the speed verdict.
   direction: [
