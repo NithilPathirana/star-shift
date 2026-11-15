@@ -4,7 +4,7 @@
 // scale. Each image keeps its own pixels (drawn with its own WCS, no resampling). Each panel
 // has the dashed target ring at that image's own date, and one dotted Ghost trail runs through
 // all three positions with a year tick at each. Images: OBSERVED; rings and trail: COMPUTED.
-import { gridToWorld } from '../../core/align.js';
+import { gridToWorld, makeGrid } from '../../core/align.js';
 import { hasMotion } from '../../core/ghost.js';
 import { fieldFor, skyToScreen, imageAffine, nearestPixel, positionsAt, yearOf, stretch, pxPerArcsec, NOMINAL } from './geometry.js';
 import { SURVEYS, loadSurvey } from './surveys.js';
@@ -16,6 +16,20 @@ export function createTelescopes(ctx) {
   const { $, V, P, esc } = ctx;
   const T = { on: false, key: null, field: null, star: null, res: {}, ctl: null, off: {}, last: {} };
   const root = $('tele'), panels = $('telePanels');
+  // b10: a field wider than the viewer's cutout (Barnard: ~420″ vs 150″) leaves SPHEREx a small square in a dark
+  // panel. When the flip-book is paused, one wider cutout of the image on screen (same 6.15″ pixels, ctx.wide)
+  // fills the SPHEREx panel like the other two; while it plays, the viewer's own cutouts are shown.
+  const W = { key: null, grid: null, d: null, ctl: null };
+  function wideFor(f) {
+    if (!ctx.wide || !f?.raw?.uri || !T.field || !V.grid || T.field.sizeArcsec <= V.grid.n * V.grid.scale + 1) return null;
+    const key = f.raw.uri + '|' + T.key;
+    if (W.key === key) return W.d ? W : null;
+    if (P.playing) return null;
+    W.ctl?.abort(); const c = W.ctl = new AbortController();
+    Object.assign(W, { key, d: null, grid: makeGrid(T.field.ra0, T.field.dec0, T.field.sizeArcsec + 20, V.grid.scale) });
+    ctx.wide(f, W.grid, c.signal).then(r => { if (W.ctl === c && T.on) { W.d = r.data; draw(); } }).catch(() => { /* keep the viewer's cutout */ });
+    return null;
+  }
 
   const curFrame = () => V.F[Math.min(P.i, V.F.length - 1)] || null;
   const fixedPos = () => (V.grid ? { ra: V.grid.ra0, dec: V.grid.dec0 } : V.target ? { ra: V.target.ra, dec: V.target.dec } : null);
@@ -133,9 +147,9 @@ export function createTelescopes(ctx) {
       let pix = null, ok = false; msg.innerHTML = '';
       if (id === 'spherex') {
         if (f && V.grid) {
-          const n = V.grid.n, off = offscreen('spherex', f.d, n, n);
-          const m = imageAffine((i, j) => gridToWorld(V.grid, i, j), n, n, view, side, { flipY: false });
-          drawImg(g, off, m, dpr, V.grid.scale * pxPerArcsec(view, side) * dpr); ok = true; pix = V.grid.scale;
+          const w = wideFor(f), gr = w ? w.grid : V.grid, n = gr.n, off = offscreen(w ? 'spherexW' : 'spherex', w ? w.d : f.d, n, n);
+          const m = imageAffine((i, j) => gridToWorld(gr, i, j), n, n, view, side, { flipY: false });
+          drawImg(g, off, m, dpr, gr.scale * pxPerArcsec(view, side) * dpr); ok = true; pix = gr.scale; T.wide = !!w;
         } else msg.textContent = 'Waiting for the first SPHEREx image…';
       } else {
         const r = T.res[id] || { state: 'loading' };
@@ -230,9 +244,9 @@ export function createTelescopes(ctx) {
     const px = pix ? `${pix < 2 ? pix.toFixed(pix < 1.2 ? 1 : 3).replace(/0+$/, '').replace(/\.$/, '') : pix.toFixed(2)}″ pixels` : '';
     if (id === 'spherex') {
       cap.innerHTML = `<b>SPHEREx</b> ${chip('SPACE')} in orbit · ${dateOf(f?.date)} · ${f?.um ? f.um.toFixed(2) + ' µm' : '—'}${f?.det ? x(` (D${f.det})`) : ''}${x(` · ${px || '6.15″ pixels'}`)}`;
-      const cut = V.grid ? Math.round(V.grid.n * V.grid.scale) : null, wide = cut && T.field && T.field.sizeArcsec / (ctx.zoom?.() || 1) > cut + 1;
+      const cut = V.grid ? Math.round(V.grid.n * V.grid.scale) : null, wide = cut && !T.wide && T.field && T.field.sizeArcsec / (ctx.zoom?.() || 1) > cut + 1;
       // Simple keeps one short line per panel (fits a short stage with Larger text); Expert adds the detail
-      sub.innerHTML = f ? `Follows the flip-book: image ${P.i + 1} of ${V.F.length}${x(", on the viewer's 6.15″ grid")}.${wide ? sx(' Dark: outside its cutout.', ` The SPHEREx cutout is ${cut}″ wide; the darker area is outside it.`) : ''}` : '';
+      sub.innerHTML = f ? `Follows the flip-book: image ${P.i + 1} of ${V.F.length}${x(T.wide ? `, a wider ${Math.round(W.grid.n * W.grid.scale)}″ cutout of it at 6.15″ pixels` : ", on the viewer's 6.15″ grid")}.${wide ? sx(' Dark: outside its cutout.', ` The SPHEREx cutout is ${cut}″ wide; the darker area is outside it.`) : ''}` : '';
       return;
     }
     const r = T.res[id], d = r?.data, m = d?.meta;
@@ -250,7 +264,7 @@ export function createTelescopes(ctx) {
 
   return {
     show(on) { T.on = on; root.hidden = !on; if (on) { if (!panels.children.length) build(); start(false); } else { T.ctl?.abort(); T.key = null; fitPhone(); } },
-    draw, reset() { T.ctl?.abort(); T.key = null; T.res = {}; T.off = {}; T.field = null; panels.innerHTML = ''; },
+    draw, reset() { T.ctl?.abort(); W.ctl?.abort(); W.key = null; W.d = null; T.key = null; T.res = {}; T.off = {}; T.field = null; panels.innerHTML = ''; },
     refresh() { if (T.on) start(false); }, // a frame list or motion change may need a new field
     state: T,
   };

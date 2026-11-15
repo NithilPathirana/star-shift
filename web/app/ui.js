@@ -136,6 +136,7 @@ const seasonOf = i => V.seasons.findIndex(v => i >= v.from && i <= v.to);
    the brightness strip and the counts still use every image the flag filter keeps (V.FK).
    AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
 const HOLD = { on: false, group: null, note: '' };
+let holdWait = false; // ?mjd=: true from the load's start until the picked image (or, failing that, the nearest) is shown
 const shownFrames = () => (HOLD.on && HOLD.group ? V.FK.filter(f => HOLD.group.dets.includes(f.det)) : V.FK);
 const holdPreset = () => (V.query?.type === 'name' ? findPreset(V.query.name) : null);
 // ?band= from a shared link (full test #15): 'all', or a held pair ('d56'); used by the first load only
@@ -146,6 +147,7 @@ const bandDefault = () => groupByDets(holdPreset()?.holdBand)?.id || null; // th
 function preBlink(on) { $('stage').classList.toggle('pre-blink', !!on); }
 function holdForLoad() { // at the start of a load: the preset's band, else off (or the shared link's choice)
   preBlink(Number.isFinite(holdMjd) || (!!holdPreset() && !wantView)); // ?mjd= (Archive Play): the first picture is the picked image
+  holdWait = Number.isFinite(holdMjd); // ...and the counter, timeline and details wait for it too
   const p = holdPreset(), g = groupByDets(p?.holdBand), wb = wantBand, wg = groupById(wb); wantBand = null;
   if (wb === 'all') Object.assign(HOLD, { on: false, group: g, note: g ? p.holdNote || '' : '' });
   else if (wg) Object.assign(HOLD, { on: true, group: wg, note: wg === g ? p.holdNote || '' : 'the band chosen in the shared link' });
@@ -250,6 +252,7 @@ function stackReadout() {
   return true;
 }
 function info(f, head) {
+  if (holdWait) f = null; // ?mjd=: no other image's date while the picked one loads
   $('ihead').textContent = head || 'This image';
   CX.info(f);
   if (!f) { ['d-date', 'd-time', 'd-det', 'd-um', 'd-band', 'd-mask', 'd-mjd'].forEach(id => { $(id).textContent = '—'; }); $('d-band').title = ''; nbInfo = null; return; }
@@ -336,9 +339,14 @@ function onFrame(i, manual) {
   if (!F.length) { setCounter(0); return; }
   i = Math.min(i, F.length - 1);
   const f = F[i];
+  const th = $('thumb'); if (th) th.style.visibility = holdWait ? 'hidden' : '';
+  if (holdWait) { // ?mjd= (Archive Play): show no other image's place, date or number until the picked one is in (like the stage)
+    ticks.forEach(t => t.classList.remove('on')); $('tlDate').textContent = ''; $('seasonLbl').textContent = '';
+    cancelAnimationFrame(tickAnim); shown = -1; $('counter').textContent = V.status === 'loading' ? `${V.FA.length} / ${V.planned} loaded` : `– / ${F.length}`; return;
+  }
   ticks.forEach((t, k) => t.classList.toggle('on', k === i));
   placeHits();
-  const th = $('thumb'); if (th) th.style.left = pos(f.mjd) + '%';
+  if (th) th.style.left = pos(f.mjd) + '%';
   const s = seasonOf(i);
   if (!manual && P.playing && i > 0 && s !== seasonOf(i - 1)) Snd.play('seasonSoft');
   if (s >= 0) $('seasonLbl').innerHTML = seasonLabel(f.mjd) || `<b>Season ${s + 1}</b> of ${V.seasons.length} · ${seasonName(V.seasons[s])}`;
@@ -352,8 +360,8 @@ function onFrame(i, manual) {
   if (manual) $('live').textContent = `Image ${i + 1} of ${F.length}, ${R.fmtDate(f.date)}${f.um ? ', ' + f.um.toFixed(2) + ' micrometres' : ''}`;
 }
 const P = { i: 0, fps: 4, playing: false, timer: null,
-  set(i, manual) { const n = V.F.length; if (!n) return; if (manual) preBlink(false); P.i = ((i % n) + n) % n; onFrame(P.i, manual); },
-  play() { if (P.playing || V.F.length < 2) return; P.playing = true; preBlink(false); const tick = () => { if (!P.playing) return; P.timer = setTimeout(() => { P.set(P.i + 1); tick(); }, 1000 / P.fps); }; tick(); onFrame(P.i); },
+  set(i, manual) { const n = V.F.length; if (!n) return; if (manual) { preBlink(false); holdWait = false; } P.i = ((i % n) + n) % n; onFrame(P.i, manual); },
+  play() { if (P.playing || V.F.length < 2) return; P.playing = true; preBlink(false); holdWait = false; const tick = () => { if (!P.playing) return; P.timer = setTimeout(() => { P.set(P.i + 1); tick(); }, 1000 / P.fps); }; tick(); onFrame(P.i); },
   pause() { P.playing = false; clearTimeout(P.timer); onFrame(P.i); },
   toggle() { P.playing ? P.pause() : P.play(); } };
 // Contamination flags + Layers bar (DESIGN.md 23): contam-ui.js draws on the stage canvas.
@@ -569,7 +577,7 @@ function setMode(m, withSound) {
   if (m === 'telescopes' && !V.grid) { toast('Telescopes needs a patch: pick one first.'); Snd.play('error'); return; }
   clearInterval(bt);
   const apply = () => {
-    mode = m; preBlink(false); const st = $('stage'); st.classList.remove('mode-play', 'mode-compare', 'mode-blink', 'mode-telescopes'); st.classList.add('mode-' + m); TS.show(m === 'telescopes');
+    mode = m; preBlink(false); holdWait = false; const st = $('stage'); st.classList.remove('mode-play', 'mode-compare', 'mode-blink', 'mode-telescopes'); st.classList.add('mode-' + m); TS.show(m === 'telescopes');
     segSelect($('viewSeg'), b => b.dataset.mode === m);
     if (m !== 'play') P.pause();
     if (m === 'blink') { side = 0; bt = setInterval(() => { side ^= 1; draw(); }, set.motion ? 1500 : 600); }
@@ -739,19 +747,19 @@ let holdMjd = null, holdDet = null; // ?mjd= (&det=) from the URL: the image to 
 const nearestF = m => { let b = 0; V.F.forEach((f, k) => { if (Math.abs(f.mjd - m) < Math.abs(V.F[b].mjd - m)) b = k; }); return b; };
 async function holdExact(m, det, ctl) {
   const stale = () => V.ctl !== ctl || V.status !== 'ready' || P.playing; // a new load, or the visitor pressed Play
-  const nearNote = () => { const f = V.F[P.i]; if (!f || stale()) return; const d = Math.abs(f.mjd - m);
+  const nearNote = () => { if (V.ctl === ctl && holdWait) { holdWait = false; P.set(P.i, true); } const f = V.F[P.i]; if (!f || stale()) return; const d = Math.abs(f.mjd - m);
     if (d > 0.01) toast(`Showing the nearest loaded image, ${d < 1 ? `${Math.round(d * 24)} hours` : `${d < 10 ? d.toFixed(1) : Math.round(d)} days`} from the one you picked.`); };
   let im = null;
   try {
     const { all } = await planImages(V.target, SETTINGS, { base: BASE });
     for (const x of all) { const d = Math.abs(x.mjdStart - m); if (d < 0.003 && (!det || x.detector === det) && (!im || d < Math.abs(im.mjdStart - m))) im = x; } // within ~4 min
   } catch { /* the list didn't come: keep the nearest */ }
-  if (stale()) return;
+  if (stale()) return nearNote();
   if (!im) return nearNote();
   let f = V.FA.find(x => x.raw.uri === im.uri);
   if (!f) {
     try { f = toF(await loadFrame(im, V.target, V.grid, SETTINGS, { base: BASE, tables })); f.extra = true; } catch { return nearNote(); }
-    if (stale()) return;
+    if (stale()) return nearNote();
   }
   if (!V.F.includes(f) && HOLD.on && HOLD.group && !HOLD.group.dets.includes(f.det)) setHold(false); // another band than the one held
   if (!V.F.includes(f)) { let k = V.F.findIndex(x => x.mjd > f.mjd); if (k < 0) k = V.F.length; V.F.splice(k, 0, f); buildTimeline(); } // extra, or hidden by the flag filter
@@ -839,7 +847,8 @@ function load(query, label) {
       $('d-n').textContent = countText();
       // ?mjd= (Archive/Spectrum "Play" links): show the image nearest that date and stay paused there
       const held = Number.isFinite(holdMjd) && V.F.length > 0;
-      if (held) { const m = holdMjd; holdMjd = null; P.pause(); P.set(nearestF(m), true); holdExact(m, holdDet, ctl); }
+      if (held) { const m = holdMjd; holdMjd = null; P.pause(); P.i = nearestF(m); $('thin').hidden = false; holdExact(m, holdDet, ctl).finally(() => { if (V.ctl === ctl) $('thin').hidden = true; }); }
+      else if (holdWait) { holdWait = false; preBlink(false); } // ?mjd= but no image came: show what there is
       onFrame(P.i); Snd.play('confirm');
       // V.FA = every image loaded; V.F = the ones the user's flag filter keeps (QA, Sun: say so, so the counts match Proof)
       // Master item 1: say that up to 120 images are used, spread evenly in time, out of all IRSA found
@@ -851,7 +860,7 @@ function load(query, label) {
       const want = wantView; wantView = null;
       setTimeout(() => {
         if (V.ctl !== ctl) return;
-        if (want && want !== 'play') { setMode(want); return; }
+        if (want && want !== 'play') { setMode(want); if (want === 'telescopes' && teleHero) teleHeroOpen(); return; }
         if (!want && holdPreset() && !held && V.stacks.length > 1) { P.pause(); setMode('blink'); return; }
         if (!set.motion && !P.playing && !held) P.play();
       }, leaveWait);
@@ -994,7 +1003,9 @@ const skymap = new SkyMap($('mapWrap'), {
   onView: () => placeOverlays(),
 });
 // The Ghost (DESIGN.md 24): predicted past/future position on the time-lapse and the sky map.
-const TS = createTelescopes({ $, V, P, esc, base: BASE, zoom: () => zoom, get GH() { return GH; } });
+const TS = createTelescopes({ $, V, P, esc, base: BASE, zoom: () => zoom, get GH() { return GH; },
+  // b10: one wider cutout of an image, centred on the Telescopes field, on the given grid (telescopes/index.js)
+  wide: (f, grid, signal) => loadFrame({ uri: f.raw.uri, mjdStart: f.mjd }, { ra: grid.ra0, dec: grid.dec0 }, grid, { ...SETTINGS, fov: (grid.n * grid.scale) / 60 }, { base: BASE, tables, signal }) });
 const GH = createGhost({ $, V, P, esc, set, Snd, NOW_MJD, skymap, scene: () => scene, mode: () => mode, redraw: () => { if (scene === 'viewer') draw(); } });
 let pinEls = [], pinDragWired = false;
 // A drag that starts on a pin pans the sky (full test map-2: the cold open puts Barnard's pin at the centre,
@@ -1339,6 +1350,7 @@ function renderCD() {
   }).catch(() => { if (!ctl.signal.aborted) $('cdNear').innerHTML = '<p class="quiet err">SIMBAD (the star catalogue) did not answer in 12 s. Click the spot again to retry.</p>'; });
   renderObs();
   $('cdPlay').disabled = false; $('mdPlay').disabled = false;
+  $('cdTele').hidden = !TELE_HERO.includes(t?.preset?.key);
 }
 $('cdPanel').addEventListener('click', e => { const b = e.target.closest('.cd-c'); if (!b) return; const v = b.parentElement.querySelector('.cd-v').textContent;
   try { navigator.clipboard?.writeText(v); } catch { /* ignore */ } b.classList.add('done'); Snd.play('confirm'); setTimeout(() => b.classList.remove('done'), 1500); });
@@ -1755,6 +1767,19 @@ function playPatch(fromHistory) {
   setTimeout(() => toViewer(false, same ? null : () => load(query, t ? t.name : PATCH_NAME), fromHistory), set.motion ? 0 : 250);
 }
 $('cdPlay').onclick = playPatch; $('mdPlay').onclick = playPatch;
+/* b10 "Telescopes as the hero": a star that moves far enough to see in 25 years gets a key on its card that
+   opens the viewer straight in Telescopes: 2MASS (2000), AllWISE (2010) and SPHEREx (2025) side by side,
+   one trail through all three. Only Barnard's Star moves enough (10.4″/yr) and shows in all three; the list can grow.
+   AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+const TELE_HERO = ['barnard'];
+let teleHero = false; // set by the key; the load's end then opens Telescopes on the first SPHEREx image
+function teleHeroOpen() { teleHero = false; P.pause(); if (mode !== 'telescopes') setMode('telescopes', true); P.set(0, true); }
+{ const k = document.createElement('button'); k.type = 'button'; k.className = 'key cd-play'; k.id = 'cdTele'; k.hidden = true;
+  k.textContent = 'See 25 years of motion'; k.title = '2MASS (2000), AllWISE (2010) and SPHEREx (2025) side by side, with one trail through all three';
+  $('cdPlay').after(k);
+  k.onclick = () => { const t = M.sel?.t; if (!TELE_HERO.includes(t?.preset?.key)) return;
+    const same = V.query?.type === 'name' && V.query.name === t.preset.label && V.status === 'ready';
+    if (same) { playPatch(); setTimeout(teleHeroOpen, set.motion ? 50 : 900); } else { teleHero = true; wantView = 'telescopes'; playPatch(); } }; }
 // Desktop dock row 2: say in words what the chosen layer shows (review 2, item 10)
 { const seg = $('layerSeg'), hint = () => { const b = seg.querySelector('[aria-pressed="true"]'); $('layerHint').innerHTML = b ? `<b>${esc(b.textContent.toLowerCase())}</b> · ${esc(b.title.charAt(0).toLowerCase() + b.title.slice(1))}` : ''; };
   hint(); new MutationObserver(hint).observe(seg, { attributes: true, subtree: true, attributeFilter: ['aria-pressed'] }); }
