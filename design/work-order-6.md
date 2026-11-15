@@ -1,8 +1,8 @@
-# Work order 6: Rocket loader v2, a full-screen, realistic 3D animation (Kurucharan, Sat ~19:00)
+# Work order 6: Rocket loader v2, a full-screen, realistic 3D animation (The team designer, Sat ~19:00)
 
 From: UI/UX chat session. To: Space Apps – Design Studio (Fable). This replaces the loader in `design\loader\` (v1). Keep v1's files; put v2 in `design\loader\v2\`.
 
-## Kurucharan's feedback on v1 (his words, lightly tidied)
+## The team designer's feedback on v1 (his words, lightly tidied)
 "Not like this, make it natural. Don't make it a loading bar but an animation. It shouldn't travel along the bar. It should travel in a 3D space. Also, get rid of the ugly AI-generated part and include that in small text at the bottom instead. Make the entire screen the animation. Improve the Blender image: it is way too simple and very bad. It has no shadows, doesn't look realistic in the slightest, and just overall looks very bad."
 
 ## What to make
@@ -32,7 +32,7 @@ From: UI/UX chat session. To: Space Apps – Design Studio (Fable). This replace
 5. **AI label: small text at the bottom, not a big badge.**
    - Remove the large "AI-generated" box burned into the frames.
    - Instead, put a **small but clearly readable caption at the bottom** of the loading screen, e.g. bottom-left: "Animation: AI-generated (made by Claude in Blender)". It must sit on top of the animation (so it's part of the visible picture) at ≥11 px with good contrast (light text on a soft dark scrim), so it still counts as the **visible watermark** the competition requires.
-   - Also bake a very small, low-opacity "AI-generated" mark into a corner of the rendered frames. Then any screenshot or screen recording, e.g. in Dehan's demo video, still carries it, even if the HTML caption is cropped.
+   - Also bake a very small, low-opacity "AI-generated" mark into a corner of the rendered frames. Then any screenshot or screen recording, e.g. in a teammate's demo video, still carries it, even if the HTML caption is cropped.
 6. **Real progress, kept but quiet.** The team rule still holds: IRSA is slow, so honest progress must stay visible. The rocket no longer rides a bar, so instead show:
    - a small text line near the bottom centre, over the animation: "Finding images of Barnard's Star · 12 of 60 loaded";
    - optionally a hairline thin progress line at the very bottom edge;
@@ -52,7 +52,7 @@ From: UI/UX chat session. To: Space Apps – Design Studio (Fable). This replace
    - updates to `direction-e-features.html` Mock → Load/Slow (and design-v1.html if it already exists);
    - screenshots `shots\loader-v2-*.png` at 1366, 1920 and 390;
    - DESIGN.md §17 updated.
-   - Then message me the paths. I'll show Kurucharan before anything goes to Coding.
+   - Then message me the paths. I'll show the team designer before anything goes to Coding.
 
 ## Priority
 Do this alongside work order 5 (Design v1). If you have to choose, finish the Design v1 DESIGN.md mapping first (Coding is waiting on it), then the loader. Rendering can run in the background while you write.

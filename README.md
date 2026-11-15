@@ -23,7 +23,7 @@
 - "Compare the images from multiple telescopes – to see how geographical position affects the night sky."
 - "Hypothesis creator notepad… add data values… with a + icon that is on everything."
 
-— Team Proper Motion (Nithil, Kurucharan, Dehan)
+— Team Proper Motion
 
 Team **Proper Motion** (Colombo, Sri Lanka) – NASA Space Apps Challenge 2026, challenge *Planet X and SPHEREx*.
 Type any sky position (or a star name) and see the SPHEREx images of that spot, lined up, as a little movie.

@@ -1,9 +1,9 @@
-# Work order 6b: "The Spectrum Run", the hero 3D loader. This is part of Design v1. (Kurucharan, Sat ~19:30)
+# Work order 6b: "The Spectrum Run", the hero 3D loader. This is part of Design v1. (The team designer, Sat ~19:30)
 
 From: UI/UX chat session. To: Space Apps – Design Studio (Fable 5.2).
 **This upgrades work order 6 and makes the loader part of Design v1** (DESIGN.md §17 + `design-v1.html`). Everything in WO6 still applies (full screen, small AI caption, real progress as quiet text, reduced-motion still, formats). This file raises the creative bar.
 
-## Kurucharan's words
+## The team designer's words
 "This rocket redesign must be included in the v1 design. It is way too simple. It shouldn't travel in a line. Make Fable 5.2 show its colours and design something amazing. I have seen amazing 3D designs on Instagram… done by Fable 5.2. This must be equally impressive."
 
 So: v1 and v1.5 read as a placeholder. He wants the kind of 3D piece people stop scrolling for: a crafted, art-directed, cinematic loop. Treat it as **your portfolio piece**. You have Blender 5.2, Cycles and an RTX 5090. Use them.
@@ -121,7 +121,7 @@ A small astronaut on a beautifully made ivory-and-copper rocket **carves through
    - Is it tasteful: not neon, not sci-fi-gamer, not purple/blue AI-slop?
 3. Render a low-sample **animation preview** (e.g. 25% resolution, 16 samples). Check the motion: no linear moves, the loop is invisible, the banking feels natural and the camera never jerks.
 4. Final render. Watch the encoded WebM full-screen at 1366×768 and 1920×1080 before reporting.
-5. Save the 3 lookdev stills + 6 frames from the final (one per ribbon) to `shots\loader-v2-*.png` so I can show Kurucharan.
+5. Save the 3 lookdev stills + 6 frames from the final (one per ribbon) to `shots\loader-v2-*.png` so I can show the team designer.
 
 ## 8. In the app (Design v1)
 - The loading state is **full-bleed**: the video covers the whole stage on searches, and the whole viewport on the very first load, with `object-fit: cover`, muted, autoplay, loop, playsinline.
@@ -143,4 +143,4 @@ A small astronaut on a beautifully made ivory-and-copper rocket **carves through
 - Real progress always shown.
 - No fake science.
 
-Report to me with the stills first if the full render will take long. I want to show Kurucharan the lookdev as soon as it exists.
+Report to me with the stills first if the full render will take long. I want to show the team designer the lookdev as soon as it exists.

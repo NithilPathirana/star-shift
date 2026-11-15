@@ -11,7 +11,7 @@
 // the tools (make_proof, prebake, export) always ask the relay.
 
 // Generous: on a slow link (phone data, a cold deploy) a 4 s limit gave up on the 200 KB manifest
-// and sent all five demo targets live (Dehan saw "Retrying" on a pre-baked star, Sun 15 Nov).
+// and sent all five demo targets live (a teammate saw "Retrying" on a pre-baked star, Sun 15 Nov).
 const MANIFEST_TIMEOUT_MS = 20000;
 
 let custom = null;      // set by configurePrebaked (tests)

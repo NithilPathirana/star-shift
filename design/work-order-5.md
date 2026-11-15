@@ -7,13 +7,13 @@ Nithil wants **one complete, consistent "Design v1" covering the whole app as bu
 1. `C:\SpaceApps2026\design\DESIGN.md` → **v3 = "Design v1"**. Map every real element and control (inventory in section 2) to an E component, token and state. Add a short "Build mapping" table: real element/ID/class in `web\` → E component → notes. Read `web\index.html`, `web\styles\app.css`, `web\styles\tokens.css` and `web\app\*.js` for the real IDs and classes.
 2. `C:\SpaceApps2026\design\mockups\design-v1.html`: a prototype laid out exactly like the real app (same panels and controls), styled in E. Reuse the data assets.
 3. Screenshots in `shots\design-v1-*.png` at 1366×768, 1920×1080 and 390×844. Cover: the sky map, the time-lapse playing, the band editor open, the loading (rocket) state, and the phone layout.
-4. Message me the paths. I show Kurucharan and tell the Master and Coding.
+4. Message me the paths. I show the team designer and tell the Master and Coding.
 
 ## 1. Run the real site first
 It's already running at **http://127.0.0.1:8787** (double-click `C:\SpaceApps2026\start.vbs` if not). Look at every part: search `Barnard's Star`, the Sky map tab, the Time-lapse tab, play, scrub, Season stacks, every Display option, the Colour bands panel (add, edit, delete, reset), More detail, Copy link and the footer. Check 1366×768 and phone width.
 
 ## 2. What is built (I checked at ~18:15)
-- **Header:** title text (currently "SPHEREx Time Viewer"; the name is the team's, keep it as text in the tool-name slot plus Kurucharan's logo slot) · search "Star name or RA Dec, e.g. Barnard's Star or 269.45 +4.69" + **Show** · an error line under the search · **Try:** chips for the 5 targets.
+- **Header:** title text (currently "SPHEREx Time Viewer"; the name is the team's, keep it as text in the tool-name slot plus the team designer's logo slot) · search "Star name or RA Dec, e.g. Barnard's Star or 269.45 +4.69" + **Show** · an error line under the search · **Try:** chips for the 5 targets.
 - **Mode tabs:** **Sky map | Time-lapse**.
 - **Sky map** (Aladin Lite 3.8.2 with the real SPHEREx all-sky DR1 HiPS):
   - wavelength label ("Wavelength: 1.63 µm", one of 102 colours at a time);
@@ -44,7 +44,7 @@ It's already running at **http://127.0.0.1:8787** (double-click `C:\SpaceApps202
 | 5 | CO₂ Ice | 3.82–4.42 | #F28C38 |
 | 6 | Brown Dwarfs | 4.42–5.01 | #E5484D |
 
-These are **data colours**, so the blue/cyan in them is fine. Kurucharan's "no blue/cyan" rule is about the UI chrome, which stays ivory/copper/sage. Rules:
+These are **data colours**, so the blue/cyan in them is fine. The team designer's "no blue/cyan" rule is about the UI chrome, which stays ivory/copper/sage. Rules:
 - band colours appear only on data: swatches, ruler bands, timeline ticks, the wavelength chip dot, map tint;
 - never as UI text colour on ivory (contrast). The band name is always written next to its swatch.
 

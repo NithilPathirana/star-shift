@@ -1,7 +1,7 @@
 # DESIGN.md: Star Shift viewer, direction E "Tactile glass instrument"
 
 Status: **v3.3 = "Design v1.1" + team features 2 and 3 (sections 23–35), Sat 14 Nov 2026**, written by the Design Studio session. v1.1 = Design v1 with the astronaut loading screen (section 17). v2 added the team's 6 features (sections 12–17). v3 covers the whole app as built: 3D sky, visible cursor motion, sounds v2, errors, build mapping (sections 18–22).
-Chosen by Kurucharan (team designer): D1, then pushed to E.
+Chosen by the team designer (team designer): D1, then pushed to E.
 
 **Reference builds:** `design/mockups/direction-e.html` (core viewer) and `design/mockups/direction-e-features.html` (core viewer plus the team's 6 features, map-first). Copy values from those files when in doubt; this document explains them.
 Shared helpers are in `design/mockups/assets/render.js` (stretch, colour scales, hatching, ring, season grouping, date and coordinate formatting). Coding may lift it as-is.
@@ -29,7 +29,7 @@ Given by Nithil on Sat 14 Nov 2026 (21:13): the name is **Star Shift** and the l
 | `star-shift-symbol-small.svg` | Small-size cut for **24–48 px** (nav rail, phone top bar). Same star and proportions; the ring and crosshair are heavier, the gaps wider and the hairline orange ring is left out, because at 34 px the original's lines are under 1 px and blur to grey |
 | `favicon.svg` | The small cut on an ivory tile (`#E9E2D8`, radius 21%), so the black ring survives a dark browser tab |
 
-The small cut and the favicon are derivatives drawn by the Design Studio. **Approved for the header and the favicon by Nithil (Sat 14 Nov 21:21) and by Kurucharan, the team designer (Sat 14 Nov 21:22, via the UI/UX chat).**
+The small cut and the favicon are derivatives drawn by the Design Studio. **Approved for the header and the favicon by Nithil (Sat 14 Nov 21:21) and by the team designer, the team designer (Sat 14 Nov 21:22, via the UI/UX chat).**
 
 **Logo credit (Master, Sun 15 Nov 09:04): one wording everywhere.** "Logo: SI-generated with ChatGPT; small version and favicon redrawn as SVG by Claude." The badge beside the symbol reads **SI** (the Space Apps FAQ calls AI "Super Intelligence"), at the same size and contrast as the old "AI" mark. The line must be visible, not tooltip-only, wherever the logo appears: the app (map credit and About), the pitch deck, the thumbnail still and the design files.
 
@@ -87,7 +87,7 @@ Branding rules:
 | `--focus` | `#8A4719` | focus outline 2.5 px, offset 3 px | 5.5:1 vs shell |
 
 Rules:
-- Gold, navy, purple, cyan and neon are banned (from Kurucharan's DON'Ts).
+- Gold, navy, purple, cyan and neon are banned (from the team designer's DON'Ts).
 - Copper means action, selection or computed. Sage means observed. Coral means error.
 - The page must still read with every accent removed.
 
@@ -188,7 +188,7 @@ phone <700:     one column: top bar → stage (aspect 1/1.08, max 66dvh) → doc
 | **Error** (IRSA down) | Stage message with a coral dot: "The NASA archive (IRSA) isn't answering". Says how many images arrived and are kept. Actions: **Retry** (fetches only missing images) and **View the 27 images**. Error sound once |
 | **Empty** | "No SPHEREx images cover this spot", "Nothing was found within 0.05° of these coordinates. Check the numbers, or try one of the examples above." |
 
-Copy rules: buttons name their action. Errors name the problem and the way out. Write plain words (Kurucharan and the public are the audience); put scientific detail in "More detail".
+Copy rules: buttons name their action. Errors name the problem and the way out. Write plain words (The team designer and the public are the audience); put scientific detail in "More detail".
 
 ---
 
@@ -802,7 +802,7 @@ In E they live in **Clarity → Image** as segmented controls, with "Copy link t
 
 # Team features 2 (v3.2): sections 23–24
 
-From the team's new ideas (Nithil, Sat 14 Nov ~21:30): "Contamination flagging - air glow, cosmic rays, light scatter due to space dust, pixel overflow" and "Ghost - future predictions of stars, location". Written Sat 21:32, short on purpose so Coding can build tonight. Planetarium, Observation Archive and Spectral Explorer specs follow later. Kurucharan's reference board is a layout reference only: no "SPHEREx Observatory" logo or NASA branding; the app is Star Shift.
+From the team's new ideas (Nithil, Sat 14 Nov ~21:30): "Contamination flagging - air glow, cosmic rays, light scatter due to space dust, pixel overflow" and "Ghost - future predictions of stars, location". Written Sat 21:32, short on purpose so Coding can build tonight. Planetarium, Observation Archive and Spectral Explorer specs follow later. The team designer's reference board is a layout reference only: no "SPHEREx Observatory" logo or NASA branding; the app is Star Shift.
 
 ## 23. Contamination flags and the Layers bar (team feature B)
 
@@ -886,7 +886,7 @@ From the team's new ideas (Nithil, Sat 14 Nov ~21:30): "Contamination flagging -
 
 # Team features 3 (v3.3): sections 25–30
 
-Written Sat 21:43 for the team's new ideas (Nithil, Sat ~21:30) and the Master Session's work order 7. Short specs, text only, no prototype. **The build decides what exists; these sections decide how it looks.** Anything the data cannot support is left out, not faked. Kurucharan's reference board is a layout reference only: no "SPHEREx Observatory" logo, no NASA branding.
+Written Sat 21:43 for the team's new ideas (Nithil, Sat ~21:30) and the Master Session's work order 7. Short specs, text only, no prototype. **The build decides what exists; these sections decide how it looks.** Anything the data cannot support is left out, not faked. The team designer's reference board is a layout reference only: no "SPHEREx Observatory" logo, no NASA branding.
 
 ## 25. Pages, navigation and shared rules for the new pages
 

@@ -1,7 +1,7 @@
-# Work order 3: Direction E "Tactile glass instrument" (from Kurucharan, Sat 14 Nov ~17:15)
+# Work order 3: Direction E "Tactile glass instrument" (from the team designer, Sat 14 Nov ~17:15)
 
-From: the UI/UX chat session (Kurucharan's design partner). To: Space Apps – Design Studio (Fable).
-Kurucharan has picked **D1 Ivory instrument** as the base and wants it pushed much further. Everything below is his request, plus my guidance on how to make it work. Read it all before starting.
+From: the UI/UX chat session (The team designer's design partner). To: Space Apps – Design Studio (Fable).
+The team designer has picked **D1 Ivory instrument** as the base and wants it pushed much further. Everything below is his request, plus my guidance on how to make it work. Read it all before starting.
 
 ## 0. Deliverables and timing
 1. `C:\SpaceApps2026\design\mockups\direction-e.html`: a working prototype of the core viewer screen. Reuse `assets\data.js` + `assets\render.js` (real Barnard frames + season stacks), and add it to `index.html`. Screenshots go in `shots\direction-e-*.png` at 1366×768, 1536×864, 1920×1080, 2560×1440 and 390×844 (phone), plus one with the Clarity panel open and one in Reduce transparency mode.
@@ -12,13 +12,13 @@ Target: the prototype by ~18:30, DESIGN.md by ~19:00 (the first full site is due
 Use your skills: `impeccable` (all UI), `liquid-glass-css` (web Liquid Glass: real SVG displacement/refraction plus the pure-CSS backdrop-filter fallback), and `emil-design-eng` (motion and micro-interactions).
 
 ## 1. Bug to fix first: it must fit any window
-Kurucharan opened D1 on a laptop (`127.0.0.1:8790/mockups/direction-d1.html?v=2`). His screenshot (`design\references\d1-laptop-bug.webp`) shows the page squeezed into a ~450 px column with scrollbars on both axes, inside a ~2000 px wide browser. Part of the cause is that D1 switches to the single-column layout at `max-width:1180px`, which is too eager for 125%/150% Windows scaling (a 1920 screen at 150% is a 1280 CSS-px viewport). It may also have been mid-resize. Either way, E must:
+The team designer opened D1 on a laptop (`127.0.0.1:8790/mockups/direction-d1.html?v=2`). His screenshot (`design\references\d1-laptop-bug.webp`) shows the page squeezed into a ~450 px column with scrollbars on both axes, inside a ~2000 px wide browser. Part of the cause is that D1 switches to the single-column layout at `max-width:1180px`, which is too eager for 125%/150% Windows scaling (a 1920 screen at 150% is a 1280 CSS-px viewport). It may also have been mid-resize. Either way, E must:
 - Fill the window fluidly at every size: CSS grid with `minmax()`, `clamp()` for type and spacing, container queries (`@container`) for the panels, `dvh`/`svh` units, and the `<meta name="viewport" content="width=device-width, initial-scale=1">` he means by "the HTML function". Use a `ResizeObserver` to keep the image canvas crisp, at integer-pixel scaling where possible.
 - Never show a page-level horizontal scrollbar. The image stage is always the largest element and never letterboxes into a tiny box.
 - Breakpoints: wide desktop (≥1600), laptop (1100–1600, the main target: 1366×768 and 1536×864 must look designed, not squeezed), tablet (700–1100: info panel becomes a slide-over sheet), phone (<700: stage on top, controls dock at the bottom, info as a bottom sheet).
 - Test by actually resizing a browser window from 360 px to 2560 px wide, and at browser zoom 125% and 150%.
 
-## 2. The look: what Kurucharan asked for
+## 2. The look: what the team designer asked for
 Base: D1 (warm ivory/bone shell, copper accent, sage secondary, dark recessed image stage, Instrument Sans + IBM Plex Mono). Add:
 - **Apple Liquid Glass**: the iOS 26 / macOS Tahoe design language. Glass that bends light at its edges (refraction), a specular rim highlight, adaptive tint taken from what's behind it, and controls that float in a layer above the content.
 - **Modern skeuomorphism / "tactile minimalism"**: physical-feeling controls (press depth, machined edges, a knob-like play button, a detented scrubber, toggle switches that look like real switches), but minimal: no fake leather or wood textures and no clutter.
@@ -71,7 +71,7 @@ WCAG 2.2 AA throughout: visible focus rings (separate high-contrast copper), key
 - Limit to ≤4 live `backdrop-filter` layers on screen at once. The SVG displacement (refraction) goes only on the 2–3 hero glass surfaces; the rest get the CSS fallback. Check that frame playback stays at 60 fps on an integrated GPU (throttle in DevTools at 4× CPU).
 - Durations: 120–180 ms for presses and toggles, 240–360 ms for panels and sheets, spring for drags. Nothing loops in the background, and no particles or starfields.
 
-## 7. The DON'Ts (from Kurucharan's own doc, section 28, plus the competition rules). All must hold.
+## 7. The DON'Ts (from the team designer's own doc, section 28, plus the competition rules). All must hold.
 Must not look like:
 - a generic AI dashboard;
 - an LLM chatbot app;

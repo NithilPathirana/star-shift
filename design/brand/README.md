@@ -5,7 +5,7 @@ Given by Nithil on Sat 14 Nov 2026. The rules are in `design/DESIGN.md` section 
 | File | Use |
 |---|---|
 | `star-shift-symbol.svg` | The logo exactly as supplied. Use at 64 px and larger |
-| `star-shift-symbol-small.svg` | Small-size cut for 24-48 px (header). Derivative: same star, heavier ring and crosshair, wider gaps, no hairline ring. Approved by Nithil (21:21) and Kurucharan (21:22), Sat 14 Nov |
+| `star-shift-symbol-small.svg` | Small-size cut for 24-48 px (header). Derivative: same star, heavier ring and crosshair, wider gaps, no hairline ring. Approved by Nithil (21:21) and the team designer (21:22), Sat 14 Nov |
 | `favicon.svg` | The small cut on an ivory tile, for the browser tab. Derivative, approved with the small cut |
 | `size-test-original-vs-small.png` | Both versions at 20-128 px on ivory and on the dark stage: why the small cut exists, and why the symbol never goes on dark |
 
@@ -13,7 +13,7 @@ Given by Nithil on Sat 14 Nov 2026. The rules are in `design/DESIGN.md` section 
 
 - The badge beside the symbol reads **SI** (Space Apps calls AI "Super Intelligence"; confirmed from the FAQ by Submission Check).
 - The credit line must be **visible** wherever the logo is shown (app, pitch deck, thumbnail still, design files). A tooltip alone is not enough.
-- The original was made with ChatGPT (Kurucharan, Sat 14 Nov 22:29). The two derivatives were drawn by Claude (AI-written SVG).
+- The original was made with ChatGPT (The team designer, Sat 14 Nov 22:29). The two derivatives were drawn by Claude (AI-written SVG).
 
 ## Drop-in for `web/`
 1. Copy the three SVG files to `web/brand/`.

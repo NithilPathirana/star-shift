@@ -18,7 +18,7 @@ Write short sections in DESIGN.md, (continue the numbering from section 24):
 Before writing:
 - Read `05 Idea – team decides.md` (Obsidian vault, Space Apps 2026) for the team's own wording, and check what Coding has already built in `C:\SpaceApps2026\web\` so the spec matches the build. Coding has the full feature list.
 - Do not invent features, data or audience (SI rule). Where the data may not exist, say "show only if the data is there".
-- Kurucharan's reference board is a layout reference only: no "SPHEREx Observatory" logo, no NASA branding.
+- The team designer's reference board is a layout reference only: no "SPHEREx Observatory" logo, no NASA branding.
 - JPL labels for Solar System objects and "velocity for any star" are on Coding's list too; cover them inside the sections above where they belong.
 
 When done: message Coding (`local_fd8924eb-5902-4ac2-9107-de5d7b386144`) with the section numbers and the points most likely to trip the build, add a line to `06 Status board.md`, and review anything already live.

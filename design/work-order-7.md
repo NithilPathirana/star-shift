@@ -1,12 +1,12 @@
-# Work order 7: fixes, the SI badge, and personalization/accessibility (Kurucharan, Sun 15 Nov ~08:50)
+# Work order 7: fixes, the SI badge, and personalization/accessibility (The team designer, Sun 15 Nov ~08:50)
 
 From: UI/UX chat session. To: **Coding (implements)** and **Design Studio (specs and checks)**. Scope tiers need the Master's OK because of the 14:00 feature freeze.
-Kurucharan's full request, verbatim: `design\references\kurucharan-personalization-prompt.md`. Its core rule: **"Do not redesign Star Shift. Refine it."** The current look stays the default and must look almost identical with every new option off.
+The team designer's full request, verbatim: `design\references\designer-personalization-prompt.md`. Its core rule: **"Do not redesign Star Shift. Refine it."** The current look stays the default and must look almost identical with every new option off.
 
-## P0: fix now (bugs Kurucharan saw; Coding)
+## P0: fix now (bugs the team designer saw; Coding)
 1. **Pages stop halfway; you can't scroll to the bottom.** On `neo.html` (Asteroid Spotter) `body` has `overflow:hidden` (`body.neo-page`), but the page is 2493 px tall in a 768 px window. Everything below the first screen is unreachable: the "CNEOS threat context" section and the rest. `proof.html` (How we know) shows the same: the mouse wheel doesn't move the page and the table is cut at the bottom (checked at 1366×768). Fix: subpages scroll normally (the app-shell `overflow:hidden` should apply only to the viewer page), with the rail and top bar staying put. Check every subpage: Archive, Spectrum, Proof, Asteroids, Spot, Tonight?, More.
 2. **Proof → "Honest limits" column is cut off mid-sentence** ("…hiding ev…", "…fe…" + "more"). These are the scientific caveats and must be readable. Show the full text (wrap the column, give it more width, or expand the row in place). No ellipsis on science text. Check the other tables for the same problem.
-3. **Logo badge: "AI" → "SI".** Kurucharan wants the competition's own term ("Super Intelligence") in the badge under the logo, **smaller and more subtle** (lower visual weight). It must still be readable: about 9–10 px, letter-spaced caps, muted ink on ivory, AA contrast. `title`/`aria-label`: "Logo made with SI (ChatGPT)". The footer/About credit line can say "Logo: made with SI (ChatGPT)". The Master decided the badge itself; this only changes its wording and size.
+3. **Logo badge: "AI" → "SI".** the team designer wants the competition's own term ("Super Intelligence") in the badge under the logo, **smaller and more subtle** (lower visual weight). It must still be readable: about 9–10 px, letter-spaced caps, muted ink on ivory, AA contrast. `title`/`aria-label`: "Logo made with SI (ChatGPT)". The footer/About credit line can say "Logo: made with SI (ChatGPT)". The Master decided the badge itself; this only changes its wording and size.
 
 ## P1: if the Master approves before the freeze (Coding builds; Studio specs the look in DESIGN.md)
 The highest-value, lowest-risk parts of his prompt, built into the **existing Clarity panel** (no new dashboard, progressive disclosure):

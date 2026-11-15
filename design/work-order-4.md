@@ -39,14 +39,14 @@ The team (Nithil) decided these features. Their exact words are in the team's no
    - Real progress must stay visible and honest: "Finding images… 12 of 60 loaded". Frames appear in the timeline as they arrive. The retry state shows when IRSA is slow or erroring. The rocket is decoration on top of real progress, never fake progress.
    - The rocket character moves along the progress path (e.g. its x-position = fraction loaded), with gentle motion. **Reduced motion: a still pose**, with the progress bar still updating.
    - **Character art rules:**
-     - If **Kurucharan draws it himself**, no mark is needed. It's his choice and he's been asked.
+     - If **The team designer draws it himself**, no mark is needed. It's his choice and he's been asked.
      - If **Claude or Blender** makes it (Blender counts as AI here, since an AI would drive it), it is AI-generated and **must carry a small visible "AI-generated" watermark** on the image itself.
      - **No NASA logo, meatball, worm or any agency insignia on the rocket**, and no real spacecraft likeness.
      - The person must be a generic cartoon character, not the likeness of any real person (under-18 rule).
-   - Until his art arrives, design the slot with a simple placeholder silhouette labelled "character art: Kurucharan / pending", so Coding can drop the file in (SVG preferred, or PNG/Lottie).
+   - Until his art arrives, design the slot with a simple placeholder silhouette labelled "character art: the team designer / pending", so Coding can drop the file in (SVG preferred, or PNG/Lottie).
    - Sound: none during loading, except the soft "loaded" confirm at the end.
 
 ## Also coming (don't design yet)
 Nithil wants a metadata PDF (per image, per-pixel wavelength and channel) before deciding on "flagging" features. Leave flagging out for now.
 
-Reply with the paths and anything you need from Kurucharan or Nithil.
+Reply with the paths and anything you need from the team designer or Nithil.
