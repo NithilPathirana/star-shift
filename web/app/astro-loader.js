@@ -78,13 +78,23 @@
         if (dead || leaving) return 0;
         leaving = true; root.classList.add('al-leaving');                       // text, pill and hairline fade out (150 ms)
         if (o.reducedMotion) { fade(); return 0; }
-        if (!exit || !exitReady || Date.now() - born < 4000) { fade(); return 400; }   // clip not ready, or a short (cached) load: never add 1.5 s of decoration to a wait under 4 s
-        var ended = false, finish = function () { if (ended) return; ended = true; fade(); };
-        exit.classList.add('al-on'); exit.currentTime = 0; play(exit);
-        exit.addEventListener('ended', finish); exit.addEventListener('error', finish);
-        later(function () { if (exit.currentTime < 0.05) finish(); }, 400);     // clip did not start: plain fade instead
-        later(finish, 1700);
-        return 1900;                                                            // 1.5 s clip + 400 ms fade
+        // Play the exit clip only from the loop's seam: it is rendered to start from the loop's FIRST frame, so starting it
+        // anywhere else was a jump cut about 7 loads in 8 (Design Studio, design/spec-loader-exit.md). Otherwise a plain fade.
+        var rem = (loop && loop.duration && !loop.paused) ? loop.duration - loop.currentTime : Infinity;   // seconds until the loop is back at its first frame
+        if (!exit || !exitReady || Date.now() - born < 4000 || rem > 0.7) { fade(); return 400; }           // not near the seam: plain fade, never a jump
+        var started = false, ended = false, finish = function () { if (ended) return; ended = true; fade(); };
+        var go = function () {
+          if (started || dead) return; started = true;
+          exit.style.transition = 'none';                                       // a cut, not a dissolve: the two frames are the same picture
+          exit.classList.add('al-on'); exit.currentTime = 0; play(exit);
+          exit.addEventListener('ended', finish); exit.addEventListener('error', finish);
+          later(function () { if (exit.currentTime < 0.05) finish(); }, 400);   // clip did not start: plain fade instead
+          later(finish, 1700);
+        };
+        var prev = loop.currentTime;
+        (function tick() { if (started || dead) return; var tt = loop.currentTime; if (tt < prev) return go(); prev = tt; requestAnimationFrame(tick); })();   // the loop wrapped: now
+        later(go, Math.round(rem * 1000) + 120);                                // safety, if frames are not being painted
+        return Math.round(rem * 1000) + 1900;                                   // wait for the seam + 1.5 s clip + 400 ms fade
       },
       destroy: function () {
         dead = true; timers.forEach(clearTimeout);

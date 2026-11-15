@@ -33,3 +33,8 @@
   .al-foot{bottom:64px}
   .al .al-capt{font-size:.75rem}
 }
+/* plain-fade ending (most loads): the picture pushes in slightly while it fades, so it still feels like leaving (design/spec-loader-exit.md) */
+.al-media{transition:transform 400ms cubic-bezier(.23,1,.32,1)}
+.al.al-done .al-media{transform:scale(1.05)}
+@media (prefers-reduced-motion: reduce){.al.al-done .al-media{transform:none}}
+.al-reduce.al-done .al-media{transform:none}
