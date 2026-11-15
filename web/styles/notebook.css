@@ -92,3 +92,6 @@
   .notebook-content { height: auto; overflow: visible; }
   .notebook-entry, .notebook-notes, .notebook-template textarea { color: #000; background: #fff; border-color: #777; box-shadow: none; }
 }
+
+/* thin shell-coloured scrollbar (Design review 2, item 6). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+.notebook-content { scrollbar-width: thin; scrollbar-color: var(--edge-strong, rgba(84,62,42,.42)) transparent; }

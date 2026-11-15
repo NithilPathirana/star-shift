@@ -360,3 +360,6 @@ html[data-motion=reduce] .pf-open svg{transition:none}
 }
 /* these pages are light, the Lab notebook dialog too */
 :root{color-scheme:light}
+
+/* thin shell-coloured scrollbar on the Archive table (Design review 2, item 6). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+.table-well{scrollbar-width:thin;scrollbar-color:var(--edge-strong) transparent}

@@ -42,10 +42,28 @@ for (const b of document.querySelectorAll('[data-notebook]')) {
 const more = document.querySelector('[data-rail-more]');
 const pagesBtn = document.getElementById('pagesBtn'), pagesPop = document.getElementById('pagesPop');
 if (more && pagesBtn && pagesPop) {
+  // From the More key the rail is on screen, so the sheet leaves out the pages the rail already shows
+  // (Design review 2, item 7); opened any other way (phone Pages key) it lists every page again.
+  const railHrefs = () => new Set([...document.querySelectorAll('.rail a[href]')].filter(a => a.getClientRects().length).map(a => a.getAttribute('href')));
+  const markDups = (on) => {
+    const shown = on ? railHrefs() : new Set();
+    const curShown = on && !!document.querySelector('.rail [aria-current="page"]')?.getClientRects().length; // Viewer's rail key is a button
+    for (const a of pagesPop.querySelectorAll('nav a[href]:not(.pg-util)')) {
+      a.style.display = shown.has(a.getAttribute('href')) || (curShown && a.getAttribute('aria-current') === 'page') ? 'none' : '';
+    }
+    const h = pagesPop.querySelector('h2');
+    if (h) { h.dataset.title ??= h.textContent; h.textContent = on ? 'More' : h.dataset.title; }
+  };
+  pagesBtn.addEventListener('click', () => markDups(false), true);
   more.addEventListener('click', (e) => {
     e.stopPropagation();
     pagesBtn.click(); // the page's own open/close logic (focus, Escape, click outside); it places the sheet synchronously
     if (pagesPop.hidden) return;
+    markDups(true);
+    setTimeout(() => { // the page focuses the first link, which may now be left out: focus the first one shown
+      if (pagesPop.hidden || pagesPop.contains(document.activeElement)) return;
+      [...pagesPop.querySelectorAll('button, a, input')].find(x => x.getClientRects().length)?.focus();
+    }, 60);
     const r = more.getBoundingClientRect(), h = pagesPop.offsetHeight; // then move it beside the rail
     pagesPop.style.left = `${Math.round(r.right + 10)}px`;
     pagesPop.style.right = 'auto';

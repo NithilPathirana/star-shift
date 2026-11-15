@@ -55,3 +55,6 @@ html[data-motion=reduce] .expert-pill,html[data-motion=reduce] .expert-pill::aft
 .sheet-credit{margin:12px 0 0;font-size:.75rem;line-height:1.4;color:var(--muted,#6b5d50)}
 /* phone: the Pages sheet spans the screen on every page (it slid 99 px off the left edge on Tonight?) */
 @media (max-width:699px){#pagesPop{left:12px!important;right:12px!important;width:auto!important;max-width:none!important}}
+
+/* thin shell-coloured scrollbars on the More pop (Design review 2, item 6). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+#pagesPop,.pop{scrollbar-width:thin;scrollbar-color:var(--edge-strong) transparent}
