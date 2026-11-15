@@ -472,7 +472,7 @@ html[data-motion=reduce] .state.loader2 { transition: none; }
 /* ===== Judging panel a6 + b2 (result plate), b3 (Hold one band), b11 (Share), design/spec-judge-fixes.md section 2.
    AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. ===== */
 .rp { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 4px;
-  width: max-content; max-width: calc(100% - 300px); pointer-events: none; } /* clear of the compass and the 30″ scale bar */
+  width: max-content; max-width: calc(100% - 340px); pointer-events: none; } /* clear of the compass and the 30″ scale bar */
 .rp[hidden], .rp-cap[hidden] { display: none; }
 .rp > * { pointer-events: auto; }
 .rp-cap { margin: 0; padding: 2px 10px; border-radius: 8px; background: rgba(21,17,14,.82); font: 500 .875rem/1.35 var(--font-ui); color: var(--stage-text); text-align: center; text-wrap: balance; }
