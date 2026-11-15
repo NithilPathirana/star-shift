@@ -308,6 +308,8 @@ html[data-motion=reduce] .pf-open svg{transition:none}
 .pf-more:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
 .pf-rules{margin-top:calc(-1 * var(--s2))}
 .pf-method sub{font-size:.75rem}
+/* 1366×640 (Design Studio item 7): all seven rows on the first screen; 2 px less row padding on short windows */
+@media (min-width:701px) and (max-height:700px){.pf-table .pf-row td{padding:4px 10px}.pf-head .pf-lede{margin-top:2px}}
 @media (max-width:700px){
   .pf-table .pf-lim{width:auto;min-width:0;padding-right:0}
   .pf-table :is(.pf-exp,.pf-meas,.pf-diff,.pf-ver){width:auto}

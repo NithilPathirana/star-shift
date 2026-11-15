@@ -5,6 +5,7 @@
 import { initClarity, showPop, closePop, esc } from '../archive/shell.js';
 import { DEFAULT_BANDS } from '../bands.js';
 import { VERDICT_CLASS, along } from './logic.js';
+import '../expert.js'; // Simple / Expert: .x-only (expert detail) and .s-only (plain-words twin)
 
 const $ = (id) => document.getElementById(id);
 const DASH = (why) => `<span class="dim" title="${esc(why)}">—</span>`;
@@ -13,6 +14,12 @@ const sgn = (v, d = 2) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFix
 const chip = (v) => `<span class="pf-chip ${VERDICT_CLASS[v] || ''}">${esc(v)}</span>`;
 const mjdDate = (mjd) => new Date((mjd - 40587) * 86400000);
 const fmtDay = (d) => d.toISOString().slice(0, 10);
+// Simple / Expert twins. Simple shows plain words; Expert adds ±, σ, detectors and full sources.
+const X = (h, tag = 'span', cls = '') => `<${tag} class="x-only ${cls}">${h}</${tag}>`;
+const Sm = (h, tag = 'span') => `<${tag} class="s-only">${h}</${tag}>`;
+const plainYr = (masYr, d = 1) => `${(masYr / 1000).toFixed(d)}″ a year`;
+const shortSource = (s) => String(s).split(/ \(via|,/)[0].trim();
+const plainGroup = (name) => String(name).replace(/\s*\(detectors[^)]*\)/, '');
 const bandColor = (um) => (DEFAULT_BANDS.find(b => um >= b.min && um < b.max) || DEFAULT_BANDS[DEFAULT_BANDS.length - 1]).color;
 
 /* ---------- shell: Clarity + Pages ---------- */
@@ -26,20 +33,22 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePop(t
 /* ---------- table cells ---------- */
 function expectedCell(t) {
   const x = t.expected;
-  if (t.type === 'motion') return `<span class="num pf-big">${arcs(x.value)}″/yr</span><small>${esc(x.source)}${x.err != null ? ` · ±${x.err} mas/yr` : ''}</small>`;
-  return `<span class="pf-txt">${esc(x.text)}</span><small>${esc(x.source)}</small>`;
+  if (t.type === 'motion') return `<span class="num pf-big">${X(`${arcs(x.value)}″/yr`)}${Sm(plainYr(x.value, 2))}</span>`
+    + X(`${esc(x.source)}${x.err != null ? ` · ±${x.err} mas/yr` : ''}`, 'small') + Sm(esc(shortSource(x.source)), 'small');
+  return `<span class="pf-txt">${esc(x.text)}</span>${X(esc(x.source), 'small')}${Sm(esc(shortSource(x.source)), 'small')}`;
 }
 function measuredCell(t, target) {
   const m = t.measured;
   if (t.type === 'motion') {
     if (!m || t.verdict === 'NOT MEASURABLE') return DASH('Not measurable: see the limits column');
     const ss = m.seasons.length;
-    const val = m.significant === false ? `no significant motion (&lt; ${arcs(m.upperLimit)}″/yr)` : `${arcs(m.value)} ± ${arcs(m.err)}″/yr`;
-    return `<span class="num pf-big">${val}</span><small class="num">${m.frames} images · ${ss} season${ss === 1 ? '' : 's'} · ${m.span} yr · ${esc(m.bands)}</small>`;
+    const val = m.significant === false ? `no significant motion ${X(`(&lt; ${arcs(m.upperLimit)}″/yr)`)}${Sm(`(under ${plainYr(m.upperLimit)})`)}`
+      : `${X(`${arcs(m.value)} ± ${arcs(m.err)}″/yr`)}${Sm(plainYr(m.value))}`;
+    return `<span class="num pf-big">${val}</span>${X(`${m.frames} images · ${ss} season${ss === 1 ? '' : 's'} · ${m.span} yr · ${esc(m.bands)}`, 'small', 'num')}${Sm(`${m.frames} images over ${m.span} years`, 'small')}`;
   }
   if (!m) return DASH('Not measurable: see the limits column');
   return m.groups.map(g => g.ok
-    ? `<span class="num pf-line">${sgn(g.value)} ± ${g.err.toFixed(2)} mag <span class="dim">${g.value > 0 ? 'fainter' : 'brighter'}</span></span><small class="num">${esc(g.name)} · ${g.frames} images</small>`
+    ? `<span class="num pf-line">${X(`${sgn(g.value)} ± ${g.err.toFixed(2)} mag`)}${Sm(`${Math.abs(g.value).toFixed(1)} mag`)} <span class="dim">${g.value > 0 ? 'fainter' : 'brighter'}</span></span>${X(`${esc(g.name)} · ${g.frames} images`, 'small', 'num')}${Sm(`at ${esc(plainGroup(g.name))}`, 'small')}`
     : `<span class="pf-line">${DASH('Too few usable images in this wavelength group')}</span><small class="num">${esc(g.name)}</small>`).join('');
 }
 function diffCell(t) {
@@ -111,26 +120,30 @@ function brightnessChart(t, target) {
 
 /* ---------- evidence (expanded row) ---------- */
 function facts(t, target) {
-  const li = [];
+  const li = []; // entries: html, or [html, 'x'] for Expert-only detail
   if (t.type === 'motion') {
     const v = t.variants, f = (x) => (x.ok ? `${arcs(x.total)} ± ${arcs(x.totalErr)}″/yr (${x.frames} images)` : `no fit (${esc(x.reason || 'no steady track')})`);
     if (t.fitAnyway) li.push(t.fitAnyway.significant === false
-      ? `No significant motion (&lt; ${arcs(t.fitAnyway.upperLimit)}″/yr): the fit gives ${arcs(t.fitAnyway.value)} ± ${arcs(t.fitAnyway.err)}″/yr from ${t.fitAnyway.frames} images, for a star the catalogue says moves ${arcs(t.expected.value, 3)}″/yr.`
-      : `The fit gives ${arcs(t.fitAnyway.value)} ± ${arcs(t.fitAnyway.err)}″/yr from ${t.fitAnyway.frames} images, for a star the catalogue says moves ${arcs(t.expected.value, 3)}″/yr. That is not a real motion (see the limits column).`);
-    if (t.measured?.statErr != null) li.push(`Uncertainty: ± ${arcs(t.measured.statErr)}″/yr from the scatter of the image positions and ± ${arcs(t.measured.sysErr)}″/yr systematic floor (measured on field stars, which should not move), combined as ± ${arcs(t.measured.err)}″/yr.`);
-    if (t.measured) li.push(`Direction of motion: measured ${t.measured.pa}°, catalogue ${t.expected.pa}° (east of north).`);
-    if (t.measured) li.push(`Seasons used: ${t.measured.seasons.map(s => `${s.from} to ${s.to} (${s.n})`).join(' · ')}.`);
-    li.push(`All detectors: ${f(v.all)} · detectors 1–4: ${f(v.short)} · detectors 5–6: ${f(v.long)} · every flagged image hidden: ${f(v.filtersOn)}.`);
-    li.push(`Expected shift over these dates: ${t.shiftPx} of a 6.15″ pixel.`);
+      ? `No significant motion ${X(`(&lt; ${arcs(t.fitAnyway.upperLimit)}″/yr): the fit gives ${arcs(t.fitAnyway.value)} ± ${arcs(t.fitAnyway.err)}″/yr`)}${Sm(`(under ${plainYr(t.fitAnyway.upperLimit)}): the fit gives ${plainYr(t.fitAnyway.value)}`)} from ${t.fitAnyway.frames} images, for a star the catalogue says moves ${arcs(t.expected.value, 3)}″/yr.`
+      : `The fit gives ${X(`${arcs(t.fitAnyway.value)} ± ${arcs(t.fitAnyway.err)}″/yr`)}${Sm(plainYr(t.fitAnyway.value))} from ${t.fitAnyway.frames} images, for a star the catalogue says moves ${arcs(t.expected.value, 3)}″/yr. That is not a real motion (see the limits column).`);
+    if (t.measured?.statErr != null) li.push([`Uncertainty: ± ${arcs(t.measured.statErr)}″/yr from the scatter of the image positions and ± ${arcs(t.measured.sysErr)}″/yr systematic floor (measured on field stars, which should not move), combined as ± ${arcs(t.measured.err)}″/yr.`, 'x']);
+    if (t.measured) li.push([`Direction of motion: measured ${t.measured.pa}°, catalogue ${t.expected.pa}° (east of north).`, 'x']);
+    if (t.measured) li.push([`Seasons used: ${t.measured.seasons.map(s => `${s.from} to ${s.to} (${s.n})`).join(' · ')}.`, 'x']);
+    if (t.measured) li.push([`Direction: measured within ${Math.round(Math.abs(((t.measured.pa - t.expected.pa + 540) % 360) - 180))}° of the catalogue direction.`, 's']);
+    li.push([`All detectors: ${f(v.all)} · detectors 1–4: ${f(v.short)} · detectors 5–6: ${f(v.long)} · every flagged image hidden: ${f(v.filtersOn)}.`, 'x']);
+    li.push(`Expected shift over these dates: ${X(`${t.shiftPx} of a 6.15″ pixel`)}${Sm(`about ${(+t.shiftPx).toFixed(1)} pixels (each 6.15″ wide)`)}.`);
     const ex = target.extra || {};
-    if (ex.neighbours?.length) li.push(`Gaia DR3 sources within 15″: ${ex.neighbours.map(n => `G ${n.g} at ${n.sepArcsec}″`).join(', ')}.`);
+    if (ex.neighbours?.length) li.push([`Gaia DR3 sources within 15″: ${ex.neighbours.map(n => `G ${n.g} at ${n.sepArcsec}″`).join(', ')}.`, 'x']);
+    if (ex.neighbours?.length) li.push([`${ex.neighbours.length} fainter star${ex.neighbours.length === 1 ? '' : 's'} within 15″ in Gaia.`, 's']);
     if (ex.brightNeighbour) li.push(`${esc(ex.brightNeighbour.name)}: ${ex.brightNeighbour.sepArcsec}″ away; the patch reaches ${ex.brightNeighbour.cutoutHalfArcsec}″ from the centre.`);
   } else if (t.measured) {
-    for (const g of t.measured.groups) li.push(`${esc(g.name)}: ${g.seasons.map(s => `${s.from}: ${sgn(s.dm)}${s.sem != null ? ` ± ${s.sem.toFixed(2)}` : ''} mag (${s.n})`).join(' · ') || 'no usable images'}.`);
+    for (const g of t.measured.groups) li.push(`${esc(g.name)}: ${g.seasons.map(s => `${s.from}: ${sgn(s.dm)}${s.sem != null ? X(` ± ${s.sem.toFixed(2)}`) : ''} mag (${s.n})`).join(' · ') || 'no usable images'}.`);
   }
   const im = target.images;
-  li.push(`Images: ${im.loaded} loaded of ${im.archive} in the archive, ${im.first} to ${im.last}; star's centre flagged saturated in ${im.saturatedCore}; ${im.flaggedNearStar} have a flag that touches the star.`);
-  return `<ul class="pf-facts">${li.map(x => `<li>${x}</li>`).join('')}</ul>`;
+  li.push([`Images: ${im.loaded} loaded of ${im.archive} in the archive, ${im.first} to ${im.last}; star's centre flagged saturated in ${im.saturatedCore}; ${im.flaggedNearStar} have a flag that touches the star.`, 'x']);
+  const mon = (iso) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+  li.push([`Images: ${im.loaded} of the ${im.archive} in the archive, ${mon(im.first)} to ${mon(im.last)}; the star's centre is too bright (saturated) in ${im.saturatedCore} of them.`, 's']);
+  return `<ul class="pf-facts">${li.map(x => Array.isArray(x) ? `<li class="${x[1] === 'x' ? 'x-only' : 's-only'}">${x[0]}</li>` : `<li>${x}</li>`).join('')}</ul>`;
 }
 function evidence(t, target) {
   const chart = t.type === 'motion' ? motionChart(t, target) : brightnessChart(t, target);
@@ -153,7 +166,7 @@ function render(d) {
         <td class="pf-obj"><button class="pf-open" type="button" aria-expanded="false" aria-controls="${id}"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2.5L7.5 6 4 9.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><b>${esc(target.label)}</b></button><small>${t.type === 'motion' ? 'moves' : 'changes brightness'}${i === 0 && target.kind === 'changes brightness' && t.type === 'motion' ? ' (checked too)' : ''}</small></td>
         <td class="pf-exp">${expectedCell(t)}</td>
         <td class="pf-meas">${measuredCell(t, target)}</td>
-        <td class="pf-diff">${diffCell(t)}</td>
+        <td class="pf-diff x-only">${diffCell(t)}</td>
         <td class="pf-ver">${chip(t.verdict)}</td>
         <td class="pf-lim"><span class="pf-lim-t" id="${id}l">${esc(t.limit)}</span><button class="pf-more" type="button" aria-expanded="false" aria-controls="${id}l" hidden>more</button></td></tr>
         <tr class="drow pf-drow" id="${id}" hidden><td colspan="6">${evidence(t, target)}</td></tr>`;
@@ -169,10 +182,10 @@ function render(d) {
   });
   initLimits();
   const when = new Date(d.generated);
-  $('under').textContent = 'Images behind each result: ' + d.targets.map(t => `${t.label}: ` + t.tests.map(x => {
+  $('under').innerHTML = `<span class="s-only">Each result uses up to ${d.settings.maxImages} SPHEREx images of the object, computed ${when.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}. Open a row to see its evidence.</span><span class="x-only">${esc('Images behind each result: ' + d.targets.map(t => `${t.label}: ` + t.tests.map(x => {
     const n = x.verdict === 'NOT MEASURABLE' ? null : x.measured?.frames;
     return `${x.type} ${n != null ? `${n} of ${t.images.loaded}` : 'none (not measurable)'}`;
-  }).join(', ')).join(' · ') + `. Computed ${when.toISOString().slice(0, 16).replace('T', ' ')} UTC, field ${d.settings.fovArcmin}′, up to ${d.settings.maxImages} images per object, flag filter: ${d.settings.flagFilter}.`;
+  }).join(', ')).join(' · ') + `. Computed ${when.toISOString().slice(0, 16).replace('T', ' ')} UTC, field ${d.settings.fovArcmin}′, up to ${d.settings.maxImages} images per object, flag filter: ${d.settings.flagFilter}.`)}</span>`;
 
   // "What this does not show": the limits that apply to every row, with the numbers from this run.
   const rw = d.targets.find(t => t.key === 'rw-aur')?.tests[0].fitAnyway, rwAll = d.targets.find(t => t.key === 'rw-aur')?.tests[0].variants;
