@@ -666,3 +666,13 @@ html[data-motion=reduce] .rp-res.swap { animation: none; }
 .lcm-pc p { margin: 2px 0; }
 .lcm-ok { color: var(--sage-ink); font-weight: 600; white-space: nowrap; }
 .lcm-diff { color: var(--copper-ink); font-weight: 600; white-space: nowrap; }
+/* the viewer's action row (Copy coordinates, Aladin Lite, Share, Signal-to-noise, Notebook, GIF, video): an even 2-column grid,
+   every key the same height and padding (Nithil, Sun 23:16: 'the buttons are misaligned') */
+.insp-sec:has(> #copyInsp){display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start}
+.insp-sec:has(> #copyInsp) > *{grid-column:1/-1}
+.insp-sec:has(> #copyInsp) > .key, .insp-sec:has(> #copyInsp) > a.key, .insp-sec:has(> #copyInsp) > button{grid-column:auto;margin:0 !important;width:100%;min-height:40px;padding:6px 10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;font-size:.8125rem;line-height:1.2;text-align:center;box-sizing:border-box}
+.insp-sec:has(> #copyInsp) > .gif-row{display:contents}
+.insp-sec:has(> #copyInsp) > .gif-row > .key{margin:0 !important;width:100%;min-height:40px;padding:6px 10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;font-size:.8125rem}
+.insp-sec:has(> #copyInsp) > .gif-row > #gifProg{grid-column:1/-1;margin:0}
+#snrSec.snr-flash{outline:2px solid var(--ring);outline-offset:4px;border-radius:10px;transition:outline-color 1.2s}
+@media (max-width:699px){.insp-sec:has(> #copyInsp) > .key, .insp-sec:has(> #copyInsp) > a.key, .insp-sec:has(> #copyInsp) > button, .insp-sec:has(> #copyInsp) > .gif-row > .key{min-height:44px}}

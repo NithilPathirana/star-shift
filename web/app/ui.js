@@ -488,6 +488,12 @@ $('cvA').addEventListener('click', e => { // click any point of the image on scr
   if (innerWidth < 1100) sheet(true);
   $('snrSec').scrollIntoView({ block: 'nearest', behavior: set.motion ? 'auto' : 'smooth' });
 });
+// Nithil (23:16): 'I can't see the SNR tool anywhere': a key in the action row that measures the target and shows the section
+{ const k = document.createElement('button'); k.type = 'button'; k.className = 'key'; k.id = 'snrKey'; k.textContent = 'Signal-to-noise';
+  k.onclick = () => { if (scene !== 'viewer' || !curImg()) return; if (mode !== 'play' && mode !== 'blink') setMode('play', true);
+    setTimeout(() => { SNR.reset(); if (innerWidth < 1100) sheet(true); const sec = $('snrSec'); sec.scrollIntoView({ block: 'nearest', behavior: set.motion ? 'auto' : 'smooth' });
+      sec.classList.add('snr-flash'); setTimeout(() => sec.classList.remove('snr-flash'), 1600); }, mode === 'play' || mode === 'blink' ? 0 : 400); };
+  $('shareInsp').after(k); }
 $('hitStar').addEventListener('click', () => { if (scene !== 'viewer' || !curImg()) return; SNR.reset(); if (innerWidth < 1100) sheet(true); $('snrSec').scrollIntoView({ block: 'nearest', behavior: set.motion ? 'auto' : 'smooth' }); });
 // b9: Gaia DR3 circles on the image on cvA (Time, or Blink's stack); off in Compare, Telescopes, Clean Blink
 const GO = createGaiaOverlay({ cv: $('cvA'), sw: $('gaiaSw'), note: $('gaiaNote'), base: BASE, view: () => {

@@ -480,6 +480,9 @@ html:where(:not([data-ax-look=classic]))[data-glass=solid] .tools{background:#1B
 :where(html:not([data-ax-look=classic])) .lcm-pc{border-radius:10px;background:rgba(255,255,255,.6);border:1px solid var(--edge)}
 :where(html:not([data-ax-look=classic])) .lcm-ok{color:var(--sage-ink)}
 :where(html:not([data-ax-look=classic])) .lcm-diff{color:var(--copper-ink)}
+:where(html:not([data-ax-look=classic])) .insp-sec:has(> #copyInsp) > .key,:where(html:not([data-ax-look=classic])) .insp-sec:has(> #copyInsp) > a.key,:where(html:not([data-ax-look=classic])) .insp-sec:has(> #copyInsp) > button{border-radius:10px}
+:where(html:not([data-ax-look=classic])) .insp-sec:has(> #copyInsp) > .gif-row > .key{border-radius:10px}
+:where(html:not([data-ax-look=classic])) #snrSec.snr-flash{outline:2px solid var(--ring);outline-offset:4px;border-radius:10px}
 /* from pages.css */
 :where(html:not([data-ax-look=classic])) .page .nav-btn{text-decoration:none}
 :where(html:not([data-ax-look=classic])) .serr{border-radius:11px;background:#FAFBFF;border:1px solid var(--coral);color:var(--coral)}

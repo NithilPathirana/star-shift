@@ -157,7 +157,7 @@ export function mountAsk() {
 /* ---------- the consent chip (Nithil, Sun 21:55): a first visit can always choose ---------- */
 // Small, at the bottom, never over the stage, the result plate or a verdict: bottom-left, else bottom-right, else
 // in flow as the top bar's last row. Hidden while a tour is open; gone for good once a choice is saved.
-const KEEP = 'h1, h2, h3, .rail, #stage, #resultPlate, #verdict, .sm-verdict, #rpRes, .transport, .tl, .dock, #cdPlay, #mdPlay, .story-go, .story';
+const KEEP = 'h1, h2, h3, .rail, #stage, #resultPlate, #verdict, .sm-verdict, #rpRes, .transport, .tl, .dock, #cdPlay, #mdPlay, .story-go, .story, #plot, #cv';
 let cc = null, ccIv = 0;
 function placeCC() {
   if (!cc) return;
