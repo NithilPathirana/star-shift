@@ -205,7 +205,9 @@ function showOffer() {
   if (!placeOffer()) { removeEventListener('click', onAppAct, true); removeEventListener('submit', onAppAct, true); offer.remove(); offer = null; return; }
   addEventListener('resize', replaceOffer);
   guardOffer(); offerIv = setInterval(guardOffer, 250);
-  offerLeft = OFFER_MS; offerT0 = performance.now(); offerT = setTimeout(() => leaveOffer(false), OFFER_MS);
+  // 8 s on screen, but gone by 9 s after the page opened (spec), and never shorter than 4 s
+  offerT0 = performance.now(); offerLeft = Math.max(4000, Math.min(OFFER_MS, OFFER_MS + 1000 - offerT0));
+  offerT = setTimeout(() => leaveOffer(false), offerLeft);
   void offer.offsetWidth; offer.classList.add('in');
 }
 
