@@ -1,5 +1,7 @@
 # Star Shift – the infrared sky over time
 
+**Open it:** LIVE_URL_GOES_HERE (no login) · **Source:** `source.zip` on the site (built with `npm run source-zip`) · **Licence:** MIT ([LICENSE](LICENSE))
+
 Team **Proper Motion** (Colombo, Sri Lanka) – NASA Space Apps Challenge 2026, challenge *Planet X and SPHEREx*.
 Type any sky position (or a star name) and see every SPHEREx image of that spot, lined up, as a little movie.
 

@@ -17,3 +17,6 @@ evidence/prebake.log
 
 # Staged by deploy/prepare-assets.mjs from design/loader/v1.1 (attested watermarked copies); regenerate, do not commit
 web/loader/
+
+# Built by npm run source-zip (git archive of HEAD); regenerate, do not commit
+web/source.zip

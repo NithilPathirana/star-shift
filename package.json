@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
-    "test:live": "set LIVE=1&& node --test tests/*.test.mjs"
+    "test:live": "set LIVE=1&& node --test tests/*.test.mjs",
+    "source-zip": "node tools/source_zip.mjs"
   }
 }
