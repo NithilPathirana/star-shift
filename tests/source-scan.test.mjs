@@ -10,7 +10,10 @@ test('every file that goes into the source zip passes the scan', () => {
 });
 
 test('the scan catches what it is meant to catch', () => {
-  const bad = ['mail me at someone@gmail.com', String.raw`C:\Users\someone\project`, '/home/someone/x', '-----BEGIN RSA PRIVATE KEY-----', 'api_key = "abcdefghijklmnop1234"'];
+  // built at run time so this file itself never contains the patterns (it ships in the zip too)
+  const j = (...p) => p.join('');
+  const bad = [j('mail me at someone', '@', 'gmail.com'), j('C:', '\\', 'Users', '\\', 'someone', '\\', 'project'), j('/ho', 'me/someone/x'),
+    j('-----BEGIN RSA ', 'PRIVATE KEY-----'), j('api', '_key = "', 'abcdefghijklmnop1234"')];
   for (const t of bad) assert.ok(scanText('x.md', t).length, t);
   assert.deepEqual(scanText('x.md', 'Co-Authored-By: Claude <noreply@anthropic.com>'), []);
 });

@@ -2,6 +2,7 @@
 // Stage only attested, watermarked loader exports and audit the public web tree.
 
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { copyFile, mkdir, readFile, readdir, stat } from 'node:fs/promises';
 import { relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -175,6 +176,8 @@ async function auditWeb() {
 try {
   await stageLoader();
   checkTargets();
+  // web/source.zip (the 'Download the source code (MIT)' link): rebuilt from HEAD and scanned (tools/source_scan.mjs)
+  execFileSync(process.execPath, [fileURLToPath(new URL('../tools/source_zip.mjs', import.meta.url))], { stdio: 'inherit' });
   await auditWeb();
   console.log('Asset preparation passed. Nothing outside web/ can be uploaded by wrangler.toml.');
 } catch (error) {
