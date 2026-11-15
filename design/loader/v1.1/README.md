@@ -99,3 +99,11 @@ Asked for by Nithil: no Earth, deep space, far more detail on the rocket and the
 - Scene script: `_build/build_rocket_v6.py` (Blender 5.2, Cycles). Raw frames: `_build/frames_v6` (240) and `_build/frames_exit_v6` (45); never publish these, they carry no mark.
 - Encode: `_build/encode.py` (no version argument = v6). The mark is now white on a dark pill, 22 px tall at 1080 and 15 px at 720, on every frame.
 - Checked: 12 files match the old ones in codec, size and frame count; 42 decoded corners all show the mark (`_build/mark-check-sheet.png`); `watermarked-assets.sha256` rewritten and verified.
+
+## Scene v7 (15 Nov 2026, 16:30 Sri Lanka time)
+Asked for by Nithil: a real NASA spacesuit for the rider. Credit line (README and site credits): "Spacesuit model: NASA 3D Resources (public domain), modified".
+- Model, source, hash, what was changed and NASA's rules: `../v5c/SOURCE.md`. Cleaning script: `../v5c/tools/emu_prep.py` (deletes every original material and texture, so no flag, patch or lettering can render; deletes the head).
+- Loop: `_build/v7_from_blend.py` on the saved v6 scene (`rocket_v6.blend`, not in git). Exit clip: `_build/build_rocket_v7.py -- exit`. Encode: `python _build/encode.py <outdir> v7`. 1920 x 1080, 36 samples.
+- The suit is not re-posed (the model has no skeleton): it stands in a hatch, cut off above the knee by the hull. No wave.
+- Checked: 12 files match v6 in codec, size and frame count; 42 decoded corners all show the mark; hashes rewritten and verified; last loop frame joins the first.
+- Never publish `../v5c/inspect/` (the model's original flag and patch textures) or `_build/frames_v7*` (no mark).

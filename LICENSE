@@ -23,3 +23,4 @@ SOFTWARE.
 Data, images and third-party libraries keep their own licences and credits
 (see README.md: NASA/IPAC IRSA SPHEREx data with their DOIs, Gaia, SIMBAD,
 Hipparcos, three.js, Astronomy Engine). The Star Shift logo is SI-generated.
+The MIT licence covers the team's code and original assets. The spacesuit model in the loader animation is NASA material (public domain, no copyright claimed) and is not covered by this licence.

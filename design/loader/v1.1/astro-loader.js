@@ -21,7 +21,7 @@
     var pill = el('div', 'al-pill'), pillTxt = el('span'), retry = el('button', 'key', 'Retry now'); retry.type = 'button';
     var start = el('button', 'key primary al-start', 'Start watching'); start.type = 'button';
     var line = el('p', 'al-line'); line.setAttribute('aria-live', 'polite');
-    var capt = el('p', 'al-capt', 'Animation: SI-generated (made by Claude in Blender) · Background: NASA SPHEREx all-sky map (IRSA)');
+    var capt = el('p', 'al-capt', 'Animation: SI-generated (made by Claude in Blender) · Spacesuit model: NASA 3D Resources (public domain), modified · Background: NASA SPHEREx all-sky map (IRSA)');
     var hair = el('i', 'al-hair'), hairFill = el('b'); hair.appendChild(hairFill);
     pill.hidden = true; start.hidden = true; pill.appendChild(pillTxt); pill.appendChild(retry);
     foot.appendChild(pill); foot.appendChild(start); foot.appendChild(line);
