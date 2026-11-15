@@ -265,7 +265,7 @@ function info(f, head) {
   $('d-det').textContent = st ? 'mixed' : 'D' + f.det;
   $('d-um').textContent = f.um ? f.um.toFixed(2) + ' µm' : 'mixed, combined';
   const bl = bandLabel(rangeOf(f.um)); // a wavelength range, never a finding (bands.js)
-  $('d-band').textContent = bl ? bl.text.replace(/ µm$/, ' µm') : st ? 'mixed (stacked)' : 'outside your bands'; $('d-band').title = bl ? bl.tip : '';
+  $('d-band').textContent = bl ? `${bl.range.replace(/ µm$/, ' µm')} · ${bl.name}` : st ? 'mixed (stacked)' : 'outside your bands'; $('d-band').title = bl ? bl.tip : '';
   nbInfo = f;
   const fl = CX.flaggedText(f);
   $('d-mask').textContent = fl ? fl.text : `${f.d.filter(v => v == null).length} of ${V.n * V.n}`; $('d-mask').title = fl ? fl.title : 'no-data pixels (stacked)';
