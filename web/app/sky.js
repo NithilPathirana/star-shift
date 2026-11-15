@@ -123,16 +123,85 @@ export function sunRaDec(date) {
   return { ra: norm360(Math.atan2(Math.cos(eps) * Math.sin(lam), Math.cos(lam)) * R2D), dec: Math.asin(Math.sin(eps) * Math.sin(lam)) * R2D };
 }
 
-// Hours tonight (next 24 h, 10-minute steps) when the spot is above minAlt while the Sun is
-// below -12° (nautical dark). Returns { hours, bestTime, bestAlt }.
-export function visibleTonight(ra, dec, lat, lon, from, minAlt = 20) {
-  let mins = 0, best = null;
-  for (let k = 0; k < 144; k++) {
-    const t = new Date(from.getTime() + k * 600000);
-    const s = sunRaDec(t);
-    if (altAz(s.ra, s.dec, lat, lon, t, { j2000: false }).alt > -12) continue; // Sun is already of date
-    const a = altAz(ra, dec, lat, lon, t).alt;
-    if (a >= minAlt) { mins += 10; if (!best || a > best.alt) best = { t, alt: a }; }
+// ---- "Tonight" for a fixed point on the sky: ONE definition, used by the viewer's "Where to look"
+// box, the Observer rows, the details page AND the planetarium's "Can I see it tonight?" card
+// (QA Sun 15 Nov: the pages disagreed). Definitions:
+//   dark        = the Sun more than 12° below the horizon (nautical darkness)
+//   tonight     = the coming dark period, or what is left of it if it is dark now
+//   up          = above the standard horizon, -0.5667° (refraction at the horizon, as rise/set use)
+//   best        = the highest point while it is dark (the transit itself when that falls in the dark)
+//   well placed = best at least 20° up
+//   highest     = the transit (riseTransitSet)
+// Altitudes are geometric (refraction is under 0.1° above 20°). 2-minute steps.
+export const DARK_SUN_ALT = -12, WELL_PLACED_ALT = 20, STD_HORIZON = -0.5667;
+const sunAlt = (lat, lon, t) => { const s = sunRaDec(t); return altAz(s.ra, s.dec, lat, lon, t, { j2000: false }).alt; }; // Sun is already of date
+const DAY_MS = 86400000;
+// The dark window for "tonight": { start, end, inDark } or null (no dark sky in the next 24 h).
+export function darkWindow(lat, lon, now, stepMin = 2) {
+  const step = stepMin * 60000, n = Math.round(1440 / stepMin), isDark = t => sunAlt(lat, lon, t) < DARK_SUN_ALT;
+  const inDark = isDark(now);
+  let start = null;
+  if (inDark) { start = now; for (let k = 1; k <= n; k++) { const t = new Date(now.getTime() - k * step); if (!isDark(t)) break; start = t; } }
+  else for (let k = 1; k <= n; k++) { const t = new Date(now.getTime() + k * step); if (isDark(t)) { start = t; break; } }
+  if (!start) return null;
+  const from = inDark ? now : start;
+  let end = new Date(from.getTime() + DAY_MS); // polar night: a day of darkness
+  for (let k = 1; k <= n; k++) { const t = new Date(from.getTime() + k * step); if (!isDark(t)) { end = new Date(t.getTime() - step); break; } }
+  return { start, end, inDark };
+}
+// Everything both pages say about tonight, as numbers. ra/dec J2000 (catalogue), Dates in and out.
+export function skyTonight(ra, dec, lat, lon, now, { stepMin = 2, wellAlt = WELL_PLACED_ALT } = {}) {
+  const rts = riseTransitSet(ra, dec, lat, lon, now, STD_HORIZON);
+  const dark = darkWindow(lat, lon, now, stepMin);
+  const out = { now, rts, dark, best: null, wellPlaced: false, hoursWell: 0, setEarlier: null };
+  if (!dark || rts.always === 'down') return out;
+  const from = dark.inDark ? now : dark.start, step = stepMin * 60000, alt = t => altAz(ra, dec, lat, lon, t).alt;
+  let best = null, n = 0;
+  for (let ms = from.getTime(); ms <= dark.end.getTime(); ms += step) {
+    const t = new Date(ms), a = alt(t);
+    if (a >= wellAlt) n++;
+    if (a > STD_HORIZON && (!best || a > best.alt)) best = { t, alt: a };
   }
-  return { hours: mins / 60, bestTime: best?.t ?? null, bestAlt: best?.alt ?? null };
+  // the transit is the true highest point: use it when it falls in tonight's dark window
+  for (const tr of [rts.transit, new Date(rts.transit.getTime() - 0.99726957 * DAY_MS)]) {
+    if (tr >= from && tr <= dark.end) { const a = alt(tr); if (a > STD_HORIZON && (!best || a >= best.alt)) best = { t: tr, alt: a }; }
+  }
+  if (best) { best.az = altAz(ra, dec, lat, lon, best.t).az; out.best = best; out.wellPlaced = best.alt >= wellAlt; out.hoursWell = n * stepMin / 60; }
+  else if (dark.inDark) { // up earlier in this dark period, set since?
+    let last = null;
+    for (let ms = now.getTime() - step; ms >= dark.start.getTime(); ms -= step) { if (alt(new Date(ms)) > STD_HORIZON) { last = new Date(ms); break; } }
+    if (last) out.setEarlier = riseTransitSet(ra, dec, lat, lon, last, STD_HORIZON).set;
+  }
+  return out;
+}
+// The shared words, so both pages say the same thing with the same numbers.
+// at(Date) -> the page's time text (24-hour HH:MM, plus a day word when not today).
+const DIR8 = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
+export const dirWord = az => DIR8[Math.round((((az % 360) + 360) % 360) / 45) % 8];
+export const whereIn = (alt, az) => alt > 85 ? 'almost straight overhead' : `in the ${dirWord(az)}`;
+// kind: 'yes' (well placed) | 'low' | 'set' (set earlier tonight) | 'day' (up only in daylight/twilight) | 'polar' (no dark sky) | 'down' (never rises)
+export function tonightWords(st, dec, lat, at) {
+  const { rts, best, now } = st, r = Math.round;
+  const kind = rts.always === 'down' ? 'down' : !st.dark ? 'polar' : st.wellPlaced ? 'yes' : best ? 'low' : st.setEarlier ? 'set' : 'day';
+  const bestText = {
+    down: 'it never rises above the horizon from here',
+    polar: 'there is no dark sky here tonight (the Sun stays less than 12° below the horizon)',
+    yes: best && `best tonight at ${at(best.t)}, ${r(best.alt)}° up ${whereIn(best.alt, best.az)}`,
+    low: best && `at most ${r(best.alt)}° up while it is dark tonight, at ${at(best.t)} (under ${WELL_PLACED_ALT}°)`,
+    set: st.setEarlier && `it set at ${at(st.setEarlier)} and is not up for the rest of the dark tonight`,
+    day: 'it is up only in daylight or twilight tonight',
+  }[kind];
+  const tDir = rts.transitAlt > 85 ? ', almost straight overhead' : ` in the ${dec < lat ? 'south' : 'north'}`;
+  const dayText = rts.always === 'down' ? 'It never rises above the horizon from here.'
+    : rts.always === 'up' ? `It never sets from here; highest at ${at(rts.transit)}, ${r(rts.transitAlt)}° up${tDir}.`
+    : `${rts.up ? 'Rose' : 'Rises'} ${at(rts.rise)}, ${rts.up && rts.transit < now ? 'was highest' : 'highest'} ${at(rts.transit)} at ${r(rts.transitAlt)}°${tDir}, sets ${at(rts.set)}.`;
+  const darkText = st.dark ? `Dark sky (Sun 12° below the horizon) ${at(st.dark.inDark ? now : st.dark.start)} to ${at(st.dark.end)}.` : '';
+  return { kind, bestText, dayText, darkText };
+}
+
+// Hours tonight above minAlt while it is dark, and the best time: skyTonight in short.
+// Returns { hours, bestTime, bestAlt } (best only when it reaches minAlt).
+export function visibleTonight(ra, dec, lat, lon, from, minAlt = WELL_PLACED_ALT) {
+  const st = skyTonight(ra, dec, lat, lon, from, { wellAlt: minAlt });
+  return { hours: st.hoursWell, bestTime: st.wellPlaced ? st.best.t : null, bestAlt: st.wellPlaced ? st.best.alt : null };
 }

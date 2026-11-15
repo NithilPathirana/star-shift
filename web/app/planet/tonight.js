@@ -1,9 +1,11 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 // "Can I see it tonight?" answer card (DESIGN.md 26, Design review): tonight = the coming night
 // at the chosen place, from sunset to sunrise (or the night we are in, if the Sun is down now).
-// The object counts as up when its apparent altitude (refraction on) is above 0°.
+// The object counts as up when its apparent altitude (refraction on) is above 0°. answer() is for the Moon,
+// planets and asteroids (bright, seen in twilight); stars and spots use starAnswer() below (shared with the viewer).
 // Pure functions: the page passes in an altitude function; tests/tonight.test.mjs checks them.
 import { A } from './astro.js';
+import { skyTonight, tonightWords } from '../sky.js';
 
 const DAY = 86400000;
 
@@ -73,4 +75,15 @@ export function answer({ altFn, date, obs, place, fmt, stepMin = 2, _depth = 0 }
   const day = upIntervals(altFn, new Date(w.start.getTime() - 12 * 3600000), new Date(w.end.getTime() + 12 * 3600000), Math.max(stepMin, 5));
   if (day.intervals.length) return { verdict: 'day', head: 'Only in daylight tonight', detail: `From ${place} it is above the horizon only while the Sun is up (night: ${fmt(w.start)} to ${fmt(w.end)}).` };
   return { verdict: 'no', head: 'No: it stays below the horizon tonight from here', detail: `From ${place} it does not rise above the horizon at any time in the day around tonight.` };
+}
+
+// The card for a star or a spot on the sky: the SAME numbers and words as the viewer's
+// "Where to look" box (sky.js skyTonight + tonightWords: dark = Sun below -12°, best = highest
+// while dark, well placed = 20°+, highest = transit). at(Date) -> "HH:MM" (+ day word).
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+export function starAnswer({ ra, dec, lat, lon, date, place, at }) {
+  const st = skyTonight(ra, dec, lat, lon, date), w = tonightWords(st, dec, lat, at);
+  const lead = { yes: 'Yes', low: 'Low tonight', set: 'Not any more tonight', day: 'Not in the dark tonight', polar: 'No dark sky tonight', down: 'No' }[w.kind];
+  const detail = [w.darkText, w.dayText].filter(Boolean).join(' ');
+  return { verdict: w.kind === 'down' ? 'no' : w.kind, head: `${lead}, from ${place}: ${w.bestText}`, detail, st, words: w };
 }

@@ -8,7 +8,7 @@ import { separationArcsec } from '../core/motion.js';
 import { simbadCone, otypeName } from './skymap.js';
 import { BANDS } from './data.js';
 
-const fmtTime = (d) => d ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+const fmtTime = (d) => d ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) : '—';
 const fmtDay = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const row = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`;
@@ -39,7 +39,7 @@ export function observerHTML(ra, dec, now = new Date()) {
   let up = rts.always === 'up' ? 'Never sets from here' : rts.always === 'down' ? 'Never rises from here' : rts.up // up now: this pass (rise already past, transit maybe past too)
     ? `Rose ${fmtTime(rts.rise)} · ${rts.transit < now ? 'was highest' : 'highest'} ${fmtTime(rts.transit)} (${rts.transitAlt.toFixed(0)}°) · sets ${fmtTime(rts.set)}`
     : `Rises ${fmtTime(rts.rise)} · highest ${fmtTime(rts.transit)} (${rts.transitAlt.toFixed(0)}°) · sets ${fmtTime(rts.set)}`;
-  const tonight = vis.hours > 0 ? `Yes: about ${vis.hours.toFixed(1)} h above 20° in the dark, best around ${fmtTime(vis.bestTime)} (${vis.bestAlt.toFixed(0)}°)` : 'Not well placed in the next 24 h (below 20° while it is dark)';
+  const tonight = vis.hours > 0 ? `Yes: about ${vis.hours.toFixed(1)} h above 20° in the dark, best around ${fmtTime(vis.bestTime)} (${vis.bestAlt.toFixed(0)}°)` : 'Not well placed tonight (below 20° while it is dark)';
   return `<dl class="facts">
     ${row('Now', `${aa.alt >= 0 ? 'Above' : 'Below'} the horizon: altitude ${aa.alt.toFixed(1)}°, azimuth ${aa.az.toFixed(1)}° (${compass})`)}
     ${row('Today', up)}

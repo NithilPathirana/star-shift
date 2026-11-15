@@ -8,7 +8,7 @@ import { parseQuery, QueryError, DEFAULT_SETTINGS } from './query.js';
 import { run, buildStacks, measureMotion, resolveTarget, motionMeasurability, motionDetectors, detectorText } from './data.js';
 import { kinematics, tangentialVelocity, toLSR, totalPM } from './kinematics.js';
 import { PRESETS, findPreset } from './presets.js';
-import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight, altAz, riseTransitSet, sunRaDec } from './sky.js';
+import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight, altAz, riseTransitSet, skyTonight, tonightWords, dirWord } from './sky.js';
 import { simbadCone, otypeName, CHANNEL_UM } from './skymap.js';
 import { Sky3D as SkyMap } from './sky3d/index.js'; // 3D celestial sphere (three.js); same interface as the Aladin SkyMap
 import { layersFor, DEFAULT_BANDS, bandLabel, bandName } from './bands.js';
@@ -1011,7 +1011,7 @@ $('insp').addEventListener('click', e => {
 
 /* ---------- observer location (opt-in, kept in memory only) ---------- */
 // alt/az and rise/transit/set come from sky.js (precessed to date, −0.5667° horizon, current pass when up)
-const hm = d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const hm = d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); // 24-hour HH:MM, as on the planetarium
 const dayTag = d => { const a = new Date(); a.setHours(0, 0, 0, 0); const b = new Date(d); b.setHours(0, 0, 0, 0); const k = Math.round((b - a) / 864e5); return k === 0 ? 'today' : k === 1 ? 'tomorrow' : k === -1 ? 'yesterday' : b.toLocaleDateString(); };
 const PLACES = { london: [51.507, -0.128], paris: [48.857, 2.352], 'new york': [40.713, -74.006], 'los angeles': [34.052, -118.244], tokyo: [35.676, 139.650],
   sydney: [-33.869, 151.209], colombo: [6.927, 79.861], kandy: [7.291, 80.636], galle: [6.053, 80.221], jaffna: [9.661, 80.026], wennappuwa: [7.349, 79.851],
@@ -1055,7 +1055,7 @@ function renderObs() {
     <div>${row('Altitude / azimuth now', `${alt.toFixed(1)}° / ${az.toFixed(1)}°`, 'calc')}
     ${rs.always === 'up' ? row('Rise / set', 'Never sets from here', 'calc') : rs.always === 'down' ? row('Rise / set', 'Never rises from here', 'calc')
       : row(rs.up ? 'Rose' : 'Rise', when(rs.rise), 'calc') + row(rs.up && rs.transit < now ? 'Was highest (transit)' : 'Highest (transit)', when(rs.transit), 'calc') + row('Set', when(rs.set), 'calc')}
-    ${row('Dark-sky viewing (next 24 h)', vis.hours > 0 ? `${vis.hours.toFixed(1)} h above 20°, best ${when(vis.bestTime)} (${vis.bestAlt.toFixed(0)}°)` : 'Not above 20° while it is dark', 'calc')}</div>
+    ${row('Dark-sky viewing tonight', vis.hours > 0 ? `${vis.hours.toFixed(1)} h above 20°, best ${when(vis.bestTime)} (${vis.bestAlt.toFixed(0)}°)` : 'Not above 20° while it is dark', 'calc')}</div>
     <p class="obs-msg">Times in your browser's time zone. Worked out from your position and the clock; no internet needed.</p>`;
   $('clrLoc').onclick = () => { obs.loc = null; renderObs(); Snd.play('click'); };
   obsTimer = setInterval(renderObs, 30000);
@@ -1066,28 +1066,20 @@ function renderObs() {
    then rise / highest / set, from Colombo by default or the place set under Observer (in memory only).
    Same maths as the Observer rows (sky.js). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
 const LOOK_HOME = { lat: 6.927, lon: 79.861, label: 'Colombo' };
-const DIR8 = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
-const dirWord = az => DIR8[Math.round((((az % 360) + 360) % 360) / 45) % 8];
 const lookPlace = () => obs.loc || LOOK_HOME;
 const lookFrom = () => !obs.loc ? 'From Colombo' : obs.loc.label === 'Your device location' ? 'From where you are' : obs.loc.label === 'Typed position' ? 'From your place' : `From ${obs.loc.label}`;
-const whereIn = (alt, az) => alt > 85 ? 'almost straight overhead' : `in the ${dirWord(az)}`;
-// { head, day }: head = now (+ best time tonight), day = rise / highest / set
+// { head, day }: head = now (+ best time tonight), day = rise / highest / set.
+// "Tonight" numbers and words come from sky.js skyTonight/tonightWords, the same ones the planetarium's card uses.
 function whereToLook(ra, dec, now = new Date()) {
   const { lat, lon } = lookPlace(), from = lookFrom();
   const at = d => `${hm(d)}${dayTag(d) === 'today' ? '' : ' ' + dayTag(d)}`;
-  const { alt, az } = altAz(ra, dec, lat, lon, now), rs = riseTransitSet(ra, dec, lat, lon, now);
-  const s = sunRaDec(now), sunUp = altAz(s.ra, s.dec, lat, lon, now, { j2000: false }).alt > -6;
-  const vis = visibleTonight(ra, dec, lat, lon, now);
-  const best = vis.bestTime ? `best tonight at ${hm(vis.bestTime)}, ${vis.bestAlt.toFixed(0)}° up ${whereIn(vis.bestAlt, altAz(ra, dec, lat, lon, vis.bestTime).az)}`
-    : 'not well placed in the dark tonight (under 20° up while it is dark)';
-  const tDir = rs.transitAlt > 85 ? ', almost straight overhead' : ` in the ${dec < lat ? 'south' : 'north'}`;
-  if (rs.always === 'down') return { head: `${from}: it never rises above the horizon.`, day: '' };
+  const { alt, az } = altAz(ra, dec, lat, lon, now), st = skyTonight(ra, dec, lat, lon, now), w = tonightWords(st, dec, lat, at);
+  if (w.kind === 'down') return { head: `${from}: ${w.bestText}.`, day: '' };
+  const best = (w.kind === 'low' ? 'low tonight: ' : '') + w.bestText, darkNow = st.dark?.inDark;
   const head = alt > 0
-    ? `${from} now: look ${dirWord(az)} (${az.toFixed(0)}°), ${alt.toFixed(0)}° up.${sunUp ? ` The Sun is up, so ${best}.` : ''}`
+    ? `${from} now: look ${dirWord(az)} (${az.toFixed(0)}°), ${alt.toFixed(0)}° up.${darkNow ? '' : ` It is not dark yet, so ${best}.`}`
     : `${from}: below the horizon now; ${best}.`;
-  const day = rs.always === 'up' ? `It never sets from here; highest at ${at(rs.transit)}, ${rs.transitAlt.toFixed(0)}° up${tDir}.`
-    : `${rs.up ? 'Rose' : 'Rises'} ${at(rs.rise)}, ${rs.up && rs.transit < now ? 'was highest' : 'highest'} ${at(rs.transit)} at ${rs.transitAlt.toFixed(0)}°${tDir}, sets ${at(rs.set)}.`;
-  return { head, day };
+  return { head, day: w.dayText };
 }
 // short form for hover readouts (cheap: no rise/set search)
 function lookShort(ra, dec) {
@@ -1103,7 +1095,9 @@ let lookTimer = 0;
 function renderLook() {
   clearInterval(lookTimer);
   const s = M.sel; if (s && $('cdLook')) $('cdLook').innerHTML = lookHTML(s.ra, s.dec);
-  if (V.grid && $('vLook')) $('vLook').innerHTML = lookHTML(V.grid.ra0, V.grid.dec0);
+  // a moving star: its position now (as on the map and the planetarium), not the time-lapse centre
+  const vt = V.target && (V.target.pmra || V.target.pmdec) ? propagate(V.target, NOW_MJD) : V.grid && { ra: V.grid.ra0, dec: V.grid.dec0 };
+  if (vt && $('vLook')) $('vLook').innerHTML = lookHTML(vt.ra, vt.dec);
   lookTimer = setInterval(renderLook, 60000);
 }
 // "Change place": switch the Observer section on and put the cursor in its place field

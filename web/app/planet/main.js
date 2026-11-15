@@ -9,7 +9,8 @@ import { OBSERVATORIES, NASA_CENTRES, DEFAULT_PLACE, ALL_PRESETS, parsePlace, fm
 import { smallBodies, onProvidersChanged } from './extras.js';
 import { initAir, updateAir } from './atmo-ui.js';
 import './jpl-small.js'; // registers the JPL Horizons provider for Ceres, Pallas, Juno and Vesta
-import { answer as tonightAnswer } from './tonight.js';
+import { answer as tonightAnswer, starAnswer } from './tonight.js';
+import { propagate } from '../../core/motion.js';
 import { findPreset } from '../presets.js';
 import { resolveName } from '../../core/resolve.js';
 
@@ -197,7 +198,8 @@ function renderSel() {
   const src = sel.kind === 'small' ? TAG.jpl : TAG.c;
   let h = group('Now from here', src, row('Altitude', `${sel.alt.toFixed(1)}°`) + row('Azimuth', `${sel.az.toFixed(1)}° ${compass(sel.az)}`));
   let pass = null, p = '';
-  try { pass = sel.kind === 'small' ? passTimes({ kind: 'point', ra: sel.ra, dec: sel.dec }, t, obs) : passTimes(sel, t, obs); } catch { pass = null; }
+  // stars and spots: rise / highest / set from the shared sky.js maths (same numbers as the viewer's "Where to look")
+  try { pass = isBody ? (sel.kind === 'small' ? passTimes({ kind: 'point', ra: sel.ra, dec: sel.dec }, t, obs) : passTimes(sel, t, obs)) : starTonight(sel, t).st.rts; } catch { pass = null; }
   if (!pass) p = row('Rise', dash('Could not be computed')) + row('Highest', dash('Could not be computed')) + row('Set', dash('Could not be computed'));
   else if (pass.always) {
     const w = pass.always === 'up' ? 'Never sets from here' : 'Never rises from here';
@@ -220,7 +222,9 @@ function renderSel() {
   else if (Number.isFinite(sel.mag)) o += row('Brightness', `mag ${sel.mag.toFixed(sel.kind === 'star' ? 2 : 1)}`);
   else o += row('Brightness', dash('Not given by the source'));
   if (sel.kind === 'moon' && Number.isFinite(sel.phase)) o += row('Lit', `${Math.round(sel.phase * 100)}%`);
-  o += row('RA (J2000)', `<span class="num">${fmtRA(sel.ra)}</span>`) + row('Dec (J2000)', `<span class="num">${fmtDec(sel.dec)}</span>`);
+  // RA/Dec are Expert detail (as on the viewer); Simple says where they are
+  o += `<dt class="x-only">RA (J2000)</dt><dd class="x-only"><span class="num">${fmtRA(sel.ra)}</span></dd><dt class="x-only">Dec (J2000)</dt><dd class="x-only"><span class="num">${fmtDec(sel.dec)}</span></dd>`
+    + `<dt class="s-only"></dt><dd class="s-only pl-note">Sky coordinates (RA, Dec) are in Expert mode.</dd>`;
   h += group(sel.kind === 'point' ? 'This spot' : 'Position and size', otag, o);
   rows.innerHTML = h; rows.hidden = false; // rows is a <div> holding grouped <dl>s
   if (isBody) { // the time-lapse shows one fixed patch; Solar System objects move out of it
@@ -233,6 +237,17 @@ function renderSel() {
   S.dirty = true;
 }
 /* ---------- "Can I see it tonight?" answer card (top of the details panel) ---------- */
+// Stars and spots: tonight's numbers and words from sky.js via starAnswer (the viewer uses the same), cached per minute.
+let stKey = '', stVal = null;
+function starTonight(sel, t) {
+  const key = `${sel.ra}|${sel.dec}|${S.place.lat}|${S.place.lon}|${S.place.id}|${Math.floor(t.getTime() / 60000)}`;
+  if (key !== stKey) {
+    const at = (d) => { const w = dayWord(d, t); return `${fmtLocal(d, false)}${w === 'today' ? '' : ' ' + w}`; };
+    const ans = starAnswer({ ra: sel.ra, dec: sel.dec, lat: S.place.lat, lon: S.place.lon, date: t, place: S.place.id === 'me' ? 'your location' : S.place.name, at });
+    stKey = key; stVal = { st: ans.st, ans };
+  }
+  return stVal;
+}
 let ansKey = '', ansMsg = null;
 function showAnswer(head, detail, verdict) {
   const el = $('answer'); el.hidden = !head; if (!head) return;
@@ -245,6 +260,11 @@ function renderAnswer() {
   const t = curTime(), key = `${sel.key || sel.name}|${sel.ra}|${sel.dec}|${S.place.id}|${S.place.lat}|${S.place.lon}|${Math.floor(t.getTime() / 300000)}`;
   if (key === ansKey) return; ansKey = key;
   const body = sel.kind === 'moon' || sel.kind === 'planet';
+  if (sel.kind === 'star' || sel.kind === 'point') { // one definition with the viewer (sky.js): dark = Sun below -12°, best = highest while dark
+    try { const a = starTonight(sel, t).ans; showAnswer(a.head, a.detail + (S.place.tz ? '' : ' Times are local solar time.'), a.verdict); }
+    catch { showAnswer('Could not work out tonight for this place', '', 'msg'); }
+    return;
+  }
   const altFn = body ? (d) => bodies(d, obs).find(b => b.key === sel.key)?.alt : (d) => starAltAz(sel.ra, sel.dec, d, obs).alt;
   try {
     const a = tonightAnswer({ altFn, date: t, obs, place: S.place.id === 'me' ? 'your location' : S.place.name, fmt: (d) => fmtLocal(d, false), stepMin: body ? 6 : 3 });
@@ -259,7 +279,8 @@ async function openFromQuery() {
     const body = S.bodies.find(b => b.name.toLowerCase() === q.toLowerCase());
     if (body) { select(body); face(S.sel); return; }
     const p = findPreset(q);
-    if (p) t = { name: p.target.name, ra: p.target.ra, dec: p.target.dec, plx: p.target.plx };
+    // a moving demo star at its mid-Nov 2026 position (MJD 61360), exactly where the viewer and map put it
+    if (p) { const n = propagate(p.target, 61360); t = { name: p.target.name, ra: n.ra, dec: n.dec, plx: p.target.plx }; }
     else {
       ansMsg = { head: `Looking up “${q}”…`, detail: 'Asking SIMBAD for its position.' }; renderAnswer();
       try { const r = await resolveName(q, { signal: AbortSignal.timeout(15000) }); if (r && Number.isFinite(r.ra)) t = { name: r.name, ra: r.ra, dec: r.dec }; } catch { /* below */ }
