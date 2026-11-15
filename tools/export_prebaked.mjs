@@ -36,7 +36,7 @@ import { fileURLToPath } from 'node:url';
 import { handle } from '../proxy/worker.js';
 import { diskCache } from '../server/server.mjs';
 import { run, buildStacks, seasons } from '../web/app/data.js';
-import { PRESETS } from '../web/app/presets.js';
+import { PRESETS, SAVED } from '../web/app/presets.js';
 import { DEFAULT_SETTINGS } from '../web/app/query.js';
 import { listImages, listImagesSIA, decodeCutout, setCompleteMode, fetchCutout } from '../web/core/irsa.js';
 import { pickImages, CUTOUT_DEG } from '../web/app/spectral/logic.js';
@@ -66,6 +66,9 @@ const mib = (b) => +(b / 1048576).toFixed(2);
 // Values that live in browser-only modules (ui.js), read from their source so a change there is followed.
 const uiSrc = readFileSync(join(ROOT, 'web', 'app', 'ui.js'), 'utf8');
 const ONLY_NEO = process.argv.includes('--only=neo');
+// --add=teegarden,vega: (re)export those saved targets (presets.js SAVED) only, keeping every other entry and file.
+// Viewer images, the map lookups and Spot's Gaia + SIMBAD field lists; no Spectrum cutouts or JPL (size).
+const ADD = (process.argv.find(a => a.startsWith('--add=')) || '').slice(6).split(',').filter(Boolean);
 const grab = (src, re, what) => { const m = re.exec(src); if (!m) throw new Error(`Could not read ${what}`); return Number(m[1]); };
 const NOW_MJD = grab(uiSrc, /const NOW_MJD = (\d+(?:\.\d+)?)/, 'NOW_MJD from ui.js');
 // The Asteroid page's example field (neo/sb-ident.js NEO_DEFAULT_VIEW, used by neo/spotter.js).
@@ -243,7 +246,9 @@ async function asteroidPage(rec) {
 /* ------------------------------------------------------------------ main */
 console.log(`export_prebaked: ${PRESETS.length} targets, fov ${SETTINGS.fov}′, max ${SETTINGS.max}, band ${SETTINGS.band}; relay code + disk cache ${CACHE_DIR}`);
 const summary = {};
-for (const p of ONLY_NEO ? [] : PRESETS) {
+const LIST = ONLY_NEO ? [] : ADD.length ? SAVED.filter(s => ADD.includes(s.key)) : PRESETS;
+if (ADD.length && LIST.length !== ADD.length) throw new Error(`--add: unknown key in ${ADD.join(',')} (presets.js SAVED)`);
+for (const p of LIST) {
   const t0 = Date.now();
   const rec = recorder(p.key);
   const pin = propagate(p.target, NOW_MJD); // ui.js TARGETS: the pin sits at the star's "now" place
@@ -257,19 +262,25 @@ for (const p of ONLY_NEO ? [] : PRESETS) {
   const other = await otherSource(frames, plan.grid, rec);
   // Requests a real browser run made that the Node replay above does not predict (tools/prebake_extra.json).
   for (const url of EXTRA[p.key] || []) await rec(url).then(r => r.arrayBuffer?.()).catch(e => console.log(`  ${p.label} extra request: ${e.message}`));
+  if (ADD.length) { // saved target: Spot's Gaia + SIMBAD field lists only (no JPL, no Spectrum page)
+    const cat = await fetchFieldStars({ centre: fieldCentre(plan.grid), base: BASE, fetchFn: rec }).catch(e => ({ gaia: { ok: false, error: e.message }, simbad: { ok: false, error: e.message } }));
+    summary[p.key] = { label: p.label, saved: true, planned: plan.planned, frames: frames.length, failed, otherSourcePx: other?.px ?? null, spot: { starCheck: { gaia: cat.gaia.ok, simbad: cat.simbad.ok } } };
+    console.log(`${p.label}: ${frames.length}/${plan.planned} images, ${failed} failed; Spot Gaia ${cat.gaia.ok} SIMBAD ${cat.simbad.ok}; ${Math.round((Date.now() - t0) / 1000)} s`);
+    continue;
+  }
   const sp = await spot(p, frames, plan.grid, rec);
   const spec = await spectrum(p, rec).catch(e => ({ error: e.message }));
   summary[p.key] = { label: p.label, planned: plan.planned, frames: frames.length, failed, otherSourcePx: other?.px ?? null, spot: sp, spectrum: spec };
   console.log(`${p.label}: ${frames.length}/${plan.planned} images, ${failed} failed; Spot JPL ${sp.asteroidCheck ? sp.asteroidCheck.seasons.map(s => s.ok ? 'ok' : 'missing').join('/') : sp.skipped}; Spectrum ${spec.error || `${spec.ok}/${spec.picked} cutouts`}; ${Math.round((Date.now() - t0) / 1000)} s`);
 }
-const neo = await asteroidPage(recorder('neo'));
-console.log(`Asteroid page (${NEO_VIEW.ra}, ${NEO_VIEW.dec}, ${NEO_VIEW.fov}°): ${neo.filter(r => r.ok).length}/${neo.length} JPL answers`);
+const neo = ADD.length ? null : await asteroidPage(recorder('neo'));
+if (neo) console.log(`Asteroid page (${NEO_VIEW.ra}, ${NEO_VIEW.dec}, ${NEO_VIEW.fov}°): ${neo.filter(r => r.ok).length}/${neo.length} JPL answers`);
 
 /* ------------------------------------------------------------------ write web/prebaked/ */
 // A JPL answer saved by an earlier export is kept when JPL did not answer this time (same request,
 // same prediction; JPL often stops answering at night).
 let carried = 0;
-if (!ONLY_NEO) try {
+if (!ONLY_NEO && !ADD.length) try {
   const old = JSON.parse(readFileSync(join(OUT, 'manifest.json'), 'utf8'));
   for (const [key, e] of Object.entries(old.entries || {})) {
     if (e.kind !== 'jpl-sb_ident' || captures.has(key)) continue;
@@ -281,10 +292,15 @@ if (!ONLY_NEO) try {
 } catch { /* first export */ }
 if (carried) console.log(`Kept ${carried} JPL answers from the earlier export (JPL did not answer them now).`);
 // --only=neo: keep every other owner's entries and files; replace web/prebaked/neo/ only.
-const old = ONLY_NEO ? JSON.parse(readFileSync(join(OUT, 'manifest.json'), 'utf8')) : null;
-await rm(ONLY_NEO ? join(OUT, 'neo') : OUT, { recursive: true, force: true });
+// --add: keep everything except the added owners' entries and folders.
+const replaced = ONLY_NEO ? ['neo'] : ADD.filter(k => summary[k]?.frames > 0); // a target IRSA did not answer keeps its old files
+if (ADD.length) { for (const [key, c] of captures) if (!replaced.includes(c.owner)) captures.delete(key); for (const k of ADD) if (!replaced.includes(k)) delete summary[k]; }
+const old = replaced.length ? JSON.parse(readFileSync(join(OUT, 'manifest.json'), 'utf8')) : null;
+if (replaced.length) for (const o of replaced) await rm(join(OUT, o), { recursive: true, force: true });
+else await rm(OUT, { recursive: true, force: true });
+if (ADD.length && Object.keys(summary).length < ADD.length) console.log(`Not exported (no images): ${ADD.filter(k => !summary[k]?.frames).join(', ')}`);
 const entries = {}, per = {};
-if (old) for (const [key, e] of Object.entries(old.entries || {})) if (!e.file.startsWith('neo/')) entries[key] = e;
+if (old) for (const [key, e] of Object.entries(old.entries || {})) if (!replaced.includes(e.file.split('/')[0])) entries[key] = e;
 for (const [key, c] of [...captures].sort((a, b) => a[0].localeCompare(b[0]))) {
   const file = `${c.owner}/${sha1(key).slice(0, 16)}${c.ext}`;
   await mkdir(dirname(join(OUT, file)), { recursive: true });
@@ -294,7 +310,11 @@ for (const [key, c] of [...captures].sort((a, b) => a[0].localeCompare(b[0]))) {
   s.files++; s.bytes += c.bytes.length; s.kinds[c.kind] = (s.kinds[c.kind] || 0) + 1;
 }
 const jplMissing = jplLog.filter(r => !r.ok).map(({ owner, key, status, error }) => ({ owner, key, status: status ?? null, error: error ?? null }));
-const manifest = old ? {
+const manifest = old && ADD.length ? {
+  ...old,
+  entries: undefined,
+  savedTargets: { ...(old.savedTargets || {}), ...Object.fromEntries(Object.entries(summary).map(([k, v]) => [k, { ...v, files: per[k]?.files ?? 0, mib: mib(per[k]?.bytes ?? 0), kinds: per[k]?.kinds ?? {}, exported: new Date().toISOString(), source: 'IRSA SPHEREx SIA + TAP lists and cutouts, SIMBAD (Harvard mirror) and Gaia DR3 cones, through the relay (proxy/worker.js)' }])) },
+} : old ? {
   ...old,
   entries: undefined,
   asteroidPage: { view: NEO_VIEW, dates: NEO_DATES, results: neo, files: per.neo?.files ?? 0, exported: new Date().toISOString() },
@@ -317,4 +337,4 @@ if (old) {
 await writeFile(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 1) + '\n');
 console.log('\nPer owner (files, MiB):');
 for (const [k, s] of Object.entries(per)) console.log(`  ${k.padEnd(11)} ${String(s.files).padStart(4)} files  ${mib(s.bytes).toFixed(2).padStart(6)} MiB  ${JSON.stringify(s.kinds)}`);
-console.log(`Total: ${manifest.totals.files} files (with manifest), ${manifest.totals.mib} MiB; JPL ${manifest.jpl.answered}/${manifest.jpl.asked} answered.`);
+console.log(`Total: ${manifest.totals.files} files (with manifest), ${manifest.totals.mib} MiB; JPL ${manifest.jpl?.answered}/${manifest.jpl?.asked} answered.`);

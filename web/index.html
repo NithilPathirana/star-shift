@@ -19,6 +19,12 @@
 <link rel="stylesheet" href="styles/notebook.css">
 <link rel="stylesheet" href="styles/access.css?v=1"><!-- colours and accessibility (app/access.js): keep this the LAST stylesheet -->
 <script src="app/access.js?v=1"></script><!-- classic script on purpose: applies a saved palette before first paint -->
+<style>/* IRSA outage: a calm line, not an alarm (ui.js autoRetry) */
+#stError.calm h2::before{display:none}
+#errAuto{font-variant-numeric:tabular-nums;color:var(--stage-text)}
+#openSaved{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px}
+#openSaved>span{flex-basis:100%;font-size:.8125rem;color:var(--stage-muted)}
+</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="fx"></defs></svg>
@@ -133,10 +139,12 @@
       <div class="loading-thin" id="thin" hidden><i id="thinBar"></i></div>
 
       <div class="state loader2" id="stLoading" hidden><div id="scanLoader"></div></div>
-      <div class="state error" id="stError" hidden role="alert">
-        <div><h2>The NASA archive isn't answering</h2>
+      <div class="state error" id="stError" hidden role="status"><!-- archive outage: a calm line + quiet retry (ui.js autoRetry) -->
+        <div><h2 id="errHead">The NASA archive isn't answering</h2>
           <p id="errTxt">Some images arrived and are kept. Retry fetches only the missing ones.</p>
-          <div class="row"><button class="key primary" id="retry">Retry</button><button class="key" id="useLoaded">Use the images loaded</button><button class="key" id="openSaved" hidden>Open a saved target: Barnard's Star →</button></div></div>
+          <p id="errAuto" hidden aria-live="off"></p>
+          <div class="row"><button class="key primary" id="retry">Retry</button><button class="key" id="useLoaded">Use the images loaded</button></div>
+          <div class="row" id="openSaved" hidden><span id="openSavedLbl">Or open a saved target (stored here, no archive needed):</span></div></div>
       </div>
       <div class="state" id="stEmpty" hidden>
         <div><h2>No SPHEREx images cover this spot</h2>

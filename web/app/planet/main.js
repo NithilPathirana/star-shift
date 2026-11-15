@@ -12,7 +12,6 @@ import './jpl-small.js'; // registers the JPL Horizons provider for Ceres, Palla
 import { answer as tonightAnswer, starAnswer } from './tonight.js';
 import { propagate } from '../../core/motion.js';
 import { findPreset } from '../presets.js';
-import { DISTANCES } from '../distances.js'; // cited Gaia DR3 parallaxes (tools/fetch_distances.mjs)
 import { seeItWith } from '../seeit.js'; // can you actually see it (V magnitude), apart from 'is it up'
 import { resolveName } from '../../core/resolve.js';
 
@@ -223,7 +222,7 @@ function renderSel() {
   let o = '';
   if (sel.kind === 'moon') o += row('Distance', `${Math.round(sel.distAU * 149597870.7).toLocaleString('en-GB')} km`);
   else if (isBody) o += row('Distance', Number.isFinite(sel.distAU) ? `${sel.distAU.toFixed(3)} AU` : dash('Not given by the source'));
-  else if (sel.kind === 'star' && sel.plx > 0) o += row('Distance', fmtDistance(sel.plx) + (sel.plxCite ? `<span class="x-only quiet"> · ${sel.plxCite}</span>` : '')); // built-in target: catalogue parallax (presets.js), or the cited Gaia DR3 one (distances.js)
+  else if (sel.kind === 'star' && sel.plx > 0) o += row('Distance', fmtDistance(sel.plx)); // built-in target: catalogue parallax (presets.js)
   else if (sel.kind === 'star') o += row('Distance', dash(sel.fromQuery ? 'Not looked up on this page' : 'Not in this star list (positions and brightness only)'));
   if (sel.kind === 'point') o += row('Brightness', dash('A spot on the sky, not an object'));
   else if (Number.isFinite(sel.mag)) o += row('Brightness', `mag ${sel.mag.toFixed(sel.kind === 'star' ? 2 : 1)}`);
@@ -304,7 +303,7 @@ async function openFromQuery() {
     if (body) { select(body); face(S.sel); return; }
     const p = findPreset(q);
     // a moving demo star at its mid-Nov 2026 position (MJD 61360), exactly where the viewer and map put it
-    if (p) { const n = propagate(p.target, 61360), dd = DISTANCES[p.key]; t = { name: p.target.name, ra: n.ra, dec: n.dec, plx: dd ? dd.plx : p.target.plx, plxCite: dd?.cite, vis: p.vis ?? null }; }
+    if (p) { const n = propagate(p.target, 61360); t = { name: p.target.name, ra: n.ra, dec: n.dec, plx: p.target.plx, vis: p.vis ?? null }; }
     else {
       ansMsg = { head: `Looking up “${q}”…`, detail: 'Asking SIMBAD for its position.' }; renderAnswer();
       try { const r = await resolveName(q, { signal: AbortSignal.timeout(15000) }); if (r && Number.isFinite(r.ra)) t = { name: r.name, ra: r.ra, dec: r.dec, vis: Number.isFinite(r.vmag) ? { v: r.vmag, source: 'SIMBAD' } : null }; } catch { /* below */ }
@@ -316,7 +315,7 @@ async function openFromQuery() {
   if (!t) return;
   ansMsg = null;
   if (S.sel) return; // the user already picked something while we were looking it up
-  select({ kind: 'star', key: 'q:' + t.ra.toFixed(5) + ',' + t.dec.toFixed(5), name: t.name, ra: t.ra, dec: t.dec, mag: null, fromQuery: true, query: q || null, plx: t.plx ?? null, plxCite: t.plxCite || null, vis: t.vis });
+  select({ kind: 'star', key: 'q:' + t.ra.toFixed(5) + ',' + t.dec.toFixed(5), name: t.name, ra: t.ra, dec: t.dec, mag: null, fromQuery: true, query: q || null, plx: t.plx ?? null, vis: t.vis });
   face(S.sel);
   if (innerWidth < 700) toggleInsp(true); // phone: the answer lives in the details sheet, so open it once
 }

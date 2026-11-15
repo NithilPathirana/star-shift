@@ -28,7 +28,28 @@ export const PRESETS = [
     holdBand: [5, 6], holdNote: 'its centre is blanked in every band; this one has the most images' },
 ];
 
+const norm = (name) => String(name).trim().toLowerCase().replace(/\s+/g, ' ').replace(/[’`]/g, "'");
 export function findPreset(name) {
-  const n = String(name).trim().toLowerCase().replace(/\s+/g, ' ').replace(/[’`]/g, "'");
+  const n = norm(name);
   return PRESETS.find(p => p.key === n || p.label.toLowerCase() === n || p.aliases.includes(n)) || null;
+}
+
+// Saved targets beyond NASA's five (Sun 15 Nov, IRSA outage): built-in SIMBAD values (Harvard mirror,
+// fetched 15 Nov 2026; ICRS, epoch J2000) so the name never needs SIMBAD, and their viewer images are
+// in web/prebaked/ (tools/export_prebaked.mjs --add=…). Not presets: no ring, Proof or quick pick.
+export const SAVED = [
+  { key: 'teegarden', label: "Teegarden's Star", aliases: ["teegarden's star", 'teegardens star', 'teegarden star', 'teegarden', 'so 0253+1652', 'gaia 0253+1652'],
+    target: { name: "Teegarden's Star", ra: 43.253715805170415, dec: 16.881286719482496, pmra: 3429.083, pmdec: -3805.541, plx: 260.9884, rv: 63, epoch: 2000, otype: 'LM*', vmag: 15.14, source: 'SIMBAD' } },
+  { key: 'proxima', label: 'Proxima Centauri', aliases: ['proxima centauri', 'proxima', 'proxima cen', 'alf cen c', 'gj 551', 'v645 cen'],
+    target: { name: 'Proxima Centauri', ra: 217.42894222160578, dec: -62.67949018907555, pmra: -3781.741, pmdec: 769.465, plx: 768.0665, rv: -20.578199, epoch: 2000, otype: 'PM*', vmag: 11.13, source: 'SIMBAD' } },
+  { key: 'vega', label: 'Vega', aliases: ['vega', 'alf lyr', 'alpha lyrae', 'α lyr'],
+    target: { name: 'Vega', ra: 279.234734787025, dec: 38.783688956244, pmra: 200.94, pmdec: 286.23, plx: 130.23, rv: -13.5, epoch: 2000, otype: 'dS*', vmag: 0.03, source: 'SIMBAD' } },
+  { key: 'sirius', label: 'Sirius', aliases: ['sirius', 'alf cma', 'alpha canis majoris', 'α cma'],
+    target: { name: 'Sirius', ra: 101.28715533333335, dec: -16.71611586111111, pmra: -546.01, pmdec: -1223.07, plx: 379.21, rv: -5.5, epoch: 2000, otype: 'SB*', vmag: -1.46, source: 'SIMBAD' } },
+  { key: 'polaris', label: 'Polaris', aliases: ['polaris', 'alf umi', 'alpha ursae minoris', 'north star', 'α umi'],
+    target: { name: 'Polaris', ra: 37.954560670189856, dec: 89.26410896994187, pmra: 44.48, pmdec: -11.85, plx: 7.54, rv: -16.42, epoch: 2000, otype: 'cC*', vmag: 2.02, source: 'SIMBAD' } },
+];
+export function findSaved(name) {
+  const n = norm(name);
+  return SAVED.find(p => p.key === n || p.label.toLowerCase() === n || p.aliases.includes(n)) || null;
 }

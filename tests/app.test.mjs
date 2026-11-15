@@ -146,7 +146,9 @@ test('presets cover NASA targets and aliases', () => {
 test('name lookup: presets offline, SIMBAD failure and not-found are friendly', async () => {
   const t = await resolveTarget({ type: 'name', name: 'wise 0855' }, { fetchFn: () => { throw new Error('offline'); } });
   assert.equal(t.presetKey, 'wise-0855');
-  await assert.rejects(resolveTarget({ type: 'name', name: 'Sirius' }, { fetchFn: async () => { throw new TypeError('fetch failed'); } }), /SIMBAD/);
+  await assert.rejects(resolveTarget({ type: 'name', name: 'Altair' }, { fetchFn: async () => { throw new TypeError('fetch failed'); } }), /SIMBAD/);
+  const s = await resolveTarget({ type: 'name', name: 'Sirius' }, { fetchFn: () => { throw new Error('offline'); } }); // a saved target: built-in values
+  assert.equal(s.savedKey, 'sirius');
   await assert.rejects(resolveTarget({ type: 'name', name: 'Nope' }, { fetchFn: async () => new Response('main_id,ra,dec,pmra,pmdec,plx_value,otype\n') }), /No star called/);
 });
 

@@ -8,7 +8,7 @@ import { parseQuery, QueryError, DEFAULT_SETTINGS } from './query.js';
 import { run, planImages, loadFrame, buildStacks, measureMotion, resolveTarget, motionMeasurability, motionDetectors, detectorText } from './data.js';
 import { seasonBounds, seasonAt, groupInto, seasonMonths } from './seasons.js';
 import { kinematics, tangentialVelocity, toLSR, totalPM } from './kinematics.js';
-import { PRESETS, findPreset } from './presets.js';
+import { PRESETS, SAVED, findPreset } from './presets.js';
 import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight, altAz, riseTransitSet, skyTonight, tonightWords, dirWord } from './sky.js';
 import { simbadCone, otypeName, CHANNEL_UM } from './skymap.js';
 import { Sky3D as SkyMap } from './sky3d/index.js'; // 3D celestial sphere (three.js); same interface as the Aladin SkyMap
@@ -30,7 +30,6 @@ import { diffImage, diffStar, diffCaption, drawDiff, diffLegend } from './diffvi
 import { CLARITY_KEY, readClarity } from './prefs.js'; // Clarity defaults (sounds off)
 import './story.js'; // b1: first-screen story on the cold-open map (story.css)
 import { fitPlaceholder, surpriseTarget } from './picktips.js'; // quick-pick tips, search placeholder, "Surprise me"
-import { DISTANCES } from './distances.js'; // cited Gaia DR3 parallaxes (tools/fetch_distances.mjs)
 import { motionVerdict, paDelta } from './proof/logic.js'; // the Proof page's verdict rule, for the result plate
 import { groupOfDet, groupByDets, centreMasked, bestGroup, counterText, plannedIndexOf, resultState, storyCaption, shareParams, verdictClass, VIEW_MODES, earlyBlinkReady, heldFitText, groupById } from './viewerbits.js';
 
@@ -731,10 +730,36 @@ function leaveLoader(quick) {
   ldLeaving = { scan, t: setTimeout(() => { ldLeaving = null; L.hidden = true; scan.destroy(); }, wait) };
   return wait; // callers start playback after this, so the first images aren't hidden behind the exit clip
 }
+/* Archive outage (IRSA 502/503 on and off, Sun 15 Nov): no alarm, a calm line and a quiet background retry
+   after 20 s, 40 s, 80 s, then every 160 s; when the image list answers, the load starts again by itself.
+   "Retry now" any time; meanwhile every saved target opens from web/prebaked/ (#openSaved).
+   AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+const AUTO = { t: 0, tick: 0, n: 0, at: 0 }; let autoLoading = false;
+function autoStop() { clearTimeout(AUTO.t); clearInterval(AUTO.tick); AUTO.t = AUTO.tick = 0; $('errAuto').hidden = true; }
+function calmHead(kind) { // 'irsa' | 'simbad' | null (any other error: the old heading)
+  $('errHead').textContent = kind === 'irsa' ? "NASA's image archive (IRSA) is busy right now" : kind === 'simbad' ? 'The star-name service (SIMBAD) is busy right now' : "The NASA archive isn't answering";
+  $('stError').classList.toggle('calm', !!kind); $('retry').textContent = kind ? 'Retry now' : 'Retry';
+}
+function autoRetry(ctl) {
+  autoStop();
+  const wait = Math.min(160, 20 * 2 ** AUTO.n) * 1000; AUTO.at = performance.now() + wait;
+  const show = () => { const s = Math.ceil((AUTO.at - performance.now()) / 1000); $('errAuto').textContent = s > 0 ? `Trying again in ${s} s…` : 'Trying again…'; };
+  $('errAuto').hidden = false; show(); AUTO.tick = setInterval(show, 1000);
+  AUTO.t = setTimeout(async () => {
+    clearInterval(AUTO.tick); AUTO.tick = 0; show();
+    let ok = false; // a quiet probe: the image list only; the loader shows again only once it answers
+    try { const tg = V.target || await resolveTarget(V.query, { signal: ctl.signal }); await planImages(tg, SETTINGS, { base: BASE, signal: ctl.signal }); ok = true; } catch { /* still busy */ }
+    if (V.ctl !== ctl || V.status !== 'error' || $('stError').hidden) return;
+    if (scene !== 'viewer') { autoStop(); return; } // back on the map: the viewer asks again when reopened
+    AUTO.n++;
+    if (ok) { autoLoading = true; load(V.query, V.name); } else autoRetry(ctl);
+  }, wait);
+}
 // showState(null) leaves #stLoading alone so leaveLoader() can fade it out
 function showState(id) { ['stLoading', 'stError', 'stEmpty'].forEach(x => { if (id === null && x === 'stLoading') return; $(x).hidden = x !== id; }); if (id && id !== 'stLoading') { V.scan?.destroy(); V.scan = null; }
   if (id === 'stError' || id === 'stEmpty') updatePlate(); // A9: no "Measuring motion… 0/…" under the error
-  $('openSaved').hidden = !(id === 'stError' && !holdPreset()); } // A9: a saved (prebaked) target always opens
+  if (id !== 'stError') autoStop();
+  savedRow(id === 'stError'); } // A9: a saved (prebaked) target always opens
 let arriveCount = 0;
 const STALL_MS = 10000;
 function progress() {
@@ -760,9 +785,10 @@ function stallCheck() {
   V.stalled = true; $('thin').hidden = true; leaveLoader(); updatePlate();
   const n = V.FA.length;
   const why = busy >= STALL_RETRIES ? `It answered "busy" ${busy} times in a row` : n ? `No new image for ${Math.round(quiet / 1000)} s` : `Nothing arrived in ${Math.round(quiet / 1000)} s`;
-  $('errTxt').textContent = n ? `${why}. ${n} of ${V.planned} images arrived; you can use them, or ask again.` : `${why}. Retry asks again.`;
+  calmHead('irsa'); // the run keeps asking by itself (data.js retries): say so calmly
+  $('errTxt').textContent = n ? `${n} of ${V.planned} images are in. Star Shift keeps asking in the background and adds the rest as they come, or use these now. (${why}.)` : `Star Shift keeps asking in the background and shows the images as soon as they come. (${why}.)`;
   $('retry').hidden = false; $('useLoaded').hidden = !n; $('useLoaded').textContent = `Use the ${n} image${n === 1 ? '' : 's'} loaded`;
-  showState('stError'); Snd.play('error');
+  showState('stError');
 }
 // A coordinate patch's heading (capitalised); the loader's "Finding images of …" keeps it lower case.
 let holdMjd = null, holdDet = null; // ?mjd= (&det=) from the URL: the image to stop on once loading finishes
@@ -798,6 +824,7 @@ let wantView = null; // ?view= from the URL (a shared link): the mode to open on
 const PATCH_NAME = 'This patch', loaderName = n => (n === PATCH_NAME ? 'this patch' : n);
 function load(query, label) {
   V.ctl?.abort(); const ctl = V.ctl = new AbortController();
+  autoStop(); if (!autoLoading) AUTO.n = 0; autoLoading = false; // a new target starts the 20 s backoff again
   P.pause(); clearInterval(bt); if (mode !== 'play') { mode = 'play'; $('stage').className = 'stage mode-play'; segSelect($('viewSeg'), b => b.dataset.mode === 'play'); }
   TS.show(false); TS.reset();
   CB.leave(); LC.data(null, null, label, true);
@@ -857,9 +884,11 @@ function load(query, label) {
     else if (e.type === 'DONE') finish();
     else if (e.type === 'ERROR' || e.type === 'NOT_FOUND') {
       V.status = 'error'; $('thin').hidden = true;
-      $('errTxt').textContent = e.message + (V.FA.length ? ` ${V.FA.length} images arrived and are kept.` : '');
+      const busy = e.type === 'ERROR' && e.retryable !== false, irsa = busy && /IRSA/.test(e.message); // an outage: calm line + quiet retry
+      calmHead(irsa ? 'irsa' : busy ? 'simbad' : null);
+      $('errTxt').textContent = irsa ? 'It has short outages on and off. Star Shift keeps asking quietly and loads the images as soon as it answers.' : e.message + (V.FA.length ? ` ${V.FA.length} images arrived and are kept.` : '');
       $('retry').hidden = e.type === 'NOT_FOUND'; $('useLoaded').hidden = !V.FA.length; $('useLoaded').textContent = `Use the ${V.FA.length} image${V.FA.length === 1 ? '' : 's'} loaded`;
-      showState('stError'); Snd.play('error');
+      showState('stError'); if (busy) autoRetry(ctl); else Snd.play('error');
     }
   };
   // Loading done, or the visitor chose "Use the N images loaded" (then the run is aborted first)
@@ -867,7 +896,7 @@ function load(query, label) {
     {
       clearInterval(stallTimer); V.stalled = false;
       V.status = 'ready'; viewerFirst = false; $('thin').hidden = true; const leaveWait = leaveLoader();
-      if (!V.FA.length) { V.status = 'error'; $('errTxt').textContent = 'No images arrived. The archive is often busy; Retry asks again.'; $('useLoaded').hidden = true; showState('stError'); Snd.play('error'); return; }
+      if (!V.FA.length) { V.status = 'error'; calmHead('irsa'); $('errTxt').textContent = 'No images arrived yet. Star Shift keeps asking quietly and loads them as soon as it answers.'; $('useLoaded').hidden = true; showState('stError'); autoRetry(ctl); return; }
       showState(null);
       restack(); // seasons stacked from the images the flag filter keeps
       remeasure();
@@ -896,8 +925,15 @@ function load(query, label) {
   };
   tablesReady.then(() => { if (!ctl.signal.aborted) run(query, SETTINGS, { base: BASE, signal: ctl.signal, tables, emit }); });
 }
-$('retry').onclick = () => { Snd.play('click'); if (V.query) load(V.query, V.name); };
-$('openSaved').onclick = () => { Snd.play('click'); $('stError').hidden = true; const n = "Barnard's Star"; $('q').value = n; goTo(n).then(() => playPatch()); }; // A9: works with the archive down (prebaked)
+$('retry').onclick = () => { Snd.play('click'); if (V.query) { autoLoading = true; load(V.query, V.name); } }; // keeps the backoff step
+// A9 + outage: NASA's five and the baked saved targets (presets.js SAVED) all open from web/prebaked/ with the archive down
+$('openSaved').insertAdjacentHTML('beforeend', [...PRESETS.map(p => p.label), ...SAVED.filter(s => s.baked).map(s => s.label)].map(n => `<button class="key" data-n="${esc(n)}">${esc(n)}</button>`).join(''));
+$('openSaved').onclick = (e) => { const b = e.target.closest('button[data-n]'); if (!b) return; Snd.play('click'); autoStop(); $('stError').hidden = true; const n = b.dataset.n; $('q').value = n; goTo(n).then(() => playPatch()); };
+function savedRow(on) { // shown on a live spot's error; the target that failed is left out
+  const show = on && !holdPreset(); $('openSaved').hidden = !show; if (!show) return;
+  const cur = String(V.name || '').toLowerCase();
+  $('openSaved').querySelectorAll('button[data-n]').forEach(b => { b.hidden = b.dataset.n.toLowerCase() === cur; });
+}
 $('useLoaded').onclick = () => { Snd.play('click'); if (V.finish && V.FA.length && V.status !== 'ready') { V.ctl?.abort(); V.finish(); } else showState(null); };
 
 /* ---------- popovers + sheets ---------- */
@@ -1241,11 +1277,9 @@ function motionDial(pa) { // 64 px, north up, east left, fixed-length arrow
 function motionHTML(sel, t, cat, gaia, same, looking) {
   const preset = !!t?.preset;
   const pmFrom = gaia || (cat && (cat.pmra || cat.pmdec) ? cat : null);
-  // RW Aurigae: SIMBAD's system entry still has the old Hipparcos parallax; the cited Gaia DR3 one wins (distances.js)
-  const dd = DISTANCES[t?.preset?.key], cited = dd ? { plx: dd.plx, plxErr: dd.plxErr, cite: dd.cite } : null;
-  const plxFrom = cited || (gaia && gaia.plx > 0 ? gaia : (cat?.plx > 0 ? cat : null));
+  const plxFrom = gaia && gaia.plx > 0 ? gaia : (cat?.plx > 0 ? cat : null);
   const rvFrom = gaia && Number.isFinite(gaia.rv) ? gaia : (cat && Number.isFinite(cat.rv) ? cat : null);
-  const srcName = r => r?.cite ? r.cite : r === gaia ? 'Gaia DR3' : preset ? 'SIMBAD (built-in)' : 'SIMBAD';
+  const srcName = r => r === gaia ? 'Gaia DR3' : preset ? 'SIMBAD (built-in)' : 'SIMBAD';
   const k = pmFrom ? kinematics({ ra: sel.ra, dec: sel.dec, pmra: pmFrom.pmra, pmdec: pmFrom.pmdec, pmraErr: pmFrom.pmraErr, pmdecErr: pmFrom.pmdecErr,
     plx: plxFrom?.plx, plxErr: plxFrom?.plxErr, rv: rvFrom?.rv }) : null;
   let more = '', h = '';
@@ -1264,7 +1298,7 @@ function motionHTML(sel, t, cat, gaia, same, looking) {
       row('Angular speed across the sky', `${k.arcsecYr.toFixed(k.arcsecYr < 0.1 ? 4 : 2)}″/yr · 1 pixel every ${fYears(k.yrPerPix)} years`, 'calc', null, 'x-only') +
       row('Shift in SPHEREx images', `one image pixel every ${fYears(k.yrPerPix)} years`, 'calc', null, 's-only');
     if (k.dist) {
-      h += row('Parallax', `${nf(plxFrom.plx, 3)}${pm(plxFrom.plxErr, 3)} mas${plxFrom.cite ? ` · ${esc(plxFrom.cite)}` : ''}`, 'cat', null, 'x-only') +
+      h += row('Parallax', `${nf(plxFrom.plx, 3)}${pm(plxFrom.plxErr, 3)} mas`, 'cat', null, 'x-only') +
         row('Distance (1000 / parallax)', `${k.dist.pc < 100 ? k.dist.pc.toFixed(3) : nf(k.dist.pc, 0)} pc · ${k.dist.ly < 100 ? k.dist.ly.toFixed(2) : nf(k.dist.ly, 0)} ly`, 'calc',
           ent(`${name}distance (1000 / parallax)${k.dist.weak ? ', unreliable: parallax under 5× its error' : ''}`, +k.dist.pc.toFixed(k.dist.pc < 100 ? 3 : 0), 'pc', '', `Worked out from the ${srcName(plxFrom)} parallax`, 'COMPUTED'), 'x-only') +
         row('Distance', `about ${k.dist.ly < 10 ? k.dist.ly.toFixed(1) : nf(Math.round(k.dist.ly), 0)} light years`, 'calc', null, 's-only');

@@ -13,7 +13,7 @@ import { tanProject } from '../core/wcs.js';
 import { seasonBounds, groupInto } from './seasons.js';
 import { mjdToEpochYear } from '../core/motion.js';
 import { wavelengthAt } from '../core/wave.js';
-import { findPreset } from './presets.js';
+import { findPreset, findSaved } from './presets.js';
 
 export const BANDS = {
   1: '0.75–1.09 µm', 2: '1.10–1.62 µm', 3: '1.63–2.41 µm', 4: '2.42–3.82 µm', 5: '3.83–4.41 µm', 6: '4.42–5.00 µm',
@@ -73,6 +73,8 @@ export async function resolveTarget(query, { fetchFn = prebakedFetch, signal } =
   if (query.type === 'coords') return { name: null, ra: query.ra, dec: query.dec, pmra: 0, pmdec: 0, epoch: 2000, source: 'coordinates' };
   const preset = findPreset(query.name);
   if (preset) return { ...preset.target, presetKey: preset.key };
+  const saved = findSaved(query.name); // a saved target (presets.js SAVED): built-in values, no SIMBAD
+  if (saved) return { ...saved.target, savedKey: saved.key };
   let t;
   try {
     t = await resolveName(query.name, { fetchFn, signal });
