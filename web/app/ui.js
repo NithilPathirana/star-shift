@@ -817,6 +817,7 @@ async function holdExact(m, det, ctl) {
   if (!im) return nearNote();
   let f = V.FA.find(x => x.raw.uri === im.uri);
   if (!f) {
+    if (IRSA_ST.down) return nearNote(); // IRSA down: the nearest saved image, no live request (Archive Play / Share links)
     try { f = toF(await loadFrame(im, V.target, V.grid, SETTINGS, { base: BASE, tables })); f.extra = true; } catch { return nearNote(); }
     if (stale()) return nearNote();
   }
