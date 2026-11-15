@@ -140,7 +140,8 @@ form.pl-tab .note{grid-column:1/-1}
 .air-band{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;color:var(--ink);padding:2px 0;cursor:default;text-align:left}
 .air-band i{width:10px;height:10px;border-radius:3px;border:1px solid rgba(40,28,18,.35);flex:none}
 .air-band .num{color:var(--ink-2)}
-.air-band sup{font-size:.625rem;margin-left:1px}
+.air-band sup{font-size:.75rem;margin-left:1px;line-height:0} /* no taller line: the % stays on the text line (QA nit) */
+.air-band{align-items:baseline}.air-band i{align-self:center}
 .air-band .st{font-weight:700;color:var(--ink-2)}
 .air-band.is-blocked .st{color:var(--ink)}
 .air-band s{text-decoration-thickness:1.5px}

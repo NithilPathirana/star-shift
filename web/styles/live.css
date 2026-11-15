@@ -39,6 +39,9 @@ html[data-motion=reduce] .rk, html[data-motion=reduce] .thin-rk { transition: no
 /* Design review fixes (Sat 14 Nov) */
 .rrow > p { grid-column: 2 / -1; margin: -2px 0 4px; font-size: .75rem; line-height: 1.35; color: var(--muted); }
 .map-read, .map-ph { background: rgba(21,17,14,.82) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+/* map credit: balanced lines, the wavelength never split from its unit (QA nit) */
+.map-ph { text-wrap: balance; }
+#mapWl { white-space: nowrap; }
 .map-read { padding-left: 12px !important; padding-right: 12px !important; }
 .sel span { text-shadow: 0 1px 2px #000; background: rgba(21,17,14,.72); padding: 1px 6px; border-radius: 6px; }
 .inspector a, .inspector a:visited, .credit a, .credit a:visited { color: var(--copper); text-decoration-thickness: 1px; text-underline-offset: 3px; }
@@ -413,7 +416,7 @@ html[data-motion=reduce] .state.loader2 { transition: none; }
   #stage:has(#ghostBar:not([hidden])) .compass { bottom: 62px; }
 }
 /* "Use all images (as on Proof)" beside a motion fit that the user's flag filter shrank (Master item 11) */
-.use-all { display: block; margin-top: 4px; padding: 0; background: none; border: 0; font: inherit; font-size: .75rem; text-align: left; cursor: pointer; }
+.use-all { display: block; margin-top: 4px; padding: 0; background: none; border: 0; font: inherit; font-family: var(--font-ui); font-size: .75rem; text-align: left; cursor: pointer; }
 .use-all[hidden] { display: none; }
 @media (max-width: 699px) { .use-all { min-height: 44px; } }
 /* ---- IR band ranges (band-editor agent, Master item 7): explainer + "see it" key in the editor,

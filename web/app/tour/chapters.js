@@ -34,7 +34,7 @@ export const CHAPTERS = [
   { id: 'map', page: 'index.html', scene: 'map', url: 'index.html', name: 'Sky map', steps: [
     { id: 'rail', targets: ['.rail'], prefer: ['right'], title: 'The pages, on the left',
       body: 'Each key opens a page about the object you picked:', list: RAIL_LINES,
-      alt: { ...PAGES_ALT, body: 'Pages, at the top, opens the other pages about the object you picked:' } },
+      alt: { ...PAGES_ALT, title: 'The pages', body: 'Pages, at the top, opens the other pages about the object you picked:' } },
     { id: 'search', targets: ['.topbar .search', '.picks'], prefer: ['below'], title: 'Pick something to look at',
       body: "Type a star name or sky coordinates, or click one of the five examples. Barnard's Star, Epsilon Indi B and WISE 0855 drift between photos; RW Aurigae and R Draconis change brightness instead.",
       phone: { targets: ['.topbar .search'], prefer: ['below'] } },
