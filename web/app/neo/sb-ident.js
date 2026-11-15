@@ -1,6 +1,16 @@
 // AI-written (OpenAI Codex) for Star Shift, NASA Space Apps 2026
 
 const DEFAULT_DATES = Object.freeze(['2025-08-15', '2026-03-15', '2026-08-15']);
+
+// The page's example field (judging panel b7; AI-written code (Claude, Anthropic) for team Proper Motion,
+// NASA Space Apps 2026): main-belt asteroid 1354 Botha (V 16.6) on 14 Dec 2025, centred on JPL's
+// 12:00 UTC prediction. SPHEREx DR1 exposures 2025W50_2A_0717_1-4 (08:28-08:37 UTC, detectors 3 and 6)
+// cover Botha's predicted place at that time (IRSA SIA point query). The second date is the patch's
+// next SPHEREx season (QR3, 15 Jun 2026). tools/export_prebaked.mjs prebakes exactly this view.
+export const NEO_DEFAULT_VIEW = Object.freeze({
+  ra: 0.5622, dec: -1.0231, fov: 0.5,
+  dates: Object.freeze(['2025-12-14', '2026-06-15']),
+});
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function finite(value) {

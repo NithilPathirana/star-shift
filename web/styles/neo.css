@@ -215,3 +215,24 @@
 
 /* Asteroid Spotter: "too faint for SPHEREx to see" under the magnitude (Design review 2, item 9). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
 .spotter-table .faint-note { display: block; text-align: inherit; white-space: normal; color: var(--ink-2); font-family: var(--font-ui); line-height: 1.3; }
+
+/* b7 (judging panel): "More from JPL" disclosure holding the watch lists and Compare orbits, and the
+   example-field note. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+.default-field { max-width: 92ch; color: var(--ink-2); font-size: .8125rem; line-height: 1.45; }
+.default-field strong { color: var(--ink); font-weight: 600; }
+.more-jpl { border-radius: var(--r-shell); padding: 0; }
+.more-jpl > summary { display: flex; justify-content: flex-start; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; color: var(--ink); font-size: inherit; font-weight: 400; min-height: 48px; padding: 14px clamp(14px, 1.6vw, 22px); cursor: pointer; list-style: none; border-radius: inherit; }
+.more-jpl > summary::-webkit-details-marker { display: none; }
+.more-jpl > summary::after { content: none; } /* the shared details '+' marker; this one has its chevron */
+.more-jpl > summary::before { content: ''; flex: none; align-self: center; width: 8px; height: 8px; margin-right: 2px; border-right: 2px solid var(--ink-2); border-bottom: 2px solid var(--ink-2); transform: rotate(-45deg); transition: transform .18s ease; }
+.more-jpl[open] > summary::before { transform: rotate(45deg); }
+.more-jpl > summary:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+.more-title { font-size: 1.125rem; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.more-sub { color: var(--ink-2); font-size: .8125rem; }
+.more-body { display: grid; gap: clamp(14px, 1.6vw, 24px); padding: 0 clamp(10px, 1.2vw, 18px) clamp(14px, 1.6vw, 22px); }
+.status-retry { margin-left: 6px; vertical-align: middle; }
+@media (prefers-reduced-motion: reduce) { .more-jpl > summary::before { transition: none; } }
+.spotter-table .more-rows td { padding-block: 10px; }
+.spotter-table .more-note { color: var(--ink-2); font-size: .75rem; }
+@media (max-width: 620px) { .neo-page .spotter-table tbody tr.more-rows { display: block; } .neo-page .spotter-table tr.more-rows td::before { content: none; } }
+.more-body .spotter-tabs .key { scroll-margin-top: 16px; }

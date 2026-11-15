@@ -300,60 +300,46 @@
  },
  "asteroidPage": {
   "view": {
-   "ra": 269.4461,
-   "dec": 4.7707,
+   "ra": 0.5622,
+   "dec": -1.0231,
    "fov": 0.5
   },
   "dates": [
-   "2025-08-15",
-   "2026-03-15",
-   "2026-08-15"
+   "2025-12-14",
+   "2026-06-15"
   ],
   "results": [
    {
-    "date": "2025-08-15",
+    "date": "2025-12-14",
     "kind": "a",
     "ok": true,
     "observer": "mpc-500",
     "error": null
    },
    {
-    "date": "2025-08-15",
+    "date": "2025-12-14",
     "kind": "c",
     "ok": true,
     "observer": "mpc-500",
     "error": null
    },
    {
-    "date": "2026-03-15",
+    "date": "2026-06-15",
     "kind": "a",
     "ok": true,
     "observer": "mpc-500",
     "error": null
    },
    {
-    "date": "2026-03-15",
-    "kind": "c",
-    "ok": true,
-    "observer": "mpc-500",
-    "error": null
-   },
-   {
-    "date": "2026-08-15",
-    "kind": "a",
-    "ok": true,
-    "observer": "mpc-500",
-    "error": null
-   },
-   {
-    "date": "2026-08-15",
+    "date": "2026-06-15",
     "kind": "c",
     "ok": true,
     "observer": "mpc-500",
     "error": null
    }
   ],
-  "files": 6
+  "files": 4,
+  "exported": "2026-11-15T06:43:28.481Z"
  },
  "jpl": {
   "asked": 16,
@@ -362,8 +348,8 @@
   "note": "All JPL requests answered."
  },
  "totals": {
-  "files": 1157,
-  "mib": 64.84
+  "files": 1155,
+  "mib": 64.85
  },
  "entries": {
   "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.760098%2C%20-7.24221%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
@@ -6924,18 +6910,6 @@
    "fetched": "2026-11-14T23:06:38.071Z",
    "kind": "jpl-sb_ident"
   },
-  "/jpl/sb_ident?obs-time=2025-08-15_12%3A00%3A00&fov-ra-center=17-57-47.06&fov-dec-center=04-46-14.52&fov-ra-hwidth=0.25&fov-dec-hwidth=0.25&sb-kind=a&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
-   "file": "neo/0c33aa9b7b899000.json",
-   "size": 942,
-   "fetched": "2026-11-14T22:11:02.132Z",
-   "kind": "jpl-sb_ident"
-  },
-  "/jpl/sb_ident?obs-time=2025-08-15_12%3A00%3A00&fov-ra-center=17-57-47.06&fov-dec-center=04-46-14.52&fov-ra-hwidth=0.25&fov-dec-hwidth=0.25&sb-kind=c&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
-   "file": "neo/aa7fd796a2c727f2.json",
-   "size": 590,
-   "fetched": "2026-11-14T17:11:56.011Z",
-   "kind": "jpl-sb_ident"
-  },
   "/jpl/sb_ident?obs-time=2025-08-29_15%3A45%3A41&fov-ra-center=17-57-47.07&fov-dec-center=04-46-12.19&fov-ra-hwidth=0.03&fov-dec-hwidth=0.03&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
    "file": "barnard/77f63a174fdeda95.json",
    "size": 557,
@@ -6960,16 +6934,16 @@
    "fetched": "2026-11-14T22:28:22.106Z",
    "kind": "jpl-sb_ident"
   },
-  "/jpl/sb_ident?obs-time=2026-03-15_12%3A00%3A00&fov-ra-center=17-57-47.06&fov-dec-center=04-46-14.52&fov-ra-hwidth=0.25&fov-dec-hwidth=0.25&sb-kind=a&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
-   "file": "neo/2547a2513cc75c5c.json",
-   "size": 935,
-   "fetched": "2026-11-14T22:11:57.648Z",
+  "/jpl/sb_ident?obs-time=2025-12-14_12%3A00%3A00&fov-ra-center=00-02-14.93&fov-dec-center=M01-01-23.16&fov-ra-hwidth=0.25&fov-dec-hwidth=0.25&sb-kind=a&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
+   "file": "neo/bd42e4c537b4e02a.json",
+   "size": 8344,
+   "fetched": "2026-11-15T06:40:41.792Z",
    "kind": "jpl-sb_ident"
   },
-  "/jpl/sb_ident?obs-time=2026-03-15_12%3A00%3A00&fov-ra-center=17-57-47.06&fov-dec-center=04-46-14.52&fov-ra-hwidth=0.25&fov-dec-hwidth=0.25&sb-kind=c&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
-   "file": "neo/5940e2814936eade.json",
-   "size": 590,
-   "fetched": "2026-11-14T22:10:54.419Z",
+  "/jpl/sb_ident?obs-time=2025-12-14_12%3A00%3A00&fov-ra-center=00-02-14.93&fov-dec-center=M01-01-23.16&fov-ra-hwidth=0.25&fov-dec-hwidth=0.25&sb-kind=c&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
+   "file": "neo/5d33158a24b8c691.json",
+   "size": 591,
+   "fetched": "2026-11-15T06:39:04.821Z",
    "kind": "jpl-sb_ident"
   },
   "/jpl/sb_ident?obs-time=2026-05-01_15%3A44%3A24&fov-ra-center=08-55-02.42&fov-dec-center=M07-14-31.96&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
@@ -6996,16 +6970,16 @@
    "fetched": "2026-11-14T23:07:50.569Z",
    "kind": "jpl-sb_ident"
   },
-  "/jpl/sb_ident?obs-time=2026-08-15_12%3A00%3A00&fov-ra-center=17-57-47.06&fov-dec-center=04-46-14.52&fov-ra-hwidth=0.25&fov-dec-hwidth=0.25&sb-kind=a&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
-   "file": "neo/5a91e53a08136481.json",
-   "size": 1040,
-   "fetched": "2026-11-14T22:12:41.334Z",
+  "/jpl/sb_ident?obs-time=2026-06-15_12%3A00%3A00&fov-ra-center=00-02-14.93&fov-dec-center=M01-01-23.16&fov-ra-hwidth=0.25&fov-dec-hwidth=0.25&sb-kind=a&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
+   "file": "neo/76d24ebc42f7792a.json",
+   "size": 9302,
+   "fetched": "2026-11-15T06:42:32.358Z",
    "kind": "jpl-sb_ident"
   },
-  "/jpl/sb_ident?obs-time=2026-08-15_12%3A00%3A00&fov-ra-center=17-57-47.06&fov-dec-center=04-46-14.52&fov-ra-hwidth=0.25&fov-dec-hwidth=0.25&sb-kind=c&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
-   "file": "neo/472498607aea74fd.json",
-   "size": 590,
-   "fetched": "2026-11-14T17:12:07.258Z",
+  "/jpl/sb_ident?obs-time=2026-06-15_12%3A00%3A00&fov-ra-center=00-02-14.93&fov-dec-center=M01-01-23.16&fov-ra-hwidth=0.25&fov-dec-hwidth=0.25&sb-kind=c&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
+   "file": "neo/33c044acd5385641.json",
+   "size": 591,
+   "fetched": "2026-11-15T06:40:28.788Z",
    "kind": "jpl-sb_ident"
   },
   "/jpl/sb_ident?obs-time=2026-08-17_07%3A17%3A13&fov-ra-center=16-32-40.14&fov-dec-center=66-45-18.09&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {

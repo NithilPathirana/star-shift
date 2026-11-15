@@ -23,6 +23,8 @@
 // request per URL (100 s budget). What JPL did not answer is listed in the manifest.
 //
 // Usage: node tools/export_prebaked.mjs            (writes web/prebaked/, replacing it)
+//        node tools/export_prebaked.mjs --only=neo (re-exports the Asteroid page's example field only;
+//                                                   every other entry and file is kept as it is)
 //        BASE=http://127.0.0.1:8787 is only the key prefix; the server need not be running.
 
 import { createHash } from 'node:crypto';
@@ -40,7 +42,7 @@ import { pickImages, CUTOUT_DEG } from '../web/app/spectral/logic.js';
 import { simbadCone } from '../web/app/skymap.js';
 import { fetchFieldStars, fetchFieldAsteroids } from '../web/app/spot/checks.js';
 import { LOAD_SETTINGS, fieldCentre } from '../web/app/spot/logic.js';
-import { buildSbIdentParams, DEFAULT_DATES } from '../web/app/neo/sb-ident.js';
+import { buildSbIdentParams, NEO_DEFAULT_VIEW } from '../web/app/neo/sb-ident.js';
 import { propagate } from '../web/core/motion.js';
 import { gridToWorld, worldToGrid } from '../web/core/align.js';
 import { prebakedKey } from '../web/core/prebaked.js';
@@ -60,16 +62,14 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const sha1 = (s) => createHash('sha1').update(s).digest('hex');
 const mib = (b) => +(b / 1048576).toFixed(2);
 
-// Values that live in browser-only modules (ui.js, neo/spotter.js), read from their source so a change there is followed.
+// Values that live in browser-only modules (ui.js), read from their source so a change there is followed.
 const uiSrc = readFileSync(join(ROOT, 'web', 'app', 'ui.js'), 'utf8');
-const spotterSrc = readFileSync(join(ROOT, 'web', 'app', 'neo', 'spotter.js'), 'utf8');
+const ONLY_NEO = process.argv.includes('--only=neo');
 const grab = (src, re, what) => { const m = re.exec(src); if (!m) throw new Error(`Could not read ${what}`); return Number(m[1]); };
 const NOW_MJD = grab(uiSrc, /const NOW_MJD = (\d+(?:\.\d+)?)/, 'NOW_MJD from ui.js');
-const NEO_VIEW = {
-  ra: grab(spotterSrc, /finiteParam\('ra', ([\d.]+)/, 'the Asteroid page default RA'),
-  dec: grab(spotterSrc, /finiteParam\('dec', (-?[\d.]+)/, 'the Asteroid page default Dec'),
-  fov: grab(spotterSrc, /finiteParam\('fov', ([\d.]+)/, 'the Asteroid page default field'),
-};
+// The Asteroid page's example field (neo/sb-ident.js NEO_DEFAULT_VIEW, used by neo/spotter.js).
+const NEO_VIEW = { ra: NEO_DEFAULT_VIEW.ra, dec: NEO_DEFAULT_VIEW.dec, fov: NEO_DEFAULT_VIEW.fov };
+const NEO_DATES = [...NEO_DEFAULT_VIEW.dates];
 if (SETTINGS.fov !== LOAD_SETTINGS.fov || SETTINGS.max !== LOAD_SETTINGS.max || SETTINGS.band !== LOAD_SETTINGS.band) {
   console.log('Note: Spot a mover uses different load settings from the viewer; its cutouts are captured separately.');
 }
@@ -223,7 +223,7 @@ async function spectrum(p, rec) {
 // neo/spotter.js fetchIdentification() for the default view, both kinds, each default date.
 async function asteroidPage(rec) {
   const out = [];
-  for (const date of DEFAULT_DATES) for (const kind of ['a', 'c']) {
+  for (const date of NEO_DATES) for (const kind of ['a', 'c']) {
     const base = { ...NEO_VIEW, date, kind };
     let res = await rec(`/jpl/sb_ident?${buildSbIdentParams(base)}`).catch(e => ({ ok: false, status: 0, error: e.message }));
     let observer = 'mpc-500';
@@ -237,7 +237,7 @@ async function asteroidPage(rec) {
 /* ------------------------------------------------------------------ main */
 console.log(`export_prebaked: ${PRESETS.length} targets, fov ${SETTINGS.fov}′, max ${SETTINGS.max}, band ${SETTINGS.band}; relay code + disk cache ${CACHE_DIR}`);
 const summary = {};
-for (const p of PRESETS) {
+for (const p of ONLY_NEO ? [] : PRESETS) {
   const t0 = Date.now();
   const rec = recorder(p.key);
   const pin = propagate(p.target, NOW_MJD); // ui.js TARGETS: the pin sits at the star's "now" place
@@ -263,7 +263,7 @@ console.log(`Asteroid page (${NEO_VIEW.ra}, ${NEO_VIEW.dec}, ${NEO_VIEW.fov}°):
 // A JPL answer saved by an earlier export is kept when JPL did not answer this time (same request,
 // same prediction; JPL often stops answering at night).
 let carried = 0;
-try {
+if (!ONLY_NEO) try {
   const old = JSON.parse(readFileSync(join(OUT, 'manifest.json'), 'utf8'));
   for (const [key, e] of Object.entries(old.entries || {})) {
     if (e.kind !== 'jpl-sb_ident' || captures.has(key)) continue;
@@ -274,8 +274,11 @@ try {
   }
 } catch { /* first export */ }
 if (carried) console.log(`Kept ${carried} JPL answers from the earlier export (JPL did not answer them now).`);
-await rm(OUT, { recursive: true, force: true });
+// --only=neo: keep every other owner's entries and files; replace web/prebaked/neo/ only.
+const old = ONLY_NEO ? JSON.parse(readFileSync(join(OUT, 'manifest.json'), 'utf8')) : null;
+await rm(ONLY_NEO ? join(OUT, 'neo') : OUT, { recursive: true, force: true });
 const entries = {}, per = {};
+if (old) for (const [key, e] of Object.entries(old.entries || {})) if (!e.file.startsWith('neo/')) entries[key] = e;
 for (const [key, c] of [...captures].sort((a, b) => a[0].localeCompare(b[0]))) {
   const file = `${c.owner}/${sha1(key).slice(0, 16)}${c.ext}`;
   await mkdir(dirname(join(OUT, file)), { recursive: true });
@@ -285,16 +288,26 @@ for (const [key, c] of [...captures].sort((a, b) => a[0].localeCompare(b[0]))) {
   s.files++; s.bytes += c.bytes.length; s.kinds[c.kind] = (s.kinds[c.kind] || 0) + 1;
 }
 const jplMissing = jplLog.filter(r => !r.ok).map(({ owner, key, status, error }) => ({ owner, key, status: status ?? null, error: error ?? null }));
-const manifest = {
+const manifest = old ? {
+  ...old,
+  entries: undefined,
+  asteroidPage: { view: NEO_VIEW, dates: NEO_DATES, results: neo, files: per.neo?.files ?? 0, exported: new Date().toISOString() },
+} : {
   about: 'Star Shift prebaked answers for the five NASA demo targets (tools/export_prebaked.mjs; read by web/core/prebaked.js). Keys are request paths as the app builds them, relative to the page origin (the relay); SIMBAD keys are full URLs. Exact matches only; anything else goes live.',
   generated: new Date().toISOString(),
   settings: { fov: SETTINGS.fov, max: SETTINGS.max, band: SETTINGS.band, mapNowMjd: NOW_MJD },
   targets: Object.fromEntries(Object.entries(summary).map(([k, v]) => [k, { ...v, files: per[k]?.files ?? 0, mib: mib(per[k]?.bytes ?? 0), kinds: per[k]?.kinds ?? {} }])),
-  asteroidPage: { view: NEO_VIEW, dates: DEFAULT_DATES, results: neo, files: per.neo?.files ?? 0 },
+  asteroidPage: { view: NEO_VIEW, dates: NEO_DATES, results: neo, files: per.neo?.files ?? 0 },
   jpl: { asked: jplLog.length, answered: jplLog.filter(r => r.ok).length, notAnswered: jplMissing, note: jplMissing.length ? 'Requests JPL did not answer go live on the page (the Spot verdict never waits for JPL).' : 'All JPL requests answered.' },
   totals: { files: Object.keys(entries).length + 1, mib: mib(Object.values(entries).reduce((a, e) => a + e.size, 0)) },
   entries,
 };
+if (old) {
+  const sorted = Object.fromEntries(Object.entries(entries).sort((a, b) => a[0].localeCompare(b[0])));
+  delete manifest.entries;
+  manifest.totals = { files: Object.keys(sorted).length + 1, mib: mib(Object.values(sorted).reduce((a, e) => a + e.size, 0)) };
+  manifest.entries = sorted;
+}
 await writeFile(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 1) + '\n');
 console.log('\nPer owner (files, MiB):');
 for (const [k, s] of Object.entries(per)) console.log(`  ${k.padEnd(11)} ${String(s.files).padStart(4)} files  ${mib(s.bytes).toFixed(2).padStart(6)} MiB  ${JSON.stringify(s.kinds)}`);

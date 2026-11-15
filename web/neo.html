@@ -52,12 +52,7 @@
       <div class="freshness" id="freshness"><span class="tag tag-jpl">JPL</span><span>Threat context waiting for data</span></div>
     </section>
 
-      <div class="spotter-tabs well" role="tablist" aria-label="Asteroid Spotter views">
-        <button class="key" id="spotter-tab" role="tab" aria-controls="spotter-panel" aria-selected="true" data-spotter-tab="spotter">Predicted in this field</button>
-        <button class="key" id="orbits-tab" role="tab" aria-controls="orbits-panel" aria-selected="false" data-spotter-tab="orbits">Compare orbits</button>
-      </div>
-
-      <div id="spotter-panel" role="tabpanel" aria-labelledby="spotter-tab" class="tab-panel">
+      <div id="spotter-panel" class="tab-panel">
         <section class="data-panel well caught-panel" aria-labelledby="caught-title">
           <div class="section-heading caught-heading"><h2 id="caught-title">Predicted in this field</h2><p class="predict-note">Predicted positions from JPL, not detections. Brightness is shown so you can judge whether SPHEREx could see it.</p><span class="result-count num" id="spotter-count">—</span></div>
           <form id="spotter-controls" class="spotter-controls">
@@ -68,6 +63,7 @@
             <label>To <input class="key num" id="spotter-to" name="to" type="date"></label>
             <button class="key primary" type="submit">Check field</button>
           </form>
+          <p class="default-field" id="spotter-default-note" hidden>Example field: SPHEREx imaged this patch on <span class="num">14 Dec 2025</span><span class="x-only"> (four exposures, <span class="num">08:28–08:37 UTC</span>, DR1 <span class="num">2025W50_2A_0717</span>)</span>. JPL predicts asteroid <strong>1354 Botha</strong> inside those images at <span class="num">V 16.6</span>, bright enough for SPHEREx to see. A prediction from its orbit, not a detection.</p>
           <p class="observation-dates">SPHEREx observation dates checked: <span class="num x-only" id="spotter-dates"></span><span class="s-only" id="spotter-dates-plain"></span>.<span class="x-only"> Override with <span class="num">?dates=YYYY-MM-DD,…</span>.</span></p>
           <div class="state-banner" id="spotter-status" role="status">Preparing JPL field checks…</div>
           <div class="table-scroll">
@@ -78,7 +74,17 @@
           </div>
           <p class="panel-foot">Predictions use JPL Small-Body Identification at 12:00 UTC on each supplied observation date. A blank result means no known object was returned, not that no uncatalogued object was present.</p>
         </section>
+      </div>
 
+      <!-- b7 (judging panel): the watch lists and orbit comparison sit under one disclosure, so the page opens on the SPHEREx field (Claude) -->
+      <details class="more-jpl well" id="more-jpl">
+        <summary><span class="more-title">More from JPL</span><span class="more-sub">NASA’s asteroid watch lists (close approaches, Sentry and Torino) and Compare orbits</span></summary>
+        <div class="more-body">
+      <div class="spotter-tabs well" role="tablist" aria-label="More from JPL">
+        <button class="key" id="threat-tab" role="tab" aria-controls="threat-panel" aria-selected="true" data-spotter-tab="threat">Watch lists</button>
+        <button class="key" id="orbits-tab" role="tab" aria-controls="orbits-panel" aria-selected="false" data-spotter-tab="orbits">Compare orbits</button>
+      </div>
+      <div id="threat-panel" role="tabpanel" aria-labelledby="threat-tab" class="tab-panel">
         <section class="threat-context" aria-labelledby="threat-title">
           <div class="section-heading context-heading"><div><h2 id="threat-title">CNEOS threat context</h2></div><span>Compact monitoring context, separate from the objects predicted in the field.</span></div>
           <div class="state-banner well" id="neo-status" role="status">Loading current NASA/JPL data…</div>
@@ -116,6 +122,8 @@
         <section class="data-panel well comparison-panel" aria-labelledby="comparison-title"><div class="section-heading"><div><h2 id="comparison-title">Comparison table</h2></div><label class="sort-control">Order objects by <select class="key" id="object-order"></select></label></div><div class="table-scroll"><table class="comparison-table" id="comparison-table"><thead></thead><tbody></tbody></table></div><p class="panel-foot">Min and max are highlighted within each numeric row. “—” includes a hover reason whenever a value is unavailable.</p></section>
         <section class="chart-stage scatter-stage" aria-labelledby="scatter-title"><div class="section-heading stage-heading"><div><h2 id="scatter-title">Variable scatter with selectable axes</h2></div></div><div class="scatter-controls"><label>X <select class="key stage-key" id="scatter-x"></select></label><button class="key stage-key" id="x-scale" aria-pressed="false">X log</button><label>Y <select class="key stage-key" id="scatter-y"></select></label><button class="key stage-key" id="y-scale" aria-pressed="false">Y log</button></div><div class="scatter-chart" id="scatter-chart"></div><p class="stage-caption"><span>Hollow points are unselected · choose an object chip to fill it</span><span>Computed from the values in the table</span></p></section>
       </div>
+        </div>
+      </details>
 
       <footer class="source-credit"><span class="tag tag-jpl">JPL</span><span>Data: NASA/JPL CNEOS, Small-Body Database and Small-Body Identification, via ssd-api.jpl.nasa.gov.</span><span>Planetary elements: JPL “Approximate Positions of the Planets”, E. M. Standish.</span><span>Text credits only · no NASA or JPL logos</span></footer>
     <footer class="pg-foot"><p class="ai-credit">Logo: SI-generated with ChatGPT; small version and favicon redrawn as SVG by Claude.</p><p><a href="source.zip" download>Download the source code (MIT)</a></p></footer>

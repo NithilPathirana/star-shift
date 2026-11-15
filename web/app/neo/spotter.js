@@ -1,6 +1,6 @@
 // AI-written (OpenAI Codex) for Star Shift, NASA Space Apps 2026
 import {
-  DEFAULT_DATES, buildSbIdentParams, observationDates, parseSbIdent, sbdbQuery,
+  DEFAULT_DATES, NEO_DEFAULT_VIEW, buildSbIdentParams, observationDates, parseSbIdent, sbdbQuery,
 } from './sb-ident.js';
 import { prebakedFetch } from '../../core/prebaked.js'; // the five demo targets answer from web/prebaked/ (Claude)
 import { SPHEREX_VISIBLE_V } from '../spot/logic.js'; // Spot's own faintness rule (Claude)
@@ -16,12 +16,17 @@ function finiteParam(name, fallback, min, max) {
   return Number.isFinite(value) && value >= min && value <= max ? value : fallback;
 }
 
+// No field in the URL: the example field and its real SPHEREx dates (b7). A field without dates
+// keeps the survey mid-dates. (Claude)
+const customField = ['ra', 'dec', 'fov'].some(name => (params.get(name) || '').trim() !== '');
 const view = {
-  ra: finiteParam('ra', 269.4461, 0, 360),
-  dec: finiteParam('dec', 4.7707, -90, 90),
-  fov: finiteParam('fov', 0.5, 0.001, 20),
-  dates: observationDates(params.get('dates')),
+  ra: finiteParam('ra', NEO_DEFAULT_VIEW.ra, 0, 360),
+  dec: finiteParam('dec', NEO_DEFAULT_VIEW.dec, -90, 90),
+  fov: finiteParam('fov', NEO_DEFAULT_VIEW.fov, 0.001, 20),
+  dates: observationDates(params.get('dates'), customField ? DEFAULT_DATES : NEO_DEFAULT_VIEW.dates),
 };
+view.isDefault = view.ra === NEO_DEFAULT_VIEW.ra && view.dec === NEO_DEFAULT_VIEW.dec && view.fov === NEO_DEFAULT_VIEW.fov
+  && view.dates.join() === NEO_DEFAULT_VIEW.dates.join();
 
 function element(name, className, text) {
   const node = document.createElement(name);
@@ -78,10 +83,19 @@ async function fetchIdentification(date, kind, signal) {
   return { rows: parseSbIdent(await retry.json(), { date, kind }), retried: true };
 }
 
+// A busy ecliptic field returns 100+ objects, nearly all far too faint: the table shows every object
+// SPHEREx could see and fills up to ROW_LIMIT with the brightest of the rest; one key shows them all (b7, Claude).
+const ROW_LIMIT = 12;
+const canSee = (item) => !(item.visualMagnitude !== null && item.visualMagnitude > SPHEREX_VISIBLE_V);
+let showAllRows = false;
 function renderRows(rows) {
   const body = $('spotter-table').tBodies[0];
   body.replaceChildren();
-  for (const item of rows) {
+  const visible = rows.filter(canSee).length;
+  const limit = Math.max(ROW_LIMIT, visible);
+  let faintBudget = limit - visible;
+  const shown = showAllRows || rows.length <= limit + 2 ? rows : rows.filter(item => canSee(item) || faintBudget-- > 0);
+  for (const item of shown) {
     const row = element('tr');
     const object = element('td', 'object-cell');
     object.dataset.label = 'Object';
@@ -118,13 +132,24 @@ function renderRows(rows) {
     add.type = 'button';
     add.addEventListener('click', () => {
       window.dispatchEvent(new CustomEvent('starshift:add-orbit-object', { detail: { query: sbdbQuery(item.name), label: item.name } }));
-      activateTab('orbits', true);
+      activateTab('orbits', true, true);
     });
     actions.append(timeLapse, add);
     row.append(object, date, position, magnitude, motion, actions);
     body.append(row);
   }
-  $('spotter-count').textContent = `${rows.length} match${rows.length === 1 ? '' : 'es'}`;
+  if (shown.length < rows.length) {
+    const row = element('tr', 'more-rows'), cell = element('td');
+    cell.colSpan = 6;
+    const hidden = rows.length - shown.length;
+    const more = element('button', 'key compact-key', `Show ${hidden} more`);
+    more.type = 'button';
+    more.addEventListener('click', () => { showAllRows = true; renderRows(rows); });
+    cell.append(more, element('span', 'more-note', ` all fainter than V ${SPHEREX_VISIBLE_V}, too faint for SPHEREx to see`));
+    row.append(cell);
+    body.append(row);
+  }
+  $('spotter-count').textContent = `${rows.length} match${rows.length === 1 ? '' : 'es'}${visible ? ` · ${visible} bright enough for SPHEREx` : ''}`;
 }
 
 function dateRange() {
@@ -175,7 +200,9 @@ async function loadSpotter() {
   const rows = results.flatMap(result => result.status === 'fulfilled' ? result.value.rows : []);
   const failures = results.filter(result => result.status === 'rejected').map(result => result.reason?.message || String(result.reason));
   const retried = results.filter(result => result.status === 'fulfilled' && result.value.retried).length;
-  renderRows(rows.sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name)));
+  // by date, then brightest first (no magnitude last), so what SPHEREx could see leads (b7, Claude)
+  const mag = (item) => item.visualMagnitude ?? Infinity;
+  renderRows(rows.sort((a, b) => a.date.localeCompare(b.date) || mag(a) - mag(b) || a.name.localeCompare(b.name)));
   if (failures.length) {
     // Plain words on the page; the raw errors go to the console (Claude)
     console.warn('JPL field checks failed:', failures);
@@ -197,15 +224,18 @@ function spotterFailed(error) {
   spotterStatus('NASA/JPL isn’t answering right now, so we can’t say which asteroids are in this field.', true, true);
 }
 
-function activateTab(name, updateUrl = false) {
-  const selected = name === 'orbits' ? 'orbits' : 'spotter';
+// b7: the two tabs live inside the "More from JPL" disclosure; choosing one opens it (Claude)
+function activateTab(name, updateUrl = false, reveal = false) {
+  const selected = name === 'orbits' ? 'orbits' : 'threat';
   document.querySelectorAll('[data-spotter-tab]').forEach(button => {
     const active = button.dataset.spotterTab === selected;
     button.setAttribute('aria-selected', String(active));
     button.tabIndex = active ? 0 : -1;
   });
-  $('spotter-panel').hidden = selected !== 'spotter';
+  $('threat-panel').hidden = selected !== 'threat';
   $('orbits-panel').hidden = selected !== 'orbits';
+  if (selected === 'orbits' || reveal) $('more-jpl').open = true;
+  if (reveal) requestAnimationFrame(() => $(selected === 'orbits' ? 'orbits-tab' : 'threat-tab').scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.motion === 'reduce' ? 'auto' : 'smooth' }));
   if (updateUrl) {
     const url = new URL(location.href);
     if (selected === 'orbits') url.searchParams.set('tab', 'orbits'); else url.searchParams.delete('tab');
@@ -232,5 +262,6 @@ $('spotter-from').value = params.get('from') || view.dates[0] || DEFAULT_DATES[0
 $('spotter-to').value = params.get('to') || view.dates.at(-1) || DEFAULT_DATES.at(-1);
 $('spotter-dates').textContent = view.dates.join(' · ');
 $('spotter-dates-plain').textContent = view.dates.map(plainMonth).join(' · ');
-activateTab(params.get('tab') === 'orbits' ? 'orbits' : 'spotter');
+activateTab(params.get('tab') === 'orbits' ? 'orbits' : 'threat', false, params.get('tab') === 'orbits');
+$('spotter-default-note').hidden = !view.isDefault;
 loadSpotter().catch(spotterFailed);
