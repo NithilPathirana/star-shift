@@ -107,7 +107,12 @@ function segSelect(seg, pred) {
   const th = seg.querySelector('.seg-thumb');
   th.style.width = `calc((100% - 6px) / ${btns.length})`; th.style.transform = `translateX(${idx * 100}%)`;
 }
-function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600); }
+// Toast (judging round 4, item 2): pinned to the top of the stage, under the chip row, so it never covers the
+// result plate, the season label or the transport; it goes after 3 s, or at the first tap or click anywhere.
+function toast(msg) { const t = $('toast'), s = $('stage')?.getBoundingClientRect();
+  if (s && s.width) { t.style.setProperty('--toast-top', `${Math.round(s.top + (matchMedia('(max-width: 699px)').matches ? 48 : 52))}px`); t.style.setProperty('--toast-x', `${Math.round(s.left + s.width / 2)}px`); t.style.setProperty('--toast-w', `${Math.round(s.width - 24)}px`); }
+  t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 3000); }
+document.addEventListener('pointerdown', () => { const t = $('toast'); if (t?.classList.contains('show')) { clearTimeout(t._h); t.classList.remove('show'); } }, true);
 
 /* ======================= FLIP-BOOK (viewer scene) ======================= */
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

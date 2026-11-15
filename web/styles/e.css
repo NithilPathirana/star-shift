@@ -293,10 +293,9 @@ details dl{margin-top:8px}
 .pop .foot{margin-top:16px;font-size:.75rem;color:var(--muted)}
 kbd{font-family:var(--font-num);font-size:.75rem;min-width:24px;display:inline-grid;place-items:center;padding:2px 6px;border-radius:6px;background:linear-gradient(180deg,#FCFAF6,#E7E0D5);border:1px solid var(--edge);box-shadow:0 1px 0 var(--edge)}
 .keys{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;font-size:.8125rem;align-items:center}
-.toast{position:fixed;left:50%;bottom:calc(var(--gap) + 110px);z-index:40;padding:10px 16px;border-radius:12px;font-size:.8125rem;transform:translate(-50%,8px);opacity:0;transition:opacity 200ms var(--ease-out),transform 300ms var(--spring);pointer-events:none}
+.toast{position:fixed;left:var(--toast-x,50%);top:var(--toast-top,64px);width:max-content;max-width:var(--toast-w,calc(100% - 24px));z-index:40;padding:10px 16px;border-radius:12px;font-size:.8125rem;transform:translate(-50%,-8px);opacity:0;transition:opacity 200ms var(--ease-out),transform 300ms var(--spring);pointer-events:none}
 .toast.show{opacity:1;transform:translate(-50%,0)}
-/* phone: toasts at the bottom edge, off the result plate (design review 3, item 2b) */
-@media (max-width:699px){.toast{bottom:12px;max-width:calc(100% - 24px)}}
+/* toast: top of the stage, placed by ui.js toast() (judging round 4, item 2); phones use the same rule */
 .scrim{position:fixed;inset:0;z-index:19;background:rgba(40,30,22,.25);opacity:0;pointer-events:none;transition:opacity var(--t-panel) var(--ease-out)}
 .scrim.on{opacity:1;pointer-events:auto}
 
@@ -500,12 +499,13 @@ html[data-motion=full] .rk .bob{animation:bob 1.6s ease-in-out infinite alternat
 }
 
 /* Visible AI watermark beside the AI-generated logo (team rule, Sat night) */
-.ai-mark{display:inline-block;font:600 .75rem/1.3 var(--font-num);letter-spacing:.03em;color:var(--ink-2);border:1px solid currentColor;border-radius:4px;padding:0 3px;cursor:help;vertical-align:middle}
+/* SI badge: small pill, ~9.5 px (Nithil 16:42); the full words live in its aria-label and the page's one credit line */
+.ai-mark{display:inline-block;font:600 .625rem/1.2 var(--font-num);letter-spacing:.04em;color:var(--ink-2);border:1px solid currentColor;border-radius:999px;padding:0 4px;cursor:help;vertical-align:middle}
 .rail .logo-slot{margin-bottom:2px}
 .rail .rail-ai{margin-bottom:var(--s3)}
 .ai-mark.top-ai{display:none;margin:0 4px 0 -2px}
 @media (max-width:699px){.ai-mark.top-ai{display:inline-block}}
-.ai-credit{font-size:.75rem;color:var(--ink-2)}
+.ai-credit{font-size:.75rem;line-height:1.4;color:var(--muted)}
 /* "Where to look" line (Master item 3): plain words above the numbers. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
 .cd-look{margin:10px 0 12px;padding:10px 12px;border-radius:12px;background:rgba(255,252,247,.55);border:1px solid var(--edge)}
 #vLook .cd-look{margin:10px 0 4px}
