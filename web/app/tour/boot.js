@@ -112,8 +112,14 @@ function placeOffer() {
   offer.style.right = Math.max(12, innerWidth - edge + 16) + 'px';
   offer.style.bottom = Math.max(12, innerHeight - st.bottom + 72) + 'px';
 }
+// the offer never sits over an open sheet, popover or dialog (e.g. the phone Pages sheet): it steps aside until it closes
+const popOpen = () => !!document.querySelector('dialog[open]')
+  || [...document.querySelectorAll('.pop:not([hidden])')].some(e => getComputedStyle(e).display !== 'none');
+let offerIv = 0;
+function guardOffer() { if (offer && !offer.hidden) offer.classList.toggle('aside', popOpen()); }
 function hideOffer() {
   if (!offer || offer.hidden) return;
+  clearInterval(offerIv);
   offer.classList.remove('in'); removeEventListener('resize', placeOffer);
   setTimeout(() => { offer.hidden = true; }, 180);
 }
@@ -127,6 +133,7 @@ function showOffer() {
   const later = () => { remember(getStore(), 'dismissed'); hideOffer(); };
   offer.querySelector('#tourLater').onclick = later; offer.querySelector('#tourX').onclick = later;
   placeOffer(); addEventListener('resize', placeOffer);
+  guardOffer(); offerIv = setInterval(guardOffer, 250);
   void offer.offsetWidth; offer.classList.add('in');
 }
 

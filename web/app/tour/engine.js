@@ -162,7 +162,12 @@ function update() {
     blocks.forEach((b, i) => { b.style.cssText = i || open ? 'width:0;height:0' : `left:0;top:0;width:${vw}px;height:${vh}px`; });
   }
   card.classList.toggle('sheet', phone);
-  if (phone) { card.style.left = card.style.top = ''; return; }
+  if (phone) { // bottom sheet; at the top instead when the part sits at the very bottom and cannot scroll up (notebook footer)
+    card.style.left = card.style.top = '';
+    card.classList.toggle('top', !!r && r.top + r.height > vh - card.offsetHeight - 16 && r.top > card.offsetHeight + 16);
+    return;
+  }
+  card.classList.remove('top');
   const c = { w: card.offsetWidth, h: card.offsetHeight };
   let p;
   if (r) p = placeClear(r, c, { w: vw, h: vh }, variant(step)?.prefer || step.prefer || []);

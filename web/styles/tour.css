@@ -26,6 +26,7 @@
 
 /* phone: the card is a bottom sheet, and the page gets room to scroll the part above it */
 .tour-card.sheet{left:8px!important;right:8px;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:auto}
+.tour-card.sheet.top{top:calc(8px + env(safe-area-inset-top,0px))!important;bottom:auto}
 @media (max-width:699px){
   html[data-tour=on] body{padding-bottom:var(--tour-sheet-h,0px)}
   .tour-actions .key,.tour-skip{min-height:44px}
@@ -82,3 +83,6 @@ html[data-motion=reduce] .tour-layer,html[data-motion=reduce] .tour-hole,html[da
 
 /* "On to <next page>" sits on its own line above Skip · Back · Done */
 .tour-actions #tourAlt{order:-1;flex-basis:100%;justify-content:center}
+
+/* the offer steps aside while a sheet, popover or dialog is open */
+.tour-offer.aside{visibility:hidden;opacity:0!important;pointer-events:none}

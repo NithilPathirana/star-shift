@@ -61,7 +61,7 @@ export const CHAPTERS = [
       body: 'Dark flat squares have no data; outlines and small marks are pixels the archive flagged as doubtful. FLAGS shows or hides them, and the arrow opens the legend.' },
     { id: 'panel', targets: ['#insp'], prefer: ['left'], title: 'About this photo',
       body: 'The panel gives the date, wavelength and flagged pixels of the photo on screen, and a brightness-over-time chart. The + keys save a value to your lab notebook.',
-      phone: { targets: ['#insp .viewer-only .insp-sec:nth-of-type(2)'], prefer: ['above'] } },
+      phone: { targets: ['#infoBtn'], prefer: ['below'], body: 'This key opens the panel about the photo on screen: date, wavelength, flagged pixels and a brightness-over-time chart. Its + keys save a value to your lab notebook.' } },
   ] },
   { id: 'archive', page: 'archive.html', url: 'archive.html', name: 'Archive', steps: [
     { id: 'here', targets: [HERE], prefer: ['right'], title: 'Every photo, as a list',
@@ -125,7 +125,8 @@ export const CHAPTERS = [
       phone: { targets: ['#screen'], prefer: ['below'] } },
     { id: 'checks', targets: ['#side'], prefer: ['left', 'above'], title: 'Let the checks run',
       body: "For each suspect the app checks flags, known stars and known asteroids, then gives a verdict. Unexplained means worth a second look by experts, not a new object.",
-      alt: { targets: ['#sheetOpen'], prefer: ['above'] } },
+      alt: [{ targets: ['#sheetOpen'], prefer: ['above'] },
+        { targets: ['#steps'], prefer: ['below'], body: 'After you mark a suspect, Verify checks it against flags, known stars and known asteroids, then gives a verdict. Unexplained means worth a second look by experts, not a new object.' }] },
   ] },
   { id: 'tonight', page: 'planetarium.html', url: 'planetarium.html', name: 'Can I see it tonight?', steps: [
     { id: 'here', targets: [HERE], prefer: ['right'], title: 'Can I see it tonight?',
