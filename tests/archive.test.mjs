@@ -130,4 +130,8 @@ test('Play link: a built-in target goes by name (?q=), any other patch by ra/dec
   assert.equal(targetViewerUrl({ name: 'RW Aurigae', ra: 76.96, dec: 30.4 }, 60919.4), 'index.html?q=RW+Aurigae&scene=viewer&mjd=60919.40000');
   assert.equal(targetViewerUrl({ name: null, ra: 10.6847, dec: 41.269 }, 60865.5), 'index.html?ra=10.68470&dec=41.26900&scene=viewer&mjd=60865.50000');
   assert.equal(targetViewerUrl({ name: 'Vega', ra: 279.23, dec: 38.78 }), 'index.html?ra=279.23000&dec=38.78000&scene=viewer');
+  // det names which detector's image (D1 and D4 share an exposure time)
+  assert.equal(targetViewerUrl({ name: 'RW Aurigae', ra: 76.96, dec: 30.4 }, 60919.42114, 4), 'index.html?q=RW+Aurigae&scene=viewer&mjd=60919.42114&det=4');
+  assert.match(viewerUrl(1, -2, 60900.5, 1), /&mjd=60900\.50000&det=1$/);
+  assert.doesNotMatch(targetViewerUrl({ name: 'Vega', ra: 279.23, dec: 38.78 }, undefined, 3), /det=/);
 });

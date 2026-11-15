@@ -14,6 +14,12 @@
 <link rel="stylesheet" href="styles/e.css">
 <link rel="stylesheet" href="styles/pages.css">
 <link rel="stylesheet" href="styles/notebook.css">
+<style>/* Archive at 1366 (fulltest archive-expert-play-clipped, archive-lede-squeeze): the Expert table fits
+   without a sideways scroll, and a long count line no longer squeezes the lede to one word per line */
+@media (min-width:701px){
+  .page[data-page=archive] .atable :is(th,td){padding-left:6px;padding-right:6px}
+  .page[data-page=archive] .pg-bar .pg-lede-bar{min-width:min(32ch,100%)}
+}</style>
 </head>
 <body>
 <div class="page" data-page="archive">

@@ -217,20 +217,25 @@ export function rowsToCSV(rows, seasons = []) {
   return toCSV(header, lines);
 }
 
-// Link that opens the patch in the main viewer. `mjd` lets the viewer jump to that image if it supports it.
-export function viewerUrl(ra, dec, mjd) {
-  const p = new URLSearchParams({ ra: (+ra).toFixed(5), dec: (+dec).toFixed(5), scene: 'viewer' });
+// Link that opens the patch in the main viewer. `mjd` + `det` name the image the viewer stops on
+// (one exposure puts the star on two detectors at once, e.g. D1 and D4, so det says which).
+const imageParams = (p, mjd, det) => {
   if (Number.isFinite(mjd)) p.set('mjd', mjd.toFixed(5));
+  if (Number.isFinite(mjd) && Number.isInteger(det) && det > 0) p.set('det', String(det));
+};
+export function viewerUrl(ra, dec, mjd, det) {
+  const p = new URLSearchParams({ ra: (+ra).toFixed(5), dec: (+dec).toFixed(5), scene: 'viewer' });
+  imageParams(p, mjd, det);
   return `index.html?${p}`;
 }
 
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 // Play link for a resolved target: one of the five built-in targets goes by its name (?q=<label>),
 // so the viewer uses the name, the ring and the pre-saved data; any other patch keeps ra/dec.
-export function targetViewerUrl(t, mjd) {
+export function targetViewerUrl(t, mjd, det) {
   const preset = t?.presetKey ? PRESETS.find(p => p.key === t.presetKey) : (t?.name ? findPreset(t.name) : null);
-  if (!preset) return viewerUrl(t.ra, t.dec, mjd);
+  if (!preset) return viewerUrl(t.ra, t.dec, mjd, det);
   const p = new URLSearchParams({ q: preset.label, scene: 'viewer' });
-  if (Number.isFinite(mjd)) p.set('mjd', mjd.toFixed(5));
+  imageParams(p, mjd, det);
   return `index.html?${p}`;
 }

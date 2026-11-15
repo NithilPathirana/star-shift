@@ -5,7 +5,7 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 
 import { parseQuery, QueryError, DEFAULT_SETTINGS } from './query.js';
-import { run, buildStacks, measureMotion, resolveTarget, motionMeasurability, motionDetectors, detectorText, seasons as groupSeasons } from './data.js';
+import { run, planImages, loadFrame, buildStacks, measureMotion, resolveTarget, motionMeasurability, motionDetectors, detectorText, seasons as groupSeasons } from './data.js';
 import { kinematics, tangentialVelocity, toLSR, totalPM } from './kinematics.js';
 import { PRESETS, findPreset } from './presets.js';
 import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight, altAz, riseTransitSet, skyTonight, tonightWords, dirWord } from './sky.js';
@@ -656,7 +656,35 @@ function stallCheck() {
   showState('stError'); Snd.play('error');
 }
 // A coordinate patch's heading (capitalised); the loader's "Finding images of …" keeps it lower case.
-let holdMjd = null; // ?mjd= from the URL: the image to stop on once loading finishes
+let holdMjd = null, holdDet = null; // ?mjd= (&det=) from the URL: the image to stop on once loading finishes
+/* ?mjd=&det= (Archive / Spectrum "Play" links, fulltest archive-play-landing): stop on that exact image
+   (one exposure puts the star on two detectors at once, e.g. D1 and D4, so det says which).
+   It is often not among the up-to-120 images spread over time (R Dra: 2,493 in all), so then it is
+   loaded on its own and shown as one extra image: in the timeline, not in the motion fit, the stacks
+   or the brightness strip (V.FK). If it can't be found or fetched, the nearest image stays, with a note.
+   AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+const nearestF = m => { let b = 0; V.F.forEach((f, k) => { if (Math.abs(f.mjd - m) < Math.abs(V.F[b].mjd - m)) b = k; }); return b; };
+async function holdExact(m, det, ctl) {
+  const stale = () => V.ctl !== ctl || V.status !== 'ready' || P.playing; // a new load, or the visitor pressed Play
+  const nearNote = () => { const f = V.F[P.i]; if (!f || stale()) return; const d = Math.abs(f.mjd - m);
+    if (d > 0.01) toast(`Showing the nearest loaded image, ${d < 1 ? `${Math.round(d * 24)} hours` : `${d < 10 ? d.toFixed(1) : Math.round(d)} days`} from the one you picked.`); };
+  let im = null;
+  try {
+    const { all } = await planImages(V.target, SETTINGS, { base: BASE });
+    for (const x of all) { const d = Math.abs(x.mjdStart - m); if (d < 0.003 && (!det || x.detector === det) && (!im || d < Math.abs(im.mjdStart - m))) im = x; } // within ~4 min
+  } catch { /* the list didn't come: keep the nearest */ }
+  if (stale()) return;
+  if (!im) return nearNote();
+  let f = V.FA.find(x => x.raw.uri === im.uri);
+  if (!f) {
+    try { f = toF(await loadFrame(im, V.target, V.grid, SETTINGS, { base: BASE, tables })); f.extra = true; } catch { return nearNote(); }
+    if (stale()) return;
+  }
+  if (!V.F.includes(f) && HOLD.on && HOLD.group && !HOLD.group.dets.includes(f.det)) setHold(false); // another band than the one held
+  if (!V.F.includes(f)) { let k = V.F.findIndex(x => x.mjd > f.mjd); if (k < 0) k = V.F.length; V.F.splice(k, 0, f); buildTimeline(); } // extra, or hidden by the flag filter
+  P.set(V.F.indexOf(f), true);
+  if (f.extra) toast(`This is the image you picked. It isn't one of the ${V.FA.length} the viewer spreads over time, so it plays as one extra image (not used in the motion fit).`);
+}
 let wantView = null; // ?view= from the URL (a shared link): the mode to open once loading finishes
 const PATCH_NAME = 'This patch', loaderName = n => (n === PATCH_NAME ? 'this patch' : n);
 function load(query, label) {
@@ -738,7 +766,7 @@ function load(query, label) {
       $('d-n').textContent = countText();
       // ?mjd= (Archive/Spectrum "Play" links): show the image nearest that date and stay paused there
       const held = Number.isFinite(holdMjd) && V.F.length > 0;
-      if (held) { const m = holdMjd; holdMjd = null; let b = 0; V.F.forEach((f, k) => { if (Math.abs(f.mjd - m) < Math.abs(V.F[b].mjd - m)) b = k; }); P.pause(); P.set(b, true); }
+      if (held) { const m = holdMjd; holdMjd = null; P.pause(); P.set(nearestF(m), true); holdExact(m, holdDet, ctl); }
       onFrame(P.i); Snd.play('confirm');
       // V.FA = every image loaded; V.F = the ones the user's flag filter keeps (QA, Sun: say so, so the counts match Proof)
       // Master item 1: say that up to 120 images are used, spread evenly in time, out of all IRSA found
@@ -1655,7 +1683,7 @@ function init() {
   app.dataset.scene = 'map';
   applySettings(); buildTimeline(); layout();
   const qp = new URLSearchParams(location.search);
-  if (qp.get('scene') === 'viewer' && qp.get('mjd') && Number.isFinite(+qp.get('mjd'))) holdMjd = +qp.get('mjd');
+  if (qp.get('scene') === 'viewer' && qp.get('mjd') && Number.isFinite(+qp.get('mjd'))) { holdMjd = +qp.get('mjd'); holdDet = Number(qp.get('det')) || null; }
   if (qp.get('scene') === 'viewer' && VIEW_MODES.includes(qp.get('view'))) wantView = qp.get('view');
   if (qp.get('ghost') !== null && Number.isFinite(+qp.get('ghost'))) GH.G.pending = { years: +qp.get('ghost'), viewer: qp.get('scene') === 'viewer' };
   const first = TARGETS[0];
