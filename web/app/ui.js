@@ -27,6 +27,7 @@ import { createCleanBlink } from './cleanblink.js'; // Blink: hide overlays, zoo
 import { createGaiaOverlay } from './gaia-overlay.js'; // b9: Gaia DR3 circles on the frames
 import { createTelescopes } from './telescopes/index.js'; // Telescope compare (DESIGN.md 31a)
 import { diffImage, diffStar, diffCaption, drawDiff, diffLegend } from './diffview.js'; // b6: Compare > Difference
+import { createGifExport } from './gifexport.js'; // spec-team-extras 3: Save as GIF / video
 import { createSnrPanel } from './snr-ui.js'; // spec A: signal-to-noise of a clicked spot (side panel)
 import { CLARITY_KEY, readClarity } from './prefs.js'; // Clarity defaults (sounds off)
 import './story.js'; // b1: first-screen story on the cold-open map (story.css)
@@ -221,6 +222,7 @@ function buildTimeline() {
 let tlRaf = 0; const rebuildSoon = () => { if (!tlRaf) tlRaf = requestAnimationFrame(() => { tlRaf = 0; buildTimeline(); onFrame(P.i); }); };
 
 let mode = 'play', side = 0, bt = null, zoom = 1, panX = 0, panY = 0, cssCell = 16, shown = -1, diffOn = false;
+let GX = null; // Save as GIF / video (gifexport.js), set up below
 function layout() {
   const box = $('screens'), two = mode === 'compare' && !diffOn, n = V.n;
   const w = box.clientWidth, h = box.clientHeight - (mode === 'compare' ? (diffOn && mq('(max-width: 699px)') ? 64 : 28) : 0); // room for the caption (phone Difference: + legend)
@@ -312,7 +314,7 @@ function setDiff(on) {
 }
 function draw() {
   const A = $('cvA'), B = $('cvB'), F = V.F;
-  GO.place();
+  GO.place(); GX?.sync();
   $('ghostOff').hidden = true; $('diffLgd').hidden = true;
   if (mode === 'telescopes') { const f = F[Math.min(P.i, F.length - 1)]; TS.refresh(); TS.draw(); info(f || null); $('chip').innerHTML = CX.chipLead() + '<span>Telescopes · same patch, same scale, north up</span>'; return; }
   if (!F.length) { const c = A.getContext('2d'); c.clearRect(0, 0, A.width, A.height); info(null); $('chip').innerHTML = ''; return; }
@@ -406,6 +408,9 @@ async function openLC(source, choices) {
 }
 $('lcMake').onclick = () => openLC();
 $('lcTool').onclick = () => openLC(); // the stage toolbar: reachable on phones, where the info sheet is closed
+{ // phones: the same key under the result plate (Judging panel round 8, item 3); only appended, the plate's own text is untouched
+  const k = document.createElement('button'); k.type = 'button'; k.id = 'lcPlateKey'; k.className = 'key lcp-key'; k.textContent = 'Make a light curve';
+  k.onclick = () => openLC(); $('resultPlate')?.appendChild(k); }
 (() => { // a click (not a drag) on the image offers a key for that spot; on the target itself, the target
   const cv = $('cvA'), scr = cv.parentElement; let down = null;
   scr.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; if (!e.target.closest('#lcmPick')) $('lcmPick')?.remove(); });
@@ -426,6 +431,37 @@ $('lcTool').onclick = () => openLC(); // the stage toolbar: reachable on phones,
 const CB =createCleanBlink({ $, Snd, mode: () => mode, n: () => V.n, cell: () => cssCell, redraw: () => draw(),
   getView: () => ({ zoom, panX, panY }), setView: v => { zoom = v.zoom; if (v.panX != null) { panX = v.panX; panY = v.panY; } layout(); },
   target: () => (firstS()?.exp && lastS()?.exp ? [firstS().exp, lastS().exp] : null) });
+// spec-team-extras 3: "Save as GIF" / "Save as video" of Blink, Time or Compare > Difference (gifexport.js).
+// Each frame is drawn by draw() into cvA exactly as on screen, then copied with the caption burned in.
+const GIF_TIME_MAX = 40; // Time: at most 40 images, spread evenly over the dates (the file stays under 5 MB)
+function exportView() {
+  if (scene !== 'viewer' || V.status !== 'ready' || !V.F.length) return null;
+  const A = $('cvA'), still = () => { if (mode !== m0 || diffOn !== d0) throw new Error('the view changed while recording'); };
+  const m0 = mode, d0 = diffOn, two = V.stacks.length > 1, target = V.name;
+  if (mode === 'blink' && two) {
+    const a = firstS(), b = lastS(), s0 = side, ms = set.motion ? 1500 : 600;
+    return { kind: 'blink', target, dates: `${R.fmtMonth(iso(a.start))} → ${R.fmtMonth(iso(b.end))}`, count: 2,
+      begin() { clearInterval(bt); },
+      async frame(k) { still(); side = k; draw(); const f = k ? b : a; return { canvas: A, label: `Blink · ${stackName(f)} · stacked · ${sRange(f)}`, delay: ms }; },
+      end() { side = s0; if (mode === 'blink') { draw(); clearInterval(bt); bt = setInterval(() => { side ^= 1; draw(); }, ms); } } };
+  }
+  if (mode === 'compare' && diffOn && two) {
+    const a = firstS(), b = lastS();
+    return { kind: 'difference', target, dates: `${R.fmtMonth(iso(a.start))} → ${R.fmtMonth(iso(b.end))}`, count: 1, begin() {}, end() {},
+      async frame() { still(); draw(); return { canvas: A, label: 'Difference · last season minus first season · copper = brighter later, blue = fainter later', delay: 1000 }; } };
+  }
+  if (mode === 'play' || (!two && mode !== 'telescopes')) {
+    const F = V.F, n = F.length, picks = n <= GIF_TIME_MAX ? F.map((_, i) => i) : Array.from({ length: GIF_TIME_MAX }, (_, j) => Math.round(j * (n - 1) / (GIF_TIME_MAX - 1)));
+    const i0 = P.i, was = P.playing;
+    return { kind: 'time', target, dates: `${R.fmtDate(F[0].date)} – ${R.fmtDate(F[n - 1].date)}`, count: picks.length,
+      begin() { P.pause(); },
+      async frame(k) { still(); P.i = picks[k]; draw(); const f = F[P.i], bl = bandLabel(rangeOf(f.um));
+        return { canvas: A, label: `Time · image ${picks[k] + 1} of ${n} · ${R.fmtDate(f.date)} · ${f.um ? f.um.toFixed(2) + ' µm' : ''}${bl ? ' · ' + bl.name : ''}${HOLD.on ? ' · ' + HOLD.group.label + ' only' : ''}`, delay: Math.round(1000 / P.fps) }; },
+      end() { if (V.F === F) P.set(Math.min(i0, V.F.length - 1)); if (was && mode === 'play') P.play(); } };
+  }
+  return null;
+}
+GX = createGifExport({ $, toast, view: exportView, onDone: () => Snd.play('confirm') });
 // Spec A: signal-to-noise of the image on screen (Time), at the star's predicted place or a clicked spot (snr-ui.js)
 const curImg = () => (V.F.length ? V.F[Math.min(P.i, V.F.length - 1)] : null);
 const SNR = createSnrPanel($('snrBody'), { base: BASE, name: () => V.name,
@@ -534,7 +570,10 @@ function updatePlate() {
   if (V.stalled || V.status === 'error' || V.status === 'empty') { el.hidden = true; plateKey = ''; return; } // the stage's own message speaks
   const loading = V.status === 'loading', mo = V.motion, p = holdPreset();
   if (V.status === 'ready' && $('stage').classList.contains('pre-blink')) setTimeout(() => preBlink(false), 1500); // whatever the load ends in, never stay blank
-  const how = `<a class="rp-how" href="proof.html${p ? '#' + p.key : ''}">How we know <span aria-hidden="true">→</span></a>`, sep = '<span class="sep">·</span>';
+  const sep = '<span class="sep">·</span>';
+  // Barnard's Star also offers the classroom activity (spec-team-extras.md item 1: measure.html)
+  const how = `<a class="rp-how" href="proof.html${p ? '#' + p.key : ''}">How we know <span aria-hidden="true">→</span></a>`
+    + (p?.key === 'barnard' ? ` ${sep} <a class="rp-how" href="measure.html">Measure it yourself <span aria-hidden="true">→</span></a>` : '');
   let res = '', live = '', done = false, cap = '', capCat = '';
   if (loading || V.status === 'idle') {
     const n = V.FA.length, N = V.planned || 0, pc = N ? Math.round(100 * n / N) : 0;
@@ -559,7 +598,7 @@ function updatePlate() {
       const nb = mo.significant !== false ? blendNb() : null, lowTxt = nb ? `Likely a lower estimate: a star ${nb.sepArcsec.toFixed(1)}″ away blends in.` : '';
       // the Proof page's 'For information' line, word for word (make_proof.mjs), with proof.json's blendFit numbers
       const bf = nb && proofBlend?.[p?.key], pm2 = x => (x / 1000).toFixed(2);
-      const bfTxt = bf ? `For information: fitting that star out (a two-source fit with its Gaia position fixed and the star width measured on Epsilon Indi B) gives ${pm2(bf.value)} ± ${pm2(bf.err)}″/yr from ${bf.frames} images, ${bf.sigma >= 0 ? '+' : ''}${bf.sigma}σ from the catalogue; the verdict uses the standard method above.` : '';
+      const bfTxt = bf ? `For information: fitting that star out (a two-source fit with its Gaia position fixed and the star width measured on Epsilon Indi B) gives ${pm2(bf.value)} ± ${pm2(bf.err)}″/yr from ${bf.frames} images, ${bf.sigma >= 0 ? '+' : ''}${bf.sigma}σ from the catalogue; the verdict uses the single-star fit.` : '';
       res = `<span class="x-only rp-x">${xRes}</span><span class="s-only rp-x">${simpleRes(st, mo, dir, dirTxt ? dirDeg(mo, cat) : null, tag)}</span>${lowTxt ? `<span class="rp-row"></span><span class="rp-k">${esc(lowTxt)}</span>` : ''}${bfTxt ? `<span class="rp-row"></span><span class="rp-k rp-info">${esc(bfTxt).replace(' (a two-source', '<span class="x-only"> (a two-source').replace('Epsilon Indi B)', 'Epsilon Indi B)</span>')}</span>` : ''} ${nw(how)}`;
       live = `Measured here ${st.value}${st.cat != null ? `, catalogue ${st.cat.toFixed(2)}″ a year` : ''}${st.verdict ? `, ${st.verdict.toLowerCase()}` : ''}${dirTxt ? `; ${dirTxt}, ${dir.verdict.toLowerCase()}` : ''}.${lowTxt ? ' ' + lowTxt : ''}${bfTxt ? ' ' + bfTxt : ''}`;
     }
@@ -1260,7 +1299,7 @@ function plainType(code) {
 function showSearchError(text, why) {
   const near = TARGETS.find(x => { const a = x.name.toLowerCase().replace(/[^a-z]/g, ''), b = String(text).toLowerCase().replace(/[^a-z]/g, ''); return b.length > 3 && (a.startsWith(b.slice(0, 4)) || b.startsWith(a.slice(0, 4))); });
   const el = $('serr'); el.hidden = false; el.classList.remove('calm'); $('toast').classList.remove('show'); // the "Looking up..." toast is answered
-  el.innerHTML = `<span>${why ? esc(why) : `Couldn't find “${esc(text)}”.`}</span>${near ? `<button class="key" id="serrFix">Try ${esc(near.name)}</button>` : ''}${why && /coordinates|RA Dec|269\.45/i.test(why) ? '' : '<span style="color:var(--muted)">or type RA Dec like 269.45 +4.69</span>'}`; // one hint only (a11)
+  el.innerHTML = `<span>${why ? esc(why) : `Couldn't find “${esc(text)}”.`}</span>${near ? `<button class="key" id="serrFix">Try ${esc(near.name)}</button>` : ''}${why && /coordinates|RA Dec|269.446/i.test(why) ? '' : '<span style="color:var(--muted)">or type RA Dec like 269.446 +4.771</span>'}`; // one hint only (a11)
   if (near) $('serrFix').onclick = () => { el.hidden = true; $('q').value = near.name; goTo(near.name); };
 }
 $('q').addEventListener('input', () => { $('serr').hidden = true; });

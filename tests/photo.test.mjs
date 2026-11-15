@@ -95,3 +95,30 @@ test('quad code is the same after rotating, scaling and shifting the four points
 test('makeSolution: up angle round-trips', () => {
   for (const up of [0, 45, 190]) assert.ok(angDiff(upAngle(makeSolution({ ra: 10, dec: 10, up, scale: 0.05, w: 100, h: 100 })), up) < 1e-9);
 });
+
+test('detection throws out sky seen through a dark silhouette and long streaks, and the photo still solves', async () => {
+  const c = { ra: 83.8, dec: 2.0, up: 30, w: 900, h: 600, bg: 30, noise: 2 }, scale = 50 / c.w;
+  const { img, centre } = renderField(cat, { ...c, scale });
+  const top = Math.round(c.h * 0.62), holes = [], streaks = [];
+  for (let y = top; y < c.h; y++) for (let x = 0; x < c.w; x++) img[y * c.w + x] = 3 + ((x * 31 + y * 17) % 5) * 0.4; // tree line
+  for (let k = 0; k < 8; k++) { // gaps between leaves: sky-coloured, every other one with a lamp in it
+    const hx = 60 + k * 105, hy = top + 40 + (k % 3) * 50; holes.push([hx, hy]);
+    for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (dx * dx + dy * dy <= 7) img[(hy + dy) * c.w + hx + dx] = 30 + (k % 2 ? 120 * Math.exp(-(dx * dx + dy * dy) / 2) : 0);
+  }
+  for (const [x0, y0, ang] of [[150, 80, 0.3], [600, 150, 2.2], [420, 300, 1.2]]) { // satellite / plane trails
+    streaks.push([x0, y0, ang]);
+    for (let t = -25; t <= 25; t += 0.5) {
+      const x = x0 + t * Math.cos(ang), y = y0 + t * Math.sin(ang);
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const X = Math.round(x) + dx, Y = Math.round(y) + dy; img[Y * c.w + X] = Math.min(255, img[Y * c.w + X] + 12 * Math.exp(-((X - x) ** 2 + (Y - y) ** 2) / 1.3)); }
+    }
+  }
+  const det = detectStars(img, c.w, c.h);
+  for (const [hx, hy] of holes) assert.ok(!det.stars.some(s => Math.hypot(s.x - hx, s.y - hy) < 6), `a star was found in the leaf gap at ${hx},${hy}`);
+  for (const [x0, y0, ang] of streaks) for (let t = -20; t <= 20; t += 5) {
+    const x = x0 + t * Math.cos(ang), y = y0 + t * Math.sin(ang);
+    assert.ok(!det.stars.some(s => Math.hypot(s.x - x, s.y - y) < 3), `a star was found on the trail at ${x.toFixed(0)},${y.toFixed(0)}`);
+  }
+  assert.ok(det.rejected.silhouette > 0 && det.rejected.elongated > 0, JSON.stringify(det.rejected));
+  const r = await solve(cat, det.stars, c.w, c.h);
+  assert.ok(r.ok && sepDeg(r.centre.ra, r.centre.dec, centre.ra, centre.dec) < 0.5);
+});

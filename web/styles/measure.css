@@ -1,0 +1,56 @@
+/* "Measure it yourself" page (web/measure.html, app/measure/). Plain on purpose: wells, keys and the dark stage
+   from e.css / pages.css. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+.ms-main{max-width:1080px}
+.ms-sheet-keys{display:flex;flex-wrap:wrap;gap:8px}
+.ms-status{font-size:.875rem;color:var(--ink-2)}
+.ms-print-only{display:none}
+.ms-status[hidden]{display:none}
+.ms-status .key{margin-left:8px}
+.ms-step{padding:var(--s3) var(--s4);display:grid;gap:10px;border-radius:var(--r-shell, 16px)}
+.ms-step h2{font-size:1.0625rem;font-weight:700;display:flex;align-items:center;gap:10px}
+.ms-step p{max-width:72ch;font-size:.9375rem;line-height:1.5;color:var(--ink-2)}
+.ms-n{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--stage);color:var(--stage-text);font-size:.875rem;flex:none}
+.ms-note{font-size:.8125rem;color:var(--muted)}
+.ms-blink{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:var(--s3);align-items:start}
+.ms-stage{position:relative;background:var(--stage);border-radius:12px;padding:8px;line-height:0}
+.ms-stage canvas{display:block;width:100%;aspect-ratio:1;image-rendering:pixelated;border-radius:6px}
+.ms-click{cursor:crosshair}
+.ms-click:focus-visible{outline:3px solid var(--focus, #2456E6);outline-offset:3px}
+.ms-cap{display:block;line-height:1.4;margin-top:6px;font-size:.75rem;color:var(--stage-text)}
+.ms-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ms-ctl-col{flex-direction:column;align-items:flex-start}
+.ms-pair{display:grid;grid-template-columns:repeat(2,minmax(0,340px));gap:var(--s3)}
+.ms-fig{margin:0;display:grid;gap:6px}
+.ms-fig figcaption{font-size:.8125rem;color:var(--ink-2);line-height:1.5}
+.ms-pos{color:var(--muted)}
+.ms-calc{display:grid;gap:4px;font-size:.875rem;color:var(--ink)}
+.ms-calc p{color:var(--ink)}
+.ms-big{font-size:1.125rem}
+.ms-result{border-radius:12px;padding:var(--s3);display:grid;gap:6px;background:rgba(255,255,255,.6);border:2px solid var(--edge-strong, rgba(40,28,18,.5))}
+.ms-result[hidden]{display:none}
+.ms-result p{color:var(--ink);max-width:72ch}
+.ms-result .ms-head{font-size:1.25rem;font-weight:700}
+.ms-result.ms-bullseye,.ms-result.ms-close,.ms-result.ms-good{border-color:var(--sage-ink, #2E6B3A)}
+.ms-result.ms-near{border-color:var(--copper-ink, #8A4A12)}
+@media (max-width:700px){
+  .ms-blink,.ms-pair{grid-template-columns:minmax(0,1fr)}
+  .ms-step{padding:var(--s3)}
+  .ms-ctl .key{min-height:44px}
+  .ms-sheet-keys .key{min-height:44px}
+  .seg-btn{min-height:44px}
+}
+/* the printed worksheet: the steps and their numbers, no app chrome */
+@media print{
+  /* notebook.css prints only the Lab notebook; here the page prints, unless the notebook is open */
+  body:not(:has(.notebook-dialog[open]))>.page{display:block!important}
+  .notebook-dialog:not([open]){display:none!important}
+  .rail,.topbar,.ms-sheet-keys,.ms-ctl,.ms-status,#againBtn,.pop,#hintNote{display:none!important}
+  body,.page,.pg-main{display:block!important;height:auto!important;overflow:visible!important;background:#fff!important}
+  .ms-main{max-width:none;padding:0}
+  .ms-print-only{display:block;margin:6px 0 10px;font-size:.875rem;color:#000}
+  .ms-step{break-inside:avoid;box-shadow:none!important;border:1px solid #999;background:#fff!important;margin-bottom:10px}
+  .ms-blink{grid-template-columns:200px 1fr}
+  .ms-pair{grid-template-columns:repeat(2,200px)}
+  .ms-step p,.ms-calc p,.ms-result p{color:#000}
+  .ms-result{background:#fff;border-color:#000}
+}

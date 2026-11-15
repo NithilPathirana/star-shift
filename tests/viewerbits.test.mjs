@@ -66,7 +66,7 @@ test('caption numbers come from the fit and the stack dates (1.0 yr apart -> 10.
   assert.equal(c.text, "Barnard's Star moved 10.3″ in 1.0 years, about 1.7 pixels.");
   assert.equal(storyCaption('X', { ok: true, total: 500, significant: false }, 1, 400), null);
   // a noisy fit (WISE 0855, 6.53 ± 1.98″/yr): rounded, with its ±, and one pixel in the singular
-  assert.equal(storyCaption('WISE 0855', { ok: true, total: 6530, totalErr: 1980, significant: true }, 60950, 60950 + 365.25, 8.15).text, 'WISE 0855 moved about 1 pixel in 1.0 years: about 6.5 ± 2.0″ a year; catalogue 8.2″.');
+  assert.equal(storyCaption('WISE 0855', { ok: true, total: 6530, totalErr: 1980, significant: true }, 60950, 60950 + 365.25, 8.15).text, 'WISE 0855 moved about 1 pixel in 1.0 years: about 6.5 ± 2.0″ a year; catalogue 8.15″.');
   assert.equal(storyCaption('X', { ok: true, total: 6150, totalErr: 100, significant: true }, 60950, 60950 + 365.25).text, 'X moved 6.2″ in 1.0 years, about 1 pixel.');
   assert.equal(storyCaption('X', { ok: false }, 1, 400), null);
 });

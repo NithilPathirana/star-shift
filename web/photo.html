@@ -102,13 +102,15 @@
           <h2>Result</h2>
           <p id="resTxt">Drop in a photo to begin.</p>
           <dl class="ph-dl" id="resDl" hidden>
-            <dt>Centre</dt><dd class="num" id="rCentre"></dd>
-            <dt>Field of view</dt><dd class="num" id="rFov"></dd>
+            <dt id="tCentre">Centre</dt><dd class="num" id="rCentre"></dd>
+            <dt id="tFov">Field of view</dt><dd class="num" id="rFov"></dd>
             <dt class="x-only">Match</dt><dd class="num x-only" id="rMatch"></dd>
             <dt class="x-only">Orientation</dt><dd class="num x-only" id="rUp"></dd>
           </dl>
+          <a class="key primary ph-go" id="goMap" href="index.html" hidden>Open the sky map at this field</a>
+          <div class="ph-named" id="named" hidden><p class="flabel">Stars in your photo, in SPHEREx infrared</p><div class="ph-links" id="namedLinks"></div></div>
           <p id="pickTxt" hidden></p>
-          <a class="key primary ph-go" id="goViewer" href="index.html" hidden>See this part of the sky in SPHEREx infrared</a>
+          <a class="key ph-go" id="goViewer" href="index.html" hidden>See this part of the sky in SPHEREx infrared</a>
           <button class="key x-only" type="button" id="csv" hidden>Download matched stars (CSV)</button>
         </div>
 

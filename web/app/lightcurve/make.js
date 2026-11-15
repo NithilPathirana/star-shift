@@ -28,7 +28,7 @@ import { propagate, separationArcsec } from '../../core/motion.js';
 import { classifyFrame } from '../../core/contam.js';
 import { meanSem } from '../proof/logic.js';
 import { seasonBounds } from '../seasons.js';
-import { GROUPS, APERTURE, WL_MATCH, GRID_ARCSEC, SEASON_GAP, DET, toMilliJy, seasonIndex, detection } from './logic.js';
+import { GROUPS, APERTURE, WL_MATCH, GRID_ARCSEC, SEASON_GAP, DET, toMilliJy, seasonIndex, detection, seasonChange } from './logic.js';
 
 // Detector wavelength ranges (SPHEREx Explanatory Supplement v2.0, as the band editor in ui.js).
 export const DET_UM = [[0.744, 1.116], [1.099, 1.651], [1.636, 2.421], [2.423, 3.822], [3.809, 4.420], [4.412, 5.002]];
@@ -41,7 +41,7 @@ export const SATURATED_TEXT = 'Saturated: not measurable.';
 export const NOTHING_TEXT = 'Nothing detected at this spot.';
 export const DETECT_SIGMA = 3; // an image whose aperture sum is under 3 times its noise is a non-detection there
 // Proof's rounding (tools/make_proof.mjs): season means to 0.001 mag, then last minus first, σ to 0.1
-const r3 = (v) => +v.toFixed(3), r1 = (v) => +v.toFixed(1);
+const r3 = (v) => +v.toFixed(3);
 export const ERR_NOTE = "Error bars: background noise in the aperture only. The star's own photon noise and calibration drifts are not included, so they are a lower bound; choose comparison stars to add their measured scatter.";
 export const ERR_NOTE_COMP = 'Error bars: background noise in the aperture plus the scatter of the comparison stars about each other (how much a steady star spreads in this band).';
 const F = 2.5 / Math.LN10; // 1.0857: σ_m = F σ_F / F
@@ -168,11 +168,11 @@ export function makeCurve(frames, grid, choices = {}, bounds) {
     const a = bySeason[0], z = bySeason[bySeason.length - 1];
     const ok = bySeason.length >= 2 && a.season === firstS && a.n >= 3 && z.n >= 3 && a.sem != null && z.sem != null;
     const count = st => mine.filter(r => r.status === st).length;
-    const dmag = ok ? r3(r3(z.dm) - r3(a.dm)) : null, dmagErr = ok ? r3(Math.hypot(r3(a.sem), r3(z.sem))) : null;
+    const { dmag, dmagErr, sigma } = ok ? seasonChange(a, z) : { dmag: null, dmagErr: null, sigma: null }; // the panel's own function
     return { ...b, total: mine.length, masked: count('masked'), flagged: absent ? 0 : count('flagged'), faint: absent && detect.state === 'offset' ? 0 : absent ? count('usable') + count('faint') + count('off image') : count('faint') + count('off image'),
       detect, absent, notHere: absent && detect.state === 'offset' ? count('usable') + count('faint') : 0,
       noRef: [...why.values()].filter(w => w === 'no reference').length, noComp: [...why.values()].filter(w => w === 'no comparison').length, why,
-      points, compScatter, direct: comps.length > 0 && !useComps, bySeason, ok, dmag, dmagErr, sigma: ok && dmagErr > 0 ? r1(Math.abs(dmag) / dmagErr) : null };
+      points, compScatter, direct: comps.length > 0 && !useComps, bySeason, ok, dmag, dmagErr, sigma };
   });
   const inAny = rows.filter(r => outBands.some(b => inBand(b, r)));
   const counts = { total: inAny.length, masked: inAny.filter(r => r.status === 'masked').length, flagged: inAny.filter(r => r.status === 'flagged').length,
@@ -180,7 +180,47 @@ export function makeCurve(frames, grid, choices = {}, bounds) {
   // every image masked within the aperture: too bright for SPHEREx (Proof's one meaning of "saturated")
   const status = !inAny.length ? 'empty' : counts.masked === inAny.length ? 'saturated' : counts.plotted ? 'ok'
     : outBands.every(b => !b.total || b.absent || !b.points.length) && outBands.some(b => b.absent || b.faint) ? 'nothing' : 'none';
-  return { rows, bands: outBands, counts, status, choices: { aperture, skipFlagged, nComps: comps.length } };
+  return { rows, bands: outBands, counts, status, choices: { aperture, skipFlagged, nComps: comps.length, bandIds: bands.map(b => b.id).join(','), own: !!source.own } };
+}
+
+// ---- the same numbers as the Proof page (Judging panel round 8, item 3) ----
+export const PROOF_CHOICES = { bandKind: 'proof', aperture: APERTURE, skipFlagged: false, comps: [] };
+// ch: a curve's .choices, or the dialog's choices ({ bandKind, aperture, skipFlagged, comps, source })
+export const isProofChoices = (ch) => (ch.bandIds != null ? ch.bandIds === 'short,long' : ch.bandKind === 'proof') && ch.aperture === APERTURE && !ch.skipFlagged
+  && !(ch.nComps ?? ch.comps?.length) && (ch.own ?? (!ch.source || ch.source.own)) !== false;
+// Proof's record for a demo target: its brightness test (RW Aur, R Dra), or the steady control (Barnard's Star,
+// proof.json control); null when Proof has no brightness numbers for it.
+export function proofRecord(proof, key, label) {
+  const t = proof?.targets?.find(q => q.key === key);
+  const b = t?.tests?.find(x => x.type === 'brightness');
+  if (b) return { kind: 'test', verdict: b.verdict, groups: b.measured?.groups || null, limit: b.limit || '' };
+  if (proof?.control && (proof.control.label === label || proof.control.label === t?.label)) return { kind: 'control', groups: proof.control.groups };
+  return null;
+}
+// Compare a curve (made with Proof's choices) with Proof's record, number by number. Returns
+// { rows: [{ name, text, match }], match } or null when Proof has nothing to compare with. A ✓ is earned only by equality.
+export function compareProof(curve, rec) {
+  if (!curve || !rec) return null;
+  const fm = (v) => (v < 0 ? '−' : '+') + Math.abs(v).toFixed(2);
+  if (rec.kind === 'test' && !rec.groups) { // NOT MEASURABLE on Proof: "Too bright for SPHEREx: 120 of 120 images have a masked pixel…"
+    const m = /(\d+) of (\d+) images have a masked pixel/.exec(rec.limit);
+    const match = !!m && curve.status === 'saturated' && +m[1] === curve.counts.masked && +m[2] === curve.counts.total;
+    return { match, rows: [{ name: 'All bands', text: `not measurable: ${curve.counts.masked} of ${curve.counts.total} images masked`, match }] };
+  }
+  const rows = curve.bands.map((b, k) => {
+    const g = rec.groups.find(x => x.name === b.long) || rec.groups[k];
+    if (!g) return { name: b.name, text: 'not on Proof', match: false };
+    if (rec.kind === 'test' && g.ok) {
+      const match = b.ok && b.dmag === g.value && b.dmagErr === g.err && b.sigma === g.sigma && b.points.length === g.frames;
+      return { name: b.name, text: b.ok ? `${fm(b.dmag)} ± ${b.dmagErr.toFixed(2)} mag · ${b.sigma}σ · ${b.points.length} images` : 'no change measured', match };
+    }
+    // no change on Proof (the control, or too few images): the same images and the same season means
+    const seasons = g.bySeason || g.seasons || [];
+    const match = !b.ok && b.points.length === g.frames && b.bySeason.length === seasons.length
+      && b.bySeason.every((s, i) => s.n === seasons[i].n && r3(s.dm) === seasons[i].dm && (s.sem == null ? seasons[i].sem == null : r3(s.sem) === seasons[i].sem));
+    return { name: b.name, text: `no change measured · ${b.points.length} images${b.bySeason.length ? `, ${b.bySeason.length} season${b.bySeason.length > 1 ? 's' : ''}` : ''}`, match };
+  });
+  return { rows, match: rows.every(r => r.match) };
 }
 
 // "64 of 120 images plotted · 16 skipped: a masked pixel within 15″ · 3 flagged at the source · …"

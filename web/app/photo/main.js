@@ -5,6 +5,7 @@
 import { prepareCatalogue, detectStars, solve, pixToSky, skyToPix, scaleDeg, fitTwo, checkTwo, starsInPhoto, summary } from './solve.js';
 import { initShell, download } from '../archive/shell.js';
 import { viewerUrl } from '../archive/logic.js';
+import { PRESETS, SAVED } from '../presets.js';
 import { formatRA, formatDec } from '../query.js';
 import { isExpert, onExpert } from '../expert.js';
 import { parsePlace } from '../planet/places.js';
@@ -101,7 +102,7 @@ async function run() {
     if (!res.ok && keep) { res = await solve(cat, stars, S.w, S.h, { fov: h.fov, onProgress: prog }); if (res.ok) note = 'The place and time hint didn’t fit this part of the sky, so it was solved without it.'; }
     status('');
     if (res.ok) { S.res = { ...res, byHand: false, note }; afterSolve(h); }
-    else { S.res = null; S.lastFail = res; setResult('fail'); draw(); }
+    else { S.res = null; S.lastFail = { ...res, lensHint: !!h.fov }; setResult('fail'); draw(); }
   } finally { S.busy = false; $('again').disabled = !S.lum; }
 }
 
@@ -129,7 +130,8 @@ function setResult(kind) {
   const el = $('result'), r = S.res;
   el.dataset.solved = kind === 'ok' ? 'true' : kind === 'busy' ? 'busy' : kind === 'none' ? 'false' : 'fail';
   const show = kind === 'ok' || kind === 'unconfirmed';
-  $('resDl').hidden = !show; $('goViewer').hidden = kind !== 'ok'; $('pickTxt').hidden = kind !== 'ok';
+  $('resDl').hidden = !show; $('goViewer').hidden = kind !== 'ok'; $('pickTxt').hidden = kind !== 'ok'; $('goMap').hidden = kind !== 'ok';
+  if (kind !== 'ok') $('named').hidden = true;
   $('csv').hidden = kind !== 'ok'; $('key').hidden = !show; $('phTag').hidden = !show;
   if (kind === 'busy') { $('resTxt').textContent = 'Looking for star patterns…'; return; }
   if (kind === 'none') { $('resTxt').textContent = 'Drop in a photo to begin.'; return; }
@@ -137,7 +139,7 @@ function setResult(kind) {
     const f = S.lastFail || {};
     $('resTxt').innerHTML = f.reason === 'few-stars'
       ? `<b>Too few stars to work with.</b> Only ${f.found || 0} star-like dots were found; it needs at least 6. A longer exposure or a darker sky helps, or line it up by hand below.`
-      : `<b>No confident match.</b> ${f.tried ? `${f.tried.toLocaleString('en')} possible star patterns were checked, but` : 'So far'} none lined up with enough other stars to rule out chance, so it won’t guess. Add the lens hint, or line it up by hand below.`;
+      : `<b>No confident match.</b> ${f.tried ? `${f.tried.toLocaleString('en')} possible star patterns were checked. For` : 'For'} each one, none of the other stars line up with the catalogue, so it won’t guess. ${f.lensHint ? 'Your lens hint was used, so try lining it up by hand below: click two stars you know.' : 'Add the lens hint, or line it up by hand below.'}`;
     return;
   }
   const c = r.centre, con = conName(c.ra, c.dec);
@@ -149,12 +151,30 @@ function setResult(kind) {
   } else {
     $('resTxt').innerHTML = `<b>Not confirmed.</b> Only ${Math.max(0, extra)} other star${extra === 1 ? '' : 's'} line up, so the two names may not match the stars you clicked. Try two other bright stars, well apart.`;
   }
+  const unc = kind !== 'ok';
+  $('tCentre').textContent = unc ? 'Centre (unconfirmed)' : 'Centre'; $('tFov').textContent = unc ? 'Field of view (unconfirmed)' : 'Field of view';
   $('rCentre').textContent = `${raDecText(c.ra, c.dec)}${con ? ` · ${con}` : ''}`;
   $('rFov').textContent = `${deg(r.fovW)} × ${deg(r.fovH)}`;
+  if (!unc) { $('goMap').href = `index.html?${new URLSearchParams({ ra: c.ra.toFixed(5), dec: c.dec.toFixed(5) })}`; namedLinks(); }
   const k = S.bw / S.w, arcmin = (px) => (px * scaleDeg(r.sol) * 60).toFixed(1);
   $('rMatch').textContent = `${r.matched} of ${r.used} stars matched (needed ${r.need}; chance ≈ ${r.chance.toFixed(2)}) · RMS ${(r.rmsPx * k).toFixed(1)} px (${arcmin(r.rmsPx)}′) · tolerance ${(r.tolPx * k).toFixed(1)} px`;
-  $('rUp').textContent = `Top of photo points ${deg(r.up)} east of north${r.mirrored ? ' (mirrored image)' : ''} · ${(scaleDeg(r.sol) / k * 3600).toFixed(1)}″ per pixel`;
+  $('rUp').textContent = `Top of photo points ${upText(r.up)} east of north${r.mirrored ? ' (mirrored image)' : ''} · ${(scaleDeg(r.sol) / k * 3600).toFixed(1)}″ per pixel`;
   updatePick();
+}
+
+// "360.0°" -> "0.0°": round first, then wrap
+const upText = (u) => `${(((Math.round(u * 10) / 10) % 360 + 360) % 360).toFixed(1)}°`;
+
+// Up to 5 stars in the photo as SPHEREx links: saved targets (presets, prebaked) first, then the brightest matched named stars.
+function namedLinks() {
+  const r = S.res, out = [], seen = new Set();
+  const inside = (ra, dec) => { const p = skyToPix(r.sol, ra, dec); return p && p.x >= 0 && p.y >= 0 && p.x < S.w && p.y < S.h; };
+  for (const t of [...PRESETS, ...SAVED]) if (inside(t.target.ra, t.target.dec)) { out.push(t.label); seen.add(t.label.toLowerCase()); }
+  const named = r.pairs.map(p => ({ name: cat.names[cat.hip[p.star]], mag: cat.mag[p.star] })).filter(x => x.name).sort((a, b) => a.mag - b.mag);
+  for (const x of named) if (!seen.has(x.name.toLowerCase())) { out.push(x.name); seen.add(x.name.toLowerCase()); }
+  const top = out.slice(0, 5);
+  $('namedLinks').replaceChildren(...top.map(n => Object.assign(document.createElement('a'), { className: 'key', textContent: n, href: `index.html?${new URLSearchParams({ q: n, scene: 'viewer' })}` })));
+  $('named').hidden = !top.length;
 }
 
 function updatePick() {
@@ -194,11 +214,23 @@ function draw() {
     for (const s of S.labels) if (!matched.has(s.i)) { g.strokeStyle = 'rgba(237,229,218,.55)'; g.beginPath(); g.arc(X(s.x), Y(s.y), R - 2, 0, 7); g.stroke(); }
     g.lineWidth = 2; g.strokeStyle = r.ok ? '#FFD84A' : 'rgba(255,216,74,.5)';
     for (const p of r.pairs) { g.beginPath(); g.arc(X(p.x), Y(p.y), R, 0, 7); g.stroke(); }
-    for (const s of S.labels) if (s.name) text(s.name, X(s.x) + 10, Y(s.y) - 7, '#FFF6E8');
     for (const b of S.planets) {
       const x = X(b.x), y = Y(b.y);
       g.strokeStyle = '#7FD1FF'; g.lineWidth = 2; g.beginPath(); g.moveTo(x, y - 9); g.lineTo(x + 9, y); g.lineTo(x, y + 9); g.lineTo(x - 9, y); g.closePath(); g.stroke();
-      text(b.name, x + 12, y + 4, '#7FD1FF');
+    }
+    // labels without overlaps: planets first, then stars brightest first; each tries four spots round its mark, else is left out
+    g.font = '600 12px "Instrument Sans", system-ui, sans-serif';
+    const placed = [], hit = (a) => a.x < 0 || a.y < 0 || a.x + a.w > v.cw || a.y + a.h > v.ch || placed.some(b => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h);
+    const want = [...S.planets.map(b => ({ t: b.name, x: X(b.x), y: Y(b.y), col: '#7FD1FF', d: 12 })),
+      ...S.labels.filter(l => l.name).sort((a, b) => a.mag - b.mag).map(l => ({ t: l.name, x: X(l.x), y: Y(l.y), col: '#FFF6E8', d: 10 }))];
+    for (const L of want) {
+      const w = g.measureText(L.t).width + 4, h = 15;
+      const spots = [[L.d, -L.d - 5], [L.d, L.d - 3], [-L.d - w, -L.d - 5], [-L.d - w, L.d - 3]];
+      for (const [dx, dy] of spots) {
+        const box = { x: L.x + dx, y: L.y + dy, w, h };
+        if (hit(box)) continue;
+        placed.push(box); text(L.t, box.x + 2, box.y + 11, L.col); break;
+      }
     }
     if (r.ok && S.pick) {
       const x = X(S.pick.x), y = Y(S.pick.y);

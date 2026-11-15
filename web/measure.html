@@ -1,0 +1,133 @@
+<!doctype html>
+<!-- AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. -->
+<html lang="en" data-motion="full" data-glass="glass" data-contrast="normal" data-text="normal">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="app/consent.js?v=1"></script><!-- first: browser-storage consent gate (optional settings wait for consent) -->
+<title>Measure it yourself · Star Shift</title>
+<link rel="icon" type="image/svg+xml" href="brand/favicon.svg">
+<meta name="description" content="A classroom activity: blink two seasons of NASA SPHEREx images of Barnard's Star, click the star in each, and work out how fast it moves.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css"><!-- tokens for the Lab notebook dialog; e.css overrides shared names -->
+<link rel="stylesheet" href="styles/e.css">
+<link rel="stylesheet" href="styles/pages.css">
+<link rel="stylesheet" href="styles/notebook.css">
+<link rel="stylesheet" href="styles/measure.css?v=1"><!-- this page, and its printed worksheet -->
+<link rel="stylesheet" href="styles/access.css?v=1"><!-- colours and accessibility (app/access.js): keep this the LAST stylesheet -->
+<script src="app/access.js?v=1"></script><!-- classic script on purpose: applies a saved palette before first paint -->
+</head>
+<body>
+<div class="page" data-page="measure">
+  <nav class="rail" aria-label="Pages">
+    <img class="logo-slot" src="brand/star-shift-symbol-small.svg" alt="" width="40" height="40"><span class="ai-mark rail-ai" title="Logo: SI-generated (SI = Super Intelligence, NASA's term for AI)" aria-label="Logo: SI-generated (SI = Super Intelligence, NASA's term for AI)" role="note">SI</span>
+    <a class="nav-btn" href="index.html"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><circle cx="10" cy="10" r="2.5"/></svg>Viewer</a>
+    <a class="nav-btn" href="archive.html"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M3 7.5h14M3 12h14M8 3v14"/></svg>Archive</a>
+    <a class="nav-btn" href="spectral.html"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 16.5h15M3.5 13l3-5 3 3 3-6 4 7" stroke-linejoin="round"/></svg>Spectrum</a>
+    <a class="nav-btn" href="proof.html"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 3v14M6 17h8M4 6h12"/><path d="M4 6l-2 5h4zM16 6l-2 5h4z" stroke-linejoin="round"/></svg>Proof</a>
+    <a class="nav-btn" href="neo.html"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="10" cy="10.5" rx="7.5" ry="3.6" transform="rotate(-24 10 10.5)"/><circle cx="15" cy="6.4" r="1.9" fill="currentColor" stroke="none"/><circle cx="10" cy="10.5" r="1.4"/></svg>Asteroids</a>
+    <a class="nav-btn" href="spot.html"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 3.5l1.1 2.9 2.9 1.1-2.9 1.1L13 11.5l-1.1-2.9L9 7.5l2.9-1.1z" stroke-linejoin="round"/><path d="M2.5 11h5M2 14.5h7M4 18h5" stroke-linecap="round"/></svg>Spot</a>
+    <a class="nav-btn" href="photo.html"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="5.5" width="15" height="11" rx="2"/><path d="M7 5.5l1.2-2h3.6l1.2 2" stroke-linejoin="round"/><circle cx="10" cy="11" r="2.8"/></svg>Your photo</a>
+    <a class="nav-btn nav-demote" href="planetarium.html" title="Can I see it tonight?" aria-label="Can I see it tonight?"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 14.5h15"/><path d="M4 14.5a6 6 0 0 1 12 0"/></svg>Tonight?</a>
+    <button class="nav-btn nav-util nav-more" type="button" data-rail-more aria-haspopup="dialog" aria-controls="pagesPop" aria-expanded="false"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7.5"/><circle cx="6.6" cy="10" r=".9" fill="currentColor" stroke="none"/><circle cx="10" cy="10" r=".9" fill="currentColor" stroke="none"/><circle cx="13.4" cy="10" r=".9" fill="currentColor" stroke="none"/></svg>More</button>
+    <button class="nav-btn nav-util" type="button" data-notebook aria-label="Lab notebook"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4.5" y="2.5" width="11" height="15" rx="1.5"/><path d="M7.5 6.5h5M7.5 9.5h5M7.5 12.5h3"/></svg>Notebook</button>
+    <a class="nav-btn nav-util" href="index.html#help"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7.5"/><path d="M7.9 7.9a2.2 2.2 0 1 1 3.1 2c-.6.3-1 .8-1 1.4v.3M10 14.1v.1" stroke-linecap="round"/></svg>Help</a>
+    <a class="nav-btn nav-util" href="index.html#about"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7.5"/><path d="M10 9v5M10 6.2v.1" stroke-linecap="round"/></svg>About</a>
+  </nav>
+
+  <header class="topbar glass">
+    <img class="logo-slot top-logo" src="brand/star-shift-symbol-small.svg" alt="" width="28" height="28"><span class="ai-mark top-ai" title="Logo: SI-generated (SI = Super Intelligence, NASA's term for AI)" aria-label="Logo: SI-generated (SI = Super Intelligence, NASA's term for AI)" role="note">SI</span><span class="name">Star Shift</span>
+    <div class="top-actions">
+      <button class="key pg-pages-key" id="pagesBtn" type="button" aria-haspopup="dialog" aria-expanded="false">Pages</button>
+      <button class="key" id="clarityBtn" type="button" aria-label="Clarity settings" aria-haspopup="dialog" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="7"/><path d="M10 3v14" /><path d="M10 3a7 7 0 0 1 0 14z" fill="currentColor"/></svg><span class="clar-l">Clarity</span></button>
+    </div>
+  </header>
+
+  <main class="pg-main ms-main" id="main">
+    <section class="pg-head ms-head">
+      <div>
+        <h1>Measure it yourself</h1>
+        <p class="pg-lede">How fast does Barnard's Star move across the sky? Find out with two real NASA SPHEREx pictures, a ruler made of pixels and a little maths. A classroom activity for ages 11 and up, about 10 minutes.</p>
+      </div>
+      <div class="ms-sheet-keys">
+        <button class="key" id="printBtn" type="button">Print worksheet</button>
+        <button class="key" id="mdBtn" type="button">Download sheet (Markdown)</button>
+      </div>
+    </section>
+
+    <p class="ms-print-only">Name: ______________________________ &nbsp; Date: ______________</p>
+    <p class="ms-status" id="status" role="status" aria-live="polite">Loading the saved SPHEREx images of Barnard's Star…</p>
+
+    <section class="well ms-step" id="step1" aria-labelledby="s1H">
+      <h2 id="s1H"><span class="ms-n num">1</span>Blink the first and last seasons</h2>
+      <p>SPHEREx photographs the same patch of sky about every six months. Each picture here is many images from one visit (a <i>season</i>) stacked together. Press <b>Blink</b> and watch the bright star in the middle: it hops a tiny bit. That hop is Barnard's Star moving through space.</p>
+      <div class="ms-blink">
+        <div class="ms-stage ms-stage-big"><canvas id="cvBlink" role="img" aria-label="The two season pictures of Barnard's Star"></canvas><span class="ms-cap num" id="blinkCap"></span></div>
+        <div class="ms-ctl ms-ctl-col">
+          <button class="key primary" id="blinkBtn" type="button" aria-pressed="false" disabled>Blink</button>
+          <div class="seg well small" role="group" aria-label="Which season to show">
+            <button class="seg-btn" id="showA" type="button" aria-pressed="true">First</button><button class="seg-btn" id="showB" type="button" aria-pressed="false">Last</button>
+          </div>
+          <p class="ms-note" id="seasonNote"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="well ms-step" id="step2" aria-labelledby="s2H">
+      <h2 id="s2H"><span class="ms-n num">2</span>Click the star's centre in each picture</h2>
+      <p>The same two pictures, zoomed in on the middle. Click the very centre of the star's glow in each one. A cross marks your click, and a dashed ring shows your click from the other picture, so you can see the hop. Keyboard: focus a picture, then use the arrow keys to move the cross (hold Shift to move a whole pixel).</p>
+      <div class="ms-pair">
+        <figure class="ms-fig"><div class="ms-stage"><canvas id="cvA" class="ms-click" tabindex="0" role="img" aria-label="First season picture: click the star's centre"></canvas></div><figcaption><b>First season</b> <span class="num" id="capA"></span><br><span class="num ms-pos" id="posA">No click yet</span></figcaption></figure>
+        <figure class="ms-fig"><div class="ms-stage"><canvas id="cvB" class="ms-click" tabindex="0" role="img" aria-label="Last season picture: click the star's centre"></canvas></div><figcaption><b>Last season</b> <span class="num" id="capB"></span><br><span class="num ms-pos" id="posB">No click yet</span></figcaption></figure>
+      </div>
+      <div class="ms-ctl"><button class="key" id="clearBtn" type="button">Clear my clicks</button><button class="key" id="hintBtn" type="button" aria-pressed="false">Stuck? Show the catalogue's spot</button></div>
+      <p class="ms-note" id="hintNote" hidden>The dotted rings mark where Gaia's catalogue says the star is in each season. Try to find its centre yourself first!</p>
+    </section>
+
+    <section class="well ms-step" id="step3" aria-labelledby="s3H">
+      <h2 id="s3H"><span class="ms-n num">3</span>How far did it move?</h2>
+      <p>Each pixel in these pictures covers <b class="num" id="scaleTxt">6.15″</b> (arcseconds) of sky. An arcsecond is tiny: 1″ is about the width of a small coin seen from 4 km away.</p>
+      <div class="ms-calc num" id="calc3" aria-live="polite">Click the star in both pictures first.</div>
+    </section>
+
+    <section class="well ms-step" id="step4" aria-labelledby="s4H">
+      <h2 id="s4H"><span class="ms-n num">4</span>Divide by the time between the pictures</h2>
+      <p>Speed = distance ÷ time. For each picture we use the average date of the images stacked in it.</p>
+      <div class="ms-calc num" id="calc4" aria-live="polite">Waiting for step 3.</div>
+    </section>
+
+    <section class="well ms-step" id="step5" aria-labelledby="s5H">
+      <h2 id="s5H"><span class="ms-n num">5</span>Compare with our fit and with Gaia</h2>
+      <p>Star Shift's computer found the star in all 120 images and fitted a straight line through its positions (see the <a href="proof.html#barnard">Proof page</a>). The Gaia spacecraft measured it far more precisely. How close did you get?</p>
+      <div class="ms-calc num" id="calc5">Waiting for your speed.</div>
+      <div class="ms-result" id="result" aria-live="polite" hidden></div>
+    </section>
+
+    <footer class="pg-foot">
+      <p>Images: NASA SPHEREx from the NASA/IPAC Infrared Science Archive (IRSA): Data Release 1 (DR1) spectral images, DOI 10.26131/IRSA678, and Quick Release 3 (QR3) spectral images, DOI 10.26131/IRSA662. "This publication makes use of data products from the Spectro-Photometer for the History of the Universe, Epoch of Reionization and Ices Explorer (SPHEREx), which is a joint project of the Jet Propulsion Laboratory and the California Institute of Technology, and is funded by the National Aeronautics and Space Administration." The pictures use the viewer's own saved images, lined up north up on a grid of 6.15″ pixels; each season is the middle value (median) of its images. Gaia DR3 proper motion via SIMBAD (ESA Gaia, DPAC; Gaia Collaboration, Vallenari et al. 2023, DOI 10.1051/0004-6361/202243940; SIMBAD, CDS, Strasbourg).</p>
+      <p class="ai-credit">Built with SI tools (Super Intelligence, NASA's term for AI). Logo: SI-generated with ChatGPT; small version and favicon redrawn as SVG by Claude.</p>
+      <p><a href="source.zip" download>Download the source code (MIT)</a></p>
+    </footer>
+  </main>
+</div>
+<div class="pop glass" id="clarity" role="dialog" aria-label="Clarity and accessibility" hidden>
+  <h2>Clarity</h2>
+  <h3>Comfort</h3>
+  <div class="opt"><span>Reduce motion<small>No sliding or shimmering</small></span><button class="switch well" role="switch" data-set="motion" aria-checked="false" aria-label="Reduce motion"><i></i></button></div>
+  <div class="opt"><span>Reduce transparency<small>Glass becomes solid</small></span><button class="switch well" role="switch" data-set="glass" aria-checked="false" aria-label="Reduce transparency"><i></i></button></div>
+  <div class="opt"><span>Increase contrast</span><button class="switch well" role="switch" data-set="contrast" aria-checked="false" aria-label="Increase contrast"><i></i></button></div>
+  <div class="opt"><span>Larger text</span><button class="switch well" role="switch" data-set="text" aria-checked="false" aria-label="Larger text"><i></i></button></div>
+  <p class="foot">Shared with the Viewer. Comfort and text choices are kept in this browser; colours only if Personalisation is on.</p>
+</div>
+
+<div class="pop glass" id="pagesPop" role="dialog" aria-label="Pages" hidden>
+  <h2>Pages</h2>
+  <nav class="pg-pages"><a class="key" href="index.html">Viewer</a><a class="key" href="archive.html">Archive</a><a class="key" href="spectral.html">Spectrum</a><a class="key" href="proof.html">Proof</a><a class="key" href="neo.html">Asteroids</a><a class="key" href="spot.html">Spot</a><a class="key" href="photo.html">Your photo</a><a class="key" href="planetarium.html">Can I see it tonight?</a><a class="key" href="measure.html" aria-current="page">Measure it yourself</a><button class="key pg-util" type="button" data-notebook>Notebook</button><a class="key pg-util" href="index.html#help">Help</a><a class="key pg-util" href="index.html#about">About</a></nav>
+</div>
+<script src="app/erender.js"></script>
+<script type="module" src="app/measure/main.js"></script>
+<script type="module" src="app/rail.js"></script><!-- Notebook and More keys (shared rail) -->
+</body>
+</html>

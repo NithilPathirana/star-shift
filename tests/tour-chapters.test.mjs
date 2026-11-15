@@ -10,8 +10,8 @@ import { CHAPTERS, PROGRESS_KEY, chapterById, nextChapter, pageOf, chapterForPag
 const memStore = () => { const m = new Map(); return { getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k), m }; };
 const throwing = { getItem() { throw new Error('SecurityError'); }, setItem() { throw new Error('Quota'); }, removeItem() { throw new Error('x'); } };
 
-test('full tour order: map, viewer, archive, spectrum, proof, asteroids, spot, tonight, notebook; 3-5 steps each', () => {
-  assert.deepEqual(CHAPTERS.map(c => c.id), ['map', 'viewer', 'archive', 'spectrum', 'proof', 'neo', 'spot', 'tonight', 'notebook']);
+test('full tour order: map, viewer, archive, spectrum, proof, asteroids, spot, your photo, tonight, notebook; 3-5 steps each', () => {
+  assert.deepEqual(CHAPTERS.map(c => c.id), ['map', 'viewer', 'archive', 'spectrum', 'proof', 'neo', 'spot', 'photo', 'tonight', 'notebook']);
   for (const c of CHAPTERS) assert.ok(c.steps.length >= 3 && c.steps.length <= 5, `${c.id}: ${c.steps.length}`);
   assert.equal(nextChapter('map').id, 'viewer');
   assert.equal(nextChapter('notebook'), null);
@@ -59,7 +59,7 @@ test('targets: phone variant first on phones, then own, then each alt (requires 
 
 test('counter: chapter name and step, with the part number in the full tour', () => {
   assert.equal(counterFor(chapterById('archive'), 1, 4, false), 'Archive · 2 of 4');
-  assert.equal(counterFor(chapterById('archive'), 0, 4, true), 'Part 3 of 9 · Archive · 1 of 4');
+  assert.equal(counterFor(chapterById('archive'), 0, 4, true), 'Part 3 of 10 · Archive · 1 of 4');
   assert.equal(counterFor(chapterById('archive'), 4, 4, true), '');
 });
 

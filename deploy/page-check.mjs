@@ -16,6 +16,8 @@ const PAGES = [
   ['/', 9000], ["/index.html?q=Barnard's%20Star&scene=viewer", 15000], ['/index.html?q=WISE%200855&scene=viewer', 12000],
   ['/proof.html', 5000], ['/spot.html', 6000], ['/archive.html?q=Barnard%27s%20Star', 6000], ['/spectral.html?q=Barnard%27s%20Star', 6000],
   ['/neo.html', 5000], ['/planetarium.html?q=Barnard%27s%20Star', 5000],
+  // spec-team-extras.md item 1: "Measure it yourself" (two clicks on Barnard's Star give a sane speed)
+  ['/measure.html', 4000],
   // the other three demo targets' deep links (Master's freeze gate: all five presets must open in the viewer)
   ['/index.html?q=Epsilon%20Indi%20B&scene=viewer', 10000], ['/index.html?q=RW%20Aurigae&scene=viewer', 10000], ['/index.html?q=R%20Draconis&scene=viewer', 10000],
   // other pages' About link (full test global-1: it lost its #about and opened nothing)
@@ -60,7 +62,7 @@ setTimeout(() => { console.error(`page check could not run: no result after ${TO
 // /version.json names the commit just deployed (deploy.sh sets EXPECT_SHA), so a stale or partial deploy fails loudly
 const MODULES = ['/app/ui.js', '/app/seasons.js', '/app/distances.js', '/app/gaia-overlay.js', '/app/spot/colour.js', '/app/spot/botha.js',
   '/app/spot/logic.js', '/app/proof/logic.js', '/app/diffview.js', '/app/erender.js', '/app/astro-loader.js', '/data/proof.json', '/data/botha-check.json', '/data/spot-botha.json',
-  '/app/consent.js', '/app/consent-ui.js', '/app/lightcurve/make.js', '/app/lightcurve/maker.js', '/app/photo/solve.js', '/app/photo/main.js', '/data/photo-test.png'];
+  '/app/consent.js', '/app/consent-ui.js', '/app/lightcurve/make.js', '/app/lightcurve/maker.js', '/app/photo/solve.js', '/app/photo/main.js', '/data/photo-test.png', '/app/measure/main.js', '/app/measure/logic.js'];
 async function preflight() {
   const bad = [];
   for (const m of MODULES) { try { const r = await fetch(base + m, { cache: 'no-store' }); if (r.status !== 200) bad.push(`${m} ${r.status}`); } catch (e) { bad.push(`${m} ${e.message}`); } }
@@ -141,6 +143,19 @@ async function run() {
             await sleep(1000);
           }
           if (!snrOk(sn)) errs.push(`clicking the star gave no SNR line naming the picture on screen (${JSON.stringify(sn).slice(0, 200)})`);
+          // spec-team-extras 3: Blink > "Save as GIF" makes a non-empty file that starts with GIF89a (no download: __ssNoDownload)
+          const gifStep = "(async () => { window.__ssNoDownload = true; const st = document.getElementById('stage'), k = document.getElementById('gifKey');"
+            + " if (!st.classList.contains('mode-blink')) { document.querySelector('#viewSeg [data-mode=blink]')?.click(); return { wait: 'blink' }; }"
+            + " if (!k || k.style.display === 'none' || k.disabled) return { wait: 'key' };"
+            + " if (!k._last) { if (!window.__gifClicked) { window.__gifClicked = 1; k.click(); } return { wait: 'file' }; }"
+            + " const b = k._last.blob; return { size: b.size, head: new TextDecoder().decode(new Uint8Array(await b.slice(0, 6).arrayBuffer())), name: k._last.name }; })()";
+          let gf = {};
+          for (let k = 0; k < 25; k++) {
+            gf = (await send('Runtime.evaluate', { expression: gifStep, returnByValue: true, awaitPromise: true }, s)).result?.result?.value || {};
+            if (gf.size != null) break;
+            await sleep(1000);
+          }
+          if (!(gf.size > 0) || gf.head !== 'GIF89a') errs.push(`Blink > Save as GIF made no valid GIF (${JSON.stringify(gf).slice(0, 120)})`);
           // the preset may still be in its early Blink / second season when the counter first shows, so retry for up to 20 s
           const step = "(() => { const st = document.getElementById('stage'), k = document.getElementById('diffKey'), l = document.getElementById('diffLgd');"
             + " const d = { p: k?.getAttribute('aria-pressed'), lg: !!l && !l.hidden && l.getClientRects().length > 0 };"
@@ -175,11 +190,24 @@ async function run() {
         await ev("document.getElementById('lcMake')?.click(), 1");
         let lc = null;
         for (let k = 0; k < 20; k++) {
-          lc = await ev("(() => { const d = document.getElementById('lcm'); return { open: !!d?.open, pts: d ? d.querySelectorAll('#lcmPlot .lcm-pt').length : 0, csv: !!d?.querySelector('#lcmCsv'), cav: !!d?.querySelector('#lcmCav')?.textContent }; })()");
-          if (lc?.open && lc.pts > 0) break;
+          lc = await ev("(() => { const d = document.getElementById('lcm'); return { open: !!d?.open, pts: d ? d.querySelectorAll('#lcmPlot .lcm-pt').length : 0, csv: !!d?.querySelector('#lcmCsv'), cav: !!d?.querySelector('#lcmCav')?.textContent, proof: d?.querySelector('#lcmSum .lcm-pc')?.dataset.match || '' }; })()");
+          if (lc?.open && lc.pts > 0 && lc.proof === 'true') break;
           await sleep(1000);
         }
         if (!lc?.open || !(lc.pts > 0) || !lc.csv || !lc.cav) errs.push(`Make a light curve did not plot RW Aurigae (${JSON.stringify(lc)})`);
+        else if (lc.proof !== 'true') errs.push(`Make a light curve did not open on Proof's numbers for RW Aurigae (no 'same as Proof ✓': ${JSON.stringify(lc)})`); // Judging panel round 8
+      }
+      if (path === '/measure.html') { // click the star's centre (the catalogue's spot) in both seasons: a speed of 8-13″/yr must appear
+        const ev = async (x) => (await send('Runtime.evaluate', { expression: x, returnByValue: true }, s)).result?.result?.value;
+        const two = "(() => { if (document.body.dataset.measureReady !== 'true') return { ready: false };"
+          + " for (const id of ['cvA', 'cvB']) { const c = document.getElementById(id), r = c.getBoundingClientRect(), x = +c.dataset.catX, y = +c.dataset.catY;"
+          + " c.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: r.left + (x + 0.5) * r.width / 15, clientY: r.top + (y + 0.5) * r.height / 15 })); }"
+          + " const b = document.querySelector('#calc4 .ms-big'), res = document.getElementById('result');"
+          + " return { ready: true, speed: b ? parseFloat(b.textContent) : null, result: !!res && !res.hidden && /fit/.test(res.textContent) }; })()";
+        let m = {};
+        for (let k = 0; k < 25; k++) { m = await ev(two) || {}; if (m.ready) break; await sleep(1000); }
+        if (!m.ready) errs.push('Measure it yourself: the saved Barnard images did not load');
+        else if (!(m.speed >= 8 && m.speed <= 13) || !m.result) errs.push(`Measure it yourself: two clicks on the star gave no sane speed (${JSON.stringify(m)})`);
       }
       if (path === '/' && !mode) { // open Help, then About: each must show its own content, never the other's
         const ev = async (x) => (await send('Runtime.evaluate', { expression: x, returnByValue: true }, s)).result?.result?.value || {};

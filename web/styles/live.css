@@ -658,3 +658,11 @@ html[data-motion=reduce] .rp-res.swap { animation: none; }
 }
 /* the stage toolbar's light-curve key (phones: the info sheet is closed): one more 44 px key must still fit 390 px */
 @media (max-width: 699px) { .tools { gap: 2px; } .tools hr { display: none; } }
+/* phones: a "Make a light curve" key under the result plate (ui.js appends it to #resultPlate) */
+.rp .lcp-key { display: none; }
+@media (max-width: 699px) { .rp .lcp-key { display: inline-flex; min-height: 44px; } }
+/* "same as Proof ✓": each band compared number by number with proof.json (maker.js proofLine) */
+.lcm-pc { margin: 0 0 8px; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.6); border: 1px solid var(--edge); font-size: .8125rem; line-height: 1.45; }
+.lcm-pc p { margin: 2px 0; }
+.lcm-ok { color: var(--sage-ink); font-weight: 600; white-space: nowrap; }
+.lcm-diff { color: var(--copper-ink); font-weight: 600; white-space: nowrap; }

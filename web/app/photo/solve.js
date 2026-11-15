@@ -90,8 +90,11 @@ export function fitPairs(pairs, m, cx, cy, start, k = 0) {
 }
 
 // ---- star detection -------------------------------------------------------------------------------
-// lum: Float32Array (w*h), any scale. Returns stars brightest first: { x, y, flux, peak }.
-export function detectStars(lum, w, h, { max = 200, nsig = 5, block = 32 } = {}) {
+// lum: Float32Array (w*h), any scale. Returns { stars (brightest first: { x, y, flux, peak }), sigma, rejected }.
+// Peaks are found on a lightly smoothed copy (Gaussian sigma 1 px) above nsig x its noise (MAD), and must cover
+// at least minPix connected pixels. Thrown out: big blobs (Moon, lamps), strongly elongated ones (trails,
+// edges) and peaks that border a dark silhouette (sky seen through trees, gaps between roofs).
+export function detectStars(lum, w, h, { max = 200, nsig = 5, block = 32, minPix = 4 } = {}) {
   // background: median of each block, bilinear between block centres
   const bw = Math.max(1, Math.ceil(w / block)), bh = Math.max(1, Math.ceil(h / block)), med = new Float32Array(bw * bh);
   const buf = new Float32Array(block * block);
@@ -107,39 +110,68 @@ export function detectStars(lum, w, h, { max = 200, nsig = 5, block = 32 } = {})
   };
   const r = new Float32Array(w * h);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) r[y * w + x] = lum[y * w + x] - bgAt(x, y);
-  // noise: median absolute deviation of a pixel sample
-  const step = Math.max(1, Math.floor((w * h) / 40000)), smp = [];
-  for (let i = 0; i < w * h; i += step) smp.push(Math.abs(r[i]));
-  smp.sort((p, q) => p - q);
+  // Gaussian smoothing, sigma 1 px (separable 5-tap)
+  const K = [0.0545, 0.2442, 0.4026, 0.2442, 0.0545], tmp = new Float32Array(w * h), sm = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let a = 0; for (let k = -2; k <= 2; k++) a += K[k + 2] * r[y * w + Math.min(w - 1, Math.max(0, x + k))]; tmp[y * w + x] = a; }
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let a = 0; for (let k = -2; k <= 2; k++) a += K[k + 2] * tmp[Math.min(h - 1, Math.max(0, y + k)) * w + x]; sm[y * w + x] = a; }
+  // noise: median absolute deviation of a pixel sample (of the smoothed and of the raw image)
+  const mad = (arr) => { const step = Math.max(1, Math.floor((w * h) / 40000)), v = []; for (let i = 0; i < w * h; i += step) v.push(Math.abs(arr[i])); v.sort((p, q) => p - q); return 1.4826 * v[v.length >> 1]; };
   let max0 = 0; for (let i = 0; i < r.length; i++) if (r[i] > max0) max0 = r[i];
-  const sigma = Math.max(1.4826 * smp[smp.length >> 1], max0 * 1e-3, 1e-6), thr = nsig * sigma;
-  const R = 3, E = 4, out = [];
+  const sigma = Math.max(mad(r), max0 * 1e-3, 1e-6), sigS = Math.max(mad(sm), max0 * 3e-4, 1e-6), thr = nsig * sigS;
+  // dark silhouettes: only when the image has blocks far darker than its sky (trees, buildings, hills)
+  const sortedMed = [...med].sort((p, q) => p - q), skyRef = sortedMed[Math.floor(0.75 * (sortedMed.length - 1))], p5 = sortedMed[Math.floor(0.02 * (sortedMed.length - 1))];
+  // "dark" = under a quarter of the sky level (trees, roofs): a sky-glow gradient or vignetting is never that dark
+  const darkLim = p5 < 0.25 * skyRef && 0.75 * skyRef > 6 * sigma ? 0.25 * skyRef : -Infinity;
+  const R = 3, E = 4, CAP = 400, out = [], rejected = { small: 0, blob: 0, elongated: 0, silhouette: 0 };
+  const mark = new Int32Array(w * h), stack = new Int32Array(CAP + 8 * CAP);
+  let id = 0;
   for (let y = E; y < h - E; y++) for (let x = E; x < w - E; x++) {
-    const i = y * w + x, v = r[i];
+    const i = y * w + x, v = sm[i];
     if (v < thr) continue;
     let peak = true;
     for (let dy = -R; dy <= R && peak; dy++) for (let dx = -R; dx <= R; dx++) {
       if (!dx && !dy) continue;
-      const u = r[i + dy * w + dx];
+      const u = sm[i + dy * w + dx];
       if (u > v || (u === v && (dy < 0 || (dy === 0 && dx < 0)))) { peak = false; break; }
     }
     if (!peak) continue;
-    // a lone hot pixel: no neighbour above 2 sigma
-    if (r[i - 1] < 2 * sigma && r[i + 1] < 2 * sigma && r[i - w] < 2 * sigma && r[i + w] < 2 * sigma) continue;
+    // connected pixels above the threshold (8-neighbours), with their second moments
+    id++; let n = 0, sp = 0, sw = 0, mx = 0, my = 0, mxx = 0, myy = 0, mxy = 0;
+    stack[sp++] = i; mark[i] = id;
+    while (sp && n <= CAP) {
+      const j = stack[--sp], jx = j % w, jy = (j - jx) / w, wt = sm[j];
+      n++; sw += wt; mx += wt * jx; my += wt * jy; mxx += wt * jx * jx; myy += wt * jy * jy; mxy += wt * jx * jy;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const X = jx + dx, Y = jy + dy; if (X < 0 || Y < 0 || X >= w || Y >= h) continue;
+        const q = Y * w + X; if (mark[q] === id || sm[q] < thr) continue;
+        mark[q] = id; if (sp < stack.length) stack[sp++] = q;
+      }
+    }
+    if (n < minPix) { rejected.small++; continue; }
+    if (n > CAP) { rejected.blob++; continue; }
+    if (n >= 6) {
+      mx /= sw; my /= sw;
+      const a = mxx / sw - mx * mx, c = myy / sw - my * my, b = mxy / sw - mx * my, tr = a + c, dt = Math.sqrt(Math.max(0, (a - c) ** 2 / 4 + b * b));
+      const l1 = tr / 2 + dt, l2 = Math.max(1e-6, tr / 2 - dt);
+      if (l1 / l2 > 6.25 && l1 > 1) { rejected.elongated++; continue; } // axis ratio over 2.5
+    }
+    if (darkLim > -Infinity) {
+      let dark = 0, tot = 0; const Rs = 10;
+      for (let dy = -Rs; dy <= Rs; dy += 2) for (let dx = -Rs; dx <= Rs; dx += 2) {
+        const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= w || Y >= h) continue;
+        tot++; if (lum[Y * w + X] < darkLim) dark++;
+      }
+      if (dark > 0.3 * tot) { rejected.silhouette++; continue; }
+    }
     let sx = 0, sy = 0, sf = 0;
     for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
       const u = r[i + dy * w + dx]; if (u <= 0) continue; sx += u * dx; sy += u * dy; sf += u;
     }
-    // extended blobs (Moon, street lights, clouds lit up): many bright pixels around the peak
-    let big = 0; const Rb = 8;
-    for (let dy = -Rb; dy <= Rb; dy += 2) for (let dx = -Rb; dx <= Rb; dx += 2) {
-      const yy = y + dy, xx = x + dx; if (yy < 0 || yy >= h || xx < 0 || xx >= w) continue; if (r[yy * w + xx] > thr) big++;
-    }
-    if (big > 40) continue;
-    out.push({ x: x + sx / sf, y: y + sy / sf, flux: sf, peak: v });
+    if (!(sf > 0)) continue;
+    out.push({ x: x + sx / sf, y: y + sy / sf, flux: sf, peak: r[i] });
   }
   out.sort((p, q) => q.flux - p.flux);
-  return { stars: out.slice(0, max), sigma };
+  return { stars: out.slice(0, max), sigma, rejected };
 }
 
 // ---- catalogue ------------------------------------------------------------------------------------

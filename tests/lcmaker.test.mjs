@@ -6,10 +6,11 @@ import { readFileSync } from 'node:fs';
 import { run } from '../web/app/data.js';
 import { configurePrebaked } from '../web/core/prebaked.js';
 import { gridToWorld } from '../web/core/align.js';
-import { measure, lightcurve } from '../web/app/lightcurve/logic.js';
+import { measure, lightcurve, fmtMag, lightOnSky, pickSaved, notHereText } from '../web/app/lightcurve/logic.js';
+import { lightCentre } from '../web/app/lightcurve/index.js';
 import { fieldGaia } from '../web/app/gaia-overlay.js';
 import { makeCurve, bandSet, toCSV, CSV_COLUMNS, lombScargle, periodSearch, periodRange, periodText, falseAlarm, encodeChoices, decodeChoices,
-  comparisonCandidates, autoPick, countsText, PERIOD_CAVEAT } from '../web/app/lightcurve/make.js';
+  comparisonCandidates, autoPick, countsText, PERIOD_CAVEAT, PROOF_CHOICES, isProofChoices, proofRecord, compareProof } from '../web/app/lightcurve/make.js';
 
 const ORIGIN = 'https://star-shift.example';
 const proof = JSON.parse(readFileSync(new URL('../web/data/proof.json', import.meta.url), 'utf8'));
@@ -170,6 +171,45 @@ test('WISE 0855 with Proof\'s choices: below 3.8 µm the light is a background s
   assert.equal(panel.groups.find(g => g.id === 'short').absent, true);
   assert.match(countsText(c), /where the light is not the source's/);
   assert.doesNotMatch(countsText(c), /saturated/);
+});
+
+test('Judging panel round 8: with Proof\'s choices each demo target matches proof.json number by number (✓ only when it does)', async () => {
+  const want = { barnard: true, 'eps-indi-b': null, 'wise-0855': null, 'rw-aur': true, 'r-dra': true };
+  for (const [key, label] of [['barnard', "Barnard's Star"], ['eps-indi-b', 'Epsilon Indi B'], ['wise-0855', 'WISE 0855'], ['rw-aur', 'RW Aurigae'], ['r-dra', 'R Draconis']]) {
+    const { frames, grid } = await load(label, key);
+    const c = makeCurve(frames, grid, { ...PROOF_CHOICES, bands: bandSet('proof') });
+    assert.ok(isProofChoices(c.choices), key);
+    const cmp = compareProof(c, proofRecord(proof, key, label));
+    if (want[key] === null) { assert.equal(cmp, null, `${key}: Proof has no brightness numbers`); continue; }
+    assert.ok(cmp.match, `${key}: ${JSON.stringify(cmp.rows)}`);
+  }
+  // a single number off breaks the match (no ✓ by default)
+  const { frames, grid } = await load('RW Aurigae', 'rw-aur');
+  const c = makeCurve(frames, grid, { ...PROOF_CHOICES, bands: bandSet('proof') });
+  const rec = proofRecord(proof, 'rw-aur', 'RW Aurigae');
+  const bad = { ...rec, groups: rec.groups.map((g, k) => (k ? { ...g, err: g.err + 0.001 } : g)) };
+  assert.equal(compareProof(c, bad).match, false);
+  assert.equal(compareProof(c, rec).rows[1].text, '+0.72 ± 0.07 mag · 11.2σ · 22 images'); // ±0.065 shown as 0.07, as Proof
+  assert.equal(isProofChoices({ ...c.choices, nComps: 1 }), false);
+});
+
+test('the Brightness-over-time panel, the maker and Proof read the same: RW Aur +0.72 ± 0.07 · 11.2σ; WISE 0855 names the Gaia star', async () => {
+  const { frames, grid } = await load('RW Aurigae', 'rw-aur');
+  const panel = lightcurve(measure(frames, grid)), maker = makeCurve(frames, grid, { ...PROOF_CHOICES, bands: bandSet('proof') });
+  const P = proof.targets.find(t => t.key === 'rw-aur').tests.find(t => t.type === 'brightness').measured.groups;
+  panel.groups.forEach((g, k) => {
+    assert.deepEqual([g.dmag, g.dmagErr, g.sigma], [P[k].value, P[k].err, P[k].sigma], g.name);
+    assert.deepEqual([maker.bands[k].dmag, maker.bands[k].dmagErr, maker.bands[k].sigma], [g.dmag, g.dmagErr, g.sigma]);
+  });
+  const long = panel.groups[1];
+  assert.equal(`${fmtMag(long.dmag)} ± ${long.dmagErr.toFixed(2)} · ${long.sigma}σ`, '+0.72 ± 0.07 · 11.2σ');
+  // WISE 0855 below 3.8 µm: the saved neighbour is named with its catalogue separation; the 8.1″ light centre is Expert detail
+  const w = await load('WISE 0855', 'wise-0855');
+  const short = lightcurve(measure(w.frames, w.grid)).groups.find(g => g.id === 'short');
+  const sky = lightOnSky(short.detect, w.grid), src = pickSaved(proof.targets.find(t => t.key === 'wise-0855').extra.neighbours, sky);
+  assert.match(notHereText(short.detect, sky, src, 'WISE 0855', 'below 3.8 µm'), /^Not detected here: the light is a background star \(Gaia G 16\.3, 7\.8″ away\)/);
+  const esc = (t) => String(t);
+  assert.match(lightCentre({ ...short, sky }, 'WISE 0855', esc), /class="x-only"> · light centre 8\.1″ from WISE 0855's position/);
 });
 
 test('a clicked empty spot: nothing detected, nothing plotted (no ±600 mag axis)', async () => {

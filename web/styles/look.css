@@ -477,6 +477,9 @@ html:where(:not([data-ax-look=classic]))[data-glass=solid] .tools{background:#1B
 @media (max-width: 699px){
   :where(html:not([data-ax-look=classic])) .lcm{border-radius:0}
 }
+:where(html:not([data-ax-look=classic])) .lcm-pc{border-radius:10px;background:rgba(255,255,255,.6);border:1px solid var(--edge)}
+:where(html:not([data-ax-look=classic])) .lcm-ok{color:var(--sage-ink)}
+:where(html:not([data-ax-look=classic])) .lcm-diff{color:var(--copper-ink)}
 /* from pages.css */
 :where(html:not([data-ax-look=classic])) .page .nav-btn{text-decoration:none}
 :where(html:not([data-ax-look=classic])) .serr{border-radius:11px;background:#FAFBFF;border:1px solid var(--coral);color:var(--coral)}
@@ -1058,8 +1061,35 @@ html:where(:not([data-ax-look=classic]))[data-glass=solid] .pl-place{background:
 :where(html:not([data-ax-look=classic])) .ph-dl dt{color:var(--muted)}
 :where(html:not([data-ax-look=classic])) .ph-dl dd{color:var(--ink)}
 :where(html:not([data-ax-look=classic])) .ph-go{text-decoration:none}
+:where(html:not([data-ax-look=classic])) .ph-links .key{text-decoration:none}
+:where(html:not([data-ax-look=classic])) #result[data-solved=unconfirmed] #resTxt b{color:var(--copper-ink)}
 :where(html:not([data-ax-look=classic])) .ph-sel{border-radius:9px;border:1px solid var(--edge);background:#FBFDFF;color:var(--ink)}
 :where(html:not([data-ax-look=classic])) .ph-sel:focus-visible{outline:2.5px solid var(--focus);outline-offset:2px}
 :where(html:not([data-ax-look=classic])) .ph-err{color:var(--coral)}
 :where(html:not([data-ax-look=classic])) #result[data-solved=true] #resTxt b{color:var(--sage-ink)}
 :where(html:not([data-ax-look=classic])) #result[data-solved=fail] #resTxt b{color:var(--copper-ink)}
+/* from measure.css */
+:where(html:not([data-ax-look=classic])) .ms-status{color:var(--ink-2)}
+:where(html:not([data-ax-look=classic])) .ms-step{border-radius:var(--r-shell, 16px)}
+:where(html:not([data-ax-look=classic])) .ms-step p{color:var(--ink-2)}
+:where(html:not([data-ax-look=classic])) .ms-n{border-radius:50%;background:var(--stage);color:var(--stage-text)}
+:where(html:not([data-ax-look=classic])) .ms-note{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .ms-stage{background:var(--stage);border-radius:12px}
+:where(html:not([data-ax-look=classic])) .ms-stage canvas{border-radius:6px}
+:where(html:not([data-ax-look=classic])) .ms-click:focus-visible{outline:3px solid var(--focus, #2456E6);outline-offset:3px}
+:where(html:not([data-ax-look=classic])) .ms-cap{color:var(--stage-text)}
+:where(html:not([data-ax-look=classic])) .ms-fig figcaption{color:var(--ink-2)}
+:where(html:not([data-ax-look=classic])) .ms-pos{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .ms-calc{color:var(--ink)}
+:where(html:not([data-ax-look=classic])) .ms-calc p{color:var(--ink)}
+:where(html:not([data-ax-look=classic])) .ms-result{border-radius:12px;background:rgba(255,255,255,.6);border:2px solid var(--edge-strong, rgba(16,29,59,.5))}
+:where(html:not([data-ax-look=classic])) .ms-result p{color:var(--ink)}
+:where(html:not([data-ax-look=classic])) .ms-result.ms-bullseye,:where(html:not([data-ax-look=classic])) .ms-result.ms-close,:where(html:not([data-ax-look=classic])) .ms-result.ms-good{border-color:var(--sage-ink, #2E6B3A)}
+:where(html:not([data-ax-look=classic])) .ms-result.ms-near{border-color:var(--copper-ink, #1444C4)}
+@media print{
+  :where(html:not([data-ax-look=classic])) body,:where(html:not([data-ax-look=classic])) .page,:where(html:not([data-ax-look=classic])) .pg-main{background:#fff!important}
+  :where(html:not([data-ax-look=classic])) .ms-print-only{color:#000}
+  :where(html:not([data-ax-look=classic])) .ms-step{box-shadow:none!important;border:1px solid #999;background:#fff!important}
+  :where(html:not([data-ax-look=classic])) .ms-step p,:where(html:not([data-ax-look=classic])) .ms-calc p,:where(html:not([data-ax-look=classic])) .ms-result p{color:#000}
+  :where(html:not([data-ax-look=classic])) .ms-result{background:#fff;border-color:#000}
+}

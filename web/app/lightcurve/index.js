@@ -25,6 +25,10 @@ const plotWhy = (g) => (g.total && !g.absent && g.masked ? (g.masked === g.total
 const WHERE = { short: 'below 3.8 µm', long: 'at 3.8–5.0 µm' }; // the group's range, for "WISE 0855 is too faint below 3.8 µm"
 const fmtJy = (v) => (v == null ? '—' : v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2));
 
+// Expert only: where the measured light centre sits (WISE 0855: 8.1″), beside the catalogue separation of the star named
+export const lightCentre = (g, name, esc) => (g.detect?.state === 'offset' && g.sky
+  ? `<span class="x-only"> · light centre ${g.sky.offArcsec.toFixed(1)}″ from ${esc(name)}'s position</span>` : '');
+
 export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick, onSource = () => {} }) {
   const plot = $('lcPlot'), read = $('lcRead'), sum = $('lcSum'), cap = $('lcCap');
   const S = { lc: null, frames: [], rows: [], cur: -1, hover: null, key: '', name: '', geo: null };
@@ -40,7 +44,11 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick, o
     if (key === S.key) return;
     S.key = key; S.frames = frames; S.rows = measure(frames, grid);
     S.lc = lightcurve(S.rows, S.bounds);
-    for (const g of S.lc.groups) if (g.absent) g.sky = lightOnSky(g.detect, grid);
+    for (const g of S.lc.groups) if (g.absent) {
+      g.sky = lightOnSky(g.detect, grid);
+      // a saved Gaia neighbour (proof.json) is named at once, so the first text is the one the maker and SNR use
+      if (g.detect?.state === 'offset' && SAVED) g.src = pickSaved(nbOf(SAVED, S.name), g.sky);
+    }
     render();
     explain(key);
   }
@@ -63,12 +71,12 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick, o
       if (src) { g.src = src; render(); onSource(); }
     }
   }
-  let proofP = null;
-  async function savedNeighbours(name) {
-    proofP ||= fetch(new URL('../../data/proof.json', import.meta.url)).then(r => (r.ok ? r.json() : null)).catch(() => null);
-    const t = (await proofP)?.targets?.find(q => q.name === name || q.label === name);
-    return t?.extra?.neighbours || [];
-  }
+  // proof.json, fetched once at start (the demo targets' saved Gaia neighbours); SAVED once it has arrived
+  let SAVED = null;
+  const proofP = fetch(new URL('../../data/proof.json', import.meta.url)).then(r => (r.ok ? r.json() : null)).catch(() => null)
+    .then(d => { SAVED = d; return d; });
+  const nbOf = (d, name) => d?.targets?.find(q => q.name === name || q.label === name)?.extra?.neighbours || [];
+  async function savedNeighbours(name) { return nbOf(await proofP, name); }
 
   function mark(i) { S.cur = i; paint(); }
 
@@ -90,8 +98,8 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick, o
       return;
     }
     sum.innerHTML = lc.groups.map(g => {
-      const v = g.ok ? `<b>${fmtMag(g.dmag)} ± ${g.dmagErr.toFixed(2)} mag</b> ${g.dmag > 0 ? 'fainter' : 'brighter'}` : g.points.length ? 'too few images to compare seasons'
-        : g.absent ? esc(notHereText(g.detect, g.sky, g.src, S.name, WHERE[g.id])) : emptyWhy(g);
+      const v = g.ok ? `<b>${fmtMag(g.dmag)} ± ${g.dmagErr.toFixed(2)} mag</b> ${g.dmag > 0 ? 'fainter' : 'brighter'}${g.sigma != null ? `<span class="x-only"> · ${g.sigma}σ</span>` : ''}` : g.points.length ? 'too few images to compare seasons'
+        : g.absent ? esc(notHereText(g.detect, g.sky, g.src, S.name, WHERE[g.id])) + lightCentre(g, S.name, esc) : emptyWhy(g);
       return `<div class="lc-row"><span class="lc-k"><i class="lc-mk lc-${SHAPE[g.id]}" aria-hidden="true"></i>${esc(g.name)}</span><span class="lc-v num">${v}${g.points.length ? `<small>${g.ok ? 'last season vs first · ' : ''}${g.points.length} image${g.points.length === 1 ? '' : 's'}</small>` : ''}</span></div>`;
     }).join('') + `<p class="lc-skip num">${esc(skippedText(lc))}</p>`;
     draw();

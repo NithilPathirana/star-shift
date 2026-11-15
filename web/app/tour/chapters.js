@@ -15,6 +15,7 @@ export const RAIL_LINES = [
   ['Proof', 'our measurements checked against star catalogues.'],
   ['Asteroids', 'where known asteroids are predicted to be, and their orbits.'],
   ['Spot', 'hunt for a moving dot yourself.'],
+  ['Your photo', 'name the stars in your own night-sky photo.'],
   ['Tonight?', 'can you see it from where you are tonight.'],
 ];
 
@@ -129,6 +130,16 @@ export const CHAPTERS = [
       body: "For each suspect the app checks flags, known stars and known asteroids, then gives a verdict. Unexplained means worth a second look by experts, not a new object.",
       alt: [{ targets: ['#sheetOpen'], prefer: ['above'] },
         { targets: ['#steps'], prefer: ['below'], body: 'After you mark a suspect, Verify checks it against flags, known stars and known asteroids, then gives a verdict. Unexplained means worth a second look by experts, not a new object.' }] },
+  ] },
+  { id: 'photo', page: 'photo.html', url: 'photo.html', name: 'Your photo', steps: [
+    { id: 'here', targets: [HERE], prefer: ['right'], title: 'Your photo, named',
+      body: 'Drop in a night-sky photo and Star Shift names the stars in it. The photo stays in your browser and is never uploaded.',
+      alt: [{ targets: ['[data-rail-more]'], prefer: ['right'] }, PAGES_ALT] },
+    { id: 'drop', targets: ['#plot'], prefer: ['right', 'below'], title: 'Drop a photo, or ours',
+      body: 'Choose a JPG or PNG, or press Try a test image. Star patterns are matched to a star catalogue and checked against more stars before anything is named.',
+      phone: { targets: ['#plot'], prefer: ['below'] } },
+    { id: 'result', targets: ['#result'], prefer: ['left', 'above'], title: 'Then open it in SPHEREx',
+      body: 'The result gives the centre and size of your photo. Open the sky map at this field, or pick a named star to see it in SPHEREx infrared.' },
   ] },
   { id: 'tonight', page: 'planetarium.html', url: 'planetarium.html', name: 'Can I see it tonight?', steps: [
     { id: 'here', targets: [HERE], prefer: ['right'], title: 'Can I see it tonight?',

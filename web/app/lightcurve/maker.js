@@ -3,9 +3,10 @@
 // "Make a light curve" dialog (judges' suggestion B). Opened from the Brightness-over-time panel or
 // from a spot clicked on the image. The numbers come from make.js; this file only draws and wires.
 
-import { makeCurve, bandSet, countsText, comparisonCandidates, autoPick, periodSearch, periodText, toCSV, encodeChoices,
+import { makeCurve, bandSet, countsText, PROOF_CHOICES, isProofChoices, proofRecord, compareProof, comparisonCandidates, autoPick, periodSearch, periodText, toCSV, encodeChoices,
   snapSource, APERTURES, MAX_COMPS, PERIOD_CAVEAT, SATURATED_TEXT, NOTHING_TEXT, ERR_NOTE, ERR_NOTE_COMP } from './make.js';
 import { fieldGaia } from '../gaia-overlay.js';
+import { lightCentre } from './index.js';
 import { GRID_ARCSEC, fmtMag, lightOnSky, pickSource, pickSaved, notHereText } from './logic.js';
 import { groupInto, seasonMonths, seasonBounds } from '../seasons.js';
 
@@ -73,9 +74,10 @@ const q = id => dlg.querySelector('#' + id);
 //         ranges: () => the band editor's ranges, notebookAdd, toast, shareURL: () => the viewer link, isExpert }
 export async function openMaker(opts) {
   if (!dlg) build();
-  Object.assign(S, { ...opts, stars: null, cands: null, curve: null, gaiaFailed: false, nb: [] });
+  Object.assign(S, { ...opts, stars: null, cands: null, curve: null, gaiaFailed: false, nb: [], proofRec: null, proofLoaded: false });
   if (!S.bounds?.length) S.bounds = seasonBounds(S.frames.map(f => f.mjd));
-  const ch = opts.choices || {};
+  // the 5 demo targets open with the Proof page's choices, so the first numbers seen are Proof's (Judging panel round 8)
+  const ch = opts.choices || (opts.preset && (!opts.source || opts.source.own) ? PROOF_CHOICES : {});
   S.bandKind = ch.bandKind || 'proof'; S.off = new Set(); S.aperture = ch.aperture || 2.5; S.skipFlagged = ch.skipFlagged ?? true; S.period = !!ch.period;
   S.wantComps = ch.comps; // ids from a link (null = auto-pick)
   S.chosen = new Set();
@@ -85,7 +87,7 @@ export async function openMaker(opts) {
   if (!dlg.open) dlg.showModal();
   // the Proof page's saved Gaia neighbours of a demo target, as the Brightness-over-time panel names a blend with them
   proofP ||= fetch(new URL('../../data/proof.json', import.meta.url)).then(r => (r.ok ? r.json() : null)).catch(() => null);
-  proofP.then(d => { const t = d?.targets?.find(q => q.name === S.name || q.label === S.name); S.nb = t?.extra?.neighbours || []; if (dlg.open && S.curve?.bands.some(b => b.absent)) summary(); });
+  proofP.then(d => { const t = d?.targets?.find(q => q.name === S.name || q.label === S.name); S.nb = t?.extra?.neighbours || []; S.proofRec = S.preset ? proofRecord(d, S.preset, S.name) : null; S.proofLoaded = !!d; if (dlg.open) summary(); });
   update(); // first draw with no comparison stars while Gaia answers
   try {
     S.stars = await fieldGaia({ grid: S.grid, preset: S.preset, base: S.base, signal: AbortSignal.timeout(20000) });
@@ -135,22 +137,31 @@ function update() {
   summary(); draw(); if (S.period) drawPeriod();
 }
 
+// "0.75–3.8 µm: −0.30 ± 0.11 mag · 2.7σ · 42 images · same as Proof ✓": compared number by number with proof.json
+function proofLine(c) {
+  if (!S.preset || !S.source.own || !S.proofLoaded) return '';
+  if (!S.proofRec) return '<p class="lcm-pc">The Proof page has no brightness test for this target.</p>';
+  if (!isProofChoices(c.choices)) return "<p class=\"lcm-pc\">The Proof page measures with its own choices (2 groups, 15″ aperture, no comparison stars, no images skipped for flags): press <b>Use the Proof page's choices</b> to compare.</p>";
+  const cmp = compareProof(c, S.proofRec);
+  if (!cmp) return '';
+  return `<div class="lcm-pc" data-match="${cmp.match}">${cmp.rows.map(r => `<p><b>${esc(r.name)}:</b> ${esc(r.text)} · ${r.match ? '<span class="lcm-ok">same as Proof ✓</span>' : '<span class="lcm-diff">differs from Proof</span>'}</p>`).join('')}</div>`;
+}
 function summary() {
   const c = S.curve, sum = q('lcmSum'), cnt = q('lcmCnt'), err = q('lcmErr');
   if (!c) { sum.innerHTML = '<p class="lcm-msg">Choose at least one band.</p>'; cnt.textContent = ''; err.textContent = ''; return; }
   cnt.textContent = countsText(c);
   const ap = Math.round(S.aperture * GRID_ARCSEC);
   if (c.status === 'saturated') { // Proof's one meaning of saturated: every image masked within the aperture
-    sum.innerHTML = `<p class="lcm-msg lcm-sat"><b>${esc(SATURATED_TEXT)}</b> Too bright for SPHEREx: ${c.counts.total === 1 ? 'the one image has' : `all ${c.counts.total} images have`} a masked pixel within ${ap}″ of ${S.source.own ? 'the star' : 'this spot'}, so its brightness can't be measured here.</p>`;
+    sum.innerHTML = proofLine(c) + `<p class="lcm-msg lcm-sat"><b>${esc(SATURATED_TEXT)}</b> Too bright for SPHEREx: ${c.counts.total === 1 ? 'the one image has' : `all ${c.counts.total} images have`} a masked pixel within ${ap}″ of ${S.source.own ? 'the star' : 'this spot'}, so its brightness can't be measured here.</p>`;
     err.textContent = ''; return;
   }
   if (c.status === 'nothing') {
-    sum.innerHTML = `<p class="lcm-msg"><b>${esc(NOTHING_TEXT)}</b> No image shows light above the noise ${S.source.own ? `at ${esc(S.name)}'s position` : 'here'}${c.bands.some(b => b.absent && b.detect?.state === 'offset') ? ', or the light there is centred on another source' : ''}, so there is no light curve to draw.</p>`;
+    sum.innerHTML = proofLine(c) + `<p class="lcm-msg"><b>${esc(NOTHING_TEXT)}</b> No image shows light above the noise ${S.source.own ? `at ${esc(S.name)}'s position` : 'here'}${c.bands.some(b => b.absent && b.detect?.state === 'offset') ? ', or the light there is centred on another source' : ''}, so there is no light curve to draw.</p>`;
     err.textContent = ''; return;
   }
   const anyComp = c.bands.some(b => b.points.some(p => p.nComp));
   err.textContent = anyComp ? ERR_NOTE_COMP : ERR_NOTE;
-  sum.innerHTML = c.bands.map(b => {
+  sum.innerHTML = proofLine(c) + c.bands.map(b => {
     const how = b.direct ? ' <span class="lcm-tag">direct: no comparison star measurable in this band</span>' : b.points.some(p => p.nComp) ? ' <span class="lcm-tag">differential</span>' : '';
     let v;
     if (b.ok) {
@@ -159,7 +170,8 @@ function summary() {
       v = `<span class="x-only"><b>${fmtMag(b.dmag)} ± ${b.dmagErr.toFixed(2)} mag</b> last season vs first (${sig.toFixed(1)}σ)</span><span class="s-only">${esc(words)}</span>`;
     } else if (b.absent) { // the panel's a3 rule and wording: whose light it is, if it is not the source's
       const sky = lightOnSky(b.detect, S.grid), src = (S.source.own && pickSaved(S.nb, sky)) || (S.stars ? pickSource(S.stars, sky) : null); // saved first, as the panel
-      v = esc(notHereText(b.detect, sky, src, S.source.own ? S.name : 'this source', /^0\.75/.test(b.name) ? 'below 3.8 µm' : `in ${b.name}`));
+      v = esc(notHereText(b.detect, sky, src, S.source.own ? S.name : 'this source', /^0\.75/.test(b.name) ? 'below 3.8 µm' : `in ${b.name}`))
+        + lightCentre({ detect: b.detect, sky }, S.source.own ? S.name : 'this source', esc); // Expert: the measured light centre, as the panel
     } else v = b.points.length ? 'too few images in the first or last season to compare them' : b.masked === b.total && b.total ? `a masked pixel within ${ap}″ in every image` : 'nothing detected in this band';
     return `<div class="lcm-row"><span class="lcm-k"><i style="--bc:${esc(b.colour)}" aria-hidden="true"></i>${esc(b.name)}</span><span class="lcm-v">${v}${how}<small>${b.points.length} image${b.points.length === 1 ? '' : 's'}</small></span></div>`;
   }).join('');

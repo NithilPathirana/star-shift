@@ -130,6 +130,14 @@ export function notHereText(d, sky, src, name, where) {
   return `Not detected here: the light in the aperture is centred ${sky ? `${sky.offArcsec.toFixed(1)}″` : `${(d.offPx * GRID_ARCSEC).toFixed(0)}″`} away, on another source`;
 }
 
+// Last season minus first, rounded as the Proof page (tools/make_proof.mjs): season means to 0.001 mag first, then
+// the difference and its error to 0.001, σ to 0.1. One function for the panel, the light-curve maker and Proof's numbers.
+const r3 = (v) => +v.toFixed(3);
+export function seasonChange(first, last) {
+  const dmag = r3(r3(last.dm) - r3(first.dm)), dmagErr = r3(Math.hypot(r3(first.sem), r3(last.sem)));
+  return { dmag, dmagErr, sigma: dmagErr > 0 ? +(Math.abs(dmag) / dmagErr).toFixed(1) : null };
+}
+
 // Δm against the first season, per wavelength group. rows from measure().
 export function lightcurve(rows, bounds) {
   const season = seasonIndex(rows.map(r => r.mjd), bounds || undefined);
@@ -161,7 +169,7 @@ export function lightcurve(rows, bounds) {
     const ok = bySeason.length >= 2 && a.season === firstS && a.n >= 3 && b.n >= 3 && a.sem != null && b.sem != null;
     return {
       ...g, total: mine.length, masked: gMasked.length, faint, noMatch: usable.length - points.length, points, bySeason, detect, absent, notHere,
-      ok, dmag: ok ? b.dm - a.dm : null, dmagErr: ok ? Math.hypot(a.sem, b.sem) : null,
+      ok, ...(ok ? seasonChange(a, b) : { dmag: null, dmagErr: null, sigma: null }),
     };
   });
   const plotted = groups.reduce((a, g) => a + g.points.length, 0);

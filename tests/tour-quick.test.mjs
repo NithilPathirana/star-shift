@@ -24,7 +24,7 @@ test('quick tour: chapters chain among themselves, never into the full tour', ()
   assert.equal(nextChapter('q-proof'), null);
   assert.equal(nextChapter('q-viewer', -1).id, 'q-pick');
   assert.equal(nextChapter('map').id, 'viewer'); // the full tour is unchanged
-  assert.equal(CHAPTERS.length, 9);
+  assert.equal(CHAPTERS.length, 10);
   assert.ok(chapterRunsHere(chapterById('q-proof'), 'proof.html'));
   assert.ok(!chapterRunsHere(chapterById('q-proof'), 'index.html'));
 });

@@ -79,7 +79,7 @@ export function resultState({ mo, measurable, verdict, catYr }) {
 // (mas/yr) over the time between the first and last season stacks (their mid-dates, MJD).
 // Only for a significant, measurable motion; null otherwise (the chip alone speaks).
 // A noisy fit (error over 15% of the value) is not overstated: it reads as a measurement with its ±
-// (judging panel A11): "WISE 0855 moved about 1 pixel in 1.0 years: about 6.5 ± 2.0″ a year; catalogue 8.2″."
+// (judging panel A11): "WISE 0855 moved about 1 pixel in 1.0 years: about 6.5 ± 2.0″ a year; catalogue 8.15″."
 export function storyCaption(name, mo, mjdA, mjdB, catYr) {
   if (!mo?.ok || mo.significant === false || !Number.isFinite(mjdA) || !Number.isFinite(mjdB) || mjdB <= mjdA) return null;
   const t = (mjdB - mjdA) / 365.25, d = mo.total / 1000 * t, px = d / PIXEL_ARCSEC;
@@ -87,7 +87,7 @@ export function storyCaption(name, mo, mjdA, mjdB, catYr) {
   const pxS = noisy ? (px < 0.5 ? 'less than a' : String(Math.round(px))) : px.toFixed(1), one = pxS === '1' || pxS === '1.0' || pxS === 'less than a';
   const pxTxt = `${pxS === '1.0' ? '1' : pxS} pixel${one ? '' : 's'}`;
   const text = noisy
-    ? `${name} moved about ${pxTxt} in ${t.toFixed(1)} years: about ${(mo.total / 1000).toFixed(1)} ± ${(mo.totalErr / 1000).toFixed(1)}″ a year${Number.isFinite(catYr) ? `; catalogue ${catYr.toFixed(1)}″` : ''}.`
+    ? `${name} moved about ${pxTxt} in ${t.toFixed(1)} years: about ${(mo.total / 1000).toFixed(1)} ± ${(mo.totalErr / 1000).toFixed(1)}″ a year${Number.isFinite(catYr) ? `; catalogue ${catYr.toFixed(2)}″` : ''}.`
     : `${name} moved ${d.toFixed(1)}″ in ${t.toFixed(1)} years, about ${pxTxt}.`;
   return { t, d, px, noisy, text };
 }
