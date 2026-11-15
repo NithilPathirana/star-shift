@@ -202,14 +202,25 @@ h1.pl-title{margin:0;line-height:inherit}
 :root{color-scheme:light}
 /* air panel: dark ranges, best-case label, six fixed band columns (Design pass 2) */
 .air-dark{margin:3px 0 0;font-size:.75rem;color:var(--ink)}
-.air-place small.air-best{color:var(--coral);font-weight:600}
+.air-place small.air-best{color:var(--copper-ink);font-weight:600} /* coral was 4.09:1 on ivory */
 .air-bands{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px 10px}
 .air-band{align-items:flex-start;flex-wrap:wrap;column-gap:5px;row-gap:0}
 .air-band i{margin-top:3px}
+@media (min-width:700px){.air-band{min-height:24px}} /* tap target: 24 px on desktop (phone: 44 px above) */
 
 /* details sheet (tablet and phone): the close key stays on top and the answer card leaves room for it,
    so the sheet can always be closed. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
 @media (max-width:1099px){
   .pl-app .sheet-close{z-index:6}
   .pl-app .inspector .pl-answer{margin-right:44px}
+}
+
+/* phone tap areas (Design final pass item 4). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+@media (max-width:699px){
+  .air-bands{column-gap:4px}
+  .air-band{min-width:44px}
+  .pl-app .inspector .switch::after{content:"";position:absolute;left:-4px;right:-4px;top:-10px;bottom:-10px} /* 54x46 hit area, same look */
+  .pl-app .sheet-close{width:44px;height:44px}
+  /* item 8: a half sheet, so the answer and the sky with its reticle show together (DESIGN.md 12) */
+  .pl-app .inspector{max-height:46dvh}
 }

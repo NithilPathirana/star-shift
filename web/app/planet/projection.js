@@ -4,14 +4,15 @@
 import { D2R } from './astro.js';
 
 // view = { az, alt (deg, where the centre of the screen looks), fov (deg across the shorter
-// side), w, h (CSS px) }. Returns a projector with the basis precomputed.
-export function makeView({ az, alt, fov, w, h }) {
+// side), w, h (CSS px), shift (optional px: the view centre sits this far above the canvas
+// middle, e.g. when the phone details sheet covers the lower sky) }. Returns a projector.
+export function makeView({ az, alt, fov, w, h, shift = 0 }) {
   const a = az * D2R, e = alt * D2R, ca = Math.cos(e);
   const d = [ca * Math.sin(a), ca * Math.cos(a), Math.sin(e)]; // forward
   const r = [Math.cos(a), -Math.sin(a), 0];                    // right (towards larger azimuth)
   const u = [r[1] * d[2] - r[2] * d[1], r[2] * d[0] - r[0] * d[2], r[0] * d[1] - r[1] * d[0]]; // up = r × d
   const scale = (Math.min(w, h) / 2) / (2 * Math.tan(fov * D2R / 4));
-  return { az, alt, fov, w, h, d, r, u, scale, cx: w / 2, cy: h / 2 };
+  return { az, alt, fov, w, h, shift, d, r, u, scale, cx: w / 2, cy: h / 2 - shift };
 }
 
 // Project one unit vector. Returns [x, y] in CSS px, or null when it is (nearly) behind

@@ -367,13 +367,13 @@ canvas.addEventListener('keydown', (e) => {
   else if (e.key === 'ArrowDown') S.view.alt = clampAlt(S.view.alt - st);
   else if (e.key === '+' || e.key === '=') setFov(S.view.fov / 1.25);
   else if (e.key === '-' || e.key === '_') setFov(S.view.fov * 1.25);
-  else if (e.key === 'Enter') { const o = pickAt(S.w / 2, S.h / 2, true) || pointAt(S.w / 2, S.h / 2); if (S.sel && S.sel === o) { if (!$('playPatch').hidden) location.href = $('playPatch').href; } else select(o); }
+  else if (e.key === 'Enter') { const cy = S.h / 2 - (S.view.shift || 0), o = pickAt(S.w / 2, cy, true) || pointAt(S.w / 2, cy); if (S.sel && S.sel === o) { if (!$('playPatch').hidden) location.href = $('playPatch').href; } else select(o); }
   else used = false;
   if (used) { e.preventDefault(); S.dirty = true; }
 });
 $('zin').onclick = () => setFov(S.view.fov / 1.5);
 $('zout').onclick = () => setFov(S.view.fov * 1.5);
-$('zreset').onclick = () => { S.view = { az: S.place.lat < 0 ? 0 : 180, alt: 40, fov: S.view.fov }; setFov(defaultFov()); };
+$('zreset').onclick = () => { S.view = { az: S.place.lat < 0 ? 0 : 180, alt: 40, fov: S.view.fov, shift: S.view.shift || 0 }; setFov(defaultFov()); };
 const defaultFov = () => (S.w < 600 ? 100 : 90);
 
 /* ---------- time controls ---------- */
@@ -437,19 +437,30 @@ function toggleInsp(on) { $('insp').classList.toggle('open', on); $('infoBtn').s
 const MIN_SHEET = 220;
 function placeInsp() {
   const el = $('insp'), st = el.style;
-  if (innerWidth >= 700 || !el.classList.contains('open')) { st.top = st.bottom = st.maxHeight = st.height = ''; return; }
+  if (innerWidth >= 700 || !el.classList.contains('open')) { st.top = st.bottom = st.maxHeight = st.height = ''; skyShift(null); return; }
   const d = $('dock').getBoundingClientRect(), bar = document.querySelector('.topbar')?.getBoundingClientRect();
   const top = Math.max(8, bar && bar.bottom > 0 ? bar.bottom + 8 : 8);
-  let box = null;
-  if (d.top - 8 - top >= MIN_SHEET) box = [top, Math.min(d.top, innerHeight) - 8]; // between the top bar and the dock
+  let box = null, overSky = false;
+  if (d.top - 8 - top >= MIN_SHEET) { // between the top bar and the dock: the lower half, so the sky stays in view above it
+    const bot = Math.min(d.top, innerHeight) - 8, h = Math.max(MIN_SHEET, Math.min(innerHeight * 0.46, (bot - top) * 0.5));
+    box = [Math.round(bot - h), bot]; overSky = true;
+  }
   else if (d.bottom > 0 && innerHeight - 8 - (d.bottom + 8) >= MIN_SHEET) box = [d.bottom + 8, innerHeight - 8]; // below the dock
   else if (d.bottom > 0 && d.top < innerHeight) { // short screen: keep at least the Now / Play row clear
     const t = document.querySelector('.pl-dock .transport').getBoundingClientRect();
     if (t.top - 8 - top >= 120) box = [top, t.top - 8];
     else if (innerHeight - 8 - (t.bottom + 8) >= 120) box = [t.bottom + 8, innerHeight - 8];
   }
-  if (!box) { st.top = st.bottom = st.maxHeight = st.height = ''; return; } // dock off screen: plain bottom sheet
+  if (!box) { st.top = st.bottom = st.maxHeight = st.height = ''; skyShift(null); return; } // dock off screen: plain bottom sheet
   st.top = box[0] + 'px'; st.bottom = 'auto'; st.height = 'auto'; st.maxHeight = (box[1] - box[0]) + 'px';
+  skyShift(overSky ? box[0] : null);
+}
+// Move the sky's centre into the part of the canvas above the sheet (sheetTop: viewport px, or null for none).
+function skyShift(sheetTop) {
+  const c = canvas.getBoundingClientRect();
+  let s = 0;
+  if (sheetTop != null && sheetTop < c.bottom && sheetTop - c.top > 80) s = Math.round(c.height / 2 - (sheetTop - c.top) / 2);
+  if (s !== (S.view.shift || 0)) { S.view.shift = s; S.dirty = true; }
 }
 addEventListener('scroll', () => { if ($('insp').classList.contains('open')) placeInsp(); }, { passive: true });
 addEventListener('resize', placeInsp);
