@@ -498,3 +498,12 @@ html[data-motion=full] .rk .bob{animation:bob 1.6s ease-in-out infinite alternat
 .ai-mark.top-ai{display:none;margin:0 4px 0 -2px}
 @media (max-width:699px){.ai-mark.top-ai{display:inline-block}}
 .ai-credit{font-size:.75rem;color:var(--ink-2)}
+/* "Where to look" line (Master item 3): plain words above the numbers. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+.cd-look{margin:10px 0 12px;padding:10px 12px;border-radius:12px;background:rgba(255,252,247,.55);border:1px solid var(--edge)}
+#vLook .cd-look{margin:10px 0 4px}
+.cd-look p{margin:0}
+.cd-look-h{font-size:.875rem;line-height:1.4;font-weight:600;color:var(--ink)}
+.cd-look-d{margin-top:4px!important;font-size:.8125rem;line-height:1.45;color:var(--ink-2)}
+.cd-look-n{margin-top:6px!important;font-size:.75rem;line-height:1.45;color:var(--muted)}
+.cd-look .fl-link{font-size:.75rem;background:none;border:0;padding:0;cursor:pointer}
+@media (max-width:699px){.cd-look .fl-link{min-height:44px}}

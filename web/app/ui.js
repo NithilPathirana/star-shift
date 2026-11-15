@@ -8,7 +8,7 @@ import { parseQuery, QueryError, DEFAULT_SETTINGS } from './query.js';
 import { run, buildStacks, measureMotion, resolveTarget, motionMeasurability, motionDetectors, detectorText } from './data.js';
 import { kinematics, tangentialVelocity, toLSR, totalPM } from './kinematics.js';
 import { PRESETS, findPreset } from './presets.js';
-import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight, altAz, riseTransitSet } from './sky.js';
+import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight, altAz, riseTransitSet, sunRaDec } from './sky.js';
 import { simbadCone, otypeName, CHANNEL_UM } from './skymap.js';
 import { Sky3D as SkyMap } from './sky3d/index.js'; // 3D celestial sphere (three.js); same interface as the Aladin SkyMap
 import { layersFor, DEFAULT_BANDS, bandLabel, bandName } from './bands.js';
@@ -455,6 +455,7 @@ function load(query, label) {
       if (!V.planned) { V.status = 'empty'; showState('stEmpty'); return; }
       $('tName').textContent = V.name; $('ra').textContent = R.fmtRA(V.grid.ra0); $('dec').textContent = R.fmtDec(V.grid.dec0); setCoordText(V.grid.ra0, V.grid.dec0);
       $('d-field').textContent = `${Math.round(V.n * V.grid.scale)}″ · north up`;
+      renderLook();
       layout(); buildTimeline(); progress();
     } else if (e.type === 'FRAME') {
       const f = toF(e.frame); V.raws.push(e.frame); V.lastArrive = performance.now();
@@ -639,7 +640,8 @@ function placeOverlays() {
   $('mdFov').textContent = fovTxt();
   const c = skymap.center(); readout(c.ra, c.dec);
 }
-function readout(ra, dec) { const t = `${R.fmtRA(ra)}  ${R.fmtDec(dec)}`; $('mdCursor').textContent = t; $('mapRead').innerHTML = `<span>FOV ${fovTxt()}</span><span class="sep">·</span><span>${t}</span>`; }
+// RA/Dec is Expert; Simple gets the plain "where to look" twin (Master items 3 and 5)
+function readout(ra, dec) { const t = `<span class="x-only">${R.fmtRA(ra)}  ${R.fmtDec(dec)}</span><span class="s-only">${esc(lookShort(ra, dec))}</span>`; $('mdCursor').innerHTML = t; $('mapRead').innerHTML = `<span class="x-only">FOV ${fovTxt()}</span><span class="sep x-only">·</span><span>${t}</span>`; }
 $('mapWrap').addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; if (!skymap.aladin) return; const r = $('mapWrap').getBoundingClientRect(), w = skymap.toWorld(e.clientX - r.left, e.clientY - r.top); if (w) readout(w[0], w[1]); });
 function mapZoom(f) { if (!skymap.aladin) return; skymap.setFov(skymap.fov() / f); Snd.play(f > 1 ? 'zoomIn' : 'zoomOut'); }
 function mapFit() { if (!skymap.aladin) return; skymap.setFov(60); Snd.play('click'); }
@@ -953,6 +955,7 @@ function useDevice() {
     { timeout: 8000, maximumAge: 600000 });
 }
 function renderObs() {
+  renderLook(); // the plain "where to look" line follows the place
   const body = $('obsBody'); clearInterval(obsTimer); if (!obs.on) { body.innerHTML = ''; return; }
   const s = M.sel; if (!s) return;
   if (!obs.loc) {
@@ -977,6 +980,60 @@ function renderObs() {
   $('clrLoc').onclick = () => { obs.loc = null; renderObs(); Snd.play('click'); };
   obsTimer = setInterval(renderObs, 30000);
 }
+
+/* ---------- "Where to look" in plain words (Master item 3) ----------
+   One line for people who don't read RA/Dec: compass direction and height above the horizon now,
+   then rise / highest / set, from Colombo by default or the place set under Observer (in memory only).
+   Same maths as the Observer rows (sky.js). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+const LOOK_HOME = { lat: 6.927, lon: 79.861, label: 'Colombo' };
+const DIR8 = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
+const dirWord = az => DIR8[Math.round((((az % 360) + 360) % 360) / 45) % 8];
+const lookPlace = () => obs.loc || LOOK_HOME;
+const lookFrom = () => !obs.loc ? 'From Colombo' : obs.loc.label === 'Your device location' ? 'From where you are' : obs.loc.label === 'Typed position' ? 'From your place' : `From ${obs.loc.label}`;
+const whereIn = (alt, az) => alt > 85 ? 'almost straight overhead' : `in the ${dirWord(az)}`;
+// { head, day, short }: head = now (+ best time tonight), day = rise / highest / set, short = for hover readouts
+function whereToLook(ra, dec, now = new Date()) {
+  const { lat, lon } = lookPlace(), from = lookFrom();
+  const at = d => `${hm(d)}${dayTag(d) === 'today' ? '' : ' ' + dayTag(d)}`;
+  const { alt, az } = altAz(ra, dec, lat, lon, now), rs = riseTransitSet(ra, dec, lat, lon, now);
+  const s = sunRaDec(now), sunUp = altAz(s.ra, s.dec, lat, lon, now, { j2000: false }).alt > -6;
+  const vis = visibleTonight(ra, dec, lat, lon, now);
+  const best = vis.bestTime ? `best tonight at ${hm(vis.bestTime)}, ${vis.bestAlt.toFixed(0)}° up ${whereIn(vis.bestAlt, altAz(ra, dec, lat, lon, vis.bestTime).az)}`
+    : 'not well placed in the dark tonight (under 20° up while it is dark)';
+  const tDir = rs.transitAlt > 85 ? ', almost straight overhead' : ` in the ${dec < lat ? 'south' : 'north'}`;
+  if (rs.always === 'down') return { head: `${from}: it never rises above the horizon.`, day: '' };
+  const head = alt > 0
+    ? `${from} now: look ${dirWord(az)} (${az.toFixed(0)}°), ${alt.toFixed(0)}° up.${sunUp ? ` The Sun is up, so ${best}.` : ''}`
+    : `${from}: below the horizon now; ${best}.`;
+  const day = rs.always === 'up' ? `It never sets from here; highest at ${at(rs.transit)}, ${rs.transitAlt.toFixed(0)}° up${tDir}.`
+    : `${rs.up ? 'Rose' : 'Rises'} ${at(rs.rise)}, ${rs.up && rs.transit < now ? 'was highest' : 'highest'} ${at(rs.transit)} at ${rs.transitAlt.toFixed(0)}°${tDir}, sets ${at(rs.set)}.`;
+  return { head, day };
+}
+// short form for hover readouts (cheap: no rise/set search)
+function lookShort(ra, dec) {
+  const { lat, lon } = lookPlace(), { alt, az } = altAz(ra, dec, lat, lon, new Date());
+  return `${alt > 0 ? `${dirWord(az)}, ${alt.toFixed(0)}° up` : 'below the horizon'} now ${lookFrom().replace(/^From /, 'from ')}`;
+}
+function lookHTML(ra, dec) {
+  const w = whereToLook(ra, dec);
+  return `<div class="cd-look" role="note"><p class="cd-look-h">${esc(w.head)}</p>${w.day ? `<p class="cd-look-d">${esc(w.day)}</p>` : ''}
+    <p class="cd-look-n">${obs.loc ? '' : 'Colombo is the default place. '}Times in your time zone. <button type="button" class="fl-link" data-look-place>Change place</button></p></div>`;
+}
+let lookTimer = 0;
+function renderLook() {
+  clearInterval(lookTimer);
+  const s = M.sel; if (s && $('cdLook')) $('cdLook').innerHTML = lookHTML(s.ra, s.dec);
+  if (V.grid && $('vLook')) $('vLook').innerHTML = lookHTML(V.grid.ra0, V.grid.dec0);
+  lookTimer = setInterval(renderLook, 60000);
+}
+// "Change place": switch the Observer section on and put the cursor in its place field
+$('insp').addEventListener('click', e => {
+  if (!e.target.closest('[data-look-place]')) return;
+  if (scene === 'viewer') toMap(true); // the Observer section lives in the map's details panel
+  if (!obs.on) obsOn(true);
+  $('obsSw').scrollIntoView({ block: 'center', behavior: set.motion ? 'auto' : 'smooth' });
+  setTimeout(() => ($('placeIn') || $('obsSw')).focus({ preventScroll: true }), 300);
+});
 
 /* ---------- IR band-range editor (domain 0.74–5.01 µm) ---------- */
 const DOMN = [0.74, 5.01];
@@ -1180,7 +1237,7 @@ window.__app = { skymap, V, M }; // debugging hook (read-only use)
 function init() {
   $('pins').innerHTML = TARGETS.map(t => `<button class="pin" data-k="${t.key}" aria-label="${esc(t.name)}, ${esc(t.id)}"></button>`).join('');
   pinEls = [...$('pins').querySelectorAll('.pin')];
-  pinEls.forEach((p, i) => { const t = TARGETS[i]; bindTip(p, () => `<b>${esc(t.name)}</b><small>${esc(t.id)}</small>`); p.onclick = () => select(t.ra, t.dec, t, true); });
+  pinEls.forEach((p, i) => { const t = TARGETS[i]; bindTip(p, () => `<b>${esc(t.name)}</b><small>${esc(t.id)}</small><small>${esc(lookShort(t.ra, t.dec))}</small>`); p.onclick = () => select(t.ra, t.dec, t, true); });
   $('pins').style.cssText = 'position:absolute;inset:0;pointer-events:none'; pinEls.forEach(p => { p.style.pointerEvents = 'auto'; });
   $('sel').hidden = true;
   app.dataset.scene = 'map';
