@@ -93,6 +93,16 @@ export function earlyBlinkReady(stacks, mjds, min = 3, tolDays = 45) {
   return a.count >= min && b.count >= min && mjd(a.start) - Math.min(...mjds) <= tolDays && Math.max(...mjds) - mjd(b.end) <= tolDays;
 }
 
+// QA a3: with one band held, how the counter's total ("x / 47") relates to the motion fit (Proof: 28).
+// Only when the fit is limited to the held detectors (presets.js motionDetectors, WISE 0855) and uses
+// fewer images than are shown. Returns { tip, line } or null.
+export function heldFitText({ shown, label, mo, heldDets, name }) {
+  if (!mo?.ok || !Array.isArray(mo.detectors) || !Array.isArray(heldDets) || !(mo.frames < shown)) return null;
+  if (mo.detectors.length !== heldDets.length || !mo.detectors.every(d => heldDets.includes(d))) return null;
+  return { tip: `${shown} images at ${label}; the motion fit uses the ${mo.frames} where ${name} is clearly detected`,
+    line: `The motion fit uses ${mo.frames} of these ${shown} images, the ones where ${name} is clearly detected.` };
+}
+
 // The share link: target (q, or ra + dec), scene, view mode and the image date.
 export function shareParams({ q, ra, dec, scene, mode, mjd }) {
   const p = new URLSearchParams();

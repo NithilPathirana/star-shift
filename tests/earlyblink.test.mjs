@@ -25,3 +25,15 @@ test('earlyBlinkReady: needs the plan\'s first and last season, each with enough
   assert.equal(earlyBlinkReady([], mjds), false);
   assert.equal(earlyBlinkReady(null, mjds), false);
 });
+
+test('heldFitText (QA a3): explains "x / 47" against the fit\'s 28 only when the fit uses the held detectors', async () => {
+  const { heldFitText } = await import('../web/app/viewerbits.js');
+  const mo = { ok: true, frames: 28, detectors: [5, 6] };
+  const t = heldFitText({ shown: 47, label: '3.8–5.0 µm', mo, heldDets: [5, 6], name: 'WISE 0855' });
+  assert.match(t.tip, /47 images at 3\.8–5\.0 µm; the motion fit uses the 28 where WISE 0855 is clearly detected/);
+  assert.match(t.line, /28 of these 47 images/);
+  assert.equal(heldFitText({ shown: 41, label: 'x', mo: { ok: true, frames: 100, detectors: null }, heldDets: [5, 6], name: 'B' }), null, 'fit on all bands');
+  assert.equal(heldFitText({ shown: 47, label: 'x', mo: { ...mo, detectors: [1, 2] }, heldDets: [5, 6], name: 'W' }), null, 'other detectors');
+  assert.equal(heldFitText({ shown: 28, label: 'x', mo, heldDets: [5, 6], name: 'W' }), null, 'fit uses them all');
+  assert.equal(heldFitText({ shown: 47, label: 'x', mo: { ok: false }, heldDets: [5, 6], name: 'W' }), null);
+});

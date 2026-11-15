@@ -28,7 +28,7 @@ import { CLARITY_KEY, readClarity } from './prefs.js'; // Clarity defaults (soun
 import './story.js'; // b1: first-screen story on the cold-open map (story.css)
 import { fitPlaceholder, surpriseTarget } from './picktips.js'; // quick-pick tips, search placeholder, "Surprise me"
 import { motionVerdict, paDelta } from './proof/logic.js'; // the Proof page's verdict rule, for the result plate
-import { groupOfDet, groupByDets, centreMasked, bestGroup, counterText, plannedIndexOf, resultState, storyCaption, shareParams, verdictClass, VIEW_MODES, earlyBlinkReady } from './viewerbits.js';
+import { groupOfDet, groupByDets, centreMasked, bestGroup, counterText, plannedIndexOf, resultState, storyCaption, shareParams, verdictClass, VIEW_MODES, earlyBlinkReady, heldFitText } from './viewerbits.js';
 
 const R = window.MockRender;
 const $ = id => document.getElementById(id), root = document.documentElement;
@@ -151,6 +151,7 @@ function setHold(on) {
   shown = -1; buildTimeline(); holdKey(); updatePlate(); draw(); onFrame(P.i);
   Snd.play('tick');
 }
+const heldFit = () => (V.status === 'ready' && HOLD.on && HOLD.group ? heldFitText({ shown: V.F.length, label: HOLD.group.label, mo: V.motion, heldDets: HOLD.group.dets, name: V.name }) : null);
 function holdKey() {
   const k = $('holdKey'); if (!k) return;
   k.setAttribute('aria-pressed', String(HOLD.on));
@@ -257,7 +258,8 @@ function setCounter(i, animate) {
   const N = V.F.length, fmt = k => counterText({ i: k, shown: N, loading: V.status === 'loading', planned: V.planned, loaded: V.FA.length,
     total: V.total, held: HOLD.on, plannedIndex: plannedIndexOf(V.plannedMjds, V.F[k]?.mjd) });
   cancelAnimationFrame(tickAnim);
-  $('counter').title = HOLD.on ? `Image number in this band (${HOLD.group.label}); ${V.FK.length} images in all bands` : V.status === 'loading' ? `Image number out of the ${V.planned} being loaded` : `Image number out of the ${N} used${V.total > N ? `; IRSA has ${V.total} images of this spot, spread evenly over time we use ${N}` : ''}`;
+  const hf = HOLD.on ? heldFit() : null; // WISE 0855: "x / 47", the fit uses 28 (QA a3)
+  $('counter').title = HOLD.on ? `Image number in this band (${HOLD.group.label}); ${hf ? hf.tip + '; ' : ''}${V.FK.length} images in all bands` : V.status === 'loading' ? `Image number out of the ${V.planned} being loaded` : `Image number out of the ${N} used${V.total > N ? `; IRSA has ${V.total} images of this spot, spread evenly over time we use ${N}` : ''}`;
   if (!N) { $('counter').textContent = fmt(0); return; }
   if (!animate || set.motion || Math.abs(i - shown) > 12 || shown < 0) { $('counter').textContent = fmt(i); shown = i; return; }
   let cur = shown; const dir = Math.sign(i - cur), stepA = () => { cur += dir; $('counter').textContent = fmt(cur); if (cur !== i) tickAnim = requestAnimationFrame(stepA); };
@@ -385,7 +387,8 @@ function updatePlate() {
   }
   // the caption slot: the Blink/Compare story, or in Time playback which band is held
   const story = (mode === 'blink' || mode === 'compare') && cap;
-  const holdLine = mode === 'play' && HOLD.on && V.F.length ? `Showing ${HOLD.group.label}: ${esc(HOLD.note)}. <button type="button" class="rp-all" data-hold-off>Show all bands</button>` : '';
+  const hf = HOLD.on ? heldFit() : null;
+  const holdLine = mode === 'play' && HOLD.on && V.F.length ? `Showing ${HOLD.group.label}: ${esc(HOLD.note)}.${hf ? ' ' + esc(hf.line) : ''} <button type="button" class="rp-all" data-hold-off>Show all bands</button>` : '';
   const capHTML = story ? `${cap}<span class="rp-cat">${esc(capCat)}</span>` : holdLine;
   const key = [res, capHTML, done].join('|'); if (key === plateKey) return; plateKey = key;
   el.classList.toggle('done', done); el.classList.toggle('measuring', !done); el.classList.toggle('two', res.includes('rp-row'));
