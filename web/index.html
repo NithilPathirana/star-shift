@@ -41,17 +41,19 @@
     <img class="logo-slot top-logo" src="brand/star-shift-symbol-small.svg" alt="" width="28" height="28"><span class="ai-mark top-ai" title="Logo: SI-generated (SI = Super Intelligence)" aria-label="Logo: SI-generated (SI = Super Intelligence)" role="note">SI</span><h1 class="name">Star Shift</h1>
     <form class="search" role="search" onsubmit="event.preventDefault();doSearch()">
       <label class="field well"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="5.5"/><path d="M12 12l4 4"/></svg>
-        <input id="q" aria-label="Star name or sky coordinates" value="" placeholder="Star name, or RA Dec like 269.45 +4.69" autocomplete="off"></label>
+        <input id="q" aria-label="Star name or sky coordinates" value="" placeholder="Any star name or coordinates, e.g. Vega or 269.45 +4.69" autocomplete="off" aria-controls="smenu"></label>
       <button class="key primary" type="submit">Show</button>
       <div class="serr" id="serr" role="alert" hidden></div>
+      <div class="smenu glass" id="smenu" hidden><button class="key" type="button" id="surpriseKey">Surprise me</button><span class="smenu-t">Opens a random nearby star that SPHEREx has photographed more than once.</span></div>
     </form>
-    <div class="picks" role="group" aria-label="Example targets">
-      <button class="key pick" aria-pressed="false">Barnard's Star</button>
-      <button class="key pick">Epsilon Indi B</button>
-      <button class="key pick">WISE 0855</button>
-      <button class="key pick">RW Aurigae</button>
-      <button class="key pick">R Draconis</button>
-    </div>
+    <div class="picks-wrap"><span class="picks-l" id="picksL">NASA's challenge targets</span>
+    <div class="picks" role="group" aria-labelledby="picksL">
+      <button class="key pick" aria-pressed="false" title="fastest-moving star in our sky" aria-description="fastest-moving star in our sky">Barnard's Star</button>
+      <button class="key pick" title="brown-dwarf pair orbiting a nearby star" aria-description="brown-dwarf pair orbiting a nearby star">Epsilon Indi B</button>
+      <button class="key pick" title="coldest known brown dwarf, seen only in long infrared" aria-description="coldest known brown dwarf, seen only in long infrared">WISE 0855</button>
+      <button class="key pick" title="young star that changes brightness" aria-description="young star that changes brightness">RW Aurigae</button>
+      <button class="key pick" title="giant star that brightens and fades" aria-description="giant star that brightens and fades">R Draconis</button>
+    </div></div>
     <div class="coords num x-only"><span id="coordTxt"></span>
       <button class="key copy" id="copyTop" aria-label="Copy coordinates"><svg class="cp" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5"/><path d="M3 10.5V3.5A1 1 0 0 1 4 2.5h6.5"/></svg><svg class="ok" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3.2 3L13 4.5"/></svg></button>
     </div>
@@ -85,6 +87,7 @@
         <section class="story on-stage" aria-label="What Star Shift does"><!-- b1 story, desktop copy (story.css / story.js) -->
           <p class="story-a">Every six months, NASA's SPHEREx photographs the whole sky.</p>
           <p class="story-b">Star Shift lets anyone flip through those photos, catch what moved, and prove it's real.</p>
+          <p class="story-c">Start with NASA's five test targets, or search any star.</p>
           <button type="button" class="key primary story-go">Watch Barnard's Star move <span aria-hidden="true">→</span></button>
         </section>
         <script>document.documentElement.dataset.story = /[?&]scene=viewer/.test(location.search) ? 'off' : 'on';</script>
@@ -198,6 +201,7 @@
     <section class="story in-dock map-only" aria-label="What Star Shift does"><!-- b1 story, phone copy -->
       <p class="story-a">Every six months, NASA's SPHEREx photographs the whole sky.</p>
       <p class="story-b">Star Shift lets anyone flip through those photos, catch what moved, and prove it's real.</p>
+      <p class="story-c">Start with NASA's five test targets, or search any star.</p>
       <div class="story-row"><button type="button" class="key primary story-go">Watch Barnard's Star move <span aria-hidden="true">→</span></button><button type="button" class="key story-tour" aria-label="Take the guided tour"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M12.8 7.2l-1.7 3.9-3.9 1.7 1.7-3.9z" stroke-linejoin="round"/></svg>Tour</button></div>
     </section>
     <div class="map-dock map-only">
@@ -276,6 +280,29 @@
 <div class="pop glass" id="help" role="dialog" aria-label="About and help" hidden>
   <button class="key tour-start" id="tourStart" type="button">Take the tour</button>
   <h2>About Star Shift</h2>
+  <section class="team-words" aria-label="In the team's own words"><!-- b5: the team's own words, copied exactly (Obsidian note 23); do not edit -->
+  <h3>Who is this for?</h3>
+  <p class="team-q">"Curious people, people that don't know and know about astronomy, people who are and aren't experienced in this field."</p>
+  <h3>Our idea</h3>
+  <p class="team-q">"Using an image of a night sky that we can surf through and put coordinates so that it will point out a specific area and exactly show the light shifting shown by the infrared banding."</p>
+  <h3>What we wanted it to do (our feature list)</h3>
+  <ul class="team-list">
+    <li>"Go to RA/Dec and fetch night sky data, and allow panning in the website."</li>
+    <li>"Allow selecting a patch in the sky, and the website will calculate the exact coordinates, declination and all the data related and will present in the corner once clicked a box will open with this data."</li>
+    <li>"Allow the user to select a range of IR bands… choose a color to code the range and let the user name the range as they want."</li>
+    <li>"Allow the option of hovering over the stars so that the name would be displayed as well."</li>
+    <li>"Allow usage of user specific location when calculating coordinate data."</li>
+    <li>"Ghost – future predictions of stars, location."</li>
+    <li>"Velocity – of stars."</li>
+    <li>"Contamination flagging – air glow, cosmic rays, light scatter due to space dust, pixel overflow."</li>
+    <li>"JPL labeling."</li>
+    <li>"Live location based sky… option to take the night sky of major laboratories also and NASA centers also and enter coordinates to locate that sky too."</li>
+    <li>"Orbit comparison – ability to compare and distinguish based on different variables such as distance from Earth."</li>
+    <li>"Compare the images from multiple telescopes – to see how geographical position affects the night sky."</li>
+    <li>"Hypothesis creator notepad… add data values… with a + icon that is on everything."</li>
+  </ul>
+  <p class="team-sign">— Team Proper Motion (Nithil, Kurucharan, Dehan)</p>
+  </section>
   <p class="about-pitch">Every six months, NASA's SPHEREx photographs the whole sky. Star Shift lets anyone flip through those photos, catch what moved, and prove it's real.</p>
   <p class="note ai-credit">Logo: SI-generated with ChatGPT; small version and favicon redrawn as SVG by Claude.</p>
   <p class="note"><a href="source.zip" download>Download the source code (MIT)</a> · Star Shift is open source under the MIT licence.</p>

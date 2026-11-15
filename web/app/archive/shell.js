@@ -4,6 +4,7 @@
 
 import { parseQuery, fromURL, formatRA, formatDec } from '../query.js';
 import { PRESETS, findPreset } from '../presets.js';
+import { pickTip, fitPlaceholder } from '../picktips.js'; // chip tips (NASA's challenge targets), search placeholder
 import { resolveName } from '../../core/resolve.js';
 import { propagate } from '../../core/motion.js';
 
@@ -33,7 +34,7 @@ export function updateNav(q) {
 function renderPicks() {
   const box = document.querySelector('.picks');
   if (!box) return;
-  box.innerHTML = PRESETS.map(p => `<button class="key pick" type="button" title="${esc(p.note)}">${esc(p.label)}</button>`).join('');
+  box.innerHTML = PRESETS.map(p => { const t = esc(pickTip(p.key) || p.note); return `<button class="key pick" type="button" title="${t}" aria-description="${t}">${esc(p.label)}</button>`; }).join('');
 }
 
 export function currentQuery(fallback = "Barnard's Star") {
@@ -52,7 +53,7 @@ export function initShell(onQuery) {
     updateNav(q);
     onQuery(q);
   };
-  initClarity(); initPops(); renderPicks();
+  initClarity(); initPops(); renderPicks(); fitPlaceholder(input);
   form.addEventListener('submit', (e) => { e.preventDefault(); go(input.value); });
   for (const b of document.querySelectorAll('.pick')) b.addEventListener('click', () => { input.value = b.textContent; go(b.textContent); });
   window.addEventListener('popstate', () => { const q = currentQuery(); updateNav(q); onQuery(q); });

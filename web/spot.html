@@ -37,7 +37,7 @@
     <img class="logo-slot top-logo" src="brand/star-shift-symbol-small.svg" alt="" width="28" height="28"><span class="ai-mark top-ai" title="Logo: SI-generated (SI = Super Intelligence)" aria-label="Logo: SI-generated (SI = Super Intelligence)" role="note">SI</span><span class="name">Star Shift</span>
     <form class="search" role="search" id="searchForm">
       <label class="field well"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="5.5"/><path d="M12 12l4 4"/></svg>
-        <input id="q" aria-label="Star name or sky coordinates" placeholder="Star name, or RA Dec like 269.45 +4.69" autocomplete="off"></label>
+        <input id="q" aria-label="Star name or sky coordinates" placeholder="Any star name or coordinates, e.g. Vega or 269.45 +4.69" autocomplete="off"></label>
       <button class="key primary" type="submit">Show</button>
       <div class="serr" id="serr" role="alert" hidden></div>
     </form>
@@ -71,6 +71,7 @@
         <div class="sm-pfold"><span>Field: <b id="pfName"></b></span><button class="key" id="pChange" type="button" aria-controls="pick" aria-expanded="true">Change</button></div>
         <h2 id="pickH">Choose any patch. Nobody may have looked at it this way before.</h2>
         <div class="sm-picks" role="group" aria-label="Fields">
+          <span class="sm-picks-l">NASA's challenge targets</span>
           <span id="quick"></span>
           <button class="key primary" id="surprise" type="button">Surprise me</button>
         </div>

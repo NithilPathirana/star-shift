@@ -26,6 +26,7 @@ import { createCleanBlink } from './cleanblink.js'; // Blink: hide overlays, zoo
 import { createTelescopes } from './telescopes/index.js'; // Telescope compare (DESIGN.md 31a)
 import { CLARITY_KEY, readClarity } from './prefs.js'; // Clarity defaults (sounds off)
 import './story.js'; // b1: first-screen story on the cold-open map (story.css)
+import { fitPlaceholder, surpriseTarget } from './picktips.js'; // quick-pick tips, search placeholder, "Surprise me"
 import { motionVerdict, paDelta } from './proof/logic.js'; // the Proof page's verdict rule, for the result plate
 import { groupOfDet, groupByDets, centreMasked, bestGroup, counterText, plannedIndexOf, resultState, storyCaption, shareParams, verdictClass, VIEW_MODES } from './viewerbits.js';
 
@@ -975,6 +976,28 @@ const row = (label, value, tag, nb, cls) => { if (nb) NB_ROWS.set(label, nb);
   return `<div class="cd-row${nb ? ' has-nb' : ''}${cls ? ' ' + cls : ''}"><span class="cd-l">${label}</span><span class="cd-t"><span class="t-mini ${TAGS[tag][0]}">${TAGS[tag][1]}</span></span><span class="cd-v">${value}</span><button class="key cd-c" aria-label="Copy ${label}">${CP}</button>${nb ? `<button type="button" class="nb-plus" data-nb="row:${esc(label)}" aria-label="Add ${esc(label)} to the lab notebook" title="Add to the lab notebook">+</button>` : ''}</div>`; };
 const sgn = v => (v < 0 ? '−' : '+') + Math.abs(v).toFixed(4) + '°';
 let cdCtl = null, repaintMot = null;
+// Search menu (picktips.js): "Surprise me" shows while the empty field has focus and opens one of
+// Spot's checked patches (two or more SPHEREx seasons) as its star, moved to today. Placeholder fits the field.
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+{
+  const menu = $('smenu'), q = $('q'), form = document.querySelector('form.search');
+  fitPlaceholder(q);
+  if (menu) {
+    const show = () => { menu.hidden = !!q.value.trim() || !$('serr').hidden; };
+    q.addEventListener('focus', show); q.addEventListener('input', show);
+    form.addEventListener('focusout', e => { if (!form.contains(e.relatedTarget)) menu.hidden = true; });
+    form.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) { menu.hidden = true; e.stopPropagation(); } });
+    menu.addEventListener('pointerdown', e => e.preventDefault()); // keep the field focused while clicking
+    $('surpriseKey').onclick = () => {
+      const tg = surpriseTarget(); Snd.play('click');
+      menu.hidden = true; $('serr').hidden = true; q.value = tg.name; q.blur();
+      document.querySelectorAll('.pick').forEach(x => x.setAttribute('aria-pressed', 'false'));
+      if (scene !== 'map') toMap(true);
+      const now = propagate(tg, NOW_MJD), t = { key: 'q', name: tg.name, id: 'Nearby red dwarf', ra: now.ra, dec: now.dec, simbad: tg };
+      flyTo(t.ra, t.dec, 2, () => select(t.ra, t.dec, t, false));
+    };
+  }
+}
 function catalogueOf(t) { return t?.preset?.target || t?.simbad || null; }
 
 /* ---------- Motion panel (DESIGN.md 27): one row per quantity, unit, source tag ---------- */

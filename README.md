@@ -2,6 +2,29 @@
 
 **Open it:** https://star-shift.nithil-kpathirana.workers.dev (no login) · **Source:** `source.zip` on the site (built with `npm run source-zip`) · **Licence:** MIT ([LICENSE](LICENSE))
 
+## Who is this for?
+"Curious people, people that don't know and know about astronomy, people who are and aren't experienced in this field."
+
+## Our idea
+"Using an image of a night sky that we can surf through and put coordinates so that it will point out a specific area and exactly show the light shifting shown by the infrared banding."
+
+## What we wanted it to do (our feature list)
+- "Go to RA/Dec and fetch night sky data, and allow panning in the website."
+- "Allow selecting a patch in the sky, and the website will calculate the exact coordinates, declination and all the data related and will present in the corner once clicked a box will open with this data."
+- "Allow the user to select a range of IR bands… choose a color to code the range and let the user name the range as they want."
+- "Allow the option of hovering over the stars so that the name would be displayed as well."
+- "Allow usage of user specific location when calculating coordinate data."
+- "Ghost – future predictions of stars, location."
+- "Velocity – of stars."
+- "Contamination flagging – air glow, cosmic rays, light scatter due to space dust, pixel overflow."
+- "JPL labeling."
+- "Live location based sky… option to take the night sky of major laboratories also and NASA centers also and enter coordinates to locate that sky too."
+- "Orbit comparison – ability to compare and distinguish based on different variables such as distance from Earth."
+- "Compare the images from multiple telescopes – to see how geographical position affects the night sky."
+- "Hypothesis creator notepad… add data values… with a + icon that is on everything."
+
+— Team Proper Motion (Nithil, Kurucharan, Dehan)
+
 Team **Proper Motion** (Colombo, Sri Lanka) – NASA Space Apps Challenge 2026, challenge *Planet X and SPHEREx*.
 Type any sky position (or a star name) and see the SPHEREx images of that spot, lined up, as a little movie.
 

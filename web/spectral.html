@@ -36,17 +36,18 @@
     <img class="logo-slot top-logo" src="brand/star-shift-symbol-small.svg" alt="" width="28" height="28"><span class="ai-mark top-ai" title="Logo: SI-generated (SI = Super Intelligence)" aria-label="Logo: SI-generated (SI = Super Intelligence)" role="note">SI</span><span class="name">Star Shift</span>
     <form class="search" role="search" id="searchForm">
       <label class="field well"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="5.5"/><path d="M12 12l4 4"/></svg>
-        <input id="q" aria-label="Star name or sky coordinates" placeholder="Star name, or RA Dec like 269.45 +4.69" autocomplete="off"></label>
+        <input id="q" aria-label="Star name or sky coordinates" placeholder="Any star name or coordinates, e.g. Vega or 269.45 +4.69" autocomplete="off"></label>
       <button class="key primary" type="submit">Show</button>
       <div class="serr" id="serr" role="alert" hidden></div>
     </form>
-    <div class="picks" role="group" aria-label="Example targets">
+    <div class="picks-wrap"><span class="picks-l" id="picksL">NASA's challenge targets</span>
+    <div class="picks" role="group" aria-labelledby="picksL">
       <button class="key pick" type="button">Barnard's Star</button>
       <button class="key pick" type="button">Epsilon Indi B</button>
       <button class="key pick" type="button">WISE 0855</button>
       <button class="key pick" type="button">RW Aurigae</button>
       <button class="key pick" type="button">R Draconis</button>
-    </div>
+    </div></div>
     <div class="top-actions">
       <button class="key pg-pages-key" id="pagesBtn" type="button" aria-haspopup="dialog" aria-expanded="false">Pages</button>
       <button class="key" id="clarityBtn" type="button" aria-label="Clarity settings" aria-haspopup="dialog" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="7"/><path d="M10 3v14" /><path d="M10 3a7 7 0 0 1 0 14z" fill="currentColor"/></svg><span class="clar-l">Clarity</span></button>

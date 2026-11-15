@@ -21,6 +21,7 @@ import {
   plainCheckText, simpleBodyName, STAR_MATCH_ARCSEC, ASTEROID_MATCH_ARCSEC,
 } from './logic.js';
 import { fetchFieldStars, starCheckAt, fetchFieldAsteroids, asteroidCheckAt } from './checks.js';
+import { pickTip, fitPlaceholder } from '../picktips.js'; // chip tips (NASA's challenge targets), search placeholder
 import { isExpert } from '../expert.js'; // Simple / Expert: .x-only and .s-only twins below
 
 // Both twins in the page; CSS from expert.js shows one. Identical texts render once.
@@ -63,7 +64,8 @@ function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add
 
 /* ------------------------------------------------------------------ field picker */
 function buildPicker() {
-  $('quick').innerHTML = QUICK.map(f => `<button class="key pick" type="button" data-key="${f.key}">${esc(f.label)}</button>`).join('');
+  $('quick').innerHTML = QUICK.map(f => { const t = esc(pickTip(f.key)); return `<button class="key pick" type="button" data-key="${f.key}" title="${t}" aria-description="${t}">${esc(f.label)}</button>`; }).join('');
+  fitPlaceholder($('q'));
   for (const b of $('quick').querySelectorAll('button')) b.onclick = () => choose(fieldByKey(b.dataset.key));
   $('surprise').onclick = () => choose(pickSurprise(S.field?.key));
 }

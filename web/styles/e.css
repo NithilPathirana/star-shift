@@ -513,3 +513,28 @@ html[data-motion=full] .rk .bob{animation:bob 1.6s ease-in-out infinite alternat
 .cd-look-n{margin-top:6px!important;font-size:.75rem;line-height:1.45;color:var(--muted)}
 .cd-look .fl-link{font-size:.75rem;background:none;border:0;padding:0;cursor:pointer}
 @media (max-width:699px){.cd-look .fl-link{min-height:44px}}
+
+/* Quick picks labelled "NASA's challenge targets" (label above the chips, so the row keeps its width);
+   Viewer search menu with "Surprise me" (web/app/picktips.js). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+.picks-wrap{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:1px}
+.picks-wrap .picks{flex:none;padding:2px 2px 3px}
+.picks-l,.sm-picks-l{font:500 .75rem/1.1 var(--font-num);letter-spacing:0;color:var(--ink-2);white-space:nowrap}
+.picks-l{padding-left:4px;margin-top:-3px}
+.sm-picks-l{flex-basis:100%}
+@media (min-width:700px){.picks-wrap .pick{min-height:30px}}
+@container top (max-width:620px){.picks-wrap{order:5;flex-basis:100%}}
+@media (max-width:699px){.picks-wrap{order:5;flex-basis:100%}.picks-l{margin-top:0}}
+@media (max-width:700px){.page .picks-wrap{display:none}}
+.smenu{--glass-tint:rgba(248,244,238,.96);--glass-tint-2:rgba(244,239,232,.95);position:absolute;left:0;top:calc(100% + 10px);z-index:26;
+  display:flex;align-items:center;gap:10px;width:max-content;max-width:min(440px,calc(100vw - 32px));padding:8px 14px 8px 8px;border-radius:12px}
+.smenu[hidden]{display:none}
+.smenu .key{flex:none;min-height:32px;padding:0 12px;font-size:.8125rem}
+.smenu-t{font-size:.8125rem;line-height:1.35;color:var(--ink-2);text-wrap:pretty}
+@media (max-width:699px){.smenu{right:0;width:auto;max-width:none}.smenu .key{min-height:44px}}
+/* About: the team's own words (b5), headings shown as written (no capitals transform) */
+.team-words{margin:4px 0 14px;padding-bottom:14px;border-bottom:1px solid var(--edge)}
+.pop .team-words h3{margin:12px 0 4px;font-size:.875rem;letter-spacing:0;text-transform:none;color:var(--ink)}
+.team-q{margin:0;font-size:.875rem;line-height:1.45;color:var(--ink-2)}
+.team-list{margin:0;padding-left:18px;font-size:.8125rem;line-height:1.45;color:var(--ink-2)}
+.team-list li+li{margin-top:4px}
+.team-sign{margin:12px 0 0;font-size:.8125rem;font-weight:600;color:var(--ink)}
