@@ -41,3 +41,11 @@ test('the viewer\'s σ (motionVerdict on the same numbers) equals the Proof page
     assert.equal(badgeText(v.verdict, v.sigma), badgeText(x.verdict, verdictSigma(x)), t.key);
   }
 });
+
+test('brightness AGREES reads CHANGE SEEN on the badge; motion keeps AGREES (judging panel round 6)', async () => {
+  const { shownVerdict } = await import('../web/app/proof/logic.js');
+  assert.equal(badgeText('AGREES', 11.24, 'brightness'), 'CHANGE SEEN 11.2σ');
+  assert.equal(badgeText('AGREES', 0.34, 'motion'), 'AGREES 0.3σ');
+  assert.equal(shownVerdict('AT THE LIMIT', 'brightness'), 'AT THE LIMIT');
+  assert.equal(badgeText('NOT MEASURABLE', 2, 'brightness'), 'NOT MEASURABLE');
+});

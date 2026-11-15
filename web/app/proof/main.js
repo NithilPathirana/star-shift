@@ -11,7 +11,7 @@ const $ = (id) => document.getElementById(id);
 const DASH = (why) => `<span class="dim" title="${esc(why)}">—</span>`;
 const arcs = (masYr, d = 2) => (masYr / 1000).toFixed(d);
 const sgn = (v, d = 2) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
-const chip = (v, sigma) => `<span class="pf-chip ${VERDICT_CLASS[v] || ''}">${esc(badgeText(v, sigma))}</span>`; // σ: proof/logic.js badgeText
+const chip = (v, sigma, type) => `<span class="pf-chip ${VERDICT_CLASS[v] || ''}">${esc(badgeText(v, sigma, type))}</span>`; // σ: proof/logic.js badgeText
 const mjdDate = (mjd) => new Date((mjd - 40587) * 86400000);
 const fmtDay = (d) => d.toISOString().slice(0, 10);
 const shortSource = (s) => String(s).split(/ \(via|[,;]/)[0].trim();
@@ -195,9 +195,10 @@ function evidence(t, target) {
 function render(d) {
   minYr = Math.max(d.settings?.minMotionMasYr ?? 700, 3 * (d.settings?.sysFloorMasYr ?? 150)) / 1000; // data.js motionMeasurability's line
   const runDay = $('runDate'); if (runDay && d.generated) runDay.textContent = new Date(d.generated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-  $('rules').innerHTML = [['Moves (proper motion): speed', d.rules.motion], ...(d.rules.direction ? [['Moves: direction', d.rules.direction]] : []), ['Changes brightness', d.rules.brightness]].map(([h, rs]) =>
-    `<div><h3>${h}</h3><dl class="pf-rule">${rs.map(([v, txt]) => `<dt>${chip(v)}</dt><dd>${esc(txt)}</dd>`).join('')}</dl></div>`).join('')
-    + `<p class="pf-rule-note">σ is the measurement's uncertainty, with the catalogue's added. For motion it is the scatter of the image positions plus a systematic floor in each direction: the field stars' own floor where 3 or more are usable in the patch, otherwise ${arcs(d.settings.sysFloorMasYr)}″/yr, measured on the field stars of all five patches together. Each row says which. A result that looks bad stays in the table with its reason.</p>`;
+  $('rules').innerHTML = [['Moves (proper motion): speed', d.rules.motion], ...(d.rules.direction ? [['Moves: direction', d.rules.direction]] : []), ['Changes brightness', d.rules.brightness, 'brightness']].map(([h, rs, type]) =>
+    `<div><h3>${h}</h3><dl class="pf-rule">${rs.map(([v, txt]) => `<dt>${chip(v, null, type)}</dt><dd>${esc(txt)}</dd>`).join('')}</dl></div>`).join('')
+    + `<p class="pf-rule-note">σ is the measurement's uncertainty, with the catalogue's added. For motion it is the scatter of the image positions plus a systematic floor in each direction: the field stars' own floor where 3 or more are usable in the patch, otherwise ${arcs(d.settings.sysFloorMasYr)}″/yr, measured on the field stars of all five patches together. Each row says which. A result that looks bad stays in the table with its reason.</p>`
+    + `<p class="pf-rule-note pf-sigma-key"><b>Reading the σ on a badge:</b> on motion rows it is how far our measurement is from the catalogue (small is good: AGREES 0.3σ); on brightness rows it is how big the change is next to its noise (big means clear: CHANGE SEEN 11.2σ).</p>`;
   let rows = '', k = 0;
   const chev = '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2.5L7.5 6 4 9.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
   for (const target of d.targets) {
@@ -210,7 +211,7 @@ function render(d) {
         <td class="pf-exp">${expectedCell(t)}</td>
         <td class="pf-meas">${measuredCell(t)}</td>
         <td class="pf-diff x-only">${diffCell(t)}</td>
-        <td class="pf-ver">${chip(t.verdict, verdictSigma(t))}${t.direction ? chip(t.direction.verdict, t.direction.sigma) : ''}</td>
+        <td class="pf-ver">${chip(t.verdict, verdictSigma(t), t.type)}${t.direction ? chip(t.direction.verdict, t.direction.sigma) : ''}</td>
         <td class="pf-why"><p>${esc(whySentence(t, target, minYr))}</p></td>
         <td class="pf-more"><button class="pf-det" type="button" aria-expanded="false" aria-controls="${id}">Details ${chev}</button></td></tr>
         <tr class="drow pf-drow" id="${id}" hidden><td colspan="7">${evidence(t, target)}</td></tr>`;

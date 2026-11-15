@@ -154,7 +154,10 @@ export const plainBand = (name) => String(name).replace(/\s*\(detectors[^)]*\)/,
 
 // σ on a verdict badge (judging panel round 4, item 4): "AGREES 0.4σ", from the same numbers the verdict uses
 // (motion: diff.sigma, the measured-vs-catalogue separation; brightness: the deciding group's σ). None for NOT MEASURABLE.
-export const badgeText = (v, sigma) => (v !== 'NOT MEASURABLE' && Number.isFinite(sigma) ? `${v} ${(+sigma).toFixed(1)}σ` : v);
+// A brightness row's AGREES is shown as CHANGE SEEN: 'AGREES 11.2σ' read as a contradiction (judging panel round 6, item 3).
+// Display only: the verdict itself, its class and the rules stay the same.
+export const shownVerdict = (v, type) => (type === 'brightness' && v === 'AGREES' ? 'CHANGE SEEN' : v);
+export const badgeText = (v, sigma, type) => { const s = shownVerdict(v, type); return v !== 'NOT MEASURABLE' && Number.isFinite(sigma) ? `${s} ${(+sigma).toFixed(1)}σ` : s; };
 export const verdictSigma = (t) => (t.verdict === 'NOT MEASURABLE' ? null : t.type === 'motion' ? t.diff?.sigma ?? null : mainGroup(t)?.sigma ?? null);
 
 // The Proof row's "Why": one plain sentence, verdict in words first, then the one reason. Built only
