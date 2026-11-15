@@ -1,6 +1,6 @@
 /* Astronaut loader (loader v1.1): a full-stage video loop of an astronaut riding a rocket, with honest text progress on top.
    Same calls as ScanLoader (set / add / slow / done / destroy), so the app can swap one for the other.
-   The video is AI-generated (made by Claude in Blender) and carries a baked "AI-generated" mark; this code is AI-written (Claude, Anthropic).
+   The video is AI-generated (made by Claude in Blender) and carries a baked "Animation: SI-generated (made by Claude in Blender)" mark (Design Studio re-encode, Sun 11:13); this code is AI-written (Claude, Anthropic).
    Team Proper Motion, NASA Space Apps 2026. Needs astro-loader.css and the astronaut-* media files in the same folder. */
 (function () {
   'use strict';
