@@ -11,7 +11,7 @@ import { PRESETS, findPreset } from './presets.js';
 import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight, altAz, riseTransitSet, skyTonight, tonightWords, dirWord } from './sky.js';
 import { simbadCone, otypeName, CHANNEL_UM } from './skymap.js';
 import { Sky3D as SkyMap } from './sky3d/index.js'; // 3D celestial sphere (three.js); same interface as the Aladin SkyMap
-import { layersFor, DEFAULT_BANDS, bandLabel, bandName } from './bands.js';
+import { layersFor, DEFAULT_BANDS, bandLabel, bandName, bandInitials } from './bands.js';
 import { notebookAdd, openNotebook } from './notebook/notebook.js'; // Lab notebook: "+" keys in the info panel
 import { listImages } from '../core/irsa.js';
 import { isExpert } from './expert.js';
@@ -238,8 +238,9 @@ function onFrame(i, manual) {
   const s = seasonOf(i);
   if (!manual && P.playing && i > 0 && s !== seasonOf(i - 1)) Snd.play('seasonSoft');
   if (s >= 0) $('seasonLbl').innerHTML = `<b>Season ${s + 1}</b> of ${V.seasons.length} · ${seasonName(V.seasons[s])}`;
-  $('tlDate').textContent = R.fmtDate(f.date);
-  track.setAttribute('aria-valuenow', i + 1); track.setAttribute('aria-valuetext', `Image ${i + 1}, ${R.fmtDate(f.date)}`);
+  const rg = rangeOf(f.um); // the coloured tick under the thumb, named in words (colour is never the only cue)
+  $('tlDate').innerHTML = (rg ? `<span class="tl-band" title="${esc(bandLabel(rg).text)}"><i style="--rc:${rg.c}"></i><span class="tlb-n">${esc(rg.name)}</span><span class="tlb-i" aria-hidden="true">${esc(bandInitials(rg))}</span></span>` : '') + `<span>${R.fmtDate(f.date)}</span>`;
+  track.setAttribute('aria-valuenow', i + 1); track.setAttribute('aria-valuetext', `Image ${i + 1}, ${R.fmtDate(f.date)}${rg ? ', ' + bandName(rg) : ''}`);
   setCounter(i, manual);
   LC.mark(i);
   $('play').dataset.playing = P.playing; $('play').setAttribute('aria-label', P.playing ? 'Pause' : 'Play');
@@ -1159,7 +1160,7 @@ function applyMapBands() {
   const key = $('mapBandsKey'); key.hidden = !mapBands;
   if (mapBands) {
     const n = mapLayers().reduce((s, l) => s + l.channels.length, 0);
-    $('mapBandsList').innerHTML = ranges.map(r => `<span title="${esc(r.name)}: ${r.min.toFixed(2)}–${r.max.toFixed(2)} µm"><i style="--rc:${r.c}"></i>${esc(r.name)}</span>`).join('');
+    $('mapBandsList').innerHTML = ranges.map(r => `<span title="${esc(r.name)}: ${r.min.toFixed(2)}–${r.max.toFixed(2)} µm"><i style="--rc:${r.c}"></i><b class="mb-i" aria-hidden="true">${esc(bandInitials(r))}</b><em class="mb-n">${esc(r.name)}</em></span>`).join('');
     $('mapBandsHold').title = `Shows the plain ${$('wlOut').textContent} map while held. Painted now: ${n} SPHEREx wavelengths in ${ranges.length} colours.`;
   }
 }

@@ -437,10 +437,22 @@ html[data-motion=reduce] .state.loader2 { transition: none; }
   .mb-key { top: auto; bottom: 108px; right: 12px; left: 12px; max-width: none; padding: 8px 10px; }
   .mb-t { display: inline; margin-right: 6px; }
   .mb-sw { display: inline-flex; gap: 4px; vertical-align: middle; }
-  .mb-sw span { font-size: 0; } /* phone: swatches only; names stay for screen readers */
+  .mb-sw .mb-n { display: none; } /* phone: swatch + short tag (St, CS, ...); full name in the title */
   .mb-row { margin-top: 6px; }
   .mb-row .key, .be-see { min-height: 44px; }
 }
 /* 'To see it' line in the Where to look box (web/app/seeit.js) */
 .cd-look .cd-look-see{margin:6px 0 0;font-weight:600;font-size:.8125rem;color:var(--ink)}
 .cd-look .cd-look-see[data-see=faint]{color:var(--copper-ink)}
+
+/* Work order 7: band colours always come with text (timeline head, map key) */
+#tlDate { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.tl-band { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-ui, inherit); font-weight: 600; color: var(--ink-2); }
+.tl-band i { width: 10px; height: 10px; border-radius: 3px; background: var(--rc); box-shadow: 0 0 0 1px rgba(40,28,18,.25); flex: none; }
+.tl-band::after { content: "·"; margin-left: 3px; color: var(--muted); font-weight: 400; }
+.tlb-i { display: none; }
+@container dock (max-width: 520px) { .tlb-n { display: none; } .tlb-i { display: inline; } }
+.mb-sw .mb-i { font-weight: 700; font-size: .75rem; }
+.mb-sw .mb-n { font-style: normal; }
+.mb-sw .mb-i { display: none; }
+@media (max-width: 699px) { .mb-sw span .mb-i { display: inline; } .mb-sw { gap: 4px 8px; flex-wrap: wrap; } .mb-sw span { gap: 3px; } }

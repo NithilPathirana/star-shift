@@ -54,6 +54,19 @@ export function bandName(b) {
   const n = String(b.name ?? '').trim() || 'Unnamed';
   return /\bband$/i.test(n) ? n : `${n} band`;
 }
+// Short text tag for a band, so colour is never the only cue (work order 7): "St", "CS", "TD",
+// "WI", "CO₂", "BD" for the team defaults; a chemical-looking first word (CO₂, CH4) is kept whole.
+const SMALL = new Set(['the', 'of', 'and', 'a', 'an', 'in', 'to', 'band']);
+export function bandInitials(b) {
+  const words = String(b?.name ?? '').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return '?';
+  if (/^[A-Z][A-Z0-9₀-₉]{1,3}$/.test(words[0]) && /[0-9₀-₉]|^[A-Z]{2,4}$/.test(words[0])) return words[0];
+  const big = words.filter(w => !SMALL.has(w.toLowerCase()));
+  const use = big.length ? big : words;
+  if (use.length === 1) { const w = [...use[0]]; return (w[0].toUpperCase() + (w[1] || '').toLowerCase()); }
+  return use.slice(0, 3).map(w => [...w][0].toUpperCase()).join('');
+}
+
 // { name, range, text, tip } for a band { id, name, min, max }.
 export function bandLabel(b) {
   if (!b) return null;
