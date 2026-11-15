@@ -6,8 +6,10 @@
 /* from access.css */
 html:where(:not([data-ax-look=classic])){accent-color:var(--copper);caret-color:var(--copper);scrollbar-color:var(--edge-strong) transparent}
 html:where(:not([data-ax-look=classic]))[data-ax-colors]:not([data-ax-colors=off]) ::selection{background:color-mix(in oklab,var(--copper-deco) 36%,transparent)}
-html:where(:not([data-ax-look=classic]))[data-ax-colors]:not([data-ax-colors=off]) .key.primary,html:where(:not([data-ax-look=classic]))[data-ax-colors]:not([data-ax-colors=off]) .switch[aria-checked=true]{border-color:color-mix(in oklab,var(--copper) 70%,#000)}
-html:where(:not([data-ax-look=classic]))[data-ax-colors]:not([data-ax-colors=off]) .key.primary{box-shadow:inset 0 1px 0 color-mix(in oklab,var(--copper-key) 60%,#fff),var(--sh-contact),var(--sh-near)}
+html:where(:not([data-ax-look=classic]))[data-ax-colors]:not([data-ax-colors=off]) .switch[aria-checked=true]{border-color:color-mix(in oklab,var(--copper) 70%,#000)}
+html:where(:not([data-ax-look=classic]))[data-ax-p=on] :is(.key.primary,.ax-sp-key){background:linear-gradient(180deg,var(--ax-key-hi,var(--copper-key)),var(--copper-key));color:var(--on-copper);border-color:color-mix(in oklab,var(--copper-key) 62%,#000)}
+html:where(:not([data-ax-look=classic]))[data-ax-p=on] .key.primary{box-shadow:inset 0 1px 0 color-mix(in oklab,var(--copper-key) 55%,#fff),var(--sh-contact),var(--sh-near)}
+html:where(:not([data-ax-look=classic]))[data-ax-p=on] .key.primary:active{background:var(--copper-key);box-shadow:inset 0 2px 4px color-mix(in oklab,var(--copper-key) 45%,#000)}
 html:where(:not([data-ax-look=classic]))[data-ax-colors]:not([data-ax-colors=off]) :is(.tag-calc,.tag.comp){background:var(--ax-p-tint,rgba(101,139,221,.15))}
 html:where(:not([data-ax-look=classic]))[data-ax-colors]:not([data-ax-colors=off]) :is(.pf-stage,.sp-stage) .tag.comp{color:var(--ring);background:color-mix(in oklab,var(--ring) 16%,transparent)}
 html:where(:not([data-ax-look=classic]))[data-ax-colors]:not([data-ax-colors=off]) .pf-stage .tag.obs{color:var(--cross);background:color-mix(in oklab,var(--cross) 16%,transparent)}
@@ -46,6 +48,7 @@ html:where(:not([data-ax-look=classic]))[data-ax-marks=on] .tag.cat{--ax-m:url("
   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.4 8.3l2.4 2.4 4.8-5' fill='none' stroke='%23FFF8F0' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/16px no-repeat}
 :where(html:not([data-ax-look=classic])) .ax-dots i{border-radius:50%;box-shadow:0 0 0 2px #F8FAFE,inset 0 1px 1px rgba(255,255,255,.35)}
 :where(html:not([data-ax-look=classic])) .ax-pn small{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .ax-mine output{color:var(--ink-2)}
 :where(html:not([data-ax-look=classic])) .ax-picks{border-top:1px solid var(--edge)}
 :where(html:not([data-ax-look=classic])) .ax-pick{border-bottom:1px solid var(--edge)}
 :where(html:not([data-ax-look=classic])) .ax-pick input{border:1px solid var(--edge-strong);border-radius:9px;background:none;box-shadow:inset 0 1px 2px rgba(29,44,75,.28),0 1px 0 rgba(255,255,255,.8)}
@@ -92,17 +95,17 @@ html:where(:not([data-ax-look=classic]))[data-contrast=more] :is(.ax-preset,.ax-
 :where(html:not([data-ax-look=classic])) .sheet-credit{color:var(--muted,#4F6082)}
 :where(html:not([data-ax-look=classic])) #pagesPop,:where(html:not([data-ax-look=classic])) .pop{scrollbar-color:var(--edge-strong) transparent}
 /* hand-written in make_look.py: where the neon yellow goes */
-:where(html:not([data-ax-look=classic])[data-ax-colors=off]) :is(.key.primary,.ax-sp-key){background:linear-gradient(180deg,#F1FF5C,#DCF514);color:#0A1238;border-color:rgba(84,104,0,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),inset 0 -1.5px 0 rgba(84,104,0,.28),var(--sh-contact),var(--sh-near)}
-:where(html:not([data-ax-look=classic])[data-ax-colors=off]) .key.primary:active{background:linear-gradient(180deg,#D3EC0C,#E6F93C);box-shadow:inset 0 2px 4px rgba(60,76,0,.45)}
-:where(html:not([data-ax-look=classic])[data-ax-colors=off]) ::selection{background:#E8FF45;color:#0A1238}
+:where(html:not([data-ax-look=classic]):not([data-ax-p=on])) :is(.key.primary,.ax-sp-key){background:linear-gradient(180deg,#F1FF5C,#DCF514);color:#0A1238;border-color:rgba(84,104,0,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),inset 0 -1.5px 0 rgba(84,104,0,.28),var(--sh-contact),var(--sh-near)}
+:where(html:not([data-ax-look=classic]):not([data-ax-p=on])) .key.primary:active{background:linear-gradient(180deg,#D3EC0C,#E6F93C);box-shadow:inset 0 2px 4px rgba(60,76,0,.45)}
+:where(html:not([data-ax-look=classic]):not([data-ax-p=on])) ::selection{background:#E8FF45;color:#0A1238}
 /* hand-written: where the blue leads. The page rail is solid blue with white labels; plain keys carry blue lettering on white */
-:where(html:not([data-ax-look=classic])[data-ax-colors=off]) .rail{background:linear-gradient(165deg,#2456E6,#0F37B0);border-color:rgba(6,26,96,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),var(--sh-near),var(--sh-far)}
-:where(html:not([data-ax-look=classic])[data-ax-colors=off]) .rail .nav-btn{color:rgba(255,255,255,.92)}
-:where(html:not([data-ax-look=classic])[data-ax-colors=off]) .rail :is(.nav-btn.nav-demote,.nav-btn.nav-util){color:rgba(255,255,255,.9)}
-:where(html:not([data-ax-look=classic])[data-ax-colors=off]) .rail .nav-btn[aria-current=page]{color:#0C34A6;background:linear-gradient(180deg,#FFFFFF,#E9EEFA);box-shadow:inset 0 1px 0 #fff,0 1px 1px rgba(3,14,60,.35),0 3px 6px -1px rgba(3,14,60,.3)}
-@media (hover:hover) and (pointer:fine){:where(html:not([data-ax-look=classic])[data-ax-colors=off]) .rail .nav-btn:not([aria-current]):hover{background:rgba(255,255,255,.16)}}
-:where(html:not([data-ax-look=classic])[data-ax-colors=off]) .rail .logo-slot{background:#fff;border-radius:11px;box-shadow:0 0 0 4px #fff,0 2px 5px 3px rgba(3,14,60,.28)}
-:where(html:not([data-ax-look=classic])[data-ax-colors=off]) .rail :is(.rail-ai,.ai-mark,.expert-l,.expert-sw){color:#fff}
-:where(html:not([data-ax-look=classic])[data-ax-colors=off]) .rail :focus-visible{outline-color:#E8FF45}
-:where(html:not([data-ax-look=classic])[data-ax-colors=off]) :is(.key,.pick){color:var(--copper-ink)}
-:where(html:not([data-ax-look=classic])[data-ax-colors=off]) :is(.key.primary,.ax-sp-key){color:#0A1238}
+:where(html:not([data-ax-look=classic]):not([data-ax-p=on])) .rail{background:linear-gradient(165deg,#2456E6,#0F37B0);border-color:rgba(6,26,96,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),var(--sh-near),var(--sh-far)}
+:where(html:not([data-ax-look=classic]):not([data-ax-p=on])) .rail .nav-btn{color:rgba(255,255,255,.92)}
+:where(html:not([data-ax-look=classic]):not([data-ax-p=on])) .rail :is(.nav-btn.nav-demote,.nav-btn.nav-util){color:rgba(255,255,255,.9)}
+:where(html:not([data-ax-look=classic]):not([data-ax-p=on])) .rail .nav-btn[aria-current=page]{color:#0C34A6;background:linear-gradient(180deg,#FFFFFF,#E9EEFA);box-shadow:inset 0 1px 0 #fff,0 1px 1px rgba(3,14,60,.35),0 3px 6px -1px rgba(3,14,60,.3)}
+@media (hover:hover) and (pointer:fine){:where(html:not([data-ax-look=classic]):not([data-ax-p=on])) .rail .nav-btn:not([aria-current]):hover{background:rgba(255,255,255,.16)}}
+:where(html:not([data-ax-look=classic]):not([data-ax-p=on])) .rail .logo-slot{background:#fff;border-radius:11px;box-shadow:0 0 0 4px #fff,0 2px 5px 3px rgba(3,14,60,.28)}
+:where(html:not([data-ax-look=classic]):not([data-ax-p=on])) .rail :is(.rail-ai,.ai-mark,.expert-l,.expert-sw){color:#fff}
+:where(html:not([data-ax-look=classic]):not([data-ax-p=on])) .rail :focus-visible{outline-color:#E8FF45}
+:where(html:not([data-ax-look=classic]):not([data-ax-p=on])) :is(.key,.pick){color:var(--copper-ink)}
+:where(html:not([data-ax-look=classic]):not([data-ax-p=on])) :is(.key.primary,.ax-sp-key){color:#0A1238}

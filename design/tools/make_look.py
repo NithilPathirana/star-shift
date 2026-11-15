@@ -18,8 +18,9 @@ HUE = math.radians(264)          # the blue (a vivid cobalt)
 YEL = math.radians(113)          # the neon yellow
 REPORT = '--report' in sys.argv
 # Hand-written rules added after the copies: where neon yellow goes. It is a fill and a mark, never text on white.
-# [data-ax-colors=off] = nobody has picked their own colours; with a picked palette the main key follows that palette instead.
-OFF = ':where(html:not([data-ax-look=classic])[data-ax-colors=off]) '
+# [data-ax-p=on] = a primary colour has been picked (Colours and accessibility); then the main key, rail and key lettering follow
+# that colour instead. Picking only the secondary or tertiary keeps the neon-yellow key and the blue rail.
+OFF = ':where(html:not([data-ax-look=classic]):not([data-ax-p=on])) '
 EXTRAS = '\n'.join([
     '/* hand-written in make_look.py: where the neon yellow goes */',
     OFF + ':is(.key.primary,.ax-sp-key){background:linear-gradient(180deg,#F1FF5C,#DCF514);color:#0A1238;border-color:rgba(84,104,0,.6);'

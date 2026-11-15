@@ -8,9 +8,11 @@ html{accent-color:var(--copper);caret-color:var(--copper);scrollbar-color:var(--
 
 /* ===== 1b. A changed palette: the few places that were written as fixed colours ===== */
 html[data-ax-colors]:not([data-ax-colors=off]) ::selection{background:color-mix(in oklab,var(--copper-deco) 36%,transparent)}
-html[data-ax-colors]:not([data-ax-colors=off]) .key.primary,
 html[data-ax-colors]:not([data-ax-colors=off]) .switch[aria-checked=true]{border-color:color-mix(in oklab,var(--copper) 70%,#000)}
-html[data-ax-colors]:not([data-ax-colors=off]) .key.primary{box-shadow:inset 0 1px 0 color-mix(in oklab,var(--copper-key) 60%,#fff),var(--sh-contact),var(--sh-near)}
+/* a picked primary: the main key is filled with that colour itself; access.js sets --on-copper to navy or near-white ink, whichever reads better (>= 4.5:1) */
+html[data-ax-p=on] :is(.key.primary,.ax-sp-key){background:linear-gradient(180deg,var(--ax-key-hi,var(--copper-key)),var(--copper-key));color:var(--on-copper);border-color:color-mix(in oklab,var(--copper-key) 62%,#000)}
+html[data-ax-p=on] .key.primary{box-shadow:inset 0 1px 0 color-mix(in oklab,var(--copper-key) 55%,#fff),var(--sh-contact),var(--sh-near)}
+html[data-ax-p=on] .key.primary:active{background:var(--copper-key);box-shadow:inset 0 2px 4px color-mix(in oklab,var(--copper-key) 45%,#000)}
 html[data-ax-colors]:not([data-ax-colors=off]) :is(.tag-calc,.tag.comp){background:var(--ax-p-tint,rgba(194,122,67,.15))}
 html[data-ax-colors]:not([data-ax-colors=off]) :is(.pf-stage,.sp-stage) .tag.comp{color:var(--ring);background:color-mix(in oklab,var(--ring) 16%,transparent)}
 html[data-ax-colors]:not([data-ax-colors=off]) .pf-stage .tag.obs{color:var(--cross);background:color-mix(in oklab,var(--cross) 16%,transparent)}
@@ -85,7 +87,9 @@ html[data-motion=reduce] .ax{transition:none;transform:none}
 .ax-pn{font:600 .8125rem/1.25 var(--font-ui)}
 .ax-pn small{display:block;margin-top:2px;font:400 .75rem/1.35 var(--font-ui);color:var(--muted)}
 
-.ax-picks{margin-top:14px;border-top:1px solid var(--edge)}
+.ax-mine{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}
+.ax-mine output{font-weight:600;color:var(--ink-2)}
+.ax-picks{margin-top:10px;border-top:1px solid var(--edge)}
 .ax-pick{display:grid;grid-template-columns:46px minmax(0,1fr) auto;align-items:center;gap:12px;min-height:54px;border-bottom:1px solid var(--edge);cursor:pointer}
 .ax-pick input{-webkit-appearance:none;appearance:none;width:46px;height:32px;padding:0;border:1px solid var(--edge-strong);border-radius:9px;background:none;cursor:pointer;
   box-shadow:inset 0 1px 2px rgba(60,40,24,.28),0 1px 0 rgba(255,255,255,.8)}

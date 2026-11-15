@@ -57,6 +57,17 @@
 
   var SHELL = hex2rgb('#E9E2D8'), SOFT = hex2rgb('#DCD4C8');   // the darker light surface in each state (cool look; the copper look's are almost the same luminance)
   var CREAM = hex2rgb('#FFF8F0'), STAGE = hex2rgb('#15110E');
+  var INK_DARK = '#0A1238', INK_LIGHT = '#FCFDFF';             // the two inks a key label can take (navy, near-white)
+  /** A key filled with the picked colour itself, and the label ink (dark or light) that reads best on it.
+      If neither ink reaches 4.5:1 on both ends of the key's gradient, the fill's lightness moves away from the ink until it does. */
+  function keyInk(hex) {
+    var c = rgb2lch(hex2rgb(hex)), L = Math.max(0.22, Math.min(0.94, c[0])), C = c[1], h = c[2], D = hex2rgb(INK_DARK), W = hex2rgb(INK_LIGHT);
+    function ends(L) { return [lch2rgb(L, C, h), lch2rgb(Math.min(0.97, L + 0.05), C, h)]; }
+    function worst(e, ink) { return Math.min(contrast(e[0], ink), contrast(e[1], ink)); }
+    var e = ends(L), dark = worst(e, D) >= worst(e, W), ink = dark ? D : W;
+    for (var i = 0; i < 80 && worst(e, ink) < 4.5; i++) { L += dark ? 0.01 : -0.01; if (L < 0.05 || L > 0.92) break; e = ends(L); }
+    return { key: rgb2hex(e[0]), keyHi: rgb2hex(e[1]), on: dark ? INK_DARK : INK_LIGHT, ratio: Math.round(worst(e, ink) * 100) / 100 };
+  }
   /** One picked colour -> the family the interface needs. Lightness moves until each use meets its contrast target. */
   function family(hex, soft) {
     var c = rgb2lch(hex2rgb(hex)), C = c[1], h = c[2], bg = soft ? SOFT : SHELL;
@@ -65,12 +76,13 @@
       for (var i = 0; i < 70 && contrast(rgb, against) < target; i++) { L += step; if (L < 0.08 || L > 0.97) break; rgb = lch2rgb(L, Math.min(C, cmax), h); }
       return rgb;
     }
-    var mid = lch2rgb(0.62, Math.min(C, 0.11), h);
+    var mid = lch2rgb(0.62, Math.min(C, 0.11), h), K = keyInk(hex);
     return {
       // a pick that is already dark is kept as dark as it was picked (only lighter picks are pulled down)
       ink: rgb2hex(tone(Math.min(c[0], 0.52), 0.16, bg, 5.2, -0.01)),          // text and icons on the light shell: at least 5.2:1
       deep: rgb2hex(tone(Math.min(c[0] - 0.05, 0.44), 0.14, bg, 7.2, -0.01)),  // small bold text on its own tint: at least 7.2:1
       fill: rgb2hex(tone(Math.min(c[0] + 0.09, 0.6), 0.17, CREAM, 4.6, -0.01)),// key fill under cream text: at least 4.6:1 (a little lighter than the ink, for the key's gradient)
+      key: K.key, keyHi: K.keyHi, on: K.on,                 // the main key: the picked colour itself, with dark or light label ink by contrast
       deco: rgb2hex(lch2rgb(0.68, Math.min(C, 0.13), h)),  // decoration only, never text
       glow: rgb2hex(tone(0.78, 0.12, STAGE, 8, 0.01)),     // on the dark stage: at least 8:1
       tint: 'rgba(' + mid.map(Math.round).join(',') + ',.17)',
@@ -89,7 +101,7 @@
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* private window: the choice lasts for this page only */ } }
 
   var VARS = ['--copper', '--copper-ink', '--copper-key', '--copper-deco', '--focus', '--ring', '--ax-p-tint', '--color-accent', '--color-focus',
-    '--sage', '--sage-ink', '--sage-tint', '--cross', '--coral', '--color-danger', '--ax-t-glow', '--ax-t-tint'];
+    '--on-copper', '--ax-key-hi', '--sage', '--sage-ink', '--sage-tint', '--cross', '--coral', '--color-danger', '--ax-t-glow', '--ax-t-tint'];
   function setVar(n, v) { root.style.setProperty(n, v); }
   function apply() {
     if (S.look !== 'classic') S.look = 'volt';
@@ -98,17 +110,18 @@
     VARS.forEach(function (n) { root.style.removeProperty(n); });
     if (custom) {
       var P = family(S.p, S.soft), Q = family(S.s, S.soft), T = family(S.t, S.soft);
-      if (S.p !== B.p) { setVar('--copper', P.ink); setVar('--copper-ink', P.deep); setVar('--copper-key', P.fill); setVar('--copper-deco', P.deco); setVar('--focus', P.ink); setVar('--ring', P.glow); setVar('--ax-p-tint', P.tint); setVar('--color-accent', P.deep); setVar('--color-focus', P.ink); }
+      if (S.p !== B.p) { setVar('--copper', P.ink); setVar('--copper-ink', P.deep); setVar('--copper-key', P.key); setVar('--ax-key-hi', P.keyHi); setVar('--on-copper', P.on); setVar('--copper-deco', P.deco); setVar('--focus', P.ink); setVar('--ring', P.glow); setVar('--ax-p-tint', P.tint); setVar('--color-accent', P.deep); setVar('--color-focus', P.ink); }
       if (S.s !== B.s) { setVar('--sage', Q.ink); setVar('--sage-ink', Q.deep); setVar('--sage-tint', Q.tint); setVar('--cross', Q.glow); }
       if (S.t !== B.t) { setVar('--coral', T.ink); setVar('--color-danger', T.ink); setVar('--ax-t-glow', T.glow); setVar('--ax-t-tint', T.tint); }
     }
     root.dataset.axColors = custom ? S.preset : 'off';
+    root.dataset.axP = S.p !== B.p ? 'on' : 'off';   // primary picked: the main key takes that colour (else the look's own key, neon yellow by default)
     root.dataset.axLeading = S.leading; root.dataset.axSpacing = S.spacing; root.dataset.axFace = S.face;
     ['bold', 'soft', 'marks', 'links', 'shapes', 'focus', 'targets'].forEach(function (k) { root.dataset['ax' + k[0].toUpperCase() + k.slice(1)] = S[k] ? 'on' : 'off'; });
     try { root.dispatchEvent(new CustomEvent('star-shift-colours', { detail: { primary: S.p, secondary: S.s, tertiary: S.t, preset: S.preset } })); } catch (e) { /* old browser */ }
   }
   apply();                                     // before first paint
-  window.StarShiftAccess = { family: family, contrast: contrast, hex2rgb: hex2rgb, get: function () { return JSON.parse(JSON.stringify(S)); }, presets: PRESETS };
+  window.StarShiftAccess = { family: family, keyInk: keyInk, contrast: contrast, hex2rgb: hex2rgb, get: function () { return JSON.parse(JSON.stringify(S)); }, presets: PRESETS };
 
   /* ---------- the panel ---------- */
   var panel = null, opener = null;
@@ -149,7 +162,8 @@
       '<div class="ax-presets" role="radiogroup" aria-label="Palette">' + PRESETS.map(function (p) {
         return '<button type="button" class="ax-preset" role="radio" aria-checked="false" data-preset="' + p.id + '"><span class="ax-dots" aria-hidden="true"><i style="background:' + p.p + '"></i><i style="background:' + p.s + '"></i><i style="background:' + p.t + '"></i></span>' +
           '<span class="ax-pn">' + p.name + '<small>' + p.note + '</small></span></button>'; }).join('') + '</div>' +
-      '<div class="ax-picks">' + [['p', 'Primary', 'Keys, links and the ring'], ['s', 'Secondary', 'Observed values and “agrees”'], ['t', 'Tertiary', 'Warnings and “differs”']].map(function (r) {
+      '<div class="ax-mine"><span class="ax-l">Your three colours<small>Palette: <output id="axPal"></output></small></span><button type="button" class="key" id="axResetC">Reset to default</button></div>' +
+      '<div class="ax-picks">' + [['p', 'Primary', 'Main keys, links, switches and the ring'], ['s', 'Secondary', 'Observed values and “agrees”'], ['t', 'Tertiary', 'Warnings and “differs”']].map(function (r) {
         return '<label class="ax-pick"><input type="color" data-ax-col="' + r[0] + '" aria-describedby="axn-' + r[0] + '"><span class="ax-l">' + r[1] + '<small>' + r[2] + '</small></span><output class="ax-hex num" id="axn-' + r[0] + '"></output></label>'; }).join('') + '</div>' +
       '<p class="ax-note" id="axAdj" hidden></p>' +
       '<figure class="ax-spec" aria-labelledby="axh-s"><figcaption id="axh-s">How these three colours look to different eyes</figcaption>' + SIM.map(function (s) {
@@ -205,6 +219,7 @@
       var k = b.dataset.axSeg, cur = S[k]; b.setAttribute('aria-pressed', String(b.dataset.v === cur));
     });
     [].forEach.call(panel.querySelectorAll('.ax-preset'), function (b) { var on = b.dataset.preset === S.preset; b.setAttribute('aria-checked', String(on)); b.tabIndex = on || (S.preset === 'custom' && b.dataset.preset === 'star') ? 0 : -1; });
+    var cur = PRESETS.filter(function (x) { return x.id === S.preset; })[0]; panel.querySelector('#axPal').textContent = cur ? cur.name : 'Custom';
     var adj = [];
     ['p', 's', 't'].forEach(function (k) {
       var inp = panel.querySelector('[data-ax-col="' + k + '"]'), brand = S[k] === LOOKS[S.look][k];
@@ -212,7 +227,7 @@
       if (!brand && contrast(hex2rgb(S[k]), S.soft ? SOFT : SHELL) < 5.2) adj.push({ p: 'Primary', s: 'Secondary', t: 'Tertiary' }[k]);
     });
     var note = panel.querySelector('#axAdj'); note.hidden = !adj.length;
-    note.textContent = adj.length ? adj.join(' and ') + (adj.length > 1 ? ' are' : ' is') + ' darkened a little where ' + (adj.length > 1 ? 'they are' : 'it is') + ' used as text, so the words stay readable. Keys and the dark image keep the shade you picked.' : '';
+    note.textContent = adj.length ? adj.join(' and ') + (adj.length > 1 ? ' are' : ' is') + ' darkened a little where ' + (adj.length > 1 ? 'they are' : 'it is') + ' used as text, so the words stay readable. Main keys and the dark image keep the shade you picked, with dark or light lettering, whichever reads better.' : '';
   }
   function onClick(e) {
     var b = e.target.closest('button'); if (!b || !panel.contains(b)) return;
@@ -220,6 +235,8 @@
     if (b.id === 'axReset') {
       for (var k in DEF) S[k] = DEF[k];
       ['motion', 'glass', 'contrast', 'text'].forEach(function (n) { setTheirs(n, false); });
+    } else if (b.id === 'axResetC') {                             // colours only: the default palette, other options kept
+      S.preset = DEF.preset; S.look = DEF.look; S.p = DEF.p; S.s = DEF.s; S.t = DEF.t;
     } else if (b.dataset.preset) {
       var p = PRESETS.filter(function (x) { return x.id === b.dataset.preset; })[0]; S.preset = p.id; S.look = p.look || 'volt'; S.p = p.p; S.s = p.s; S.t = p.t;
       if (p.id === 'mono') S.marks = true;                       // with no colour, the marks carry the meaning
