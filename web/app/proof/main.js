@@ -74,8 +74,8 @@ function measuredCell(t, target) {
 }
 function diffCell(t) {
   if (!t.diff) return DASH(t.verdict === 'NOT MEASURABLE' ? 'Nothing measured to compare' : 'No difference computed');
-  if (t.type === 'motion') return `<span class="num pf-big">${sgn(t.diff.value / 1000)}″/yr</span><small class="num">${t.diff.sigma} σ in speed</small>`
-    + (t.direction ? `<span class="num pf-line">${arcs(t.direction.value)}″/yr</span><small class="num">as an arrow: χ ${t.direction.chi2d.toFixed(2)} (2 dof) = ${t.direction.sigma.toFixed(1)} σ</small>` : '');
+  if (t.type === 'motion') return `<span class="num pf-big">${sgn(t.diff.value / 1000)}″/yr</span> <small class="num">${t.diff.sigma} σ speed</small>`
+    + (t.direction ? ` <span class="num pf-line">${arcs(t.direction.value)}″/yr</span><small class="num" title="Measured minus catalogue as an arrow: χ ${t.direction.chi2d.toFixed(2)} over 2 degrees of freedom, the same chance as ${t.direction.sigma.toFixed(1)}σ in one dimension">${t.direction.sigma.toFixed(1)} σ direction</small>` : '');
   return t.measured.groups.map(g => g.ok ? `<span class="num pf-line">${g.sigma} σ</span><small>change ÷ uncertainty</small>` : `<span class="pf-line">${DASH('Not measured')}</span><small>&nbsp;</small>`).join('');
 }
 
