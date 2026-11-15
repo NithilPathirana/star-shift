@@ -25,6 +25,7 @@ const MW_TINT = [0xE9 / 255, 0xD8 / 255, 0xC2 / 255], DETAIL_TINT = [1.0, 0.965,
 // to the first level so both read as the same dark sky (at wide views the faint Milky Way keeps it).
 const SKY_FLOOR = 36 / 255;
 const STARS_URL = new URL('../data/stars.json', import.meta.url);
+const ALLSKY_LOCAL = { 33: new URL('../../data/allsky-ch33.png', import.meta.url).href }; // see _layer
 export const CREDIT = 'Stars: Hipparcos (ESA), new reduction (van Leeuwen 2007), via the ESA Gaia archive. Imagery: NASA/SPHEREx DR1 (Caltech/IPAC).';
 
 const COARSE = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 900;
@@ -513,7 +514,12 @@ export class Sky3D {
     if (!l) {
       l = { url, tex: null, mesh: null, state: 'loading', used: 0 };
       this.layers.set(url, l);
-      loadTexture(`${url}/Norder3/Allsky.png`, this.abort.signal).then((tex) => {
+      // The default channel's all-sky image ships with the site (data/allsky-ch33.png, the relay's own
+      // bytes): the cold-open map is never black when IRSA is down, and paints without waiting for it.
+      const ch = Number(/\/hips\/spherex\/(\d+)$/.exec(url)?.[1]);
+      const own = ALLSKY_LOCAL[ch];
+      (own ? loadTexture(own, this.abort.signal).catch((err) => { if (err?.name === 'AbortError') throw err; return loadTexture(`${url}/Norder3/Allsky.png`, this.abort.signal); })
+        : loadTexture(`${url}/Norder3/Allsky.png`, this.abort.signal)).then((tex) => {
         if (!this.allskyGeo) this.allskyGeo = allskyGeometry(tex.image.width, tex.image.height);
         l.tex = tex; l.state = 'ready';
         l.mesh = new THREE.Mesh(this.allskyGeo, mat(TILE_VS, TILE_FS, { ...this.U, fillSteps: { value: 2 }, map: { value: tex }, alpha: { value: 1 }, nearest: { value: 0 }, soft: { value: 0 }, bp: { value: 0 }, cellPx: { value: tex.image.width / ALLSKY_COLS }, texSize: { value: new THREE.Vector2(tex.image.width, tex.image.height) } }));

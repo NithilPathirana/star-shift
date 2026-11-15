@@ -16,6 +16,7 @@
 //  - Spot a mover: the same image list and cutouts, and the field-level lookups the page starts
 //    when a field loads (Gaia + SIMBAD around the patch centre, JPL sb_ident for the whole patch
 //    in each blinked season), so any click in the patch is answered from these files;
+//  - Spectrum page (spectral.html): the same image list and its 0.03° cutouts (16 per detector, the default);
 //  - Asteroid page (neo.html): its default field and dates (6 sb_ident requests).
 // The `hdus=5` cutouts (VARIANCE/ZODI) are fetched only when a user opens those layers: not saved.
 // JPL is asked politely: the relay's cached copy (any age) first; only if there is none, one live
@@ -34,7 +35,8 @@ import { diskCache } from '../server/server.mjs';
 import { run, buildStacks, seasons } from '../web/app/data.js';
 import { PRESETS } from '../web/app/presets.js';
 import { DEFAULT_SETTINGS } from '../web/app/query.js';
-import { listImages, decodeCutout, setCompleteMode } from '../web/core/irsa.js';
+import { listImages, decodeCutout, setCompleteMode, fetchCutout } from '../web/core/irsa.js';
+import { pickImages, CUTOUT_DEG } from '../web/app/spectral/logic.js';
 import { simbadCone } from '../web/app/skymap.js';
 import { fetchFieldStars, fetchFieldAsteroids } from '../web/app/spot/checks.js';
 import { LOAD_SETTINGS, fieldCentre } from '../web/app/spot/logic.js';
@@ -53,6 +55,7 @@ const TABLES = JSON.parse(readFileSync(join(ROOT, 'web', 'core', 'data', 'spectr
 // the replay below, e.g. the viewer's "other source" SIMBAD cone when the page's stack differs a little.
 const EXTRA = (() => { try { const j = JSON.parse(readFileSync(join(ROOT, 'tools', 'prebake_extra.json'), 'utf8')); delete j.about; return j; } catch { return {}; } })();
 const IRSA_MS = 120000, JPL_MS = 100000, SIMBAD_MS = 20000;
+const SPECTRUM_PER_DETECTOR = 16; // spectral.html #perDet default
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const sha1 = (s) => createHash('sha1').update(s).digest('hex');
 const mib = (b) => +(b / 1048576).toFixed(2);
@@ -196,6 +199,27 @@ async function spot(p, frames, grid, rec) {
   };
 }
 
+// Spectrum page (spectral/main.js load + measureImage) with its defaults: the image list at the
+// star's late-2025 place (archive/shell.js listPosition, the same list the viewer saves) and a
+// 0.03° cutout of each picked image (16 per detector) centred on the star's place on that date.
+async function spectrum(p, rec) {
+  const t = p.target, moving = !!(t.pmra || t.pmdec);
+  const lp = moving ? propagate(t, 61000) : t;
+  const ims = await listImages(lp.ra, lp.dec, { base: BASE, fetchFn: rec });
+  const picked = pickImages(ims, SPECTRUM_PER_DETECTOR);
+  let ok = 0, failed = 0;
+  const one = async (im) => {
+    const c = moving ? propagate(t, im.mjdStart) : t; // archive/shell.js cutoutCenter
+    for (let pass = 0; pass < 3; pass++) {
+      try { await fetchCutout(im.uri, +c.ra.toFixed(5), +c.dec.toFixed(5), CUTOUT_DEG, { base: BASE, fetchFn: rec }); ok++; return; }
+      catch (e) { if (pass < 2) await sleep(5000); }
+    }
+    failed++;
+  };
+  for (let i = 0; i < picked.length; i += 4) await Promise.all(picked.slice(i, i + 4).map(one));
+  return { picked: picked.length, ok, failed };
+}
+
 // neo/spotter.js fetchIdentification() for the default view, both kinds, each default date.
 async function asteroidPage(rec) {
   const out = [];
@@ -228,8 +252,9 @@ for (const p of PRESETS) {
   // Requests a real browser run made that the Node replay above does not predict (tools/prebake_extra.json).
   for (const url of EXTRA[p.key] || []) await rec(url).then(r => r.arrayBuffer?.()).catch(e => console.log(`  ${p.label} extra request: ${e.message}`));
   const sp = await spot(p, frames, plan.grid, rec);
-  summary[p.key] = { label: p.label, planned: plan.planned, frames: frames.length, failed, otherSourcePx: other?.px ?? null, spot: sp };
-  console.log(`${p.label}: ${frames.length}/${plan.planned} images, ${failed} failed; Spot JPL ${sp.asteroidCheck ? sp.asteroidCheck.seasons.map(s => s.ok ? 'ok' : 'missing').join('/') : sp.skipped}; ${Math.round((Date.now() - t0) / 1000)} s`);
+  const spec = await spectrum(p, rec).catch(e => ({ error: e.message }));
+  summary[p.key] = { label: p.label, planned: plan.planned, frames: frames.length, failed, otherSourcePx: other?.px ?? null, spot: sp, spectrum: spec };
+  console.log(`${p.label}: ${frames.length}/${plan.planned} images, ${failed} failed; Spot JPL ${sp.asteroidCheck ? sp.asteroidCheck.seasons.map(s => s.ok ? 'ok' : 'missing').join('/') : sp.skipped}; Spectrum ${spec.error || `${spec.ok}/${spec.picked} cutouts`}; ${Math.round((Date.now() - t0) / 1000)} s`);
 }
 const neo = await asteroidPage(recorder('neo'));
 console.log(`Asteroid page (${NEO_VIEW.ra}, ${NEO_VIEW.dec}, ${NEO_VIEW.fov}°): ${neo.filter(r => r.ok).length}/${neo.length} JPL answers`);

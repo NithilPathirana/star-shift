@@ -4,6 +4,33 @@
 // (releases and DOIs: web/data/releases.json).
 
 import { kindMasksOf } from '../archive/logic.js';
+import { measure, detection, lightOnSky, GROUPS, GRID_ARCSEC } from '../lightcurve/logic.js';
+import { worldToGrid } from '../../core/align.js';
+
+// Is the light in the aperture the target's? (the viewer's a3 rule, lightcurve/logic.js detection:
+// light centre more than 1 px from the predicted position = another source). Each cutout has its own
+// WCS, so the predicted position and the light centre of each image are put on one 6.15″ sky grid
+// around the target first. cuts: { image {nx, ny, data}, wcs, x, y, detector }.
+// Returns, per wavelength group with a judgement: { id, name, detect, sky } (sky: lightOnSky).
+export function lightCheck(cuts, target) {
+  const grid = { ra0: target.ra, dec0: target.dec, c: 0, scale: GRID_ARCSEC };
+  const out = [];
+  for (const g of GROUPS) {
+    const rows = [];
+    for (const c of cuts) {
+      if (!g.dets.includes(c.detector) || !c.wcs || !c.image || !Number.isFinite(c.x)) continue;
+      const { nx, ny, data } = c.image, n = Math.max(nx, ny);
+      let sq = data;
+      if (nx !== ny) { sq = new Float32Array(n * n).fill(NaN); for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) sq[j * n + i] = data[j * nx + i]; }
+      const r = measure([{ n, data: sq, mjd: c.mjd, detector: c.detector, expected: [c.x, c.y] }], null)[0];
+      const toGrid = (p) => worldToGrid(grid, ...c.wcs.pixToWorld(p[0], p[1]));
+      rows.push({ masked: r.masked, at: toGrid(r.at), light: r.light ? toGrid(r.light) : null, snr: r.snr });
+    }
+    const detect = detection(rows);
+    if (detect) out.push({ id: g.id, name: g.name, detect, sky: lightOnSky(detect, grid) });
+  }
+  return out;
+}
 
 export const X_RANGE = { min: 0.74, max: 5.01 }; // µm, the band editor's domain (DESIGN.md 29)
 export const FEATURES = [

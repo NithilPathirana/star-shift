@@ -11,8 +11,11 @@ import { seasonsOf, seasonIndex, mjdToUtc, bandAt, targetViewerUrl } from '../ar
 import { IRSA } from '../../core/irsa.js';
 import {
   X_RANGE, FEATURES, APERTURES, CUTOUT_DEG, PIXEL_ARCSEC, pickImages, aperturePhotometry, pixelSolidAngle, toMilliJy,
-  apertureFlagged, whyNoPhotometry, niceTicks, logTicks, yRange, fmtValue, pointsToCSV,
+  apertureFlagged, whyNoPhotometry, niceTicks, logTicks, yRange, fmtValue, pointsToCSV, lightCheck,
 } from './logic.js';
+import { pickSource, pickSaved, BLEND_RADIUS } from '../lightcurve/logic.js';
+import { gaiaCone } from '../../core/resolve.js';
+import { prebakedFetch } from '../../core/prebaked.js';
 import { isExpert, onExpert } from '../expert.js'; // Simple / Expert (Master item 5)
 import { base, initShell, resolve, listPosition, targetLine, motionHtml, download, slug, esc, cutoutCenter } from '../archive/shell.js';
 
@@ -22,7 +25,9 @@ const SHORT = { 'd-starlight': 'Star', 'd-coolstars': 'Cool', 'd-dust': 'Dust', 
 const S = {
   target: null, images: [], seasons: [], cuts: [], points: [], queue: [], queued: new Set(), done: 0, failed: 0, total: 0,
   aperture: APERTURES[1], season: 'all', log: false, ctrl: null, running: 0, hover: null,
+  inflight: new Set(), lost: [], lastArrive: 0, busy: 0, listed: false, checkKey: '',
 };
+const FRESH = () => ({ inflight: new Set(), lost: [], busy: 0, listed: false, checkKey: '' });
 let tables = null;
 const tablesReady = fetch('core/data/spectral_wcs.json').then(r => r.json()).then(t => { tables = t; }).catch(() => {});
 
@@ -30,13 +35,15 @@ const tablesReady = fetch('core/data/spectral_wcs.json').then(r => r.json()).the
 async function load(q) {
   S.ctrl?.abort();
   const ctrl = S.ctrl = new AbortController();
-  Object.assign(S, { images: [], seasons: [], cuts: [], points: [], queue: [], queued: new Set(), done: 0, failed: 0, total: 0, season: 'all', hover: null });
+  Object.assign(S, { images: [], seasons: [], cuts: [], points: [], queue: [], queued: new Set(), done: 0, failed: 0, total: 0, season: 'all', hover: null, running: 0, ...FRESH() });
   $('more').disabled = true; $('csv').disabled = true;
+  $('downNote').hidden = true; $('lightNote').hidden = true;
   setStatus('Finding the star…'); progress(); renderSeasons(); draw();
   try {
     const t = await resolve(q, ctrl.signal);
     if (ctrl.signal.aborted) return;
     S.target = t;
+    watch(ctrl);
     const tl = targetLine(t);
     $('tName').textContent = tl.name; $('tCoords').textContent = tl.coords;
     // motion and "Position now" as separate parts, so a phone can put each on its own line (pages.css .sp-tl)
@@ -47,6 +54,7 @@ async function load(q) {
     const p = listPosition(t);
     const [ims] = await Promise.all([listImages(p.ra, p.dec, { base, signal: ctrl.signal }), tablesReady]);
     if (ctrl.signal.aborted) return;
+    S.listed = true; S.lastArrive = Date.now();
     if (!ims.length) { setStatus('The archive has no SPHEREx images of this spot yet.'); return; }
     if (!tables) { setStatus('Could not load the wavelength tables (core/data/spectral_wcs.json).'); return; }
     S.images = ims;
@@ -54,13 +62,86 @@ async function load(q) {
     renderSeasons();
     enqueue(pickImages(ims, perDet()));
   } catch (e) {
-    if (e.name === 'AbortError') return;
-    setStatus(e.notFound ? e.message : `Could not get the image list: ${e.message}. IRSA may be busy; try again in a minute.`);
+    if (e.name === 'AbortError' || ctrl.signal.aborted) return; // a newer search, or the watchdog (its own message)
+    if (e.notFound || !S.target) { setStatus(e.notFound ? e.message : `Could not find the star: ${e.message}`); return; }
+    setStatus(''); archiveDown(ctrl, true);
   }
 }
 
+// Live stars (judging panel a10, the Spot rule): when IRSA sends nothing new for STALL_MS, or answers
+// "busy" BUSY_503 times in a row, stop, say so, keep the dots already measured, and offer Retry.
+// The five demo targets answer from web/prebaked/ at once.
+const STALL_MS = 18000, BUSY_503 = 30;
+function watch(ctrl) {
+  const t0 = S.lastArrive = Date.now();
+  const h = setInterval(() => {
+    if (ctrl !== S.ctrl || ctrl.signal.aborted) return clearInterval(h);
+    const now = Date.now();
+    if (S.listed && !S.running && !S.queue.length) { S.lastArrive = now; return; } // idle: nothing asked
+    if (now - S.lastArrive >= STALL_MS || (S.busy >= BUSY_503 && now - t0 >= STALL_MS)) { clearInterval(h); archiveDown(ctrl); }
+  }, 500);
+}
+function lose(im) { S.failed++; S.queued.delete(im.uri); S.lost.push(im); } // "Retry" or "Measure more" may ask again
+function archiveDown(ctrl, quick = false) {
+  const pending = [...S.inflight, ...S.queue];
+  ctrl.abort();
+  S.queue = []; S.inflight.clear(); S.running = 0;
+  for (const im of pending) { lose(im); S.done++; }
+  const got = S.points.length, asked = S.total, came = S.done - S.failed;
+  $('downTxt').textContent = (!S.listed ? (quick ? 'It did not send the list of images for this star.' : `IRSA sent nothing for ${STALL_MS / 1000} seconds.`)
+    : !came ? `None of the ${asked} images came in.`
+    : `${came} of ${asked} images came in, then IRSA ${quick ? 'stopped answering' : 'went quiet'}; the ${got} dot${got === 1 ? '' : 's'} so far stay.`) + ' It is often busy; Retry asks again.';
+  $('downNote').hidden = false;
+  setStatus(''); progress(); draw();
+}
+$('retry').onclick = () => {
+  $('downNote').hidden = true;
+  if (!S.listed) return load(currentQ);
+  const again = S.lost.splice(0);
+  S.failed -= again.length; S.done -= again.length; S.total -= again.length; S.busy = 0;
+  enqueue(again);
+};
+
+// Whose light are the dots? (lightCheck: the viewer's a3 rule.) A group whose light centre sits on
+// another source gets one plain line naming it (Gaia through our relay; offline, the Gaia DR3 cone the
+// Proof page saved in proof.json). Only when a run has finished; the same cutouts are never re-judged.
+async function checkLight() {
+  const t = S.target, cuts = S.cuts;
+  const key = `${t?.ra},${t?.dec}:${cuts.length}`;
+  if (!t || key === S.checkKey) return;
+  S.checkKey = key;
+  const lines = [];
+  for (const g of lightCheck(cuts, t)) {
+    if (g.detect.state !== 'offset' || !g.sky) continue;
+    let src = null;
+    if (t.presetKey) src = pickSaved(await savedNeighbours(t.name), g.sky); // demo targets: no network needed
+    if (!src) {
+      const [ra, dec] = g.sky.light;
+      src = await gaiaCone(ra, dec, BLEND_RADIUS, { endpoint: `${location.origin}/gaia/tap/sync`, top: 10, signal: AbortSignal.timeout(15000) })
+        .then(rows => pickSource(rows, g.sky)).catch(() => null) || pickSaved(await savedNeighbours(t.name), g.sky);
+    }
+    if (S.checkKey !== key) return; // another star since
+    const where = g.id === 'short' ? 'Below 3.8 µm' : 'From 3.8 to 5 µm';
+    const who = src ? `a background star (Gaia G ${src.g.toFixed(1)}, ${src.sepArcsec.toFixed(1)}″ away)` : `another source, centred ${g.sky.offArcsec.toFixed(1)}″ away`;
+    lines.push(`${where} the light here is ${who}, not ${esc(t.name || 'this star')}.` +
+      `<span class="x-only"> Light centre ${g.sky.offArcsec.toFixed(1)}″ (${(g.detect.offPx).toFixed(1)} px) from the predicted position, median of ${g.detect.hits} of ${g.detect.n} clean images${src?.id ? `; ${esc(src.id)}` : ''}.</span>`);
+  }
+  if (S.checkKey !== key) return;
+  $('lightNote').innerHTML = lines.join('<br>');
+  $('lightNote').hidden = !lines.length;
+}
+let proofP = null;
+async function savedNeighbours(name) { // as lightcurve/index.js
+  proofP ||= fetch(new URL('../../data/proof.json', import.meta.url)).then(r => (r.ok ? r.json() : null)).catch(() => null);
+  const t = (await proofP)?.targets?.find(q => q.name === name || q.label === name);
+  return t?.extra?.neighbours || [];
+}
+// IRSA's "busy" answers, counted for the watchdog (fetchCutout retries them itself).
+const counted = (u, o) => prebakedFetch(u, o).then((r) => { if ([429, 502, 503].includes(r.status)) S.busy++; return r; });
+
 function enqueue(list) {
   const add = list.filter(im => !S.queued.has(im.uri));
+  if (add.length && S.ctrl.signal.aborted) { $('downNote').hidden = true; S.ctrl = new AbortController(); watch(S.ctrl); } // after "isn't answering"
   for (const im of add) { S.queued.add(im.uri); S.queue.push(im); }
   S.total += add.length;
   progress();
@@ -71,35 +152,45 @@ function pump() {
   const ctrl = S.ctrl;
   while (S.running < 8 && S.queue.length) {
     const im = S.queue.shift();
-    S.running++;
+    S.running++; S.inflight.add(im);
     measureImage(im, ctrl.signal).then((cut) => {
       if (ctrl.signal.aborted) return;
+      S.lastArrive = Date.now(); S.busy = 0;
       S.cuts.push(cut);
       const p = pointFrom(cut);
       if (p) S.points.push(p); else cut.missing = true;
     }).catch((e) => {
       if (ctrl.signal.aborted || e.name === 'AbortError') return;
       if (!im.retried) { S.queue.push({ ...im, retried: true }); S.total++; return; }
-      S.failed++; S.queued.delete(im.uri); // "Measure more" may try it again later
+      lose(im);
     }).finally(() => {
       if (ctrl.signal.aborted) return;
+      S.inflight.delete(im);
       S.running--; S.done++;
       progress(); scheduleDraw(); pump();
+      if (!S.running && !S.queue.length) runDone(ctrl);
     });
   }
+}
+
+// A run finished: most images failed = the archive is down (fast errors, e.g. no connection);
+// otherwise check whose light the dots are (WISE 0855's short wavelengths: a background star).
+function runDone(ctrl) {
+  if (S.lost.length && S.lost.length >= S.total / 2) return archiveDown(ctrl, true);
+  checkLight();
 }
 
 // Download a small cutout and keep what the measurement needs (so changing the aperture is instant).
 async function measureImage(im, signal) {
   const c0 = cutoutCenter(S.target, im.mjdStart);
-  const raw = await fetchCutout(im.uri, c0.ra, c0.dec, CUTOUT_DEG, { base, signal });
+  const raw = await fetchCutout(im.uri, c0.ra, c0.dec, CUTOUT_DEG, { base, signal, fetchFn: counted });
   const c = maskBadPixels(raw);
   const pos = (S.target.pmra || S.target.pmdec) ? propagate(S.target, c.mjd) : S.target;
   const [x, y] = c.wcs.worldToPix(pos.ra, pos.dec);
   const tab = tables[String(c.detector)];
   const wl = tab ? wavelengthAt(c.header, tab, x, y) : null;
   return {
-    uri: im.uri, obsid: c.obsid || im.obsid, mjd: c.mjd ?? im.mjdStart, detector: c.detector, x, y,
+    uri: im.uri, obsid: c.obsid || im.obsid, mjd: c.mjd ?? im.mjdStart, detector: c.detector, x, y, wcs: c.wcs,
     image: c.image, flags: raw.flags?.data ?? null, flagNames: raw.flagNames, pixSr: pixelSolidAngle(c.wcs, x, y),
     um: wl?.wavelength ?? null, bw: wl?.bandwidth ?? null,
   };
