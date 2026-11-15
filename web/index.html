@@ -83,10 +83,11 @@
         <div class="map-read num" id="mapRead"></div>
         <div class="mb-key" id="mapBandsKey" hidden><!-- IR band ranges painted on the map (band-editor agent) -->
           <p class="mb-t">Coloured by your IR band ranges</p>
+          <p class="mb-note" id="mapBandsNote"></p>
           <div class="mb-sw" id="mapBandsList"></div>
           <div class="mb-row"><button class="key mb-hold" id="mapBandsHold" type="button" aria-pressed="false">Hold to compare</button><button class="key mb-off" id="mapBandsOff" type="button">Turn off</button></div>
         </div>
-        <p class="map-ph" id="mapCredit">Drag to look around, scroll to zoom. Stars: Hipparcos (ESA). Imagery: NASA/SPHEREx DR1 (Caltech/IPAC) at <span id="mapWl">1.63 µm</span>.<br><span class="map-logo-credit">Logo: AI-generated (SI) with ChatGPT; small version and favicon redrawn as SVG by Claude.</span></p>
+        <p class="map-ph" id="mapCredit">Drag to look around, scroll to zoom. Stars: Hipparcos (ESA). Imagery: NASA/SPHEREx DR1 (Caltech/IPAC) <span id="mapWl">at 1.63 µm</span>.<br><span class="map-logo-credit">Logo: AI-generated (SI) with ChatGPT; small version and favicon redrawn as SVG by Claude.</span></p>
       </div>
       <div class="tele" id="tele" hidden><!-- Telescope compare (DESIGN.md 31a) -->
         <div class="tele-head"><p class="tele-line">These are different wavelengths and different cameras. Compare where things are, not how bright they look.</p>
@@ -189,7 +190,7 @@
       <div class="rd"><span>Cursor</span><b id="mdCursor">–</b></div>
       <div class="rd"><span>Field of view</span><b id="mdFov">–</b></div>
       <div class="rd"><span>Selected</span><b id="mdSel">–</b></div>
-      <label class="rd wl-rd"><span>Map colour · <b id="wlOut">1.63 µm</b></span><input type="range" id="wl" min="0" max="101" step="1" value="33" aria-label="Sky map wavelength"></label>
+      <label class="rd wl-rd"><span><span id="wlLbl">Map colour</span> · <b id="wlOut">1.63 µm</b></span><input type="range" id="wl" min="0" max="101" step="1" value="33" aria-label="Sky map wavelength" aria-describedby="wlHint"><small class="wl-hint" id="wlHint" hidden>Applies when band paint is off</small></label>
       <span class="grow"></span>
       <button class="key primary" id="mdPlay">Play this patch over time</button>
     </div>
@@ -245,6 +246,7 @@
   <p class="be-sub">Name and colour your own wavelength ranges. SPHEREx covers 0.744–5.002 µm with 6 detectors (102 channels, 17 each). Dashed boxes show each detector's span.</p>
   <div class="ruler" id="ruler"><div class="det-row" id="detRow"></div><div class="scale-row" id="scaleRow"></div><div class="lanes" id="lanes"></div></div>
   <div class="rows" id="rows"></div>
+  <p class="mb-note be-bnote" id="beBandNote"></p>
   <div class="be-actions"><button class="key" id="addRange">+ Add range</button><button class="key" id="resetRanges">Reset to defaults</button></div>
   <div class="opt be-map"><span>Paint the sky map in these ranges<small>Changes the sky map, not this time-lapse picture</small></span><button class="switch well" role="switch" aria-checked="false" id="mapBandsSw" aria-label="Paint the sky map in these ranges" aria-describedby="beHow"><i></i></button></div>
   <p class="be-how" id="beHow">Each SPHEREx image records one narrow wavelength at each spot. A range picks which of those wavelengths belong to it; with the switch on, the sky map draws those images in the range's colour and adds them together, so a place that is brighter in one range takes on that range's colour.</p>

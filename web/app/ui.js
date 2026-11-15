@@ -11,7 +11,7 @@ import { PRESETS, findPreset } from './presets.js';
 import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight, altAz, riseTransitSet, skyTonight, tonightWords, dirWord } from './sky.js';
 import { simbadCone, otypeName, CHANNEL_UM } from './skymap.js';
 import { Sky3D as SkyMap } from './sky3d/index.js'; // 3D celestial sphere (three.js); same interface as the Aladin SkyMap
-import { layersFor, DEFAULT_BANDS, bandLabel, bandName, bandInitials } from './bands.js';
+import { layersFor, DEFAULT_BANDS, bandLabel, bandName, bandInitials, BAND_NOTE } from './bands.js';
 import { notebookAdd, openNotebook } from './notebook/notebook.js'; // Lab notebook: "+" keys in the info panel
 import { listImages } from '../core/irsa.js';
 import { isExpert } from './expert.js';
@@ -239,7 +239,7 @@ function onFrame(i, manual) {
   if (!manual && P.playing && i > 0 && s !== seasonOf(i - 1)) Snd.play('seasonSoft');
   if (s >= 0) $('seasonLbl').innerHTML = `<b>Season ${s + 1}</b> of ${V.seasons.length} · ${seasonName(V.seasons[s])}`;
   const rg = rangeOf(f.um); // the coloured tick under the thumb, named in words (colour is never the only cue)
-  $('tlDate').innerHTML = (rg ? `<span class="tl-band" title="${esc(bandLabel(rg).text)}"><i style="--rc:${rg.c}"></i><span class="tlb-n">${esc(rg.name)}</span><span class="tlb-i" aria-hidden="true">${esc(bandInitials(rg))}</span></span>` : '') + `<span>${R.fmtDate(f.date)}</span>`;
+  $('tlDate').innerHTML = (rg ? `<span class="tl-band" title="${esc(bandLabel(rg).text)}"><i style="--rc:${rg.c}"></i><span class="tlb-n">${esc(bandName(rg))}</span><span class="tlb-i" aria-hidden="true">${esc(bandInitials(rg))}</span></span>` : '') + `<span>${R.fmtDate(f.date)}</span>`;
   track.setAttribute('aria-valuenow', i + 1); track.setAttribute('aria-valuetext', `Image ${i + 1}, ${R.fmtDate(f.date)}${rg ? ', ' + bandName(rg) : ''}`);
   setCounter(i, manual);
   LC.mark(i);
@@ -253,7 +253,7 @@ const P = { i: 0, fps: 4, playing: false, timer: null,
   pause() { P.playing = false; clearTimeout(P.timer); onFrame(P.i); },
   toggle() { P.playing ? P.pause() : P.play(); } };
 // Contamination flags + Layers bar (DESIGN.md 23): contam-ui.js draws on the stage canvas.
-const CX = createContam({ $, R, V, P, esc, set, Snd, base: BASE, tables: () => tables, rangeOf: um => rangeOf(um), segSelect,
+const CX = createContam({ $, R, V, P, esc, set, Snd, base: BASE, tables: () => tables, rangeOf: um => namedRange(rangeOf(um)), segSelect,
   mode: () => mode, redraw: () => { draw(); }, refilter: () => refilter(), stackRaws: () => V.F.map(f => f.raw).sort((a, b) => a.mjd - b.mjd),
   closePop: () => closePop(), hideTip: () => hideTip(),
   tipAt: (html, x, y) => { clearTimeout(tipT); $('tip').innerHTML = html; placeTip({ left: x - 10, right: x + 10, top: y - 10, height: 20 }); } });
@@ -1141,14 +1141,22 @@ const saveRanges = () => { try { localStorage.setItem(BKEY, JSON.stringify(range
 const r2 = v => Math.round(v * 100) / 100;
 const pct = um => (um - DOMN[0]) / (DOMN[1] - DOMN[0]) * 100;
 function rangeOf(um) { return um == null ? null : ranges.find(r => um >= r.min && um <= r.max) || null; }
+// Same range with its '…band' name (WAVE legend); one cached copy per range so identity checks still work
+const namedCache = new WeakMap();
+function namedRange(r) {
+  if (!r) return r;
+  let n = namedCache.get(r);
+  if (!n || n.raw !== r.name || n.c !== r.c) { n = { ...r, raw: r.name, name: bandName(r) }; namedCache.set(r, n); }
+  return n;
+}
 function hexRgb(h) { const m = /^#?([0-9a-f]{6})$/i.exec(h); if (!m) return null; const n = parseInt(m[1], 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
 function onColour(h) { const [r, g, b] = hexRgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return (.2126 * r + .7152 * g + .0722 * b) > .28 ? '#1A1410' : '#FFF8F0'; }
 function colourDist(a, b) { const x = hexRgb(a), y = hexRgb(b); const rm = (x[0] + y[0]) / 2; return Math.sqrt((2 + rm / 256) * (x[0] - y[0]) ** 2 + 4 * (x[1] - y[1]) ** 2 + (2 + (255 - rm) / 256) * (x[2] - y[2]) ** 2); }
 function warnings(r) {
   const w = [];
   if (!(r.min < r.max)) w.push('Min must be smaller than max.');
-  ranges.forEach(o => { if (o !== r && r.min < o.max && o.min < r.max) w.push(`Overlaps ${esc(o.name)} (allowed).`); });
-  ranges.forEach(o => { if (o !== r && colourDist(r.c, o.c) < 70) w.push(`Colour looks close to ${esc(o.name)}; the names still tell them apart.`); });
+  ranges.forEach(o => { if (o !== r && r.min < o.max && o.min < r.max) w.push(`Overlaps ${esc(bandName(o))} (allowed).`); });
+  ranges.forEach(o => { if (o !== r && colourDist(r.c, o.c) < 70) w.push(`Colour looks close to ${esc(bandName(o))}; the names still tell them apart.`); });
   return w;
 }
 let mbHeld = false; // "Hold to compare": the plain one-wavelength map while held
@@ -1157,10 +1165,13 @@ function applyMapBands() {
   $('mapBandsSw').setAttribute('aria-checked', mapBands);
   $('mapBandsSee').hidden = !mapBands || scene === 'map';
   skymap.setBands(mapBands && !mbHeld ? mapLayers() : []);
+  mapWlText();
   const key = $('mapBandsKey'); key.hidden = !mapBands;
   if (mapBands) {
     const n = mapLayers().reduce((s, l) => s + l.channels.length, 0);
-    $('mapBandsList').innerHTML = ranges.map(r => `<span title="${esc(r.name)}: ${r.min.toFixed(2)}–${r.max.toFixed(2)} µm"><i style="--rc:${r.c}"></i><b class="mb-i" aria-hidden="true">${esc(bandInitials(r))}</b><em class="mb-n">${esc(r.name)}</em></span>`).join('');
+    $('mapBandsNote').textContent = BAND_NOTE;
+    key.setAttribute('aria-label', `Coloured by your IR band ranges. ${BAND_NOTE}.`);
+    $('mapBandsList').innerHTML = ranges.map(r => `<span title="${esc(bandName(r))}: ${r.min.toFixed(2)}–${r.max.toFixed(2)} µm. ${BAND_NOTE}."><i style="--rc:${r.c}"></i><b class="mb-i" aria-hidden="true">${esc(bandInitials(r))}</b><em class="mb-n">${esc(bandName(r))}</em></span>`).join('');
     $('mapBandsHold').title = `Shows the plain ${$('wlOut').textContent} map while held. Painted now: ${n} SPHEREx wavelengths in ${ranges.length} colours.`;
   }
 }
@@ -1178,21 +1189,22 @@ function renderBands(focusId) {
   $('detRow').innerHTML = DETS.map(([a, b], i) => `<span class="det" style="left:${pct(a)}%;width:${pct(b) - pct(a)}%;${i % 2 ? 'top:0' : ''}" title="Detector ${i + 1}: ${a}–${b} µm">D${i + 1}</span>`).join('');
   let sc = ''; for (let v = 1; v <= 5; v += .25) { const maj = Math.abs(v - Math.round(v)) < 1e-9; sc += `<i class="${maj ? 'maj' : ''}" style="left:${pct(v)}%"></i>` + (maj ? `<span style="left:${pct(v)}%;${v === 5 ? 'transform:translateX(-100%)' : ''}">${v} µm</span>` : ''); }
   $('scaleRow').innerHTML = sc;
-  $('lanes').innerHTML = ranges.map(r => `<div class="lane"><div class="band" data-id="${r.id}" style="--c:${r.c};--on:${onColour(r.c)};left:${pct(r.min)}%;width:${Math.max(0, pct(r.max) - pct(r.min))}%" title="${esc(r.name + (r.tip ? ': ' + r.tip : ''))}">
-      <span class="h l" role="slider" tabindex="0" id="h-${r.id}-min" aria-label="${esc(r.name)} start" aria-valuemin="${DOMN[0]}" aria-valuemax="${DOMN[1]}" aria-valuenow="${r.min}" aria-valuetext="${r.min.toFixed(2)} micrometres"></span>
-      <span class="bn">${esc(r.name)}</span>
-      <span class="h r" role="slider" tabindex="0" id="h-${r.id}-max" aria-label="${esc(r.name)} end" aria-valuemin="${DOMN[0]}" aria-valuemax="${DOMN[1]}" aria-valuenow="${r.max}" aria-valuetext="${r.max.toFixed(2)} micrometres"></span></div></div>`).join('');
+  $('lanes').innerHTML = ranges.map(r => `<div class="lane"><div class="band" data-id="${r.id}" style="--c:${r.c};--on:${onColour(r.c)};left:${pct(r.min)}%;width:${Math.max(0, pct(r.max) - pct(r.min))}%" title="${esc(bandName(r) + (r.tip ? ': ' + r.tip : ''))}">
+      <span class="h l" role="slider" tabindex="0" id="h-${r.id}-min" aria-label="${esc(bandName(r))} start" aria-valuemin="${DOMN[0]}" aria-valuemax="${DOMN[1]}" aria-valuenow="${r.min}" aria-valuetext="${r.min.toFixed(2)} micrometres"></span>
+      <span class="bn">${esc(bandName(r))}</span>
+      <span class="h r" role="slider" tabindex="0" id="h-${r.id}-max" aria-label="${esc(bandName(r))} end" aria-valuemin="${DOMN[0]}" aria-valuemax="${DOMN[1]}" aria-valuenow="${r.max}" aria-valuetext="${r.max.toFixed(2)} micrometres"></span></div></div>`).join('');
   $('rows').innerHTML = ranges.map(r => `<div class="rrow" data-id="${r.id}">
-      <button class="swatch" style="--c:${r.c}" aria-label="Colour of ${esc(r.name)}: ${esc((PALETTE.find(p => p[1].toLowerCase() === r.c.toLowerCase()) || ['custom'])[0])}" aria-expanded="${openPal === r.id}"></button>
+      <button class="swatch" style="--c:${r.c}" aria-label="Colour of ${esc(bandName(r))}: ${esc((PALETTE.find(p => p[1].toLowerCase() === r.c.toLowerCase()) || ['custom'])[0])}" aria-expanded="${openPal === r.id}"></button>
       <label class="field well" title="${esc(r.tip || '')}"><input class="rn" value="${esc(r.name)}" aria-label="Name" maxlength="32"></label>
-      <label class="field well"><input class="rmin" type="number" step="0.01" min="${DOMN[0]}" max="${DOMN[1]}" value="${r.min.toFixed(2)}" aria-label="${esc(r.name)} from, micrometres"></label>
-      <label class="field well"><input class="rmax" type="number" step="0.01" min="${DOMN[0]}" max="${DOMN[1]}" value="${r.max.toFixed(2)}" aria-label="${esc(r.name)} to, micrometres"></label>
-      <button class="key icon rdel" aria-label="Delete ${esc(r.name)}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 9h5.6l.7-9"/></svg></button>
+      <label class="field well"><input class="rmin" type="number" step="0.01" min="${DOMN[0]}" max="${DOMN[1]}" value="${r.min.toFixed(2)}" aria-label="${esc(bandName(r))} from, micrometres"></label>
+      <label class="field well"><input class="rmax" type="number" step="0.01" min="${DOMN[0]}" max="${DOMN[1]}" value="${r.max.toFixed(2)}" aria-label="${esc(bandName(r))} to, micrometres"></label>
+      <button class="key icon rdel" aria-label="Delete ${esc(bandName(r))}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 9h5.6l.7-9"/></svg></button>
       ${r.tip ? `<p>${esc(r.tip)}</p>` : ''}
       <div class="rwarn" role="status">${warnings(r).join(' ')}</div>
       ${openPal === r.id ? `<div class="palette well">${PALETTE.map(([nm, c]) => `<button style="--c:${c}" data-c="${c}" aria-label="${nm}" aria-pressed="${c.toLowerCase() === r.c.toLowerCase()}" title="${nm}"></button>`).join('')}
         <label class="field well"><input class="hex" value="${r.c}" aria-label="Hex colour" maxlength="7"></label></div>` : ''}
     </div>`).join('');
+  $('beBandNote').textContent = BAND_NOTE;
   bindBands();
   if (focusId) document.getElementById(focusId)?.focus();
 }
@@ -1225,7 +1237,7 @@ function bindBands() {
   });
   $('rows').querySelectorAll('.rrow').forEach(rowEl => {
     const r = ranges.find(x => x.id === rowEl.dataset.id), warn = rowEl.querySelector('.rwarn');
-    rowEl.querySelector('.rn').addEventListener('input', e => { r.name = e.target.value || 'Untitled'; r.tip = ''; saveRanges(); const b = $('lanes').querySelector(`[data-id="${r.id}"] .bn`); if (b) b.textContent = r.name; applyRanges(); });
+    rowEl.querySelector('.rn').addEventListener('input', e => { r.name = e.target.value || 'Untitled'; r.tip = ''; saveRanges(); const b = $('lanes').querySelector(`[data-id="${r.id}"] .bn`); if (b) b.textContent = bandName(r); applyRanges(); });
     rowEl.querySelector('.rn').addEventListener('change', () => commit());
     const num = (cls, key) => rowEl.querySelector(cls).addEventListener('change', e => {
       let v = parseFloat(String(e.target.value).replace(',', '.'));
@@ -1241,7 +1253,7 @@ function bindBands() {
     });
     num('.rmin', 'min'); num('.rmax', 'max');
     rowEl.querySelector('.swatch').onclick = () => { openPal = openPal === r.id ? null : r.id; Snd.play('tick'); renderBands(); };
-    rowEl.querySelector('.rdel').onclick = () => { ranges = ranges.filter(x => x !== r); Snd.play('click'); commit(); toast(`Deleted ${r.name}.`); };
+    rowEl.querySelector('.rdel').onclick = () => { ranges = ranges.filter(x => x !== r); Snd.play('click'); commit(); toast(`Deleted ${bandName(r)}.`); };
     rowEl.querySelectorAll('.palette button').forEach(b => { b.onclick = () => { r.c = b.dataset.c; Snd.play('tick'); commit(); }; });
     const hex = rowEl.querySelector('.hex'); if (hex) hex.addEventListener('change', () => { const v = hex.value.trim(); if (hexRgb(v)) { r.c = v.startsWith('#') ? v : '#' + v; commit(); } else { warn.textContent = 'Use a hex colour like #C27A43.'; } });
   });
@@ -1304,7 +1316,7 @@ function placeHits() {
   $('hitStar').hidden = !!f.ringOff;
   Object.assign($('hitStar').style, { left: ((ex + .5) * cssCell - rad) + 'px', top: ((ey + .5) * cssCell - rad) + 'px', width: 2 * rad + 'px', height: 2 * rad + 'px' });
   $('hitOther').hidden = !otherPx; if (!otherPx) return;
-  const [ox, oy] = otherPx, rr = 1.5 * cssCell;
+  const [ox, oy] = otherPx, rr = Math.max(1.5 * cssCell, mq('(max-width: 699px)') ? 22 : 0); // phone: 44 px tap box; the drawn ring keeps its size
   Object.assign($('hitOther').style, { left: ((ox + .5) * cssCell - rr) + 'px', top: ((oy + .5) * cssCell - rr) + 'px', width: 2 * rr + 'px', height: 2 * rr + 'px' });
 }
 bindTip($('hitStar'), () => `<b>${esc(V.ring && !V.ring.own ? V.ring.name : V.name)}</b><small>${V.ring && !V.ring.own ? 'Inside the dashed ring: where this catalogued star should be on this date' : V.target?.pmra || V.target?.pmdec ? 'Inside the dashed ring (predicted position)' : 'Centre of the patch'}</small>`);
@@ -1343,10 +1355,21 @@ function playPatch() {
   if (skymap.aladin && !set.motion) skymap.setFov(Math.max(0.05, (150 / 3600) / 0.42));
   setTimeout(() => toViewer(false, same ? null : () => load(query, t ? t.name : PATCH_NAME)), set.motion ? 0 : 250);
 }
-$('cdPlay').onclick = playPatch; $('mdPlay').onclick = playPatch; $('mapBack').onclick = () => toMap(false);
+$('cdPlay').onclick = playPatch; $('mdPlay').onclick = playPatch;
+// Wide screens show the details panel's copper Play key beside the dock, so the dock's is plain there (review 2, item 8)
+{ const ph = matchMedia('(max-width: 1099px)'), f = () => $('mdPlay').classList.toggle('primary', ph.matches); f(); ph.addEventListener('change', f); }
+ $('mapBack').onclick = () => toMap(false);
 
 /* ---------- map colour (wavelength) ---------- */
-function setWl(ch) { skymap.setChannel(ch); const um = CHANNEL_UM[ch].toFixed(2) + ' µm'; $('wlOut').textContent = um; $('mapWl').textContent = um; }
+function setWl(ch) { skymap.setChannel(ch); const um = CHANNEL_UM[ch].toFixed(2) + ' µm'; $('wlOut').textContent = um; mapWlText(); }
+// Map credit and dock slider say what the map shows: one wavelength, or the band paint (review 2, item 2)
+function mapWlText() {
+  const painted = mapBands && !mbHeld, um = $('wlOut').textContent;
+  $('mapWl').textContent = painted ? 'coloured by your band ranges' : `at ${um}`;
+  $('wlLbl').textContent = mapBands ? 'Plain map' : 'Map colour';
+  $('wlHint').hidden = !mapBands;
+  $('wl').closest('.wl-rd').classList.toggle('wl-off', mapBands);
+}
 $('wl').addEventListener('input', e => setWl(+e.target.value));
 
 /* ---------- shareable URL: ?q= or ?ra=&dec=, plus &scene=viewer ---------- */

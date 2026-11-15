@@ -456,3 +456,10 @@ html[data-motion=reduce] .state.loader2 { transition: none; }
 .mb-sw .mb-n { font-style: normal; }
 .mb-sw .mb-i { display: none; }
 @media (max-width: 699px) { .mb-sw span .mb-i { display: inline; } .mb-sw { gap: 4px 8px; flex-wrap: wrap; } .mb-sw span { gap: 3px; } }
+/* Design review 2, items 1-2: the band names line, and the dock slider while band paint is on */
+.mb-note { margin: 0 0 6px; font-size: .75rem; line-height: 1.35; color: var(--stage-muted, #CDBFAE); }
+.be-bnote { margin: 6px 0 0; color: var(--muted); }
+.wl-rd.wl-off input { opacity: .45; filter: grayscale(1); }
+.wl-hint { font-size: .75rem; color: var(--muted); }
+.wl-hint[hidden] { display: none; }
+@media (max-width: 699px) { .mb-note { margin: 2px 0 4px; } .mb-key { top: 50px; bottom: auto; } .mb-row { margin-top: 4px; } } /* clear of the map credit at the foot */
