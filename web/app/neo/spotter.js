@@ -7,6 +7,7 @@ import { listImagesSIA } from '../../core/irsa.js'; // SPHEREx exposure times of
 import { prebakedFetch } from '../../core/prebaked.js'; // the five demo targets answer from web/prebaked/ (Claude)
 import { SPHEREX_VISIBLE_V } from '../spot/logic.js'; // Spot's own faintness rule (Claude)
 import '../expert.js'; // Simple / Expert twins below: .x-only (RA/Dec, ISO dates, ″/h) and .s-only (plain words) (Claude)
+import { bothaCheckText, checkAppliesTo, loadBothaCheck } from './botha-check.js'; // measured Botha check (Claude)
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -29,6 +30,14 @@ const view = {
 };
 view.isDefault = view.ra === NEO_DEFAULT_VIEW.ra && view.dec === NEO_DEFAULT_VIEW.dec && view.fov === NEO_DEFAULT_VIEW.fov
   && view.dates.join() === NEO_DEFAULT_VIEW.dates.join();
+
+// Measured check of the example asteroid (web/data/botha-check.json); null keeps the prediction wording (Claude)
+let bothaCheck = null, bothaWords = null;
+const bothaCheckP = loadBothaCheck(AbortSignal.timeout(10000)).then((check) => {
+  bothaCheck = check; bothaWords = bothaCheckText(check);
+  const note = $('botha-check-note');
+  if (bothaWords && note) note.replaceChildren(...twin(bothaWords.expert, bothaWords.simple));
+});
 
 function element(name, className, text) {
   const node = document.createElement(name);
@@ -143,6 +152,11 @@ function renderRows(rows) {
     const object = element('td', 'object-cell');
     object.dataset.label = 'Object';
     object.append(element('strong', '', item.name), element('small', '', item.kind === 'c' ? 'Comet' : 'Asteroid'));
+    // The example field's asteroid: our measurement of the images (tools/botha_check.mjs), not JPL's (Claude)
+    if (bothaWords && checkAppliesTo(bothaCheck, item)) {
+      object.append(...twin(bothaWords.rowExpert, bothaWords.rowSimple, 'small'));
+      object.style.height = 'auto'; // a third line: the 36 px grid cell would let it spill into the next row
+    }
     const date = element('td', 'num'); date.dataset.label = 'Date';
     const [xTime, sTime] = timeNote(item.time);
     date.append(...twin(item.date || '—', plainDay(item.date)), element('small', 'x-only', xTime), element('small', 's-only', sTime));
@@ -250,6 +264,8 @@ async function loadSpotter() {
   const retried = results.filter(result => result.status === 'fulfilled' && result.value.retried).length;
   // by date, then brightest first (no magnitude last), so what SPHEREx could see leads (b7, Claude)
   const mag = (item) => item.visualMagnitude ?? Infinity;
+  await bothaCheckP; // a small local file; never rejects
+  if (currentRun !== run) return;
   renderRows(rows.sort((a, b) => a.date.localeCompare(b.date) || mag(a) - mag(b) || a.name.localeCompare(b.name)));
   if (failures.length) {
     // Plain words on the page; the raw errors go to the console (Claude)

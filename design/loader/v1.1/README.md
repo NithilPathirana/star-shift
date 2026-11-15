@@ -6,7 +6,7 @@ Brought back by Nithil on Sat 14 Nov 2026 (~20:50): "Use the revamped astronaut 
 
 The app crops the picture to fill the stage, so the baked corner mark is often outside the visible area there. The caption is the mark people see in the app; the baked one is for the files themselves.
 
-No NASA or agency logos, insignia or lettering, no real spacecraft likeness, no face. Background: the real NASA SPHEREx all-sky map (IRSA DR1) through the app's copper image scale.
+No NASA or agency logos, insignia or lettering, no real spacecraft likeness, no face. Background: the real NASA SPHEREx all-sky map (IRSA DR1), shown through a navy-to-white colour scale (scene v4; the first scene used the app's copper image scale).
 
 ## Files
 
@@ -86,9 +86,10 @@ function leaveLoader() {
 Nothing else changes: `set()`, `add()`, `slow()` and `destroy()` are called exactly as now.
 
 ## Changes
+- **v4 (Sun 15 Nov 13:53), a new scene:** Nithil, "Improve the astronaut animations also", after choosing the blue, white and neon-yellow look. `_build/build_rocket_v4.py` (a changed copy of v3): white rocket and suit, blue bands, visor and gloves, navy trim, neon-yellow rings and exhaust, and the SPHEREx sky shown navy-to-white. **The rider waves once per loop** (camera-side arm up at 3.0 to 5.8 s; the poster still is the top of the wave), looks around more, the rocket rolls and sways about three times as much, there are three times as many dust motes moving two to five times faster (speed streaks), and the exhaust flickers and pulses more. Same length, size and frame rate (240 + 45 frames, 30 fps), so the component did not change. Rendered frames: `_build/frames_v4/`, `_build/frames_exit_v4/`. The loop seam was measured (frame 240 to 1 differs as much as any neighbouring pair). `python _build/encode.py` now encodes v4; `python _build/encode.py .. v3` encodes the first copper scene, whose frames are kept.
 - **v3 (Sun 15 Nov), media and wording:** the baked mark now reads "Animation: SI-generated (made by Claude in Blender)" (was "AI-generated"), at the same place, size and contrast. All twelve media files were re-encoded by `_build/encode.py` from the same clean frames; nothing was re-rendered in Blender. `watermarked-assets.sha256` and `_build/mark-check-sheet.png` were remade. The caption in `astro-loader.js` says SI-generated too.
 - **v2 (Sat 14 Nov 21:06), `astro-loader.js` only:** the exit clip is skipped when the whole load took under 4 s (was 1.2 s). On the live site a cached Barnard's Star load takes 1.7 s; the 1.9 s exit nearly doubled the wait. Recopy to `web/app/` and load with `?v=2`.
 - **Optional, in `web/app/ui.js`:** playback starts while the exit clip still covers the stage (`P.play()` in `onStart` and in the `DONE` branch), so the first ~2 s of the flip-book are hidden. To fix, let `leaveLoader()` return the wait (`return set.motion ? 0 : (ms ?? 400);`, and `0` on its early return) and start playback after it: `setTimeout(() => { if (!set.motion && !P.playing) P.play(); }, leaveLoader());` in both places.
 
 ## Rebuilding
-`_build/build_rocket_v3.py` (`blender -b --factory-startup -P build_rocket_v3.py -- full`, then `-- exit`) renders `frames2/` (240) and `frames_exit/` (45); frames already on disk are kept. `python _build/encode.py` then writes the files above into this folder.
+`_build/build_rocket_v4.py` (`blender -b --factory-startup -P build_rocket_v4.py -- full`, then `-- exit`; about 40 minutes on the Scar while other work runs) renders `frames_v4/` (240) and `frames_exit_v4/` (45); frames already on disk are kept. `python _build/encode.py` then writes the files above into this folder.
