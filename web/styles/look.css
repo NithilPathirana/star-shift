@@ -220,6 +220,13 @@ html:where(:not([data-ax-look=classic]))[data-glass=solid] .tools{background:#1B
 :where(html:not([data-ax-look=classic])) .team-q{color:var(--ink-2)}
 :where(html:not([data-ax-look=classic])) .team-list{color:var(--ink-2)}
 :where(html:not([data-ax-look=classic])) .team-sign{color:var(--ink)}
+:where(html:not([data-ax-look=classic])) .snr-at{color:var(--ink-2)}
+:where(html:not([data-ax-look=classic])) .snr-line{color:var(--ink)}
+:where(html:not([data-ax-look=classic])) .snr-why,:where(html:not([data-ax-look=classic])) .snr-n,:where(html:not([data-ax-look=classic])) .snr-m,:where(html:not([data-ax-look=classic])) .snr-st{color:var(--ink-2)}
+:where(html:not([data-ax-look=classic])) .snr-f{color:var(--ink-2)}
+:where(html:not([data-ax-look=classic])) .snr-r{color:var(--ink-2)}
+:where(html:not([data-ax-look=classic])) .snr-rk[aria-pressed=true]{color:var(--copper-ink);border-color:currentColor}
+:where(html:not([data-ax-look=classic])) .snr-back{background:none;border:0}
 /* from live.css */
 :where(html:not([data-ax-look=classic])) #mapWrap{background:var(--stage);border-radius:var(--r-shell)}
 :where(html:not([data-ax-look=classic])) .wl-rd input{accent-color:var(--copper)}

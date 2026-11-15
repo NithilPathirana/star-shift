@@ -27,6 +27,7 @@ import { createCleanBlink } from './cleanblink.js'; // Blink: hide overlays, zoo
 import { createGaiaOverlay } from './gaia-overlay.js'; // b9: Gaia DR3 circles on the frames
 import { createTelescopes } from './telescopes/index.js'; // Telescope compare (DESIGN.md 31a)
 import { diffImage, diffStar, diffCaption, drawDiff, diffLegend } from './diffview.js'; // b6: Compare > Difference
+import { createSnrPanel } from './snr-ui.js'; // spec A: signal-to-noise of a clicked spot (side panel)
 import { CLARITY_KEY, readClarity } from './prefs.js'; // Clarity defaults (sounds off)
 import './story.js'; // b1: first-screen story on the cold-open map (story.css)
 import { fitPlaceholder, surpriseTarget } from './picktips.js'; // quick-pick tips, search placeholder, "Surprise me"
@@ -353,7 +354,7 @@ function setCounter(i, animate) {
 function onFrame(i, manual) {
   const F = V.F;
   if (mode === 'play' || mode === 'telescopes') draw(); if (openPop?.pop.id === 'flagsPop' && !P.playing) CX.renderPop();
-  GH.syncKey(); GH.update();
+  GH.syncKey(); GH.update(); SNR.update();
   if (!F.length) { setCounter(0); return; }
   i = Math.min(i, F.length - 1);
   const f = F[i];
@@ -393,6 +394,20 @@ const LC = createLightcurve({ $, esc, colourOf: um => rangeOf(um)?.c,
 const CB = createCleanBlink({ $, Snd, mode: () => mode, n: () => V.n, cell: () => cssCell, redraw: () => draw(),
   getView: () => ({ zoom, panX, panY }), setView: v => { zoom = v.zoom; if (v.panX != null) { panX = v.panX; panY = v.panY; } layout(); },
   target: () => (firstS()?.exp && lastS()?.exp ? [firstS().exp, lastS().exp] : null) });
+// Spec A: signal-to-noise of the image on screen (Time), at the star's predicted place or a clicked spot (snr-ui.js)
+const curImg = () => (V.F.length ? V.F[Math.min(P.i, V.F.length - 1)] : null);
+const SNR = createSnrPanel($('snrBody'), { base: BASE, name: () => V.name,
+  frame: () => (holdWait ? null : curImg()?.raw || null), frames: () => V.FK.map(f => f.raw),
+  seasonOf: m => seasonAt(m, V.bounds),
+  starAt: raw => { const f = V.F.find(x => x.raw === raw); return f && V.ring && !f.ringOff ? gridToWorld(V.grid, f.exp[0], f.exp[1]) : null; } });
+$('cvA').addEventListener('click', e => { // click any point of the image on screen (Time view) to measure it
+  if (scene !== 'viewer' || (mode !== 'play' && mode !== 'blink') || !V.grid || !curImg()) return; // Blink: same patch, the Time image is named in the panel
+  const r = e.currentTarget.getBoundingClientRect(), n = V.grid.n;
+  SNR.at(...gridToWorld(V.grid, ((e.clientX - r.left) / r.width) * n - .5, ((e.clientY - r.top) / r.height) * n - .5));
+  if (innerWidth < 1100) sheet(true);
+  $('snrSec').scrollIntoView({ block: 'nearest', behavior: set.motion ? 'auto' : 'smooth' });
+});
+$('hitStar').addEventListener('click', () => { if (scene !== 'viewer' || !curImg()) return; SNR.reset(); if (innerWidth < 1100) sheet(true); $('snrSec').scrollIntoView({ block: 'nearest', behavior: set.motion ? 'auto' : 'smooth' }); });
 // b9: Gaia DR3 circles on the image on cvA (Time, or Blink's stack); off in Compare, Telescopes, Clean Blink
 const GO = createGaiaOverlay({ cv: $('cvA'), sw: $('gaiaSw'), note: $('gaiaNote'), base: BASE, view: () => {
   const one = mode === 'play' || (mode !== 'telescopes' && V.stacks.length < 2), f = !V.F.length ? null : one ? V.F[Math.min(P.i, V.F.length - 1)] : mode === 'blink' ? (side ? lastS() : firstS()) : null;

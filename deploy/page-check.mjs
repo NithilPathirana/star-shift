@@ -123,6 +123,16 @@ async function run() {
         if (v.scene !== 'viewer' || !/\d+ of [\d,]+ images/.test(v.n)) errs.push(`deep link did not open the viewer with images within ${Math.round(wait / 1000) + 25} s (scene=${v.scene}, "${String(v.n).slice(0, 60)}")`);
         // Barnard: Compare > Difference must really switch on (its key was dead on live, Judging panel round 3)
         else if (/Barnard/.test(path)) {
+          // Spec A: click the star (the patch centre) and an SNR line must appear in "This spot: signal-to-noise"
+          const snrClick = "(() => { const A = document.getElementById('cvA'), r = A.getBoundingClientRect(); A.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));"
+            + " const b = document.getElementById('snrBody'); return { line: b?.querySelector('.snr-line')?.textContent || '', at: b?.querySelector('.snr-at')?.textContent || '' }; })()";
+          let sn = {};
+          for (let k = 0; k < 15; k++) {
+            sn = (await send('Runtime.evaluate', { expression: snrClick, returnByValue: true }, s)).result?.result?.value || {};
+            if (/^(Signal-to-noise \d|SNR not meaningful here)/.test(sn.line) && /clicked/.test(sn.at)) break;
+            await sleep(1000);
+          }
+          if (!/^(Signal-to-noise \d|SNR not meaningful here)/.test(sn.line) || !/clicked/.test(sn.at)) errs.push(`clicking the star gave no SNR line (${JSON.stringify(sn).slice(0, 120)})`);
           // the preset may still be in its early Blink / second season when the counter first shows, so retry for up to 20 s
           const step = "(() => { const st = document.getElementById('stage'), k = document.getElementById('diffKey'), l = document.getElementById('diffLgd');"
             + " const d = { p: k?.getAttribute('aria-pressed'), lg: !!l && !l.hidden && l.getClientRects().length > 0 };"

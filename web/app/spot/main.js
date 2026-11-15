@@ -26,6 +26,7 @@ import { measureColour, colourEstimate, colourLines, withColour, ratioText, COLO
 import { pickTip, fitPlaceholder } from '../picktips.js'; // chip tips (NASA's challenge targets), search placeholder
 import { isExpert } from '../expert.js'; // Simple / Expert: .x-only and .s-only twins below
 import { BOTHA_KEY, BOTHA_URL, bothaFrames, bothaGrid, bothaColour, bothaCard } from './botha.js'; // "Known asteroid" example: one night
+import { spotSnrHTML } from '../snr-ui.js'; // spec A: signal-to-noise line on the verdict card
 
 // Both twins in the page; CSS from expert.js shows one. Identical texts render once.
 const twin = (simple, expert) => (simple === expert ? expert : `<span class="s-only">${simple}</span><span class="x-only">${expert}</span>`);
@@ -630,6 +631,20 @@ function notebookEntry(s) {
     context: { page: 'Spot', ra: +s.ra.toFixed(6), dec: +s.dec.toFixed(6), date: `${fmtDay(A.mjd)} / ${fmtDay(B.mjd)}`, frameId: `${middleImage(A).obsid} / ${middleImage(B).obsid}`, url: location.href },
   };
 }
+// Spec A: signal-to-noise of the suspect's dot on the middle image of the season it was found in (snr-ui.js).
+// Measured once per suspect; the card re-renders every second, so it shows the cached line.
+function snrCard(s) {
+  if (S.botha) return '';
+  if (s.snr === undefined) {
+    s.snr = null;
+    const k = s.dot ? s.dot.k : (S.show ? 1 : 0), st = blinked()[k], img = st && middleImage(st);
+    const ra = s.dot ? s.dot.ra : s.ra, dec = s.dot ? s.dot.dec : s.dec;
+    if (img?.uri) spotSnrHTML(st, img, S.frames, ra, dec, { base: BASE, label: `${k ? 'latest' : 'first'} season, ${fmtDay(img.mjd)}` })
+      .then(h => { s.snr = h; }, () => { s.snr = '<p class="snr-line muted">Signal-to-noise: this image\'s pixels could not be loaded.</p>'; })
+      .then(() => { if (S.sel === s.id && $('smSnr')) $('smSnr').innerHTML = s.snr; });
+  }
+  return s.snr || '<p class="snr-line muted">Measuring the signal-to-noise…</p>';
+}
 function renderVerdict(s) {
   const v = s.verdict, el = $('verdict');
   const waitingJpl = v?.kind === 'pending' && v.running?.length === 1 && v.running[0] === 'asteroid';
@@ -651,6 +666,7 @@ function renderVerdict(s) {
     ${v.evidence?.length ? `<ul class="sm-vev">${v.evidence.map((t, i) => `<li>${i === 0 && (v.decidedBy === 'star' || v.decidedBy === 'asteroid') ? twin(esc(plainCheckText(v.decidedBy, s.lines[v.decidedBy])), esc(t)) : esc(t)}</li>`).join('')}</ul>` : ''}
     ${v.running?.includes('asteroid') ? `<p class="sm-vrun">Asteroid check still running · <span data-secs>${Math.round((Date.now() - (s.astStart || Date.now())) / 1000)} s</span>${v.kind === 'artefact' ? '. A known asteroid here would change this answer' : ''}.</p>` : ''}
     ${v.notRun ? `<p class="sm-evn">${esc(v.notRun)}</p>` : ''}
+    <div class="sm-snr" id="smSnr">${snrCard(s)}</div>
     ${retry ? `<div class="sm-vkeys">${retry}</div>` : ''}
     <div class="sm-record"><p><b>Record it.</b> Save this suspect's position, the two seasons, the four checks and the verdict to your lab notebook (kept on this device).</p>
       <div class="sm-vkeys"><button class="key primary" type="button" id="saveNb">Save to notebook</button><button class="key" type="button" id="openNb">Open notebook</button></div></div>`;

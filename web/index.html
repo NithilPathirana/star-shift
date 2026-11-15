@@ -193,6 +193,10 @@
       <dl class="nb-dl"><dt>Date</dt><dd><span id="d-date"></span><button type="button" class="nb-plus" id="nbAdd" data-nb="date" aria-label="Add the image date to the lab notebook" title="Add to the lab notebook">+</button></dd><dt>Time</dt><dd id="d-time"></dd><dt class="x-only">Detector</dt><dd class="x-only" id="d-det"></dd><dt>Wavelength</dt><dd><span id="d-um"></span><button type="button" class="nb-plus" data-nb="um" aria-label="Add the wavelength to the lab notebook" title="Add to the lab notebook">+</button></dd><dt>Band</dt><dd><span id="d-band"></span><button type="button" class="nb-plus" data-nb="band" aria-label="Add the wavelength band to the lab notebook" title="Add to the lab notebook">+</button></dd><dt>Flagged pixels</dt><dd><span id="d-mask"></span><button type="button" class="nb-plus" data-nb="mask" aria-label="Add the flagged-pixel count to the lab notebook" title="Add to the lab notebook">+</button></dd></dl>
       <p class="note d-layer" id="d-layer" hidden></p>
     </section>
+    <section class="insp-sec snr-sec" id="snrSec"><!-- signal-to-noise tool, spec A (app/snr-ui.js, app/snr.js) -->
+      <div class="ih"><h3>This spot: signal-to-noise</h3><span class="tag tag-calc">Computed</span></div>
+      <div id="snrBody" aria-live="polite"></div>
+    </section>
     <section class="insp-sec">
       <div class="ih"><h3>Where it should be</h3><span class="tag tag-calc">Computed</span></div>
       <p class="note" id="ringNote">The dashed ring is worked out from the star's catalogue motion for this date.</p>
