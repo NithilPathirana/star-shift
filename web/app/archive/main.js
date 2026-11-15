@@ -6,7 +6,7 @@ import { listImages, fetchCutout, maskBadPixels } from '../../core/irsa.js';
 import { makeGrid, reproject } from '../../core/align.js';
 import { wavelengthAt } from '../../core/wave.js';
 import { propagate } from '../../core/motion.js';
-import { DEFAULT_BANDS } from '../bands.js';
+import { DEFAULT_BANDS, BAND_NOTE, bandName } from '../bands.js';
 import { toRows, seasonsOf, sortRows, filterRows, paginate, rowsToCSV, summarizeFlags, targetViewerUrl, FLAG_KINDS, flagText, bandAt } from './logic.js';
 import '../expert.js'; // Simple / Expert: .x-only columns and details, .s-only plain-words twins
 import { base, initShell, resolve, listPosition, targetLine, motionHtml, download, slug, esc, cutoutSizeDeg, cutoutCenter } from './shell.js';
@@ -77,7 +77,10 @@ function buildFilters() {
   for (const k of ['season', 'band', 'detector', 'hasFlags', 'release']) S.filter[k] = 'all';
   const n = (pred) => S.rows.filter(pred).length;
   chipRow($('fSeason'), 'season', [{ v: 'all', html: 'All' }, ...S.seasons.map(s => ({ v: s.i, html: `${esc(s.label)} <span class="num dim">${s.n}</span>` }))]);
-  chipRow($('fBand'), 'band', [{ v: 'all', html: 'All' }, ...DEFAULT_BANDS.map(b => ({ v: b.id, title: `${b.min}–${b.max} µm. ${b.tip}`, html: `<i class="sw" style="background:${b.color}"></i>${esc(b.name)}` }))]);
+  chipRow($('fBand'), 'band', [{ v: 'all', html: 'All' }, ...DEFAULT_BANDS.map(b => ({ v: b.id, title: `${b.min}–${b.max} µm. ${b.tip}`, html: `<i class="sw" style="background:${b.color}"></i>${esc(bandName(b))}` }))]);
+  // One line saying band names are ranges, not findings (Design review 2, item 1)
+  const fl = $('fBandG')?.querySelector('.flabel');
+  if (fl && !fl.querySelector('.fnote')) fl.insertAdjacentHTML('beforeend', ` <span class="fnote">· ${esc(BAND_NOTE)}</span>`);
   const dets = [...new Set(S.rows.map(r => r.detector))].sort();
   chipRow($('fDet'), 'detector', [{ v: 'all', html: 'All' }, ...dets.map(d => ({ v: d, html: `D${d} <span class="num dim">${n(r => r.detector === d)}</span>` }))]);
   chipRow($('fFlags'), 'hasFlags', [{ v: 'all', html: 'All' }, { v: 'yes', html: 'Has flags' }, { v: 'no', html: 'Clean' }, { v: 'unchecked', html: 'Not loaded' }]);
@@ -184,9 +187,9 @@ function rowHtml(r) {
 function wlCell(r) {
   if (Number.isFinite(r.wlStar)) {
     const b = bandAt(r.wlStar);
-    return `<span class="wl" title="Wavelength at the star's pixel (detector D${r.detector} covers ${r.wlMin?.toFixed(2)}–${r.wlMax?.toFixed(2)} µm)"><i class="sw" style="background:${b?.color ?? 'transparent'}"></i><span class="num">λ ${r.wlStar.toFixed(3)} µm</span> <span class="dim">${esc(b?.name ?? '')}</span></span>`;
+    return `<span class="wl" title="Wavelength at the star's pixel (detector D${r.detector} covers ${r.wlMin?.toFixed(2)}–${r.wlMax?.toFixed(2)} µm)"><i class="sw" style="background:${b?.color ?? 'transparent'}"></i><span class="num">λ ${r.wlStar.toFixed(3)} µm</span> <span class="dim">${esc(bandName(b))}</span></span>`;
   }
-  return `<span class="wl" title="Detector range; the wavelength at the star shows once the image loads"><i class="sw" style="background:${r.bandColor ?? 'transparent'}"></i><span class="num">${r.wlMin?.toFixed(2) ?? '—'}–${r.wlMax?.toFixed(2) ?? '—'} µm</span> <span class="dim">${esc(r.band ?? '')}</span></span>`;
+  return `<span class="wl" title="Detector range; the wavelength at the star shows once the image loads"><i class="sw" style="background:${r.bandColor ?? 'transparent'}"></i><span class="num">${r.wlMin?.toFixed(2) ?? '—'}–${r.wlMax?.toFixed(2) ?? '—'} µm</span> <span class="dim">${esc(bandName(DEFAULT_BANDS.find(d => d.id === r.bandId)) || (r.band ?? ''))}</span></span>`;
 }
 
 function detailHtml(r) {

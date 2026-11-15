@@ -435,6 +435,8 @@ $('speedSeg').querySelectorAll('.seg-btn').forEach(b => b.onclick = () => { S.ra
 /* ---------- switches ---------- */
 function bindSwitch(id, key) { const b = $(id); b.onclick = () => { S.opt[key] = !S.opt[key]; b.setAttribute('aria-checked', S.opt[key]); S.dirty = true; }; }
 bindSwitch('swGrid', 'grid'); bindSwitch('swNames', 'labels'); bindSwitch('swBelow', 'below');
+// The whole Show row (label + switch, 44 px tall on phones) toggles its switch (Design review 2, item 3)
+for (const id of ['swGrid', 'swNames', 'swBelow']) { const b = $(id), row = b.closest('.opt'); row?.classList.add('opt-tap'); row?.addEventListener('click', (e) => { if (!b.contains(e.target)) b.click(); }); }
 
 /* ---------- popovers ---------- */
 let openPop = null;

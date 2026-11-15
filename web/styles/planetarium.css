@@ -228,3 +228,14 @@ h1.pl-title{margin:0;line-height:inherit}
 }
 /* 'To see it' line on the answer card (web/app/seeit.js) */
 .pl-ans-see{margin:6px 0 0;font-weight:600;font-size:.8125rem;color:var(--ink)}.pl-ans-see[data-see=faint]{color:var(--copper-ink)}
+
+/* Design review 2: band chips get room for the '…band' names (item 1); phone tap areas of 44 px
+   for the Show rows and "How each row was chosen" (item 3). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+@media (min-width:700px){
+  .air-bands{grid-template-columns:1fr 1fr 1.4fr 1fr 1fr 1.15fr}
+}
+.opt.opt-tap{cursor:pointer}
+@media (max-width:699px){
+  .pl-app .inspector .opt.opt-tap{min-height:44px}
+  .pl-air-how summary{min-height:44px}
+}

@@ -4,7 +4,7 @@
 // a last row for SPHEREx in space. Shading comes from real ATRAN curves (atmo.js, README in
 // web/data/atran/). Nothing here is sent anywhere: the place stays in this page's memory.
 import { observer, bodies, starAltAz } from './astro.js';
-import { DEFAULT_BANDS } from '../bands.js';
+import { DEFAULT_BANDS, BAND_NOTE, bandName } from '../bands.js';
 import { RULER, RULE_TEXT, COMPARE_SITES, curveForPlace, bandMean, verdict, rulerSegments, targetLine, coverage, darkRanges, fmtRanges } from './atmo.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -16,7 +16,7 @@ let data = null, failed = false, el = null, lastKey = '', lastT = 0, timer = 0, 
 
 export async function initAir(root) {
   el = root; if (!el) return;
-  el.querySelector('#airRule').textContent = RULE_TEXT;
+  el.querySelector('#airRule').textContent = `${RULE_TEXT} ${BAND_NOTE}.`; // band names are ranges, not findings
   try {
     const res = await fetch(new URL('../../data/atran/transmission.json', import.meta.url));
     if (!res.ok) throw new Error(String(res.status));
@@ -67,7 +67,8 @@ function rulerHtml(segs, label) {
 }
 
 function bandChips(curveRef) {
-  return '<ul class="air-bands">' + DEFAULT_BANDS.map(b => {
+  return '<ul class="air-bands">' + DEFAULT_BANDS.map(b0 => {
+    const b = { ...b0, name: bandName(b0) }; // one wording: 'Brown-dwarf band'
     if (!curveRef) return `<li><button class="air-band" type="button" aria-label="${esc(b.name)}: no air in the way"><i style="background:${b.color}"></i><span class="bn">${esc(b.name)}</span></button></li>`;
     const m = bandMean(data, curveRef.curve, b.min, b.max);
     if (!m) return `<li><button class="air-band" type="button" aria-label="${esc(b.name)}: no curve"><i style="background:${b.color}"></i><span class="bn">${esc(b.name)}</span> ${dash('No transmission curve covers this band')}</button></li>`;

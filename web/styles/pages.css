@@ -37,6 +37,7 @@
 .fgroup{display:flex;flex-direction:column;gap:6px;min-width:0}
 .fgroup.grow{flex:1 1 200px;align-self:flex-end;max-width:320px}
 .flabel{font-size:.75rem;font-weight:600;color:var(--muted)}
+.flabel .fnote{font-weight:400} /* 'Names for wavelength ranges, not detections' */
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip-k{min-height:32px;padding:0 11px;font-size:.8125rem;border-radius:999px}
 .chip-k .dim{font-size:.75rem}

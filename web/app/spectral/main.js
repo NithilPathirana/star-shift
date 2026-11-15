@@ -6,7 +6,7 @@
 import { listImages, fetchCutout, maskBadPixels } from '../../core/irsa.js';
 import { wavelengthAt } from '../../core/wave.js';
 import { propagate } from '../../core/motion.js';
-import { DEFAULT_BANDS, DETECTORS } from '../bands.js';
+import { DEFAULT_BANDS, DETECTORS, BAND_NOTE, bandName } from '../bands.js';
 import { seasonsOf, seasonIndex, mjdToUtc, bandAt, targetViewerUrl } from '../archive/logic.js';
 import { IRSA } from '../../core/irsa.js';
 import {
@@ -163,7 +163,7 @@ function renderKey() {
   const seasons = S.seasons.filter(s => used.has(s.i) && (S.season === 'all' || S.season === s.i));
   $('key').innerHTML = `<span>${dot(true)} clean aperture</span><span>${dot(false)} flagged pixels in the aperture</span>` +
     seasons.map(s => `<span>${dot(true, SHAPES[s.i % SHAPES.length])} ${esc(s.label)}</span>`).join('') +
-    '<span class="dim">Colour = band (wavelength)</span>';
+    `<span class="dim">Colour = band (wavelength) · ${esc(BAND_NOTE)}</span>`;
   const nFlag = pts.filter(p => p.flagged).length;
   $('flagNote').hidden = !(pts.length >= 5 && nFlag / pts.length >= 0.9);
 }
@@ -255,8 +255,11 @@ function draw() {
   // the six colour bands behind, with names
   for (const b of DEFAULT_BANDS) {
     const x0 = X(Math.max(b.min, X_RANGE.min)), x1 = X(Math.min(b.max, X_RANGE.max));
+    // '…band' name when it fits its column (about 5.8 px a letter at 11 px), else shorter forms
+    const fits = (t) => !narrow && t.length * 5.8 <= x1 - x0 + 14;
+    const full = bandName(b), label = fits(full) ? full : fits(b.name) ? b.name : (SHORT[b.id] ?? b.name);
     s += `<rect x="${x0}" y="${m.t}" width="${x1 - x0}" height="${ph}" fill="${b.color}" opacity=".07"/>`;
-    s += `<text x="${(x0 + x1) / 2}" y="${m.t - 12}" fill="${b.color}" text-anchor="middle" font-family="Instrument Sans,system-ui,sans-serif" font-size="11" font-weight="600">${esc(narrow ? SHORT[b.id] ?? b.name : b.name)}</text>`;
+    s += `<text x="${(x0 + x1) / 2}" y="${m.t - 12}" fill="${b.color}" text-anchor="middle" font-family="Instrument Sans,system-ui,sans-serif" font-size="11" font-weight="600">${esc(label)}</text>`;
   }
   // grid + y axis
   const yt = S.log ? logTicks(yr.lo, yr.hi) : niceTicks(yr.lo, yr.hi, 6);
@@ -311,8 +314,8 @@ function showTip(h, ev) {
   const p = h.p, s = S.seasons[p.season];
   const plainDay = new Date(`${p.date}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   tip.innerHTML = (isExpert()
-    ? `<b>${fmtValue(p.mJy)} mJy</b> ± ${fmtValue(p.errMJy)} (background)<br>λ ${p.um.toFixed(3)} µm · D${p.detector} · ${esc(p.band ?? '')}<br>${p.date} ${p.time} UTC${s ? ` · ${esc(s.label)}` : ''}<br>`
-    : `<b>${fmtValue(p.mJy)} mJy</b><br>${p.um.toFixed(2)} µm · ${esc(p.band ?? '')}<br>${plainDay}<br>`) +
+    ? `<b>${fmtValue(p.mJy)} mJy</b> ± ${fmtValue(p.errMJy)} (background)<br>λ ${p.um.toFixed(3)} µm · D${p.detector} · ${esc(bandName(bandAt(p.um)) || (p.band ?? ''))}<br>${p.date} ${p.time} UTC${s ? ` · ${esc(s.label)}` : ''}<br>`
+    : `<b>${fmtValue(p.mJy)} mJy</b><br>${p.um.toFixed(2)} µm · ${esc(bandName(bandAt(p.um)) || (p.band ?? ''))}<br>${plainDay}<br>`) +
     (p.flagged ? `Flagged in aperture: ${p.kinds.map(k => ({ cosmic: 'cosmic ray', overflow: 'overflow', scatter: 'scattered light', other: 'other' }[k])).join(', ')}<br>` : '') +
     `<span style="color:#B5A898">Click to open this image in the viewer</span>`;
   tip.hidden = false;
