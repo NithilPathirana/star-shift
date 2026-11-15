@@ -176,7 +176,7 @@ function draw() {
   if (!S.ready) return;
   const cv = $('cv'), n = S.grid.n, k = +cv.dataset.dev, vs = viewSettings();
   const st = S.show ? S.stacks[lastIdx()] : S.stacks[0];
-  R.draw(cv, st.F, n, { ramp: vs.ramp, cell: k, ring: false, stretch: vs.str, maskBg: '#211b16', maskInk: '#6b5d50', hatch: true });
+  R.draw(cv, st.F, n, { ramp: vs.ramp, cell: k, ring: false, stretch: vs.str, maskBg: '#211b16', maskInk: '#6b5d50' });
   const c = cv.getContext('2d');
   // a known mover's predicted place in this season (Ghost style: hollow ivory ring, DESIGN.md 24)
   const sel = selected(), star = sel?.lines?.star;
@@ -232,11 +232,14 @@ let nextId = 1;
 // Numbers stay stable: removing suspect 2 leaves 1 and 3, and the next click takes the lowest free number.
 // A removed suspect takes its checks, verdict and report summary with it (late answers are dropped in settle).
 function clearSuspects() { for (const s of S.suspects) s.token = null; S.suspects = []; S.sel = null; $('sum').textContent = ''; renderSide(); }
-$('clearAll').onclick = () => {
+$('clearAll').onclick = (e) => {
   const n = S.suspects.length; if (!n) return;
   clearSuspects(); draw(); steps();
   toast(n === 1 ? 'Suspect removed.' : `All ${n} suspects removed.`);
-  $('susEmpty').focus();
+  const empty = $('susEmpty'); // keyboard (detail 0) keeps the ring; a mouse click does not
+  empty.classList.toggle('quiet', e.detail > 0);
+  empty.addEventListener('blur', () => empty.classList.remove('quiet'), { once: true });
+  empty.focus();
 };
 $('cv').addEventListener('click', (e) => {
   if (!S.ready) return;
@@ -448,7 +451,7 @@ function paintThumbs(s) {
     const flags = cv.dataset.kind === 'flags', i = +cv.dataset.i;
     const st = flags ? blinked()[i] : S.stacks[i], half = flags ? 3 : 4, side = 2 * half + 1, cell = cv.width / side;
     const off = document.createElement('canvas');
-    R.draw(off, st.F, n, { ramp: vs.ramp, cell: 8, ring: false, stretch: vs.str, maskBg: '#211b16', maskInk: '#6b5d50', hatch: true });
+    R.draw(off, st.F, n, { ramp: vs.ramp, cell: 8, ring: false, stretch: vs.str, maskBg: '#211b16', maskInk: '#6b5d50' });
     const c = cv.getContext('2d'), cx = Math.round(s.x), cy = Math.round(s.y);
     c.fillStyle = '#15110E'; c.fillRect(0, 0, cv.width, cv.height); c.imageSmoothingEnabled = false;
     c.drawImage(off, (cx - half) * 8, (cy - half) * 8, side * 8, side * 8, 0, 0, cv.width, cv.height);

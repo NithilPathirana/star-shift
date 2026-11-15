@@ -182,7 +182,7 @@ function render(d) {
   });
   initLimits();
   const when = new Date(d.generated);
-  $('under').innerHTML = `<span class="s-only">Each result uses up to ${d.settings.maxImages} SPHEREx images of the object, computed ${when.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}. Open a row to see its evidence.</span><span class="x-only">${esc('Images behind each result: ' + d.targets.map(t => `${t.label}: ` + t.tests.map(x => {
+  $('under').innerHTML = `<span class="s-only">Each result uses up to ${d.settings.maxImages} SPHEREx images of the object, computed ${when.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}. Open a row to see its evidence.</span><span class="x-only num">${esc('Images behind each result: ' + d.targets.map(t => `${t.label}: ` + t.tests.map(x => {
     const n = x.verdict === 'NOT MEASURABLE' ? null : x.measured?.frames;
     return `${x.type} ${n != null ? `${n} of ${t.images.loaded}` : 'none (not measurable)'}`;
   }).join(', ')).join(' · ') + `. Computed ${when.toISOString().slice(0, 16).replace('T', ' ')} UTC, field ${d.settings.fovArcmin}′, up to ${d.settings.maxImages} images per object, flag filter: ${d.settings.flagFilter}.`)}</span>`;

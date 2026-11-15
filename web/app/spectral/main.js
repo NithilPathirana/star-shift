@@ -14,7 +14,7 @@ import {
   apertureFlagged, whyNoPhotometry, niceTicks, logTicks, yRange, fmtValue, pointsToCSV,
 } from './logic.js';
 import { isExpert, onExpert } from '../expert.js'; // Simple / Expert (Master item 5)
-import { base, initShell, resolve, listPosition, targetLine, download, slug, esc, cutoutCenter } from '../archive/shell.js';
+import { base, initShell, resolve, listPosition, targetLine, motionHtml, download, slug, esc, cutoutCenter } from '../archive/shell.js';
 
 const $ = (id) => document.getElementById(id);
 const SHAPES = ['circle', 'square', 'triangle', 'diamond'];
@@ -40,8 +40,7 @@ async function load(q) {
     const tl = targetLine(t);
     $('tName').textContent = tl.name; $('tCoords').textContent = tl.coords;
     // motion and "Position now" as separate parts, so a phone can put each on its own line (pages.css .sp-tl)
-    $('tPm').innerHTML = tl.pm.split(' · ').filter(Boolean).map(x => `<span class="sp-sep x-only" aria-hidden="true"> · </span><span class="x-only">${esc(x)}</span>`).join('')
-      + (tl.pm ? `<span class="s-only">moves about ${(Math.hypot(t.pmra, t.pmdec) / 1000).toFixed(1)}″ a year</span>` : '');
+    $('tPm').innerHTML = motionHtml(t, tl);
     $('tName').parentElement.classList.add('sp-tl');
     document.title = `${tl.name} · Spectral Explorer · Star Shift`;
     setStatus('Asking IRSA which SPHEREx images cover this star…');
@@ -257,7 +256,7 @@ function draw() {
   for (const b of DEFAULT_BANDS) {
     const x0 = X(Math.max(b.min, X_RANGE.min)), x1 = X(Math.min(b.max, X_RANGE.max));
     s += `<rect x="${x0}" y="${m.t}" width="${x1 - x0}" height="${ph}" fill="${b.color}" opacity=".07"/>`;
-    s += `<text x="${(x0 + x1) / 2}" y="${m.t - 12}" fill="${b.color}" text-anchor="middle" font-family="Instrument Sans,system-ui,sans-serif" font-size="${narrow ? 9 : 11}" font-weight="600">${esc(narrow ? SHORT[b.id] ?? b.name : b.name)}</text>`;
+    s += `<text x="${(x0 + x1) / 2}" y="${m.t - 12}" fill="${b.color}" text-anchor="middle" font-family="Instrument Sans,system-ui,sans-serif" font-size="11" font-weight="600">${esc(narrow ? SHORT[b.id] ?? b.name : b.name)}</text>`;
   }
   // grid + y axis
   const yt = S.log ? logTicks(yr.lo, yr.hi) : niceTicks(yr.lo, yr.hi, 6);
@@ -277,9 +276,9 @@ function draw() {
     : `<text transform="translate(16 ${m.t + ph / 2}) rotate(-90)" fill="${muted}" text-anchor="middle">Flux density (mJy)${S.log ? ', log' : ''}</text>`;
   // detector spans under the axis (they overlap a little at the edges); Expert only
   for (const d of isExpert() ? DETECTORS : []) {
-    const y = m.t + ph + 26 + (d.d % 2 ? 0 : 7);
+    const y = m.t + ph + 27 + (d.d % 2 ? 0 : 13); // two rows, room for 11 px labels
     s += `<line x1="${X(d.min)}" x2="${X(Math.min(d.max, X_RANGE.max))}" y1="${y}" y2="${y}" stroke="${muted}" stroke-width="3" opacity=".55"/>`;
-    s += `<text x="${X(d.min) + 2}" y="${y - 3}" fill="${muted}" font-size="9">D${d.d}</text>`;
+    s += `<text x="${X(d.min) + 2}" y="${y - 3}" fill="${muted}" font-size="11">D${d.d}</text>`;
   }
   // ice features
   for (const f of FEATURES) {

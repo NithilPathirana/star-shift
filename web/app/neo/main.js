@@ -283,7 +283,10 @@ async function load() {
     $('freshness').replaceChildren(element('span', 'tag tag-jpl', 'JPL'), element('span', '', freshnessText));
     setStatus(`Loaded ${state.approaches.length} close approaches and ${state.risks.length.toLocaleString('en-US')} Sentry objects.`);
   } catch (error) {
-    setStatus(`NASA/JPL data could not be loaded: ${error.message}. Check that the local relay includes the JPL route.`, true);
+    console.warn('NASA/JPL threat data failed:', error); // details for us; plain words for the page (Claude)
+    setStatus('NASA/JPL’s asteroid service isn’t answering right now, so the current close approaches and impact-risk list can’t be shown. Please try again later.', true);
+    for (const id of ['summary-torino-note', 'summary-closest-note']) $(id).textContent = 'Not available right now.';
+    $('freshness').replaceChildren(element('span', 'tag tag-jpl', 'JPL'), element('span', '', 'NASA/JPL not answering right now'));
   }
 }
 

@@ -151,7 +151,7 @@ html[data-motion=reduce] .sm-toast{transition:none}
   .sm-picks .pick,.sm-picks .primary,.sm-ckeys .key,.sm-vkeys .key,.sm-sumhead .key{min-height:44px}
   .sm-stage{height:min(112vw,520px)}
   .sm-screen{inset:48px 12px 40px 12px}
-  .sm-flag{top:auto;bottom:10px;right:auto;left:50%;transform:translateX(-50%)}
+  .sm-flag{top:auto;bottom:8px;right:auto;left:50%;transform:translateX(-50%);white-space:nowrap}
   .sm-stage .scalebar{display:none}
   .sm-ckeys{width:100%}
   .sm-ckeys .seg{flex:1;grid-auto-columns:1fr}
@@ -197,6 +197,7 @@ html[data-motion=reduce] .sm-toast{transition:none}
 .sm-clear{min-height:30px;padding:0 10px;font-size:.75rem}
 .sm-empty:focus{outline:none}
 .sm-empty:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+.sm-empty.quiet:focus-visible{outline:none} /* focused by a mouse click on Clear all: no ring */
 html:not([data-expert=on]) .sm-sbtn{grid-template-columns:28px minmax(0,1fr)}
 html:not([data-expert=on]) .sm-sv{text-align:left}
 @media (max-width:700px){.sm-clear{min-height:44px;padding:0 14px}.sm-sbtn{min-height:44px}}

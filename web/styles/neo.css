@@ -118,8 +118,9 @@
 .object-chip::before { content: ""; width: 9px; height: 9px; flex: none; border-radius: 50%; background: var(--series-color); }
 .object-chip.selected { background: var(--well-top); box-shadow: inset 0 1px 3px rgba(60,40,24,.2); }
 .object-chip .chip-select { font-weight: 600; }
-.object-chip .remove { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 50%; color: var(--muted); }
-.object-chip .remove:disabled { opacity: .3; cursor: not-allowed; }
+.object-chip .remove { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 50%; color: var(--ink-2); font-size: 1.125rem; line-height: 1; }
+.object-chip .remove:not(:disabled):hover { background: rgba(84,62,42,.1); color: var(--ink); }
+.object-chip .remove:disabled { opacity: .45; cursor: not-allowed; } /* at least two objects stay */
 .selection-count { color: var(--muted); font-size: .75rem; }
 .stage-controls, .scatter-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .chart-stage .kicker { color: var(--ring); }
@@ -172,6 +173,7 @@
   .object-search { width: 100%; }
   .object-search .field { min-width: 0; }
   .section-heading { align-items: start; flex-direction: column; }
+  .caught-heading .predict-note { flex: 0 1 auto; } /* the 360 px basis became a height in the column */
   .orbit-chart { min-height: 300px; }
   .spotter-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .spotter-controls .primary { min-height: 44px; }

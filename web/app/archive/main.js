@@ -9,7 +9,7 @@ import { propagate } from '../../core/motion.js';
 import { DEFAULT_BANDS } from '../bands.js';
 import { toRows, seasonsOf, sortRows, filterRows, paginate, rowsToCSV, summarizeFlags, targetViewerUrl, FLAG_KINDS, flagText, bandAt } from './logic.js';
 import '../expert.js'; // Simple / Expert: .x-only columns and details, .s-only plain-words twins
-import { base, initShell, resolve, listPosition, targetLine, download, slug, esc, cutoutSizeDeg, cutoutCenter } from './shell.js';
+import { base, initShell, resolve, listPosition, targetLine, motionHtml, download, slug, esc, cutoutSizeDeg, cutoutCenter } from './shell.js';
 
 const $ = (id) => document.getElementById(id);
 let tables = null;
@@ -35,7 +35,7 @@ async function load(q) {
     S.target = t;
     const tl = targetLine(t);
     $('tName').textContent = tl.name; $('tCoords').textContent = tl.coords;
-    $('tPm').innerHTML = tl.pm ? `<span class="x-only">${esc(tl.pm)}</span><span class="s-only">moves about ${(Math.hypot(t.pmra, t.pmdec) / 1000).toFixed(1)}″ a year</span>` : '';
+    $('tPm').innerHTML = motionHtml(t, tl);
     document.title = `${tl.name} · Observation Archive · Star Shift`;
     $('count').textContent = 'Asking IRSA for every SPHEREx image of this spot…';
     const p = listPosition(t);
@@ -133,7 +133,9 @@ function render() {
   const pg = paginate(S.view, S.page, S.size);
   S.page = pg.page;
   const all = S.rows.length;
-  $('count').textContent = all ? `${S.view.length.toLocaleString()} of ${all.toLocaleString()} images${pg.total ? ` · showing ${pg.from}–${pg.to}` : ''}` : '';
+  // a flag filter can only judge the images whose cutout is loaded: say how many that is
+  const known = S.filter.hasFlags === 'yes' || S.filter.hasFlags === 'no' ? S.rows.filter(r => r.flags).length : all;
+  $('count').textContent = all ? `${S.view.length.toLocaleString()} of ${all.toLocaleString()} images${known < all ? ` (flags known for ${known.toLocaleString()} so far)` : ''}${pg.total ? ` · showing ${pg.from}–${pg.to}` : ''}` : '';
   $('pageTxt').textContent = `${pg.page + 1} / ${pg.pages}`;
   $('prev').disabled = pg.page === 0; $('next').disabled = pg.page >= pg.pages - 1;
   for (const th of document.querySelectorAll('th[data-sort]')) {

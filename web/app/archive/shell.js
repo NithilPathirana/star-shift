@@ -105,6 +105,15 @@ export function targetLine(t, now = new Date()) {
   return { name, coords, pm };
 }
 
+// The motion part of the header: Expert = the measured line split at its separators (mono, like the
+// catalogue position); Simple = plain words. A star under 0.05″/yr "barely moves" instead of "0.0″".
+export function motionHtml(t, tl) {
+  if (!tl.pm) return '';
+  const x = tl.pm.split(' · ').filter(Boolean).map((p, i) => `${i ? '<span class="sp-sep x-only" aria-hidden="true">·</span>' : ''}<span class="num x-only">${esc(p)}</span>`).join('');
+  const yr = Math.hypot(t.pmra, t.pmdec) / 1000;
+  return x + `<span class="s-only">${yr < 0.05 ? 'barely moves (less than 0.1″ a year)' : `moves about ${yr.toFixed(1)}″ a year`}</span>`;
+}
+
 // ---- Clarity (same storage key and behaviour as the Viewer and Sky now) and popovers ----------
 const CLARITY_KEY = 'tgi-clarity-v1';
 const mq = (q) => matchMedia(q).matches;

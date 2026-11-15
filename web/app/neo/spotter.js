@@ -92,12 +92,12 @@ function renderRows(rows) {
     const sep = arcminFromCentre(raDeg, decDeg);
     position.append(element('span', 'x-only', raDeg === null ? (item.ra || '—') : fmtRA(raDeg)), element('small', 'x-only', decDeg === null ? (item.dec || '—') : fmtDec(decDeg)),
       element('span', 's-only', sep === null ? 'inside the field' : `${Math.round(sep)}′ from the centre`));
-    const magnitude = element('td', 'num', item.visualMagnitude === null ? '—' : `${number(item.visualMagnitude, 2)} mag`);
+    const magnitude = element('td', 'num', item.visualMagnitude === null ? '—' : `${item.visualMagnitude.toFixed(1)} mag`);
     magnitude.dataset.label = 'V magnitude';
     if (item.visualMagnitude === null) magnitude.title = 'JPL did not report a visual magnitude';
     const motion = element('td', 'num');
     if (item.motionArcsecHour === null) motion.textContent = '—';
-    else motion.append(...twin(`${number(item.motionArcsecHour, 2)} ″/h`, `${Math.round(item.motionArcsecHour)}″ an hour`));
+    else motion.append(...twin(`${item.motionArcsecHour.toFixed(2)} ″/h`, `${Math.round(item.motionArcsecHour)}″ an hour`));
     motion.dataset.label = 'Motion';
     if (item.motionArcsecHour === null) motion.title = 'JPL did not report both motion components';
     const actions = element('td', 'spotter-actions'); actions.dataset.label = 'Actions';
@@ -143,7 +143,13 @@ async function loadSpotter() {
   const retried = results.filter(result => result.status === 'fulfilled' && result.value.retried).length;
   renderRows(rows.sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name)));
   if (failures.length) {
-    $('spotter-status').textContent = `Loaded ${rows.length} matches; ${failures.length} of ${results.length} JPL checks failed. ${failures.join(' · ')}`;
+    // Plain words on the page; the raw errors go to the console (Claude)
+    console.warn('JPL field checks failed:', failures);
+    const allFailed = failures.length === results.length;
+    if (allFailed) $('spotter-count').textContent = 'No answer';
+    $('spotter-status').textContent = allFailed
+      ? 'NASA/JPL’s asteroid service isn’t answering right now, so we can’t say which asteroids are in this field. This does not mean there are none. Please try again later.'
+      : `Showing ${rows.length} match${rows.length === 1 ? '' : 'es'}, but NASA/JPL didn’t answer for ${failures.length} of ${results.length} checks, so some may be missing. Please try again later.`;
     $('spotter-status').classList.add('error');
   } else if (retried) {
     $('spotter-status').textContent = `Loaded ${rows.length} matches. JPL rejected MPC code 500, so ${retried} checks used an equivalent geocentric state-vector retry.`;
@@ -189,6 +195,8 @@ $('spotter-dates').textContent = view.dates.join(' · ');
 $('spotter-dates-plain').textContent = view.dates.map(plainMonth).join(' · ');
 activateTab(params.get('tab') === 'orbits' ? 'orbits' : 'spotter');
 loadSpotter().catch(error => {
-  $('spotter-status').textContent = `JPL identification could not be loaded: ${error.message}. Check the relay route and the strict coordinate/date formats.`;
+  console.warn('JPL field check failed:', error);
+  $('spotter-count').textContent = 'No answer';
+  $('spotter-status').textContent = 'NASA/JPL’s asteroid service isn’t answering right now, so we can’t say which asteroids are in this field. Please try again later.';
   $('spotter-status').classList.add('error');
 });
