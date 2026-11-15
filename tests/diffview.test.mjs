@@ -75,19 +75,20 @@ test('legend: plain words, and in Expert the scale ends too', () => {
   assert.match(diffLegend({ scale: 279.9 }), /±280 MJy/);
 });
 
-test('diverging colours (default blue look): blue #2F6BE0, near-white #F2F4F8, yellow #E8C400, no orange', () => {
+test('diverging colours (default blue look): dark #1A2233 at zero, blue below, yellow above, lightness symmetric, no orange', () => {
   const hex = c => '#' + c.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
-  assert.equal(hex(diffColor(0)), '#F2F4F8');
-  assert.equal(hex(diffColor(-1)), '#2F6BE0');
-  assert.equal(hex(diffColor(1)), '#E8C400');
+  assert.equal(hex(diffColor(0)), '#1A2233', 'no change blends into the navy stage');
   assert.deepEqual(diffColor(-5), diffColor(-1), 'clipped at the scale');
-  const z = toLab([242, 244, 248]), d = c => { const l = toLab(c); return Math.hypot(l[0] - z[0], l[1] - z[1], l[2] - z[2]); };
-  for (const t of [0.02, 0.05, 0.1, 0.2, 0.3]) { // small and medium changes: both sides equally far from white (OKLab)
-    const r = d(diffColor(-t)) / d(diffColor(t));
-    assert.ok(r > 0.8 && r < 1.25, `balance at ${t}: ${r.toFixed(2)}`);
+  const L = c => toLab(c)[0], hue = c => { const l = toLab(c); return Math.atan2(l[2], l[1]) * 180 / Math.PI; };
+  let pl = L(diffColor(0));
+  for (let i = 1; i <= 50; i++) {
+    const up = diffColor(i / 50), dn = diffColor(-i / 50);
+    assert.ok(Math.abs(L(up) - L(dn)) < 0.03, `same lightness both sides at ${i / 50}`);
+    assert.ok(L(up) > pl - 1e-6, 'lightness rises with |difference|'); pl = L(up);
+    if (i >= 5) { assert.ok(dn[2] > dn[0], 'below zero is blue'); assert.ok(up[0] > up[2] && up[1] > up[2], 'above zero is yellow'); }
   }
-  let pu = 0, pd = 0;
-  for (let i = 1; i <= 50; i++) { const u = d(diffColor(i / 50)), w = d(diffColor(-i / 50)); assert.ok(u >= pu && w >= pd, 'each side moves away from white'); pu = u; pd = w; }
+  assert.ok(L(diffColor(1)) > 0.8 && L(diffColor(-1)) > 0.8, 'both ends bright');
+  assert.match(diffCaption(null), /Dark: no change/);
   assert.match(diffKeyTitle(), /Yellow = brighter later, blue = fainter later/);
   assert.match(diffKeyTitle(true), /Copper = brighter later/);
   assert.match(diffLegend({ scale: 1 }), /title="Yellow = brighter later/);
