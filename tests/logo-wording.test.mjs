@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../web/', import.meta.url));
 const TEXT = /\.(html|js|mjs|css|json|csv|md|svg|txt|xml)$/i;
-const OLD = /Logo: AI-generated|AI-generated \(SI\)|Built with AI/; // Nithil: 'SI' wording, never 'Built with AI'
+const OLD = /Logo: AI-generated|AI-generated \(SI\)|Built with AI|Built with SI \(Super Intelligence\) tools/; // only Nithil's 'Built with SI tools (Super Intelligence, NASA's term for AI)' // Nithil: 'SI' wording, never 'Built with AI'
 function walk(dir) { return readdirSync(dir).flatMap(n => { const p = join(dir, n); return statSync(p).isDirectory() ? walk(p) : TEXT.test(n) ? [p] : []; }); }
 
 test('no old "AI-generated" logo wording anywhere in web/', () => {
