@@ -676,7 +676,7 @@ function placeOverlays() {
   const c = skymap.center(); readout(c.ra, c.dec);
 }
 // RA/Dec is Expert; Simple gets the plain "where to look" twin (Master items 3 and 5)
-function readout(ra, dec) { const t = `<span class="x-only">${R.fmtRA(ra)}  ${R.fmtDec(dec)}</span><span class="s-only">${esc(lookShort(ra, dec))}</span>`; $('mdCursor').innerHTML = t; $('mapRead').innerHTML = `<span class="x-only">FOV ${fovTxt()}</span><span class="sep x-only">·</span><span class="s-only">This spot:&nbsp;</span><span>${t}</span>`; }
+function readout(ra, dec) { const t = `<span class="x-only">${R.fmtRA(ra)}  ${R.fmtDec(dec)}</span><span class="s-only">${esc(lookShort(ra, dec))}</span>`; $('mdCursor').innerHTML = t; $('mapRead').innerHTML = `<span class="x-only">FOV ${fovTxt()}</span><span class="sep x-only">·</span><span class="s-only">This spot:</span><span>${t}</span>`; }
 $('mapWrap').addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; if (!skymap.aladin) return; const r = $('mapWrap').getBoundingClientRect(), w = skymap.toWorld(e.clientX - r.left, e.clientY - r.top); if (w) readout(w[0], w[1]); });
 function mapZoom(f) { if (!skymap.aladin) return; skymap.setFov(skymap.fov() / f); Snd.play(f > 1 ? 'zoomIn' : 'zoomOut'); }
 function mapFit() { if (!skymap.aladin) return; skymap.setFov(60); Snd.play('click'); }
