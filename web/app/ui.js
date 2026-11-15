@@ -14,6 +14,7 @@ import { Sky3D as SkyMap } from './sky3d/index.js'; // 3D celestial sphere (thre
 import { layersFor, DEFAULT_BANDS, bandLabel, bandName } from './bands.js';
 import { notebookAdd, openNotebook } from './notebook/notebook.js'; // Lab notebook: "+" keys in the info panel
 import { listImages } from '../core/irsa.js';
+import { isExpert } from './expert.js';
 import { propagate, separationArcsec, mjdToDate } from '../core/motion.js';
 import { gridToWorld } from '../core/align.js';
 import { createContam } from './contam-ui.js';
@@ -312,11 +313,13 @@ function notMeasurableText(mc, mo) {
   const satHead = `the star's centre is saturated in ${all ? 'every image' : `${mo.maskedFrames} of the ${mo.frames} measured images`}`;
   const t = V.target, catYr = t && (t.pmra || t.pmdec) ? totalPM(t.pmra, t.pmdec) / 1000 : null;
   const slowTxt = mc.slow && catYr != null ? `its catalogue motion, ${catYr.toFixed(2)}″/yr, moves it only ${mc.shiftPx.toFixed(3)} of a 6.15″ pixel over these ${mo.span.toFixed(1)} years` : '';
-  const fitTxt = mo.significant !== false ? `${(mo.total / 1000).toFixed(2)} ± ${(mo.totalErr / 1000).toFixed(2)}″/yr` : `no significant motion (&lt; ${(mo.upperLimit / 1000).toFixed(2)}″/yr)`;
+  // the fit's number is Expert detail; Simple keeps the plain sentence (and the honest "not a real motion")
+  const fitNum = `${(mo.total / 1000).toFixed(2)} ± ${(mo.totalErr / 1000).toFixed(2)}″/yr`;
+  const fitTxt = mo.significant !== false ? `<span class="x-only">${fitNum}</span><span class="s-only">small apparent motion</span>` : `no significant motion<span class="x-only"> (&lt; ${(mo.upperLimit / 1000).toFixed(2)}″/yr)</span>`;
   if (mc.saturated) return { head: `Not measurable here: ${satHead}`,
     note: `So every position comes from the edges of a blanked core${mo.significant !== false ? `, and the fit's ${fitTxt} from ${mo.frames} images is not a real motion` : ''}.${slowTxt ? ` Also, ${slowTxt}.` : ''}` };
   if (mc.slow) return { head: `Not measurable here: ${slowTxt.replace(/^its/, 'the')}`,
-    note: mo.significant !== false ? `The fit gives ${fitTxt} from ${mo.frames} images, which is not a real motion: a star this slow should show none.` : `As expected, the ${mo.frames} images show ${fitTxt}.` };
+    note: mo.significant !== false ? `The fit gives <span class="s-only">a </span>${fitTxt} from ${mo.frames} images, which is not a real motion: a star this slow should show none.` : `As expected, the ${mo.frames} images show ${fitTxt}.` };
   return { head: 'Not measurable here: the fit could not run', note: '' };
 }
 // Re-apply the "hide images with…" filter, keeping the current image (or the nearest one in time).
@@ -960,7 +963,9 @@ $('cdPanel').addEventListener('click', e => { const b = e.target.closest('.cd-c'
    One "+" per key value in the info panel. Each saves the value as shown, with its unit, error,
    source and source tag, plus where and when it was seen (target position, image date, view URL). */
 window.openNotebook = openNotebook; // also the hook the guided tour looks for (tour/steps.js)
-const posText = (ra, dec) => `${R.fmtRA(ra)} ${R.fmtDec(dec)} (${ra.toFixed(5)}°, ${sgn(dec)})`;
+// notebook position: Expert adds decimal degrees; Simple names the constellation instead (QA item 9)
+const posText = (ra, dec) => { if (isExpert()) return `${R.fmtRA(ra)} ${R.fmtDec(dec)} (${ra.toFixed(5)}°, ${sgn(dec)})`;
+  const c = constellation(ra, dec); return `${c ? `In ${c.name} · ` : ''}${R.fmtRA(ra)} ${R.fmtDec(dec)}`; };
 function nbMeasured() {
   const mo = V.motion; if (!mo?.ok) return null;
   const sig = mo.significant !== false, used = usedText(mo);
