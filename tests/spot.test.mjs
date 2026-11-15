@@ -97,10 +97,24 @@ test('flags: a pixel flagged in a third of a season explains it; a bright star\'
   assert.equal(one.status, 'clear'); assert.match(one.text, /Only 1 of 4 images/);
   // saturated star core: OVERFLOW+TRANSIENT on the same pixel is the star, not an artefact
   const star = L.evaluateFlags([{ label: 'First season', frames: [...Array(4)].map(() => frame({ [at]: 2 | 1 | 2097152 })) }], 4, 4);
-  assert.equal(star.status, 'clear'); assert.match(star.text, /bright star fills these pixels/);
+  assert.equal(star.status, 'clear'); assert.match(star.text, /saturated \(pixel overflow\) in 4 of 4 images of the first season: that is the star itself/);
   assert.equal(L.evaluateFlags([{ label: 'First season', frames: [frame()] }], 4, 4).text, 'No archive flags on or next to this spot.');
   // two pixels away is not "on or next to"
   assert.equal(L.flagsAtSpot(frame({ [4 * 9 + 6]: 1 }), 4, 4).kinds.size, 0);
+});
+
+test('flags: saturation is counted on its own line, apart from the fault flags (judging panel a11)', () => {
+  const at = 4 * 9 + 4;
+  // Barnard-like: centre saturated in every image, a real ghost flag in 4 of 40
+  const season = [...Array(40)].map((_, i) => frame({ [at]: 2 | 1, ...(i < 4 ? { [at + 9]: 4194304 } : {}) }));
+  const latest = [...Array(40)].map((_, i) => frame(i < 30 ? { [at]: 67108864 } : {}));
+  const r = L.evaluateFlags([{ label: 'First season', frames: season }, { label: 'Latest season', frames: latest }], 4, 4);
+  assert.equal(r.status, 'clear'); // decision unchanged: 4 of 40 is under a third
+  assert.match(r.text, /^Only 4 of 40 images of the first season carry a fault flag here/);
+  assert.equal(r.per[0].saturated, 40); assert.equal(r.per[1].saturated, 30); assert.equal(r.per[0].flagged, 4);
+  assert.match(r.text, /The centre is saturated \(pixel overflow\) in 40 of 40 images of the first season and 30 of 40 images of the latest season: that is the star itself, not a fault, so it is not counted as a flag\./);
+  assert.equal(L.saturationText([{ label: 'First season', n: 10, saturated: 0 }]), '');
+  assert.match(L.saturationText([{ label: 'First season', n: 10, saturated: 2 }]), /2 of 10 images of the first season: a bright star filling those pixels/);
 });
 
 // ---------- check b: known stars

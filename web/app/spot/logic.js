@@ -118,16 +118,24 @@ export function evaluateFlags(seasons, x, y) {
   });
   const names = (kinds) => ARTEFACT_KINDS.filter(k => kinds[k.id]).map(k => `${k.name} ${kinds[k.id]}`).join(', ');
   const worst = per.slice().sort((a, b) => b.flagged / (b.n || 1) - a.flagged / (a.n || 1))[0];
-  const satNote = per.some(p => p.saturated > p.n / 2) ? ' A bright star fills these pixels in most images (pixel overflow): that is the star itself, not a fault.' : '';
+  const satNote = saturationText(per);
   if (worst?.explains) {
     return { status: 'explained', per, worst,
-      text: `The archive flags this spot in ${worst.flagged} of ${worst.n} images of the ${worst.label.toLowerCase()} (${names(worst.kinds)}).`,
+      text: `The archive flags this spot in ${worst.flagged} of ${worst.n} images of the ${worst.label.toLowerCase()} (${names(worst.kinds)}).${satNote}`,
       reason: `the archive flags this spot in ${worst.flagged} of ${worst.n} images of the ${worst.label.toLowerCase()}` };
   }
   const any = per.filter(p => p.flagged);
   if (!any.length) return { status: 'clear', per, text: 'No archive flags on or next to this spot.' + satNote };
   return { status: 'clear', per,
-    text: `Only ${any.map(p => `${p.flagged} of ${p.n} images of the ${p.label.toLowerCase()}`).join(' and ')} carry a flag here: too few to make a dot in a season picture, which takes the middle value of all its images.` + satNote };
+    text: `Only ${any.map(p => `${p.flagged} of ${p.n} images of the ${p.label.toLowerCase()}`).join(' and ')} carry a fault flag here: too few to make a dot in a season picture, which takes the middle value of all its images.` + satNote };
+}
+// Saturation is reported on its own line, not as a fault flag (judging panel a11: the Proof page
+// counts the saturated centre separately too). Counts are per season, as the flag counts above.
+export function saturationText(per) {
+  const sat = per.filter(p => p.saturated > 0);
+  if (!sat.length) return '';
+  const most = sat.some(p => p.saturated > p.n / 2);
+  return ` The centre is saturated (pixel overflow) in ${sat.map(p => `${p.saturated} of ${p.n} images of the ${p.label.toLowerCase()}`).join(' and ')}: ${most ? 'that is the star itself' : 'a bright star filling those pixels'}, not a fault, so it is not counted as a flag.`;
 }
 
 // ---------------------------------------------------------------- check b: known stars that moved

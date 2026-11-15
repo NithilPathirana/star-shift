@@ -96,8 +96,35 @@ function progress() {
 }
 function fieldTitle(f) { return f.label; }
 
+// Live loads give up (judging panel a10) when IRSA sends nothing new for STALL_MS, or after
+// BUSY_503 "busy" answers once STALL_MS has passed. The demo fields answer from web/prebaked/ at once.
+const STALL_MS = 18000, BUSY_503 = 30; // 18 s: the message is up within 20 s of a blocked archive
+function watchdog(ctl, onGiveUp) {
+  const t0 = Date.now(); let last = t0, busy = 0;
+  const dog = { timedOut: false, progress() { last = Date.now(); }, busy() { busy++; }, stop() { clearInterval(h); } };
+  const h = setInterval(() => {
+    if (ctl.signal.aborted || S.ctl !== ctl) return dog.stop();
+    const now = Date.now();
+    if (now - last >= STALL_MS || (busy >= BUSY_503 && now - t0 >= STALL_MS)) { dog.stop(); dog.timedOut = true; ctl.abort(); onGiveUp(); }
+  }, 500);
+  return dog;
+}
+// The archive stopped answering: Retry, and keep the images already in when they span two seasons.
+function archiveDown(f, frames) {
+  $('line').hidden = true;
+  const got = frames.slice().sort((a, b) => a.mjd - b.mjd);
+  const usable = got.length && groupSeasons(got).length >= 2;
+  const keys = [['Retry', () => loadField(f)]];
+  if (usable) keys.push([`Use the ${got.length} images loaded`, () => finishField(f, got, true)]);
+  showState('The NASA archive isn\'t answering',
+    got.length ? `${got.length} of ${S.planned} images came in, then IRSA went quiet. It is often busy; Retry asks again.${usable ? '' : ' The images so far are all from one season, too few to blink.'}`
+      : `IRSA sent nothing for ${STALL_MS / 1000} seconds. It is often busy; Retry asks again.`, keys);
+}
+
 async function loadField(f) {
   S.ctl?.abort(); const ctl = S.ctl = new AbortController();
+  const frames = [];
+  const dog = watchdog(ctl, () => archiveDown(f, frames));
   stopBlink(); clearSuspects();
   Object.assign(S, { field: f, target: f.target, grid: null, frames: [], stacks: [], seasonFrames: [], ready: false, loaded: 0, planned: 0, failed: 0, show: 0 });
   markPicks(); $('pickNote').textContent = ''; foldPick(true);
@@ -115,28 +142,37 @@ async function loadField(f) {
   let plan;
   try { plan = await planImages(f.target, LOAD_SETTINGS, { base: BASE, signal: ctl.signal }); }
   catch (e) {
-    if (ctl.signal.aborted) return;
-    showState('The NASA archive (IRSA) isn\'t answering', 'It is often busy. Retry asks again.', [['Retry', () => loadField(f)]]);
+    dog.stop();
+    if (ctl.signal.aborted) return; // a newer field, or the watchdog (which shows its own message)
+    showState('The NASA archive isn\'t answering', 'IRSA is often busy. Retry asks again.', [['Retry', () => loadField(f)]]);
     return;
   }
   if (ctl.signal.aborted) return;
+  dog.progress();
   const chosen = plan.chosen;
-  if (!chosen.length) { showState('No SPHEREx images cover this spot', 'Try one of the fields above.'); return; }
+  if (!chosen.length) { dog.stop(); showState('No SPHEREx images cover this spot', 'Try one of the fields above.'); return; }
   const planSeasons = groupSeasons(chosen.map(im => ({ mjd: im.mjdStart })));
-  if (planSeasons.length < 2) return oneSeason(f);
+  if (planSeasons.length < 2) { dog.stop(); return oneSeason(f); }
   S.grid = gridFor(f.target, chosen, LOAD_SETTINGS.fov);
   S.planned = chosen.length; progress();
   showState(`Loading ${chosen.length} images in ${planSeasons.length} seasons`, '');
   progress();
-  const frames = [];
   await mapLimit(chosen, 8, async (im) => {
     if (ctl.signal.aborted) return;
-    try { frames.push(await loadFrame(im, f.target, S.grid, LOAD_SETTINGS, { base: BASE, signal: ctl.signal, tables })); S.loaded++; }
+    try { frames.push(await loadFrame(im, f.target, S.grid, LOAD_SETTINGS, { base: BASE, signal: ctl.signal, tables, onRetry: dog.busy })); S.loaded++; dog.progress(); }
     catch (e) { if (!ctl.signal.aborted) S.failed++; }
     if (!ctl.signal.aborted) progress();
   });
+  dog.stop();
   if (ctl.signal.aborted) return;
+  finishField(f, frames);
+}
+// Stacks the loaded images and starts the blink. `partial`: the user chose to go on with the images
+// that came in before IRSA went quiet.
+function finishField(f, frames, partial = false) {
+  if (S.field !== f) return;
   frames.sort((a, b) => a.mjd - b.mjd);
+  if (partial) { S.loaded = frames.length; S.failed = S.planned - frames.length; }
   S.frames = frames;
   S.seasonFrames = groupSeasons(frames);
   if (S.seasonFrames.length < 2) {
