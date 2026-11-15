@@ -1,0 +1,93 @@
+/* AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+   The Proof table ("How we know"), design/spec-proof-flags.md part 1: five columns, one number per
+   cell, one "Why" sentence; the rest in six labelled groups behind the chevron; one card per test on phones. */
+
+/* ---------- desktop table (1a) ---------- */
+.pf-tab{table-layout:fixed}
+.pf-tab th{height:38px;padding:9px 12px;vertical-align:middle}
+.pf-tab th:nth-child(1){width:190px}
+.pf-tab th:nth-child(2){width:180px;text-align:right}
+.pf-tab th:nth-child(3){width:210px;text-align:right}
+.pf-tab th:nth-child(4){width:110px;white-space:normal;line-height:1.3}
+.pf-tab th:nth-child(4) .tag{margin-left:0}
+.pf-tab th:nth-child(5){width:190px}
+.pf-tab :is(th.pf-h-more,td.pf-more){display:none}
+.pf-tab td{height:56px;padding:10px 12px;vertical-align:middle;white-space:normal;border-bottom:0;border-top:1px solid var(--edge);min-width:0}
+.pf-tab .pf-group:first-of-type tr.pf-row:first-child td{border-top:0}
+.pf-tab tr.pf-next td{border-top-color:color-mix(in srgb,var(--edge) 50%,transparent)}
+.pf-tab .pf-group + .pf-group tr:first-child td{border-top:1px solid var(--edge-strong)}
+
+/* Object: chevron, name, kind. The second test of an object leaves the name out (sr-only on desktop). */
+.pf-tab .pf-obj{min-width:0}
+.pf-tab .pf-open{align-items:flex-start;gap:8px;min-height:24px;width:100%}
+.pf-tab .pf-open svg{margin-top:6px}
+.pf-nm{display:block;min-width:0}
+.pf-nm b{display:block;font-size:.9375rem;line-height:1.2;font-weight:600;color:var(--ink)}
+.pf-tab .pf-nm small{display:block;margin-top:1px;font-size:.75rem;line-height:1.3;color:var(--muted)}
+.pf-nm .pf-rep{position:fixed;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* Catalogue says / We measured: one number, right-aligned, tabular figures */
+.pf-tab :is(.pf-exp,.pf-meas){text-align:right;min-width:0}
+.pf-n{display:block;line-height:1.2;white-space:nowrap;font-family:var(--font-num);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.pf-v{font-size:1rem;font-weight:600;color:var(--ink)}
+.pf-u{font-size:.8125rem;color:var(--muted)}
+.pf-na{color:var(--muted);font-weight:400}
+.pf-tab small.pf-src{display:block;margin-top:1px;font-size:.75rem;line-height:1.3;color:var(--muted)}
+
+/* Verdict: chips stacked, 6 px apart; never hidden */
+.pf-tab .pf-ver .pf-chip{display:table;padding-top:1px;padding-bottom:1px;line-height:1.25}
+.pf-tab .pf-ver .pf-chip + .pf-chip{margin-top:6px}
+
+/* Why: one plain sentence, at most two lines */
+.pf-why p{max-width:68ch;font-size:.8125rem;line-height:1.4;color:var(--ink-2);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+@media (max-width:1000px){.pf-why p{-webkit-line-clamp:3;line-clamp:3}}
+
+.pf-tab .pf-group{scroll-margin-top:8px}
+
+/* ---------- the detail behind the chevron (1c) ---------- */
+.pf-tab tr.pf-drow td{height:auto;padding:14px 16px 18px 44px;background:var(--shell);border-top:1px solid var(--edge);vertical-align:top}
+.pf-groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 28px}
+.pf-g h4{margin:0 0 6px;font-size:.75rem;font-weight:700;color:var(--muted)}
+.pf-g dl{display:grid;grid-template-columns:auto 1fr;column-gap:12px;margin:0;line-height:1.6;font-size:.8125rem}
+.pf-g dt{color:var(--muted)}
+.pf-g dd{margin:0;min-width:0;text-align:left;font-family:var(--font-num);font-variant-numeric:tabular-nums;color:var(--ink);overflow-wrap:break-word}
+.pf-g-wide{grid-column:1 / -1}
+.pf-g .pf-lim-t{max-width:68ch;margin:0;font-size:.8125rem;line-height:1.5;color:var(--ink)}
+.pf-tab .pf-drow .pf-ev{margin-top:18px}
+
+/* ---------- phone: one card per test (1d) ---------- */
+@media (max-width:700px){
+  .pf-tab{table-layout:auto}
+  .pf-tab tr.pf-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"obj ver" "exp meas" "diff diff" "why why" "more more";column-gap:12px;row-gap:8px;padding:14px 16px;border-top:1px solid var(--edge);border-bottom:0}
+  .pf-tab .pf-group:first-of-type tr.pf-row:first-child{border-top:0}
+  .pf-tab .pf-group + .pf-group tr.pf-row:first-child{border-top:1px solid var(--edge-strong)}
+  .pf-tab .pf-group + .pf-group tr.pf-row:first-child td{border-top:0}
+  .pf-tab tr.pf-row td{display:block;height:auto;padding:0;border:0;min-width:0;width:auto;max-width:none}
+  .pf-tab .pf-obj{grid-area:obj}
+  .pf-tab .pf-ver{grid-area:ver;display:flex;flex-wrap:wrap;justify-content:flex-end;align-content:flex-start;gap:6px}
+  .pf-tab .pf-ver .pf-chip{display:inline-block}
+  .pf-tab .pf-ver .pf-chip + .pf-chip{margin-top:0}
+  .pf-tab .pf-exp{grid-area:exp}
+  .pf-tab .pf-meas{grid-area:meas}
+  .pf-tab .pf-diff{grid-area:diff}
+  .pf-tab .pf-why{grid-area:why}
+  .pf-tab td.pf-more{grid-area:more;display:block}
+  .pf-tab :is(.pf-exp,.pf-meas){text-align:left}
+  .pf-tab :is(.pf-exp,.pf-meas)::before{display:block;font-size:.75rem;line-height:1.3;color:var(--muted)}
+  .pf-tab .pf-exp::before{content:"Catalogue says"}
+  .pf-tab .pf-meas::before{content:"We measured"}
+  .pf-v{font-size:1.0625rem}
+  .pf-n{white-space:normal}
+  .pf-nm .pf-rep{position:static;width:auto;height:auto;overflow:visible;clip-path:none;white-space:normal}
+  .pf-tab .pf-open{min-height:44px}
+  .pf-why p{display:block;-webkit-line-clamp:unset;line-clamp:none;overflow:visible;max-width:none}
+  .pf-det{display:flex;align-items:center;gap:6px;width:100%;min-height:44px;padding:0;background:none;border:0;font:600 .8125rem/1.3 var(--font-ui);color:var(--copper-ink,var(--ink));cursor:pointer;text-align:left}
+  .pf-det svg{flex:none;transition:transform var(--t-toggle) var(--ease-out)}
+  .pf-det[aria-expanded=true] svg{transform:rotate(90deg)}
+  .pf-det:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+  .pf-tab tr.pf-drow{display:block}
+  .pf-tab tr.pf-drow[hidden]{display:none}
+  .pf-tab tr.pf-drow td{display:block;padding:12px 16px 16px}
+  .pf-groups{grid-template-columns:1fr;gap:12px}
+}
+html[data-motion=reduce] .pf-det svg{transition:none}

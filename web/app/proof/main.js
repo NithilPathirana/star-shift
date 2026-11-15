@@ -4,7 +4,7 @@
 
 import { initClarity, showPop, closePop, esc } from '../archive/shell.js';
 import { DEFAULT_BANDS } from '../bands.js';
-import { VERDICT_CLASS, along } from './logic.js';
+import { VERDICT_CLASS, along, nmReason, mainGroup, plainBand, whySentence } from './logic.js';
 import '../expert.js'; // Simple / Expert: .x-only (expert detail) and .s-only (plain-words twin)
 
 const $ = (id) => document.getElementById(id);
@@ -14,12 +14,7 @@ const sgn = (v, d = 2) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFix
 const chip = (v) => `<span class="pf-chip ${VERDICT_CLASS[v] || ''}">${esc(v)}</span>`;
 const mjdDate = (mjd) => new Date((mjd - 40587) * 86400000);
 const fmtDay = (d) => d.toISOString().slice(0, 10);
-// Simple / Expert twins. Simple shows plain words; Expert adds ±, σ, detectors and full sources.
-const X = (h, tag = 'span', cls = '') => `<${tag} class="x-only ${cls}">${h}</${tag}>`;
-const Sm = (h, tag = 'span') => `<${tag} class="s-only">${h}</${tag}>`;
-const plainYr = (masYr, d = 1) => `${(masYr / 1000).toFixed(d)}″ a year`;
-const shortSource = (s) => String(s).split(/ \(via|,/)[0].trim();
-const plainGroup = (name) => String(name).replace(/\s*\(detectors[^)]*\)/, '');
+const shortSource = (s) => String(s).split(/ \(via|[,;]/)[0].trim();
 const bandColor = (um) => (DEFAULT_BANDS.find(b => um >= b.min && um < b.max) || DEFAULT_BANDS[DEFAULT_BANDS.length - 1]).color;
 
 /* ---------- shell: Clarity + Pages ---------- */
@@ -30,64 +25,33 @@ $('pagesBtn').onclick = toggler('pagesPop', 'pagesBtn');
 document.addEventListener('click', (e) => { const p = document.querySelector('.pop:not([hidden])'); if (p && !p.contains(e.target)) closePop(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePop(true); });
 
-/* ---------- table cells ---------- */
+/* ---------- table cells (spec-proof-flags.md 1a: one number per cell, one sentence) ---------- */
+// A number cell: value in --font-num, unit muted, optional source line under it.
+const numCell = (val, unit, src = '') => `<span class="pf-n"><span class="pf-v">${val}</span><span class="pf-u">${unit}</span></span>${src ? `<small class="pf-src">${src}</small>` : ''}`;
+const NA = (why) => `<span class="pf-n"><span class="pf-v pf-na" title="${esc(why)}" aria-hidden="true">—</span></span><span class="sr-only">${esc(why)}</span>`;
 function expectedCell(t) {
   const x = t.expected;
-  if (t.type === 'motion') return `<span class="num pf-big">${X(`${arcs(x.value)}″/yr`)}${Sm(plainYr(x.value, 2))}</span>`
-    + X(`${esc(x.source)}${x.err != null ? ` · ±${x.err} mas/yr` : ''}`, 'small') + Sm(esc(shortSource(x.source)), 'small');
-  return `<span class="pf-txt">${esc(x.text)}</span>${X(esc(x.source), 'small')}${Sm(esc(shortSource(x.source)), 'small')}`;
+  if (t.type === 'motion') return numCell(arcs(x.value), '″/yr', esc(shortSource(x.source)));
+  return numCell('variable', '', esc(shortSource(x.source)));
 }
-// What the measurability rule counted (same words as the rule): "saturation flag in 120/120;
-// centre blanked in 81/120 (68%, under the 90% limit)". Shown where the flag is in 10%+ of images.
-function countsLine(t) {
-  const c = t.counts;
-  if (!c || !(c.saturationFlag >= 0.1 * c.images)) return '';
-  let blank = '';
-  if (c.blanked != null && c.fitted) {
-    const pct = Math.round(100 * c.blanked / c.fitted), lim = Math.round(100 * c.limitFrac);
-    blank = `; centre blanked in ${c.blanked}/${c.fitted} (${pct}%, ${c.blanked / c.fitted >= c.limitFrac ? 'at or over' : 'under'} the ${lim}% limit)`;
-  }
-  return `<small class="num pf-counts">saturation flag in ${c.saturationFlag}/${c.images}${blank}</small>`;
-}
-const floorLine = (txt) => (txt ? `<small class="num pf-floor">${esc(txt)}</small>` : '');
-const fromCat = (src) => (/^Gaia/.test(src) ? 'Gaia' : 'the catalogue');
-// Not-measurable reason in the viewer's words and order (ui.js NM_WHY): blanked centre first, then the
-// rate rule (not a pixel count); both when both apply (R Draconis).
 let minYr = 0.7; // set from proof.json settings in render()
-function nmWhy(t) {
-  const c = t.counts, sat = c?.blanked != null && c.fitted > 0 && c.blanked / c.fitted >= c.limitFrac;
-  const slow = `its catalogue motion is under the ${minYr.toFixed(1)}″ a year we can measure`;
-  if (sat) return `centre blanked in ${c.blanked} of ${c.fitted} images${t.why === 'slow' ? `, and ${slow}` : ''}`;
-  if (t.why === 'slow') return slow;
-  if (t.why === 'fit') return 'the fit could not run';
-  return 'see the limits column';
-}
-function measuredCell(t, target) {
+function measuredCell(t) {
   const m = t.measured;
+  if (t.verdict === 'NOT MEASURABLE' || !m) return NA(`Not measurable: ${t.type === 'motion' ? nmReason(t, minYr) : 'see the details'}`);
   if (t.type === 'motion') {
-    if (!m || t.verdict === 'NOT MEASURABLE') {
-      const why = nmWhy(t);
-      return `${DASH('Not measurable: see the limits column')}<small class="dim">Not measurable: ${why}</small>${countsLine(t)}${floorLine(t.fitAnyway?.floorText)}`;
-    }
-    const ss = m.seasons.length, d = t.diff, w = t.window, src = fromCat(t.expected.source);
-    const val = m.significant === false ? `no significant motion ${X(`(&lt; ${arcs(m.upperLimit)}″/yr)`)}${Sm(`(under ${plainYr(m.upperLimit)})`)}`
-      : `${X(`${arcs(m.value)} ± ${arcs(m.err)}″/yr${d?.sigma != null ? ` · ${d.sigma}σ` : ''}`)}${Sm(`${(m.value / 1000).toFixed(1)} ± ${(m.err / 1000).toFixed(1)}″ a year${d?.sigma != null ? ` · ${d.sigma}σ from ${src}` : ''}`)}`;
-    const v = t.direction;
-    const dir = v ? `<small class="num pf-dir">${X(`direction ${v.measured}° vs ${v.catalogue}° · ${Math.abs(v.paDiff).toFixed(1)}° off, ${arcs(v.sideways, 1)}″/yr sideways · ${v.sigma.toFixed(1)}σ`)}${Sm(`direction ${Math.abs(v.paDiff).toFixed(1)}° off ${src === 'Gaia' ? "Gaia's" : "the catalogue's"}, about ${arcs(v.sideways, 1)}″ a year sideways · ${v.sigma.toFixed(1)}σ`)}</small>` : '';
-    const half = w && w.paLo != null ? (((w.paHi - w.paLo + 360) % 360) / 2).toFixed(1) : null;
-    const win = w ? `<small class="num pf-win"><span class="dim">${X(`would agree from ${arcs(w.lo)} to ${arcs(w.hi)}″/yr${half ? `, pointing ${w.paLo}° to ${w.paHi}°` : ''}`)}${Sm(`would agree from ${(w.lo / 1000).toFixed(1)} to ${(w.hi / 1000).toFixed(1)}″ a year${half ? `, pointing within ${half}°` : ''}`)}</span></small>` : '';
-    return `<span class="num pf-big">${val}</span>${dir}${win}${floorLine(m.floorText)}${countsLine(t)}${X(`${m.frames} images · ${ss} season${ss === 1 ? '' : 's'} · ${m.span} yr · ${esc(m.bands)}`, 'small', 'num')}${Sm(`${m.frames} images over ${m.span} years`, 'small')}`;
+    if (m.significant === false) return numCell(`&lt; ${arcs(m.upperLimit)}`, '″/yr');
+    return numCell(`${arcs(m.value)} ± ${arcs(m.err)}`, '″/yr');
   }
-  if (!m) return DASH('Not measurable: see the limits column');
-  return m.groups.map(g => g.ok
-    ? `<span class="num pf-line">${X(`${sgn(g.value)} ± ${g.err.toFixed(2)} mag`)}${Sm(`${Math.abs(g.value).toFixed(2)} ± ${g.err.toFixed(2)} mag`)} <span class="dim">${g.value > 0 ? 'fainter' : 'brighter'}</span>${g.sigma != null ? ` · ${g.sigma}σ` : ''}</span>${X(`${esc(g.name)} · ${g.frames} images`, 'small', 'num')}${Sm(`at ${esc(plainGroup(g.name))}`, 'small')}`
-    : `<span class="pf-line">${DASH('Too few usable images in this wavelength group')}</span><small class="num">${esc(g.name)}</small>`).join('');
+  const g = mainGroup(t);
+  if (!g) return NA('No usable change');
+  return `<span title="${esc(plainBand(g.name))}">${numCell(`${Math.abs(g.value).toFixed(2)} ± ${g.err.toFixed(2)}`, ` mag ${g.value > 0 ? 'fainter' : 'brighter'}`)}</span>`;
 }
 function diffCell(t) {
   if (!t.diff) return DASH(t.verdict === 'NOT MEASURABLE' ? 'Nothing measured to compare' : 'No difference computed');
-  if (t.type === 'motion') return `<span class="num pf-big">${sgn(t.diff.value / 1000)}″/yr</span> <small class="num">${t.diff.sigma} σ speed</small>`
-    + (t.direction ? ` <span class="num pf-line">${arcs(t.direction.value)}″/yr</span><small class="num" title="Measured minus catalogue as an arrow: χ ${t.direction.chi2d.toFixed(2)} over 2 degrees of freedom, the same chance as ${t.direction.sigma.toFixed(1)}σ in one dimension">${t.direction.sigma.toFixed(1)} σ direction</small>` : '');
-  return t.measured.groups.map(g => g.ok ? `<span class="num pf-line">${g.sigma} σ</span><small>change ÷ uncertainty</small>` : `<span class="pf-line">${DASH('Not measured')}</span><small>&nbsp;</small>`).join('');
+  if (t.type === 'motion') return numCell(sgn(t.diff.value / 1000), '″/yr')
+    + `<small class="pf-src num">${t.diff.sigma}σ speed</small>`
+    + (t.direction ? `<small class="pf-src num" title="Measured minus catalogue as an arrow: ${arcs(t.direction.value)}″/yr, χ ${t.direction.chi2d.toFixed(2)} over 2 degrees of freedom, the same chance as ${t.direction.sigma.toFixed(1)}σ in one dimension">${t.direction.sigma.toFixed(1)}σ direction</small>` : '');
+  return t.measured.groups.map(g => `<small class="pf-src num" title="${esc(g.name)}: change ÷ uncertainty" aria-label="${esc(plainBand(g.name))}">${g.ok ? `${g.sigma}σ` : '—'}</small>`).join('');
 }
 
 /* ---------- charts (dark stage, DESIGN.md 25) ---------- */
@@ -151,38 +115,78 @@ function brightnessChart(t, target) {
   return svg(g, `${target.label}: brightness change against date`) + key;
 }
 
-/* ---------- evidence (expanded row) ---------- */
-function facts(t, target) {
-  const li = []; // entries: html, or [html, 'x'] for Expert-only detail
+/* ---------- the detail behind the chevron (spec 1c): six labelled groups, then the chart ---------- */
+// A group: heading + label/value pairs. Pairs with an empty value are dropped; an empty group is left out.
+const grp = (h, pairs) => {
+  const p = pairs.filter(x => x && x[1] != null && x[1] !== '');
+  return p.length ? `<section class="pf-g"><h4>${h}</h4><dl>${p.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl></section>` : '';
+};
+const fitTxt = (x) => (x.ok ? `${arcs(x.total)} ± ${arcs(x.totalErr)}″/yr (${x.frames})` : `no fit (${esc(x.reason || 'no steady track')})`);
+function groups(t, target) {
+  const out = [], m = t.measured, c = t.counts, im = target.images;
   if (t.type === 'motion') {
-    const v = t.variants, f = (x) => (x.ok ? `${arcs(x.total)} ± ${arcs(x.totalErr)}″/yr (${x.frames} images)` : `no fit (${esc(x.reason || 'no steady track')})`);
-    if (t.fitAnyway) li.push(t.fitAnyway.significant === false
-      ? `No significant motion ${X(`(&lt; ${arcs(t.fitAnyway.upperLimit)}″/yr): the fit gives ${arcs(t.fitAnyway.value)} ± ${arcs(t.fitAnyway.err)}″/yr`)}${Sm(`(under ${plainYr(t.fitAnyway.upperLimit)}): the fit gives ${plainYr(t.fitAnyway.value)}`)} from ${t.fitAnyway.frames} images, for a star the catalogue says moves ${arcs(t.expected.value, 3)}″/yr.`
-      : `The fit gives ${X(`${arcs(t.fitAnyway.value)} ± ${arcs(t.fitAnyway.err)}″/yr`)}${Sm(plainYr(t.fitAnyway.value))} from ${t.fitAnyway.frames} images, for a star the catalogue says moves ${arcs(t.expected.value, 3)}″/yr. That is not a real motion (see the limits column).`);
-    if (t.measured?.statErr != null) li.push([`Uncertainty: ± ${arcs(t.measured.statErr)}″/yr from the scatter of the image positions and the systematic ${esc(t.measured.floorText || `floor ± ${arcs(t.measured.sysErr)}″/yr`)}, combined as ± ${arcs(t.measured.err)}″/yr.`, 'x']);
-    if (t.measured) li.push([`Direction of motion: measured ${t.measured.pa}°, catalogue ${t.expected.pa}° (east of north)${t.direction ? `; measured minus catalogue = ${sgn(t.direction.east / 1000)}″/yr east, ${sgn(t.direction.north / 1000)}″/yr north: χ = √((Δe/σe)² + (Δn/σn)²) = ${t.direction.chi2d} over 2 degrees of freedom, the same chance as ${t.direction.sigma}σ in one dimension` : ''}.`, 'x']);
-    if (t.measured) li.push([`Seasons used: ${t.measured.seasons.map(s => `${s.from} to ${s.to} (${s.n})`).join(' · ')}.`, 'x']);
-    if (t.measured) li.push([`Direction: measured within ${Math.round(Math.abs(((t.measured.pa - t.expected.pa + 540) % 360) - 180))}° of the catalogue direction.`, 's']);
-    li.push([`All detectors: ${f(v.all)} · detectors 1–4: ${f(v.short)} · detectors 5–6: ${f(v.long)} · every flagged image hidden: ${f(v.filtersOn)}.`, 'x']);
-    li.push(`Expected shift over these dates: ${X(`${t.shiftPx} of a 6.15″ pixel`)}${Sm(`about ${(+t.shiftPx).toFixed(1)} pixels (each 6.15″ wide)`)}.`);
-    const ex = target.extra || {};
-    if (ex.neighbours?.length) li.push([`Gaia DR3 sources within 15″: ${ex.neighbours.map(n => `G ${n.g} at ${n.sepArcsec}″`).join(', ')}.`, 'x']);
-    if (ex.neighbours?.length) li.push([`${ex.neighbours.length} fainter star${ex.neighbours.length === 1 ? '' : 's'} within 15″ in Gaia.`, 's']);
-    if (ex.brightNeighbour) li.push(`${esc(ex.brightNeighbour.name)}: ${ex.brightNeighbour.sepArcsec}″ away; the patch reaches ${ex.brightNeighbour.cutoutHalfArcsec}″ from the centre.`);
-  } else if (t.measured) {
-    for (const g of t.measured.groups) li.push(`${esc(g.name)}: ${g.seasons.map(s => `${s.from}: ${sgn(s.dm)}${s.sem != null ? X(` ± ${s.sem.toFixed(2)}`) : ''} mag (${s.n})`).join(' · ') || 'no usable images'}.`);
+    const w = t.window, fa = t.fitAnyway, v = t.variants || {};
+    const ok = m && t.verdict !== 'NOT MEASURABLE';
+    out.push(grp('Speed', [
+      ok && ['measured', m.significant === false ? `no significant motion (&lt; ${arcs(m.upperLimit)}″/yr)` : `${arcs(m.value)} ± ${arcs(m.err)}″/yr`],
+      ['catalogue', `${arcs(t.expected.value, t.expected.value < 1000 ? 3 : 2)}″/yr${t.expected.err != null ? ` ± ${t.expected.err} mas/yr` : ''}`],
+      ['source', esc(t.expected.source)],
+      t.diff && ['apart', `${t.diff.sigma}σ`],
+      w && ['agrees from', `${arcs(w.lo)} to ${arcs(w.hi)}″/yr`],
+      fa && ['the fit gives', `${arcs(fa.value)} ± ${arcs(fa.err)}″/yr from ${fa.frames} images, not claimed`],
+      !ok && ['why not', `Not measurable: ${esc(nmReason(t, minYr))}`],
+      v.all && ['all detectors', fitTxt(v.all)], v.short && ['detectors 1–4', fitTxt(v.short)], v.long && ['detectors 5–6', fitTxt(v.long)], v.filtersOn && ['flagged hidden', fitTxt(v.filtersOn)],
+      ['expected shift', `${t.shiftPx} of a 6.15″ pixel`],
+    ]));
+    const d = t.direction;
+    if (d) out.push(grp('Direction', [
+      ['measured', `${d.measured}°`], ['catalogue', `${d.catalogue}°`],
+      ['apart', `${Math.abs(d.paDiff).toFixed(1)}° (${d.sigma.toFixed(1)}σ)`],
+      ['sideways', `about ${arcs(d.sideways, 1)}″/yr`],
+      w?.paLo != null && ['agrees from', `${w.paLo}° to ${w.paHi}°`],
+      ['difference', `${sgn(d.east / 1000)}″/yr east, ${sgn(d.north / 1000)}″/yr north; χ ${d.chi2d} over 2 degrees of freedom`],
+    ]));
+    else if (m && t.expected.pa != null) out.push(grp('Direction', [['measured', `${m.pa}°`], ['catalogue', `${t.expected.pa}°`], ['note', 'not judged: nothing measurable']]));
+    const floor = (ok ? m : fa)?.floorText || '';
+    const fm = floor.match(/^floor ([\d.]+″\/yr) from (.*?)(?: \((.*); (\d+) usable here\))?$/);
+    out.push(grp('Error floor', fm ? [['floor', fm[1]], ['from', esc(fm[3] ? `${fm[2]}, ${fm[3]}` : fm[2])], fm[4] != null && ['usable here', fm[4]],
+      ok && m.statErr != null && ['scatter part', `± ${arcs(m.statErr)}″/yr`], ok && ['combined', `± ${arcs(m.err)}″/yr`]] : [['floor', esc(floor)]]));
+    out.push(grp('Images used', [
+      ['images', ok ? `${m.frames}` : fa ? `${fa.frames}` : `${im.loaded}`],
+      m && ['seasons', `${m.seasons.length}`], m && ['span', `${m.span} years`], m && ['bands', esc(m.bands)],
+      m && ['dates', m.seasons.map(s => `${s.from} to ${s.to} (${s.n})`).join(' · ')],
+      ['in the archive', `${im.loaded} loaded of ${im.archive}, ${im.first} to ${im.last}`],
+    ]));
+  } else {
+    const gs = m?.groups || [];
+    out.push(grp('Brightness change', [
+      ['catalogue', esc(t.expected.text)], ['source', esc(t.expected.source)],
+      ...gs.map(g => [esc(plainBand(g.name)), g.ok ? `${sgn(g.value)} ± ${g.err.toFixed(2)} mag (${g.sigma}σ, ${g.frames} images)` : 'too few usable images']),
+    ]));
+    out.push(grp('Images used', [
+      m && ['images', `${m.frames}`],
+      ...gs.filter(g => g.ok).map(g => [`${esc(plainBand(g.name))} by season`, g.seasons.map(s => `${s.from}: ${sgn(s.dm)}${s.sem != null ? ` ± ${s.sem.toFixed(2)}` : ''} (${s.n})`).join(' · ')]),
+      ['in the archive', `${im.loaded} loaded of ${im.archive}, ${im.first} to ${im.last}`],
+    ]));
   }
-  const im = target.images;
-  li.push([`Images: ${im.loaded} loaded of ${im.archive} in the archive, ${im.first} to ${im.last}; star's centre flagged saturated in ${im.saturatedCore}; ${im.flaggedNearStar} have a flag that touches the star.`, 'x']);
-  const mon = (iso) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-  li.push([`Images: ${im.loaded} of the ${im.archive} in the archive, ${mon(im.first)} to ${mon(im.last)}; the star's centre is too bright (saturated) in ${im.saturatedCore} of them.`, 's']);
-  return `<ul class="pf-facts">${li.map(x => Array.isArray(x) ? `<li class="${x[1] === 'x' ? 'x-only' : 's-only'}">${x[0]}</li>` : `<li>${x}</li>`).join('')}</ul>`;
+  const ex = target.extra || {};
+  out.push(grp('Flags and saturation', [
+    c && ['saturation flag', `${c.saturationFlag} of ${c.images}`],
+    c?.blanked != null && ['centre blanked', `${c.blanked} of ${c.fitted}`],
+    c && ['limit', `${Math.round(100 * c.limitFrac)}%`],
+    !c && ['centre saturated', `${im.saturatedCore} of ${im.loaded}`],
+    ['flag touches star', `${im.flaggedNearStar} of ${im.loaded}`],
+    ex.neighbours?.length && ['Gaia within 15″', ex.neighbours.map(n => `G ${n.g} at ${n.sepArcsec}″`).join(', ')],
+    ex.brightNeighbour && [esc(ex.brightNeighbour.name), `${ex.brightNeighbour.sepArcsec}″ away; the patch reaches ${ex.brightNeighbour.cutoutHalfArcsec}″`],
+  ]));
+  out.push(`<section class="pf-g pf-g-lim${t.limit.length > 300 ? ' pf-g-wide' : ''}"><h4>Honest limits</h4><p class="pf-lim-t">${esc(t.limit)}</p></section>`);
+  return `<div class="pf-groups">${out.join('')}</div>`;
 }
 function evidence(t, target) {
   const chart = t.type === 'motion' ? motionChart(t, target) : brightnessChart(t, target);
   const title = t.type === 'motion' ? 'Position against date, with the fitted line' : 'Brightness against date, compared with the first season';
-  return `<div class="pf-ev"><div class="pf-stage">${chart ? `<p class="pf-cap">${title}</p>${chart}` : `<p class="pf-cap">No chart: nothing could be measured.</p>`}</div>
-    <div class="pf-evside">${facts(t, target)}<a class="key" href="${esc(target.viewer)}">Open in the viewer</a></div></div>`;
+  return `${groups(t, target)}<div class="pf-ev"><div class="pf-stage">${chart ? `<p class="pf-cap">${title}</p>${chart}` : `<p class="pf-cap">No chart: nothing could be measured.</p>`}</div>
+    <div class="pf-evside"><a class="key" href="${esc(target.viewer)}">Open in the viewer</a></div></div>`;
 }
 
 /* ---------- render ---------- */
@@ -193,27 +197,30 @@ function render(d) {
     `<div><h3>${h}</h3><dl class="pf-rule">${rs.map(([v, txt]) => `<dt>${chip(v)}</dt><dd>${esc(txt)}</dd>`).join('')}</dl></div>`).join('')
     + `<p class="pf-rule-note">σ is the measurement's uncertainty, with the catalogue's added. For motion it is the scatter of the image positions plus a systematic floor in each direction: the field stars' own floor where 3 or more are usable in the patch, otherwise ${arcs(d.settings.sysFloorMasYr)}″/yr, measured on the field stars of all five patches together. Each row says which. A result that looks bad stays in the table with its reason.</p>`;
   let rows = '', k = 0;
+  const chev = '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2.5L7.5 6 4 9.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
   for (const target of d.targets) {
     rows += `<tbody class="pf-group" id="${esc(target.key)}">`; // proof.html#barnard (the viewer's 'How we know →')
     target.tests.forEach((t, i) => {
-      const id = `ev${k++}`;
-      rows += `<tr class="pf-row" data-ev="${id}">
-        <td class="pf-obj"><button class="pf-open" type="button" aria-expanded="false" aria-controls="${id}"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2.5L7.5 6 4 9.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><b>${esc(target.label)}</b></button><small>${t.type === 'motion' ? 'moves' : 'changes brightness'}${i === 0 && target.kind === 'changes brightness' && t.type === 'motion' ? ' (checked too)' : ''}</small></td>
+      const id = `ev${k++}`, kind = t.type === 'motion' ? 'moves' : 'brightness';
+      const name = i === 0 ? `<b>${esc(target.label)}</b>` : `<b class="pf-rep">${esc(target.label)}</b>`;
+      rows += `<tr class="pf-row${i ? ' pf-next' : ''}" data-ev="${id}">
+        <td class="pf-obj"><button class="pf-open" type="button" aria-expanded="false" aria-controls="${id}">${chev}<span class="pf-nm">${name}<small>${kind}</small></span></button></td>
         <td class="pf-exp">${expectedCell(t)}</td>
-        <td class="pf-meas">${measuredCell(t, target)}</td>
+        <td class="pf-meas">${measuredCell(t)}</td>
         <td class="pf-diff x-only">${diffCell(t)}</td>
-        <td class="pf-ver">${chip(t.verdict)}${t.direction ? ` ${chip(t.direction.verdict)}` : ''}</td>
-        <td class="pf-lim"><span class="pf-lim-t">${esc(t.limit)}</span></td></tr>
-        <tr class="drow pf-drow" id="${id}" hidden><td colspan="6">${evidence(t, target)}</td></tr>`;
+        <td class="pf-ver">${chip(t.verdict)}${t.direction ? chip(t.direction.verdict) : ''}</td>
+        <td class="pf-why"><p>${esc(whySentence(t, target, minYr))}</p></td>
+        <td class="pf-more"><button class="pf-det" type="button" aria-expanded="false" aria-controls="${id}">Details ${chev}</button></td></tr>
+        <tr class="drow pf-drow" id="${id}" hidden><td colspan="7">${evidence(t, target)}</td></tr>`;
     });
     rows += `</tbody>`;
   }
   const tb = $('rows'); tb.insertAdjacentHTML('beforebegin', rows); tb.remove();
   { const h = location.hash.slice(1), el = h && document.getElementById(decodeURIComponent(h)); if (el && el.classList.contains('pf-group')) requestAnimationFrame(() => el.scrollIntoView({ block: 'start' })); }
   document.querySelectorAll('.pf-row').forEach(r => {
-    const btn = r.querySelector('.pf-open'), ev = document.getElementById(r.dataset.ev);
-    const toggle = () => { const open = ev.hidden; ev.hidden = !open; btn.setAttribute('aria-expanded', String(open)); r.classList.toggle('pf-on', open); };
-    btn.onclick = (e) => { e.stopPropagation(); toggle(); };
+    const btns = r.querySelectorAll('.pf-open,.pf-det'), ev = document.getElementById(r.dataset.ev);
+    const toggle = () => { const open = ev.hidden; ev.hidden = !open; btns.forEach(b => b.setAttribute('aria-expanded', String(open))); r.classList.toggle('pf-on', open); };
+    btns.forEach(b => { b.onclick = (e) => { e.stopPropagation(); toggle(); }; });
     r.onclick = (e) => { if (!e.target.closest('a,button')) toggle(); };
   });
   const when = new Date(d.generated);
@@ -244,5 +251,5 @@ fetch('data/proof.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.stat
   console.error('Proof page:', e); // never swallow it (render() removes #rows before it can fail)
   const at = $('rows') || document.querySelector('.pf-table tbody') || document.querySelector('table');
   if (!at) return;
-  at.innerHTML =`<tr><td colspan="6" class="empty">The measurements file could not be read (${esc(e.message)}). Run <span class="num">node tools/make_proof.mjs</span> with the server on, then reload.</td></tr>`;
+  at.innerHTML =`<tr><td colspan="7" class="empty">The measurements file could not be read (${esc(e.message)}). Run <span class="num">node tools/make_proof.mjs</span> with the server on, then reload.</td></tr>`;
 });

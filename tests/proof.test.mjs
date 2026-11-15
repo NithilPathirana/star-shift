@@ -138,3 +138,41 @@ test('proof.json: Barnard row prints both directions, the rule counts and the fl
   for (const [v] of d.rules.direction) assert.ok(VERDICT_CLASS[v], v);
   assert.equal(d.settings.controlFloor, undefined); // no control-star floor (lead's decision, 15 Nov)
 });
+
+// Proof table "Why" sentences (spec-proof-flags.md 1b): generated from proof.json, never typed per target.
+test('why sentence: one plain sentence per row, from proof.json numbers', async () => {
+  const { whySentence } = await import('../web/app/proof/logic.js');
+  const d = JSON.parse(readFileSync(new URL('../web/data/proof.json', import.meta.url), 'utf8'));
+  const why = (key, type) => { const t = d.targets.find(x => x.key === key); return whySentence(t.tests.find(x => x.type === type), t, 0.7); };
+  const b = d.targets.find(t => t.key === 'barnard').tests[0];
+  assert.equal(why('barnard', 'motion'), `Speed matches. Direction is ${Math.abs(b.direction.paDiff).toFixed(1)}° off because the bright centre is blanked; we measure from the edges.`);
+  assert.equal(why('eps-indi-b', 'motion'), 'Speed and direction both match.');
+  const w = d.targets.find(t => t.key === 'wise-0855').tests[0];
+  assert.equal(why('wise-0855', 'motion'), `Matches inside a wide error bar: only ${w.measured.frames} long-wavelength images show it.`);
+  // the viewer's not-measurable words (commit 7affb05), blanked centre first for R Draconis
+  assert.equal(why('rw-aur', 'motion'), 'Not measurable: its catalogue motion is under the 0.7″ a year we can measure.');
+  assert.match(why('r-dra', 'motion'), /^Not measurable: centre blanked in \d+ of \d+ images, and its catalogue motion is under the 0\.7″ a year we can measure\.$/);
+  assert.match(why('rw-aur', 'brightness'), /^Fainter by 0\.7\d mag at 3\.8–5\.0 µm from the first to the last season: a clear change\.$/);
+  assert.match(why('r-dra', 'brightness'), /^Too bright to measure: its centre is saturated in /);
+  for (const t of d.targets) for (const x of t.tests) {
+    const s = whySentence(x, t, 0.7);
+    assert.ok(s.length > 10 && s.length < 140, `${t.key} ${x.type}: ${s}`);
+    assert.ok(!/[σ()[\]]|±/.test(s), `${t.key} ${x.type}: no σ, ± or brackets: ${s}`);
+    assert.ok(!/detected|discovered|proves|\bfail/i.test(s), s);
+    if (x.verdict === 'NOT MEASURABLE') assert.match(s, /^(Not measurable|Too bright to measure)/, s);
+  }
+});
+
+test('why sentence: other verdicts follow the same pattern (verdict first, one reason)', async () => {
+  const { whySentence } = await import('../web/app/proof/logic.js');
+  const mot = (verdict, value, err, dir, extra = {}) => ({ type: 'motion', verdict, expected: { value: 10000 }, measured: { value, err, frames: 100, detectors: [1, 2, 3, 4, 5, 6] }, direction: dir, counts: { blanked: 0, fitted: 100, limitFrac: 0.9 }, ...extra });
+  assert.equal(whySentence(mot('DIFFERS', 8000, 300, { verdict: 'DIRECTION AGREES', paDiff: 1 })), 'Speed differs: 20% below the catalogue, more than the error bar allows.');
+  assert.equal(whySentence(mot('AT THE LIMIT', 10700, 300, null)), 'Speed is at the limit: 7% above the catalogue.');
+  assert.equal(whySentence(mot('AT THE LIMIT', 9000, 5000, null, { why: 'loose' })), 'At the limit: the error bar is more than half the measured speed.');
+  assert.equal(whySentence(mot('AGREES', 10100, 300, { verdict: 'DIRECTION OFF', paDiff: -4.2 })), 'Speed matches. Direction is 4.2° off, more than the error bars allow.');
+  assert.equal(whySentence(mot('AGREES', 10100, 300, { verdict: 'DIRECTION AT THE LIMIT', paDiff: 2.5 })), 'Speed matches. Direction is 2.5° off, at the limit of the error bars.');
+  const br = { type: 'brightness', verdict: 'AT THE LIMIT', measured: { groups: [{ name: '0.75–3.8 µm (detectors 1–4)', ok: true, value: -0.2, err: 0.1 }, { name: '3.8–5.0 µm (detectors 5–6)', ok: false }] } };
+  assert.equal(whySentence(br), 'Brighter by 0.20 mag at 0.75–3.8 µm from the first to the last season: not clearly above the noise.');
+  const nm = { type: 'motion', verdict: 'NOT MEASURABLE', why: 'fit', counts: { blanked: 2, fitted: 50, limitFrac: 0.9 } };
+  assert.equal(whySentence(nm), 'Not measurable: the fit could not run.');
+});

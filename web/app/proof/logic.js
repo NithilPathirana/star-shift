@@ -133,3 +133,57 @@ export const along = (e, n, paDeg) => e * Math.sin(paDeg * Math.PI / 180) + n * 
 
 export const VERDICT_CLASS = { 'AGREES': 'v-agree', 'AT THE LIMIT': 'v-limit', 'DIFFERS': 'v-differ', 'NOT MEASURABLE': 'v-none',
   'DIRECTION AGREES': 'v-agree', 'DIRECTION AT THE LIMIT': 'v-limit', 'DIRECTION OFF': 'v-differ' };
+
+// Not-measurable reason in the viewer's words and order (ui.js NM_WHY): blanked centre first, then
+// the rate rule; both when both apply (R Draconis). minYr = the smallest motion we call real (″/yr).
+export function nmReason(t, minYr = 0.7) {
+  const c = t.counts, sat = c?.blanked != null && c.fitted > 0 && c.blanked / c.fitted >= c.limitFrac;
+  const slow = `its catalogue motion is under the ${minYr.toFixed(1)}″ a year we can measure`;
+  if (sat) return `centre blanked in ${c.blanked} of ${c.fitted} images${t.why === 'slow' ? `, and ${slow}` : ''}`;
+  if (t.why === 'slow') return slow;
+  if (t.why === 'fit') return 'the fit could not run';
+  return 'see the honest limits';
+}
+
+// The brightness group the row shows: the clearest measured change (largest change ÷ uncertainty).
+export function mainGroup(t) {
+  const ok = (t.measured?.groups || []).filter(g => g.ok && g.err > 0);
+  return ok.sort((a, b) => Math.abs(b.value) / b.err - Math.abs(a.value) / a.err)[0] || null;
+}
+export const plainBand = (name) => String(name).replace(/\s*\(detectors[^)]*\)/, '');
+
+// The Proof row's "Why": one plain sentence, verdict in words first, then the one reason. Built only
+// from proof.json's numbers for this test (spec-proof-flags.md 1b); no σ, no brackets.
+export function whySentence(t, target, minYr = 0.7) {
+  if (t.verdict === 'NOT MEASURABLE') {
+    if (t.type === 'motion') return `Not measurable: ${nmReason(t, minYr)}.`;
+    const im = target?.images;
+    if (im && im.loaded && im.saturatedCore / im.loaded >= 0.9) return `Too bright to measure: its centre is saturated in ${im.saturatedCore === im.loaded ? `all ${im.loaded}` : `${im.saturatedCore} of ${im.loaded}`} images.`;
+    return 'Not measurable: too few images with a clean centre at matching wavelengths.';
+  }
+  if (t.type === 'motion') {
+    const m = t.measured, d = t.direction, c = t.counts;
+    const speed = t.verdict === 'AGREES' ? 'matches' : t.verdict === 'AT THE LIMIT' ? 'is at the limit' : 'differs';
+    if (d && d.verdict !== 'DIRECTION AGREES') {
+      const off = `${Math.abs(d.paDiff).toFixed(1)}°`;
+      const blanked = c?.blanked != null && c.fitted > 0 && c.blanked / c.fitted >= 0.25;
+      const lead = `Speed ${speed}. Direction is ${off} off`;
+      if (d.verdict === 'DIRECTION OFF') return blanked ? `${lead} because the bright centre is blanked; we measure from the edges.` : `${lead}, more than the error bars allow.`;
+      return `${lead}, at the limit of the error bars.`;
+    }
+    const wide = m && m.value > 0 && m.err / m.value > 0.2;
+    if (t.verdict === 'AGREES' && wide) {
+      const long = Array.isArray(m.detectors) && m.detectors.length && m.detectors.every(k => k >= 5);
+      return `Matches inside a wide error bar: only ${m.frames} ${long ? 'long-wavelength ' : ''}images show it.`;
+    }
+    if (t.verdict === 'AGREES') return d ? 'Speed and direction both match.' : 'Speed matches.';
+    if (t.why === 'loose') return 'At the limit: the error bar is more than half the measured speed.';
+    const pct = Math.round(100 * Math.abs(m.value - t.expected.value) / t.expected.value);
+    return t.verdict === 'DIFFERS' ? `Speed differs: ${pct}% ${m.value < t.expected.value ? 'below' : 'above'} the catalogue, more than the error bar allows.`
+      : `Speed is at the limit: ${pct}% ${m.value < t.expected.value ? 'below' : 'above'} the catalogue.`;
+  }
+  const g = mainGroup(t);
+  if (!g) return 'No clear change above the noise.';
+  const what = `${g.value > 0 ? 'Fainter' : 'Brighter'} by ${Math.abs(g.value).toFixed(2)} mag at ${plainBand(g.name)} from the first to the last season`;
+  return t.verdict === 'AGREES' ? `${what}: a clear change.` : `${what}: not clearly above the noise.`;
+}

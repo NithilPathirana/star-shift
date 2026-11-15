@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="styles/e.css">
 <link rel="stylesheet" href="styles/pages.css">
 <link rel="stylesheet" href="styles/notebook.css">
+<link rel="stylesheet" href="styles/proof.css?v=1"><!-- the Proof table (spec-proof-flags.md 1) -->
 <link rel="stylesheet" href="styles/access.css?v=1"><!-- colours and accessibility (app/access.js): keep this the LAST stylesheet -->
 <script src="app/access.js?v=1"></script><!-- classic script on purpose: applies a saved palette before first paint -->
 </head>
@@ -51,16 +52,17 @@
     </section>
 
     <section class="well table-well pf-well" aria-label="Expected compared with measured, per object">
-      <table class="atable pf-table">
+      <table class="atable pf-tab">
         <thead><tr>
-          <th scope="col">Object</th>
-          <th scope="col">Expected <span class="tag cat">CATALOGUE</span></th>
-          <th scope="col">Measured here <span class="tag obs">OBSERVED</span></th>
-          <th scope="col" class="x-only">Difference <span class="tag comp">COMPUTED</span></th>
-          <th scope="col">Verdict</th>
-          <th scope="col">Honest limits</th>
+          <th scope="col" class="pf-h-obj">Object</th>
+          <th scope="col" class="pf-h-num">Catalogue says <span class="tag cat">CATALOGUE</span></th>
+          <th scope="col" class="pf-h-num">We measured <span class="tag obs">OBSERVED</span></th>
+          <th scope="col" class="pf-h-diff x-only">Difference <span class="tag comp">COMPUTED</span></th>
+          <th scope="col" class="pf-h-ver">Verdict</th>
+          <th scope="col" class="pf-h-why">Why</th>
+          <th scope="col" class="pf-h-more"><span class="sr-only">Details</span></th>
         </tr></thead>
-        <tbody id="rows"><tr><td colspan="6" class="empty">Loading the measurements…</td></tr></tbody>
+        <tbody id="rows"><tr><td colspan="7" class="empty">Loading the measurements…</td></tr></tbody>
       </table>
     </section>
     <p class="pf-under" id="under"></p>

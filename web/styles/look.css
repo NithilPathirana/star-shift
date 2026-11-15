@@ -864,6 +864,33 @@ html:where(:not([data-ax-look=classic]))[data-glass=solid] .pl-place{background:
   :where(html:not([data-ax-look=classic])) .notebook-entry,:where(html:not([data-ax-look=classic])) .notebook-notes,:where(html:not([data-ax-look=classic])) .notebook-template textarea{color:#000;background:#fff;border-color:#777;box-shadow:none}
 }
 :where(html:not([data-ax-look=classic])) .notebook-content{scrollbar-color:var(--edge-strong, rgba(51,67,99,.42)) transparent}
+/* from proof.css */
+:where(html:not([data-ax-look=classic])) .pf-tab td{border-bottom:0;border-top:1px solid var(--edge)}
+:where(html:not([data-ax-look=classic])) .pf-tab .pf-group:first-of-type tr.pf-row:first-child td{border-top:0}
+:where(html:not([data-ax-look=classic])) .pf-tab tr.pf-next td{border-top-color:color-mix(in srgb,var(--edge) 50%,transparent)}
+:where(html:not([data-ax-look=classic])) .pf-tab .pf-group + .pf-group tr:first-child td{border-top:1px solid var(--edge-strong)}
+:where(html:not([data-ax-look=classic])) .pf-nm b{color:var(--ink)}
+:where(html:not([data-ax-look=classic])) .pf-tab .pf-nm small{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .pf-v{color:var(--ink)}
+:where(html:not([data-ax-look=classic])) .pf-u{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .pf-na{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .pf-tab small.pf-src{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .pf-why p{color:var(--ink-2)}
+:where(html:not([data-ax-look=classic])) .pf-tab tr.pf-drow td{background:var(--shell);border-top:1px solid var(--edge)}
+:where(html:not([data-ax-look=classic])) .pf-g h4{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .pf-g dt{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .pf-g dd{color:var(--ink)}
+:where(html:not([data-ax-look=classic])) .pf-g .pf-lim-t{color:var(--ink)}
+@media (max-width:700px){
+  :where(html:not([data-ax-look=classic])) .pf-tab tr.pf-row{border-top:1px solid var(--edge);border-bottom:0}
+  :where(html:not([data-ax-look=classic])) .pf-tab .pf-group:first-of-type tr.pf-row:first-child{border-top:0}
+  :where(html:not([data-ax-look=classic])) .pf-tab .pf-group + .pf-group tr.pf-row:first-child{border-top:1px solid var(--edge-strong)}
+  :where(html:not([data-ax-look=classic])) .pf-tab .pf-group + .pf-group tr.pf-row:first-child td{border-top:0}
+  :where(html:not([data-ax-look=classic])) .pf-tab tr.pf-row td{border:0}
+  :where(html:not([data-ax-look=classic])) .pf-tab :is(.pf-exp,.pf-meas)::before{color:var(--muted)}
+  :where(html:not([data-ax-look=classic])) .pf-det{background:none;border:0;color:var(--copper-ink,var(--ink))}
+  :where(html:not([data-ax-look=classic])) .pf-det:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+}
 /* from spot.css */
 :where(html:not([data-ax-look=classic])) .sm-step{border-radius:12px;border:1px solid transparent;background:none;color:var(--ink-2)}
 :where(html:not([data-ax-look=classic])) .sm-step .num{border-radius:50%;border:1.5px solid var(--edge-strong);color:var(--ink-2)}
