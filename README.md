@@ -34,8 +34,6 @@ Type any sky position (or a star name) and see the SPHEREx images of that spot, 
 > Files carry an "AI-written code" header.
 >
 > Logo: SI-generated with ChatGPT; small version and favicon redrawn as SVG by Claude.
->
-> Loader animation: SI-generated (made by Claude in Blender). Spacesuit model: NASA 3D Resources (public domain), modified.
 
 ## The web app (`web/`)
 - `index.html` + `styles/tokens.css` (all colours, type, spacing, radii, motion as CSS variables) + `styles/app.css`.
@@ -102,5 +100,3 @@ Bundled in `web/vendor/` (each folder keeps the library's own LICENSE file):
 | [Astronomy Engine](https://github.com/cosinekitty/astronomy) | 2.1.19 | MIT | 2019-2023 Don Cross |
 
 Everything else in this repository is the team's own code under the MIT licence ([LICENSE](LICENSE)).
-
-The MIT licence covers the team's code and original assets. The spacesuit model in the loader animation is NASA material (public domain, no copyright claimed) and is not covered by this licence. The original model file is not in this repository or in source.zip; `design/loader/v5c/SOURCE.md` says where it comes from.

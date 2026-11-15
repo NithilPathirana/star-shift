@@ -1,20 +1,20 @@
 # Loader v1.1: approved, watermarked exports. SHA-256, then the file name (same folder).
-# Attested by the Design Studio session (Claude, Anthropic), the loader's owner, on 2026-11-15 16:30 Sri Lanka time.
+# Attested by the Design Studio session (Claude, Anthropic), the loader's owner, on 2026-11-15 16:03 Sri Lanka time.
 # The mark now reads "Animation: SI-generated (made by Claude in Blender)" (it read "AI-generated" until this date; SI is the Space Apps word for AI).
-# Scene v7 (spacesuit model from NASA 3D Resources, modified: flag, patch, lettering and face removed, own materials; standing in a hatch on the v6 rocket), rendered and encoded on this date from _build/frames_v7 and frames_exit_v7. Credit: Spacesuit model: NASA 3D Resources (public domain), modified.
+# Scene v6 (deep space, a more detailed rocket and rider; the rider waves), rendered and encoded on this date from _build/frames_v6 and frames_exit_v6.
 # What was checked: for each file below, frames were decoded from the file itself (the stills; frames 0, 60, 120, 180, 239 of each loop;
 # frames 0, 11, 22, 33, 44 of each exit clip: 42 frames in all) and the bottom-right corner was looked at.
 # Every one shows the baked mark, including the faded last frames of the exit clips.
 # The mark is drawn by one ffmpeg drawtext filter with no time condition (_build/encode.py), so it is on every frame.
 # Evidence: _build/mark-check-sheet.png (made by _build/mark_check.py). Re-make it with any change to these files, then update the hashes.
 # Never list anything from _build/: those are raw frames with no mark.
-73e65788152334c08748f3ca35f146f907c2e7ee3c53c17514d14755283c2c72  astronaut-still-720.webp
-33cfa8e12983fdc9a2decdda4947bee46205d196d2b580549632f20470035e0d  astronaut-still-1080.webp
-1f04a17653e71133015def541515f54be5a63c69eaf34f7a7cda098099cf8812  astronaut-loop-720.webm
-c6e46937d9c7e3d7d41b37306f820951f067a74fc4f4fed28de49d7dd0418a12  astronaut-loop-720.mp4
-cc850873e4d18dcc7fe94783fa99649ac11dc1519c49b8e96cd72e60152fe63b  astronaut-loop-1080.webm
-f098ccdf4ed7d47d193491792541ea039548a3f1c33f3e030d5698476554badb  astronaut-loop-1080.mp4
-40f771f2c2b1a842327578ea74ce7dbe8f01d7691301589f4a2d28fc7dc89147  astronaut-exit-720.webm
-23cb389b1539e7b3de3253ee91145e14851efe7cb15096c7e1bd5e6c789a19df  astronaut-exit-720.mp4
-38b6c8c24a7cf075a86365ba4d0bec7c639c67378ba3cf9933e4cb1bd9e50e5e  astronaut-exit-1080.webm
-da1d6485b8c3b9c8af63c80cb8b51e631c1abac3505e19fa000b0be7c57d8a7a  astronaut-exit-1080.mp4
+ea1d8ae9333bbc77d5866c1a3c21c073c817bbb5a4caf84f464c6f2c2e8b1fa7  astronaut-still-720.webp
+7f544303a0c209ec4f42fa384a847b563c2ef3563fd97750cde59ea2182beff1  astronaut-still-1080.webp
+359143437646d365712ac8d031453e17513f2a311094a7bcd2327f18415aa18d  astronaut-loop-720.webm
+157a7cd16e4b08b3ce7f489ce6b5cff853d930b81d7a0813deb9958a70e8dc6b  astronaut-loop-720.mp4
+2050b728cdf323ad704659b37065eaf077b775b81f9b31d0ab1c96b3bbb9e647  astronaut-loop-1080.webm
+2a98e563bae26a5a412aa7b79d462b0f7bacef34158c7d79386a91f2a0a9380a  astronaut-loop-1080.mp4
+766083814d0fd467ca325af1c17e44da223e4d6e6b986b32226decb770ed981e  astronaut-exit-720.webm
+2fdbbec9559786f725a64232529b99823a2dd74882fa4a4b6a93830726ec0629  astronaut-exit-720.mp4
+d13c0c072ea9160012a3abc57ba975aa29102f98b60a1a906a883feb8bb7347a  astronaut-exit-1080.webm
+bc0572130db4aaa8635818504bdfdffadb1ae224ef87fd504088b5b7bd75b4ff  astronaut-exit-1080.mp4
