@@ -91,7 +91,9 @@ test('stacks: √N, counts per detector and season, plain words and CSV', () => 
   const n = S.detectorCounts(frames, { detector: 3, mjd: 61003 }, (m) => (m < 61100 ? 0 : 1));
   assert.deepEqual(n, { season: 0, nSeason: 12, nAll: 30 });
   const t = S.snrText({ ok: true, snr: 14, flux: 1, noise: 1 / 14, r: 2, rIn: 4, rOut: 8, nApUsed: 13, nApFlagged: 0, nSky: 150, nSkyFlagged: 0, bg: 1, sigmaSky: 0.1, varSum: 0.1, skyErr2: 0.01, noiseFrom: 'variance+sky' }, n, { detector: 3 });
-  assert.equal(t.simple, "Signal-to-noise 14: clearly real. Stacking this season's 12 images from detector 3: about 48. All 30 images from detector 3 combined: about 77.");
+  // season pictures are medians: √(2n/π), not √n (14 × √(24/π) = 38.7, 14 × √(60/π) = 61.2)
+  assert.equal(t.simple, "Signal-to-noise 14: clearly real. Stacking this season's 12 images from detector 3: about 39. All 30 images from detector 3 combined: about 61.");
+  assert.ok(Math.abs(S.medianStackedSNR(14, 12) - 38.70) < 0.05);
   assert.match(t.expert[0], /^SNR = F \/ σ/);
   assert.equal(S.snrWord(4), 'faint: probably real, but check other images'); assert.equal(S.snrWord(2), 'not clearly above the noise');
   const row = S.csvRow({ ok: true, snr: 14, x: 1, y: 2, r: 2, rIn: 4, rOut: 8, nApUsed: 13, nApFlagged: 0, nSky: 150, bg: 1, sigmaSky: 0.1, varSum: 0.1, skyErr2: 0.01, flux: 1, noise: 0.0714, noiseFrom: 'sky' }, { target: "Barnard's Star, x", obsid: 'O1', mjd: 61000.5, detector: 3 }, n);
@@ -125,4 +127,52 @@ test('the five saved targets give sensible answers on their real pre-baked cutou
   assert.ok(out['eps-indi-b'].ok >= 0.9 * out['eps-indi-b'].n && out['eps-indi-b'].med > 50, JSON.stringify(out['eps-indi-b']));
   // WISE 0855: measured almost everywhere, a modest SNR (faint in single images)
   assert.ok(out['wise-0855'].ok >= 0.9 * out['wise-0855'].n && out['wise-0855'].med > 1 && out['wise-0855'].med < 30, JSON.stringify(out['wise-0855']));
+});
+
+// Judging panel round 7 (SNR honesty): no projection from noise, the sky-limited note, stacks measured not projected.
+const fake = (snr, extra = {}) => ({ ok: true, snr, flux: snr, noise: 1, r: 2, rIn: 4, rOut: 8, nApUsed: 13, nApFlagged: 0, nSky: 150, nSkyFlagged: 0, bg: 1, sigmaSky: 0.1, varSum: 0.9, skyErr2: 0.1, noiseFrom: 'sky', ...extra });
+const counts = { nSeason: 12, nAll: 30 };
+
+test('single-image SNR < 3: no stacking projection, "No detectable source here"', () => {
+  for (const s of [2.9, 1.2, 0]) {
+    const t = S.snrText(fake(s), counts, { detector: 3 });
+    assert.match(t.line, /^No detectable source here/);
+    assert.doesNotMatch(t.simple, /Stacking this season|combined: about/);
+    assert.doesNotMatch(t.expert.join(' '), /Median stacks|SNR × √/);
+    assert.match(t.expert.join(' '), /No stacking projection: single-image SNR .* < 3/);
+    const row = S.csvRow(fake(s), {}, counts).split(','), h = S.CSV_HEAD.split(',');
+    assert.equal(row[h.indexOf('snr_season_det')], ''); assert.equal(row[h.indexOf('snr_all_det')], '');
+  }
+  const ok = S.snrText(fake(3), counts, { detector: 3 });
+  assert.match(ok.line, /^Signal-to-noise 3/); assert.match(ok.simple, /Stacking this season's 12 images/);
+});
+
+test('blank sky (a negative flux) gives "No detectable source", never a negative stacked SNR', () => {
+  const t = S.snrText(fake(-1.7, { flux: -1.7 }), counts, { detector: 5 });
+  assert.equal(t.line, 'No detectable source here (signal-to-noise -1.7).');
+  assert.doesNotMatch(t.simple + t.expert.join(' '), /about -|→ -/);
+  assert.match(t.simple, /doesn't create a source/);
+  // real pixels: pure sky noise with a dip where the "star" would be
+  const r = rng(11), img = { nx: NX, ny: NY, data: Float64Array.from({ length: NX * NY }, () => SKY + SKY_SIG * gauss(r)) };
+  for (let j = 18; j <= 21; j++) for (let i = 19; i <= 22; i++) img.data[j * NX + i] -= 2;
+  const p = S.aperturePhotometry(img, X0, Y0);
+  assert.ok(p.ok && p.flux < 0 && p.snr < 0);
+  assert.match(S.snrText(p, counts).line, /^No detectable source here/);
+});
+
+test("sky-limited note: the exact phrase in Expert when the star's own noise is not in σ; none with VARIANCE", () => {
+  const sky = S.snrText(fake(20), counts, { detector: 3 });
+  assert.ok(sky.expert.includes("Note: sky-limited estimate; ignores the star's own (photon) noise"));
+  assert.match(S.SKY_LIMITED_SIMPLE, /star's own light/);
+  const v = S.snrText(fake(20, { noiseFrom: 'variance+sky' }), counts, { detector: 3 });
+  assert.ok(!v.expert.some(l => /sky-limited/.test(l)));
+  // a stack on screen is measured on its own pixels, not projected
+  const st = S.snrText(fake(40), counts, { stack: true });
+  assert.doesNotMatch(st.simple, /Stacking/); assert.match(st.expert.join(' '), /Measured on the stacked \(median\) picture itself/);
+  assert.match(S.snrText({ ok: false, reason: 'blanked' }, {}, { stack: true }).line, /centre blanked in the stack: saturated or no good data/);
+  // a median stack hides a saturated core: its own images say so
+  const n = 9, clean = { n, data: Array(n * n).fill(1) }, holed = { n, data: Array(n * n).fill(1) }; holed.data[4 * n + 4] = null;
+  assert.equal(S.mostlyBlanked([holed, holed, clean], 4, 4), true);
+  assert.equal(S.mostlyBlanked([holed, clean, clean], 4, 4), false);
+  assert.match(S.snrText({ ok: false, reason: 'saturated' }, {}, { stack: true }).line, /saturated or blanked in most images of this stack/);
 });

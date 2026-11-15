@@ -17,7 +17,7 @@ import { notebookAdd, openNotebook } from './notebook/notebook.js'; // Lab noteb
 import { listImages } from '../core/irsa.js';
 import { isExpert } from './expert.js';
 import { propagate, separationArcsec, mjdToDate } from '../core/motion.js';
-import { gridToWorld } from '../core/align.js';
+import { gridToWorld, worldToGrid } from '../core/align.js';
 import { createContam } from './contam-ui.js';
 import { ringObject, ringAt } from './ringobj.js';
 import { seeItWith } from './seeit.js'; // can you actually see it (V magnitude), apart from 'is it up' // whose dashed ring, and where (patch bug, Sun 15 Nov)
@@ -429,10 +429,15 @@ const CB =createCleanBlink({ $, Snd, mode: () => mode, n: () => V.n, cell: () =>
 const curImg = () => (V.F.length ? V.F[Math.min(P.i, V.F.length - 1)] : null);
 const SNR = createSnrPanel($('snrBody'), { base: BASE, name: () => V.name,
   frame: () => (holdWait ? null : curImg()?.raw || null), frames: () => V.FK.map(f => f.raw),
+  // Blink / Compare show season stacks, not the Time image: measure those stacks, named as the stage names them
+  stacks: () => ((mode === 'blink' || mode === 'compare') && V.stacks.length > 1 && V.grid ? [firstS(), lastS()].map(s => ({
+    label: `${stackName(s).toLowerCase()} stack, ${s.count} image${s.count === 1 ? '' : 's'} (${sRange(s)})`, n: V.grid.n, data: s.d, exp: s.ringOff ? null : s.exp,
+    members: V.F.filter(f => seasonAt(f.mjd, V.bounds) === s.season).map(f => ({ n: V.grid.n, data: f.d, raw: f.raw })) })) : null), // a saturated core shows in its images
+  toGrid: (ra, dec) => worldToGrid(V.grid, ra, dec), label: raw => `${R.fmtDate(raw.date)}, D${raw.detector}`,
   seasonOf: m => seasonAt(m, V.bounds),
   starAt: raw => { const f = V.F.find(x => x.raw === raw); return f && V.ring && !f.ringOff ? gridToWorld(V.grid, f.exp[0], f.exp[1]) : null; } });
 $('cvA').addEventListener('click', e => { // click any point of the image on screen (Time view) to measure it
-  if (scene !== 'viewer' || (mode !== 'play' && mode !== 'blink') || !V.grid || !curImg()) return; // Blink: same patch, the Time image is named in the panel
+  if (scene !== 'viewer' || (mode !== 'play' && mode !== 'blink') || !V.grid || !curImg()) return; // Blink: the panel measures the two stacks on screen
   const r = e.currentTarget.getBoundingClientRect(), n = V.grid.n;
   SNR.at(...gridToWorld(V.grid, ((e.clientX - r.left) / r.width) * n - .5, ((e.clientY - r.top) / r.height) * n - .5));
   if (innerWidth < 1100) sheet(true);

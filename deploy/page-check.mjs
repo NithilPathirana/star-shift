@@ -127,14 +127,17 @@ async function run() {
         else if (/Barnard/.test(path)) {
           // Spec A: click the star (the patch centre) and an SNR line must appear in "This spot: signal-to-noise"
           const snrClick = "(() => { const A = document.getElementById('cvA'), r = A.getBoundingClientRect(); A.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));"
-            + " const b = document.getElementById('snrBody'); return { line: b?.querySelector('.snr-line')?.textContent || '', at: b?.querySelector('.snr-at')?.textContent || '' }; })()";
+            + " const b = document.getElementById('snrBody'), d = [...document.querySelectorAll('#tlDate > span')].pop()?.textContent || '';"
+            + " return { line: b?.querySelector('.snr-line')?.textContent || '', at: b?.querySelector('.snr-at')?.textContent || '', shown: d }; })()";
+          // ...and it measures the picture on screen: the SNR line names the shown image's (or Blink stack's) date (judging panel round 7)
+          const snrOk = v => /^(Signal-to-noise -?\d|SNR not meaningful here|No detectable source here)/.test(v.line) && /clicked/.test(v.at) && !!v.shown && v.at.includes(v.shown);
           let sn = {};
           for (let k = 0; k < 15; k++) {
             sn = (await send('Runtime.evaluate', { expression: snrClick, returnByValue: true }, s)).result?.result?.value || {};
-            if (/^(Signal-to-noise \d|SNR not meaningful here)/.test(sn.line) && /clicked/.test(sn.at)) break;
+            if (snrOk(sn)) break;
             await sleep(1000);
           }
-          if (!/^(Signal-to-noise \d|SNR not meaningful here)/.test(sn.line) || !/clicked/.test(sn.at)) errs.push(`clicking the star gave no SNR line (${JSON.stringify(sn).slice(0, 120)})`);
+          if (!snrOk(sn)) errs.push(`clicking the star gave no SNR line naming the picture on screen (${JSON.stringify(sn).slice(0, 200)})`);
           // the preset may still be in its early Blink / second season when the counter first shows, so retry for up to 20 s
           const step = "(() => { const st = document.getElementById('stage'), k = document.getElementById('diffKey'), l = document.getElementById('diffLgd');"
             + " const d = { p: k?.getAttribute('aria-pressed'), lg: !!l && !l.hidden && l.getClientRects().length > 0 };"

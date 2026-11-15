@@ -11,7 +11,9 @@
 //            + N_ap² × (π/2) σ_sky² / N_sky   (the error of the median sky level)
 //   Without VARIANCE: Σ VAR_i is replaced by N_ap σ_sky² (sky scatter only, so the star's own photon
 //   noise is left out and a bright star's SNR comes out too high; the callers say so).
-//   Stacks: SNR_n = SNR_1 × √n, if each of the n images is like this one (independent noise).
+//   Stacks: projected only when this image's SNR ≥ 3 (stacking noise does not make a source):
+//   a median stack (as the viewer's season pictures) gains √(2n/π), a mean √n, if each image is like this one.
+//   A stack on screen is measured on its own pixels (sky scatter of the stacked picture), never projected.
 
 export const SNR_DEFAULT_R = 2;           // px (12.3″), adjustable 1–4
 export const SNR_R_MIN = 1, SNR_R_MAX = 4;
@@ -96,8 +98,15 @@ export function aperturePhotometry(img, x, y, { r = SNR_DEFAULT_R, variance = nu
   return { ...out, ok: Number.isFinite(snr), reason: Number.isFinite(snr) ? null : 'nosky', bg, sigmaSky, flux, varSum, skyErr2, noise, snr, peak: Math.max(...ap) - bg };
 }
 
-// SNR if n images like this one are combined (independent noise): √n better.
+// SNR if n images like this one are combined (independent noise): √n better for a mean.
 export const stackedSNR = (snr, n) => (Number.isFinite(snr) && n > 0 ? snr * Math.sqrt(n) : NaN);
+// The viewer's season pictures are medians: a median of n is noisier than a mean, √(2n/π) (n of 1-2: no loss).
+export const medianStackedSNR = (snr, n) => (Number.isFinite(snr) && n > 0 ? snr * (n > 2 ? Math.sqrt(2 * n / Math.PI) : Math.sqrt(n)) : NaN);
+// Below this single-image SNR no source is detected, so nothing is projected for stacks.
+export const MIN_DETECT_SNR = 3;
+export const detected = (snr) => Number.isFinite(snr) && snr >= MIN_DETECT_SNR;
+export const SKY_LIMITED = "sky-limited estimate; ignores the star's own (photon) noise";
+export const SKY_LIMITED_SIMPLE = "This only counts the sky's flicker, not the flicker of the star's own light, so for a bright star the real number is lower.";
 
 // How many images share this one's detector: in its season (season = index into bounds) and in all.
 // frames: [{ mjd, detector }]; seasonOf(mjd) -> season index (seasons.js seasonAt with the page's bounds).
@@ -117,19 +126,40 @@ export const REASON_TEXT = {
   blanked: 'SNR not meaningful here (centre blanked: no good data)',
   edge: 'SNR not meaningful here (too close to the image edge)',
   nosky: 'SNR not meaningful here (not enough clean sky around it)',
+  blankedStack: 'SNR not meaningful here (centre blanked in the stack: saturated or no good data)',
+  saturatedStack: 'SNR not meaningful here (centre saturated or blanked in most images of this stack)',
 };
+// A median stack hides a saturated core (the few unblanked values survive): true when the centre
+// (within 1.5 px of x, y) is blanked in at least half of the stack's own images ({ n, data } each).
+export function mostlyBlanked(members, x, y) {
+  if (!members?.length) return false;
+  let k = 0;
+  for (const m of members) {
+    let hit = false;
+    for (let j = Math.floor(y - 2); j <= Math.ceil(y + 2) && !hit; j++) for (let i = Math.floor(x - 2); i <= Math.ceil(x + 2); i++) {
+      if (i >= 0 && j >= 0 && i < m.n && j < m.n && Math.hypot(i - x, j - y) <= 1.5 && !Number.isFinite(m.data[j * m.n + i] ?? NaN)) { hit = true; break; }
+    }
+    if (hit) k++;
+  }
+  return k >= members.length / 2;
+}
 
 /**
  * Words for one result. counts: { nSeason, nAll } same-detector images (optional).
  * Returns { simple, expert: [lines], line } — `line` is the one-line headline for both modes.
  */
-export function snrText(p, counts = {}, { detector } = {}) {
-  if (!p.ok) { const t = REASON_TEXT[p.reason] || 'SNR not meaningful here'; return { line: t, simple: t, expert: [t] }; }
+export function snrText(p, counts = {}, { detector, stack = false } = {}) {
+  if (!p.ok) { const t = (stack && REASON_TEXT[p.reason + 'Stack']) || REASON_TEXT[p.reason] || 'SNR not meaningful here'; return { line: t, simple: t, expert: [t] }; }
   const s1 = p.snr, ns = counts.nSeason, na = counts.nAll, det = detector ? `detector ${detector}` : 'this detector';
-  const line = `Signal-to-noise ${round(s1)}: ${snrWord(s1)}.`;
+  const seen = detected(s1);
+  // no source: say so plainly; never project a stack from noise (or from a negative flux)
+  const line = seen ? `Signal-to-noise ${round(s1)}: ${snrWord(s1)}.` : `No detectable source here (signal-to-noise ${round(s1)}).`;
   const st = [];
-  if (ns > 1) st.push(`Stacking this season's ${ns} images from ${det}: about ${round(stackedSNR(s1, ns))}.`);
-  if (na > 1 && na !== ns) st.push(`All ${na} images from ${det} combined: about ${round(stackedSNR(s1, na))}.`);
+  if (!seen) st.push(stack ? 'This stack shows nothing above the noise at this spot.' : "Stacking more images doesn't create a source that isn't there.");
+  else if (!stack) {
+    if (ns > 1) st.push(`Stacking this season's ${ns} images from ${det}: about ${round(medianStackedSNR(s1, ns))}.`);
+    if (na > 1 && na !== ns) st.push(`All ${na} images from ${det} combined: about ${round(medianStackedSNR(s1, na))}.`);
+  }
   const simple = [line, ...st].join(' ');
   const f = (v) => (Math.abs(v) >= 100 || (Math.abs(v) < 0.01 && v !== 0) ? v.toExponential(3) : v.toPrecision(4));
   const expert = [
@@ -138,8 +168,11 @@ export function snrText(p, counts = {}, { detector } = {}) {
     `B = ${f(p.bg)} MJy/sr: median of ${p.nSky} sky px, ${p.rIn}–${p.rOut} px out${p.nSkyFlagged ? ` (${p.nSkyFlagged} flagged px left out)` : ''}; σ_sky = ${f(p.sigmaSky)} (1.4826 × MAD)`,
     p.noiseFrom === 'variance+sky'
       ? `σ² = ΣVAR + N²(π/2)σ_sky²/N_sky = ${f(p.varSum)} + ${f(p.skyErr2)} (VARIANCE layer + sky level error)`
-      : `σ² = Nσ_sky² + N²(π/2)σ_sky²/N_sky = ${f(p.varSum)} + ${f(p.skyErr2)} (sky scatter only: VARIANCE not loaded, so the star's own photon noise is left out and a bright star's SNR is too high)`,
-    ...(ns > 1 || na > 1 ? [`Stacks: SNR × √n (if each image is like this one): season n = ${ns || 1} → ${stackedSNR(s1, ns || 1).toFixed(1)}; all n = ${na || 1} → ${stackedSNR(s1, na || 1).toFixed(1)}`] : []),
+      : `σ² = Nσ_sky² + N²(π/2)σ_sky²/N_sky = ${f(p.varSum)} + ${f(p.skyErr2)} (${stack ? 'sky scatter of the stacked picture; the reprojection smooths noise a little, so this may read slightly high' : 'sky scatter only: VARIANCE not loaded, so the star\'s own photon noise is left out and a bright star\'s SNR is too high'})`,
+    ...(stack ? ["Measured on the stacked (median) picture itself: σ_sky is that picture's own sky scatter; no √n projection"]
+      : !seen ? [`No stacking projection: single-image SNR ${s1.toFixed(2)} < ${MIN_DETECT_SNR} (no detected source to scale)`]
+      : ns > 1 || na > 1 ? [`Median stacks: SNR × √(2n/π) (if each image is like this one; a mean would give × √n): season n = ${ns || 1} → ${medianStackedSNR(s1, ns || 1).toFixed(1)}; all n = ${na || 1} → ${medianStackedSNR(s1, na || 1).toFixed(1)}`] : []),
+    ...(p.noiseFrom === 'sky' ? [`Note: ${SKY_LIMITED}`] : []),
   ];
   return { line, simple, expert };
 }
@@ -151,6 +184,6 @@ export function csvRow(p, meta = {}, counts = {}) {
   const ns = counts.nSeason || '', na = counts.nAll || '';
   return [q(meta.target ?? ''), q(meta.obsid ?? ''), num(meta.mjd, 10), meta.detector ?? '', num(meta.wavelengthUm, 4), num(meta.ra, 9), num(meta.dec, 9),
     num(p.x, 5), num(p.y, 5), p.r, p.rIn, p.rOut, p.nApUsed ?? '', p.nApFlagged ?? '', p.nSky ?? '', num(p.bg), num(p.sigmaSky), num(p.varSum), num(p.skyErr2),
-    num(p.flux), num(p.noise), num(p.snr, 4), p.noiseFrom, ns, p.ok && ns ? num(stackedSNR(p.snr, ns), 4) : '', na, p.ok && na ? num(stackedSNR(p.snr, na), 4) : '',
+    num(p.flux), num(p.noise), num(p.snr, 4), p.noiseFrom, ns, p.ok && ns && detected(p.snr) ? num(medianStackedSNR(p.snr, ns), 4) : '', na, p.ok && na && detected(p.snr) ? num(medianStackedSNR(p.snr, na), 4) : '',
     q(p.ok ? '' : (REASON_TEXT[p.reason] || p.reason))].join(',');
 }
