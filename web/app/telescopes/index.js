@@ -97,22 +97,29 @@ export function createTelescopes(ctx) {
     const capH = Math.max(0, ...[...panels.querySelectorAll('.tele-p')].map(f => f.offsetHeight - (f.querySelector('.tele-box')?.offsetHeight || 0))) || 104;
     const noteH = ($('teleNote')?.offsetHeight || 18) + 10;
     const side = phone ? Math.floor(Math.min(box.width - 4, 420))
-      : Math.floor(Math.max(120, Math.min((box.width - 2 * 18) / 3, box.height - head - 10 - capH - noteH)));
+      : Math.floor(Math.max(120, Math.min((box.width - 2 * 18) / 3, box.height - head - 20 - capH - noteH)));
     return side;
+  }
+  // caption column: as wide as a third of the stage allows (up to 260 px), even when a short stage
+  // makes the image small, so captions wrap to fewer lines and stay inside the stage (QA 1366x640)
+  function figWidth(side) {
+    if (innerWidth < 700) return side;
+    const w = Math.floor((root.getBoundingClientRect().width - 2 * 18) / 3);
+    return Math.max(side, Math.min(w, 260));
   }
 
   function draw() {
     if (!T.on) return;
     if (!panels.children.length) build();
     const fld = T.field; if (!fld) return;
-    const side = sizePanels(), dpr = Math.min(devicePixelRatio || 1, 2), zoom = ctx.zoom?.() || 1;
+    const side = sizePanels(), figW = figWidth(side), dpr = Math.min(devicePixelRatio || 1, 2), zoom = ctx.zoom?.() || 1;
     const view = { ...fld, sizeArcsec: fld.sizeArcsec / zoom };
     const star = motionStar(), fx = fixedPos(), ep = epochs();
     const pos = Object.fromEntries(ORDER.map(id => [id, star && Number.isFinite(ep[id]) ? positionsAt(star, fx, [ep[id]])[0] : fx]));
     const f = curFrame();
     for (const id of ORDER) {
       const fig = panels.querySelector(`[data-s="${id}"]`), cv = fig.querySelector('canvas'), msg = fig.querySelector('.tele-msg');
-      cv.style.width = cv.style.height = side + 'px'; fig.style.width = side + 'px';
+      cv.style.width = cv.style.height = side + 'px'; fig.style.width = figW + 'px';
       const W = Math.round(side * dpr); if (cv.width !== W) { cv.width = W; cv.height = W; }
       const g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); hatch(g, W, W, dpr);
       let pix = null, ok = false; msg.innerHTML = '';
@@ -143,7 +150,10 @@ export function createTelescopes(ctx) {
     $('teleNote').textContent = `Each panel: ${span}″ across (${(span / 60).toFixed(1)}′), north up, east left, same scale.` +
       (fld.clipped ? ' The star moved further than one view can hold, so a ring may fall off the edge.' : '') +
       (star ? '' : ' No catalogued motion for this object: the ring marks the same spot in all three.');
+    // captions and note were measured from the previous draw: if the text still runs past the stage, size once more
+    if (innerWidth >= 700 && !refit && root.scrollHeight > root.clientHeight + 1) { refit = true; requestAnimationFrame(() => { draw(); refit = false; }); }
   }
+  let refit = false;
 
   // Phone: the three panels stack, so the stage grows to hold them (the page scrolls, not the stage).
   function fitPhone() {

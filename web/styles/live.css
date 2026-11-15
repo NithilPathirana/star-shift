@@ -294,6 +294,9 @@ html[data-motion=full] .tele-wait { animation: tele-pulse 1.4s ease-in-out infin
 .mode-telescopes .compass { display: none; }
 .tele { bottom: 14px; }
 .tele-panels { flex: none; }
+/* the image keeps its own size inside a wider caption column; a very short stage scrolls instead of cutting text */
+.tele-box { justify-self: start; }
+@media (min-width: 700px) { .tele { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; } }
 
 /* lightcurve + clean blink */
 /* Brightness-vs-date strip in the info panel (app/lightcurve/). DESIGN.md 25 charts: dark flat

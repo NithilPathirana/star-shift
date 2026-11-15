@@ -49,7 +49,7 @@ function placesFor(chosen) {
 }
 
 function rulerHtml(segs, label) {
-  // Blocked share drawn as the no-data hatch masked by a hard-stop gradient (1 − T as alpha).
+  // Blocked share drawn as a flat shade masked by a hard-stop gradient (1 − T as alpha).
   const stops = [];
   let gap = '';
   for (const s of segs) {
