@@ -23,14 +23,19 @@ const BROWSERS = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/P
 // archive / catalogue hosts and relay routes whose failures are "the archive is busy", not our bug
 const ARCHIVE = /\/(SIA|TAP\/sync|ibe\/|gaia\/|jpl\/|hips\/)|simbad|irsa|gea\.esac|ssd-api|fonts\.g/i;
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+// hard limits so a stuck browser can never hold the commit gate (a hang held it 10 min, Sun 13:02)
+const CDP_TIMEOUT_MS = 30000, TOTAL_TIMEOUT_MS = 6 * 60 * 1000;
+let browserProc = null;
+setTimeout(() => { console.error(`page check could not run: no result after ${TOTAL_TIMEOUT_MS / 60000} min (browser stuck)`); try { browserProc?.kill(); } catch { /* gone */ } process.exit(2); }, TOTAL_TIMEOUT_MS).unref();
 
 async function run() {
   const exe = process.env.BROWSER || BROWSERS.find(p => existsSync(p));
   if (!exe) throw new Error('No Chrome/Edge found (set BROWSER=path)');
   const port = 9300 + Math.floor(Math.random() * 600), dir = mkdtempSync(join(tmpdir(), 'pagecheck-'));
-  const chrome = spawn(exe, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, '--no-first-run', 'about:blank'], { stdio: 'ignore', windowsHide: true });
+  const chrome = browserProc = spawn(exe, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, '--no-first-run', 'about:blank'], { stdio: 'ignore', windowsHide: true });
   let ws, id = 0; const pend = new Map(), handlers = [];
-  const send = (method, params = {}, sessionId) => new Promise(res => { const i = ++id; pend.set(i, res); ws.send(JSON.stringify({ id: i, method, params, sessionId })); });
+  const send = (method, params = {}, sessionId) => new Promise((res, rej) => { const i = ++id; pend.set(i, res); ws.send(JSON.stringify({ id: i, method, params, sessionId }));
+    setTimeout(() => { if (pend.has(i)) { pend.delete(i); rej(new Error(`browser did not answer ${method} in ${CDP_TIMEOUT_MS / 1000} s`)); } }, CDP_TIMEOUT_MS); });
   const rows = [];
   try {
     let info;
@@ -61,10 +66,16 @@ async function run() {
       await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false }, s);
       await send('Page.navigate', { url: base + path }, s);
       await sleep(wait);
-      if (/scene=viewer/.test(path)) { // the viewer really opened and has images (not just "no errors")
-        const r = await send('Runtime.evaluate', { expression: "(() => ({ scene: document.querySelector('.app')?.dataset.scene, n: document.getElementById('d-n')?.textContent || '' }))()", returnByValue: true }, s);
-        const v = r.result?.result?.value || {};
-        if (v.scene !== 'viewer' || !/\d+ of [\d,]+ images/.test(v.n)) errs.push(`deep link did not open the viewer with images (scene=${v.scene}, "${String(v.n).slice(0, 60)}")`);
+      if (/scene=viewer/.test(path)) { // the viewer really opened and has images (not just "no errors");
+        // poll up to 25 s more, so a busy machine (several gates queued) is not mistaken for a broken link
+        let v = {};
+        for (let k = 0; k < 25; k++) {
+          const r = await send('Runtime.evaluate', { expression: "(() => ({ scene: document.querySelector('.app')?.dataset.scene, n: document.getElementById('d-n')?.textContent || '' }))()", returnByValue: true }, s);
+          v = r.result?.result?.value || {};
+          if (v.scene === 'viewer' && /\d+ of [\d,]+ images/.test(v.n)) break;
+          await sleep(1000);
+        }
+        if (v.scene !== 'viewer' || !/\d+ of [\d,]+ images/.test(v.n)) errs.push(`deep link did not open the viewer with images within ${Math.round(wait / 1000) + 25} s (scene=${v.scene}, "${String(v.n).slice(0, 60)}")`);
       }
       handlers.splice(handlers.indexOf(h), 1);
       await send('Target.closeTarget', { targetId });

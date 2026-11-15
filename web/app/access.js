@@ -7,17 +7,21 @@
 (function () {
   'use strict';
   var KEY = 'star-shift-access-v1', root = document.documentElement;
-  var BRAND = { p: '#8A4719', s: '#46604A', t: '#A4452F' };           // the team's own Star Shift colours
+  // Two looks. 'volt' is the default since Sun 15 Nov 2026 (Nithil, team leader: "Use Blue with white with neon yellow"):
+  // white paper, navy ink, vivid blue and neon yellow, from styles/look.css. 'classic' is the first copper look.
+  var LOOKS = { volt: { p: '#1342C2', s: '#46604A', t: '#A4452F' }, classic: { p: '#8A4719', s: '#46604A', t: '#A4452F' } };
+  var BRAND = LOOKS.volt;
   var PRESETS = [
-    { id: 'star', name: 'Star Shift', note: 'The team’s copper, sage and coral', p: BRAND.p, s: BRAND.s, t: BRAND.t },
+    { id: 'star', look: 'volt', name: 'Star Shift', note: 'Blue, white and neon yellow', p: BRAND.p, s: BRAND.s, t: BRAND.t },
     // Graphite keys plus two hues on the axis each kind of colour blindness still sees (blue and orange; teal and crimson).
     // Simulated (Machado 2009): every pair of the three stays at least 17 apart (OKLab x100) for the eyes it is made for;
     // the team palette's "agrees" and "differs" are 3.8 apart under protanopia.
     { id: 'rg', name: 'Red-green safe', note: 'For protanopia and deuteranopia', p: '#2B2622', s: '#0072B2', t: '#D55E00' },
     { id: 'by', name: 'Blue-yellow safe', note: 'For tritanopia', p: '#2B2622', s: '#00707A', t: '#B3123E' },
-    { id: 'mono', name: 'No colour', note: 'For achromatopsia: shade and marks only', p: '#2B2622', s: '#5B5148', t: '#111111' }
+    { id: 'mono', name: 'No colour', note: 'For achromatopsia: shade and marks only', p: '#2B2622', s: '#5B5148', t: '#111111' },
+    { id: 'classic', look: 'classic', name: 'First look: copper', note: 'The earlier copper, sage and coral on cream', p: LOOKS.classic.p, s: LOOKS.classic.s, t: LOOKS.classic.t }
   ];
-  var DEF = { preset: 'star', p: BRAND.p, s: BRAND.s, t: BRAND.t, leading: 'normal', spacing: 'normal', face: 'star',
+  var DEF = { preset: 'star', look: 'volt', p: BRAND.p, s: BRAND.s, t: BRAND.t, leading: 'normal', spacing: 'normal', face: 'star',
     bold: false, soft: false, marks: false, links: false, shapes: false, focus: false, targets: false };
   var S = read();
 
@@ -51,7 +55,8 @@
   function lum(rgb) { return 0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2]); }
   function contrast(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
 
-  var SHELL = hex2rgb('#E9E2D8'), SOFT = hex2rgb('#DCD4C8'), CREAM = hex2rgb('#FFF8F0'), STAGE = hex2rgb('#15110E');
+  var SHELL = hex2rgb('#E9E2D8'), SOFT = hex2rgb('#DCD4C8');   // the darker light surface in each state (cool look; the copper look's are almost the same luminance)
+  var CREAM = hex2rgb('#FFF8F0'), STAGE = hex2rgb('#15110E');
   /** One picked colour -> the family the interface needs. Lightness moves until each use meets its contrast target. */
   function family(hex, soft) {
     var c = rgb2lch(hex2rgb(hex)), C = c[1], h = c[2], bg = soft ? SOFT : SHELL;
@@ -78,6 +83,7 @@
     var o = {}; try { o = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { o = {}; }
     var out = {}; for (var k in DEF) out[k] = (typeof o[k] === typeof DEF[k]) ? o[k] : DEF[k];
     ['p', 's', 't'].forEach(function (k) { if (!okHex(out[k])) out[k] = DEF[k]; });
+    if (o.look === undefined && out.preset === 'star') { out.p = DEF.p; out.s = DEF.s; out.t = DEF.t; }   // saved before the second look existed: follow the new default
     return out;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* private window: the choice lasts for this page only */ } }
@@ -86,13 +92,15 @@
     '--sage', '--sage-ink', '--sage-tint', '--cross', '--coral', '--color-danger', '--ax-t-glow', '--ax-t-tint'];
   function setVar(n, v) { root.style.setProperty(n, v); }
   function apply() {
-    var custom = !(S.p === BRAND.p && S.s === BRAND.s && S.t === BRAND.t);
+    if (S.look !== 'classic') S.look = 'volt';
+    var B = LOOKS[S.look], custom = !(S.p === B.p && S.s === B.s && S.t === B.t);
+    root.dataset.axLook = S.look;
     VARS.forEach(function (n) { root.style.removeProperty(n); });
     if (custom) {
       var P = family(S.p, S.soft), Q = family(S.s, S.soft), T = family(S.t, S.soft);
-      if (S.p !== BRAND.p) { setVar('--copper', P.ink); setVar('--copper-ink', P.deep); setVar('--copper-key', P.fill); setVar('--copper-deco', P.deco); setVar('--focus', P.ink); setVar('--ring', P.glow); setVar('--ax-p-tint', P.tint); setVar('--color-accent', P.deep); setVar('--color-focus', P.ink); }
-      if (S.s !== BRAND.s) { setVar('--sage', Q.ink); setVar('--sage-ink', Q.deep); setVar('--sage-tint', Q.tint); setVar('--cross', Q.glow); }
-      if (S.t !== BRAND.t) { setVar('--coral', T.ink); setVar('--color-danger', T.ink); setVar('--ax-t-glow', T.glow); setVar('--ax-t-tint', T.tint); }
+      if (S.p !== B.p) { setVar('--copper', P.ink); setVar('--copper-ink', P.deep); setVar('--copper-key', P.fill); setVar('--copper-deco', P.deco); setVar('--focus', P.ink); setVar('--ring', P.glow); setVar('--ax-p-tint', P.tint); setVar('--color-accent', P.deep); setVar('--color-focus', P.ink); }
+      if (S.s !== B.s) { setVar('--sage', Q.ink); setVar('--sage-ink', Q.deep); setVar('--sage-tint', Q.tint); setVar('--cross', Q.glow); }
+      if (S.t !== B.t) { setVar('--coral', T.ink); setVar('--color-danger', T.ink); setVar('--ax-t-glow', T.glow); setVar('--ax-t-tint', T.tint); }
     }
     root.dataset.axColors = custom ? S.preset : 'off';
     root.dataset.axLeading = S.leading; root.dataset.axSpacing = S.spacing; root.dataset.axFace = S.face;
@@ -199,7 +207,7 @@
     [].forEach.call(panel.querySelectorAll('.ax-preset'), function (b) { var on = b.dataset.preset === S.preset; b.setAttribute('aria-checked', String(on)); b.tabIndex = on || (S.preset === 'custom' && b.dataset.preset === 'star') ? 0 : -1; });
     var adj = [];
     ['p', 's', 't'].forEach(function (k) {
-      var inp = panel.querySelector('[data-ax-col="' + k + '"]'), brand = S[k] === BRAND[k];
+      var inp = panel.querySelector('[data-ax-col="' + k + '"]'), brand = S[k] === LOOKS[S.look][k];
       inp.value = S[k].toLowerCase(); panel.querySelector('#axn-' + k).textContent = S[k].toUpperCase();
       if (!brand && contrast(hex2rgb(S[k]), S.soft ? SOFT : SHELL) < 5.2) adj.push({ p: 'Primary', s: 'Secondary', t: 'Tertiary' }[k]);
     });
@@ -213,7 +221,7 @@
       for (var k in DEF) S[k] = DEF[k];
       ['motion', 'glass', 'contrast', 'text'].forEach(function (n) { setTheirs(n, false); });
     } else if (b.dataset.preset) {
-      var p = PRESETS.filter(function (x) { return x.id === b.dataset.preset; })[0]; S.preset = p.id; S.p = p.p; S.s = p.s; S.t = p.t;
+      var p = PRESETS.filter(function (x) { return x.id === b.dataset.preset; })[0]; S.preset = p.id; S.look = p.look || 'volt'; S.p = p.p; S.s = p.s; S.t = p.t;
       if (p.id === 'mono') S.marks = true;                       // with no colour, the marks carry the meaning
     } else if (b.dataset.ax) {
       var key = b.dataset.ax, on = b.getAttribute('aria-checked') !== 'true';
@@ -230,7 +238,7 @@
   function onColour(e) {
     var k = e.target.dataset && e.target.dataset.axCol; if (!k || !okHex(e.target.value)) return;
     S[k] = e.target.value.toUpperCase();
-    var hit = PRESETS.filter(function (x) { return x.p === S.p && x.s === S.s && x.t === S.t; })[0]; S.preset = hit ? hit.id : 'custom';
+    var hit = PRESETS.filter(function (x) { return (x.look || 'volt') === S.look && x.p === S.p && x.s === S.s && x.t === S.t; })[0]; S.preset = hit ? hit.id : 'custom';
     save(); apply(); sync();
   }
   function open(from) {
@@ -259,5 +267,15 @@
     var foot = pop.querySelector('.foot'); foot ? pop.insertBefore(b, foot) : pop.appendChild(b);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hook); else hook();
+
+  /* look-late.css holds the cool copies of access.css and expert.css rules; it must come after both (expert.css is added by script, late) */
+  function late() {
+    var all = document.querySelectorAll('link[href*="styles/expert.css"],#expert-css'), ex = all[all.length - 1], mine = document.getElementById('ax-look-late');
+    if (!mine) { mine = document.createElement('link'); mine.rel = 'stylesheet'; mine.id = 'ax-look-late'; mine.href = 'styles/look-late.css?v=1'; document.head.appendChild(mine); }
+    if (!ex || (ex.compareDocumentPosition(mine) & Node.DOCUMENT_POSITION_FOLLOWING)) return;   // no expert.css yet, or already after it
+    ex.parentNode.insertBefore(mine, ex.nextSibling);
+  }
+  try { new MutationObserver(late).observe(document.head, { childList: true }); } catch (e) { /* old browser: expert.css keeps its first colours */ }
+  late();
   addEventListener('storage', function (e) { if (e.key === KEY) { S = read(); apply(); sync(); } });   // another tab changed it
 })();

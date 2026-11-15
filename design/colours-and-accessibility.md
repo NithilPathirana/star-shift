@@ -65,3 +65,32 @@ The five switches the app already had (motion, transparency, contrast, text, sou
 - **Found, not mine:** the app's existing Larger text switch makes the phone inspector about 32 px wider than the screen.
 - **Not checked:** Safari, Firefox, a real phone, Expert mode, the tour while the panel is open, and Archive, Spectrum, Asteroids, Spot and Tonight? by eye (they load the same two files). Not checked with colour-blind people: the numbers above are a simulation.
 - The simulation strip needs SVG filters and `color-mix()`, which every current browser has.
+
+## Update, Sun 15 Nov 13:00: the default look is blue, white and neon yellow
+
+Nithil, as team leader: 12:40 "change the color scheme to be not AI-generated looking"; 12:53, after a first cool-grey and Prussian-blue try, "Looks AI. Use Blue with white with neon yellow". The cool-grey try is gone; this replaces it.
+
+**The look**
+- **White:** paper `#F2F4FA`, raised surfaces `#F8FAFE`, keys almost pure white. Ink is navy `#182236`.
+- **Blue:** `#1342C2` for links, switches and tags; the page rail is solid blue (`#2456E6` to `#0F37B0`) with white labels; plain keys carry blue lettering (`#0C34A6`).
+- **Neon yellow:** only as a fill or a mark, never as text on white. The one main key on a screen (`#F1FF5C` to `#DCF514`, navy lettering), text selection, and the ring, compass and links on the dark image (`#EAF42F` on navy `#0A1121`).
+- Sage ("agrees") and coral ("differs") are unchanged. The infrared image keeps its copper scale; the logo keeps its orange star.
+
+**How it is built**
+- `web/styles/look.css` (97 KB) and `web/styles/look-late.css` (about 14 KB) are **generated** by `design/tools/make_look.py`. The script reads every stylesheet and writes each rule again with the 201 warm colours moved (the mapping is the `move()` function), then adds a short hand-written block for the yellow key, the blue rail and the blue key lettering. Nothing in the app's own stylesheets is edited.
+- `access.css` imports `look.css`; `access.js` adds `look-late.css` after the Expert styles, which arrive late.
+- Every copied rule carries a zero-weight switch, `:where(html:not([data-ax-look=classic]))`, and keeps the original order, so the cascade is exactly the original one.
+- **The copper look is kept** as the palette "First look: copper" in the Colours panel. One click brings it back on every page.
+- With a colour-blind palette or picked colours, the yellow key, the blue rail and the blue lettering step back so the chosen colours lead.
+- **After any change to a stylesheet, run `python design/tools/make_look.py` again**, or the new rule keeps its copper colour.
+
+**Checked**
+- Contrast, token by token, copper look against this one: higher everywhere (text 12.37 → 14.46; quiet text 5.22 → 6.10; links 5.45 → 7.38; marks on the image 9.01 → 15.68). Main key: navy on yellow 14.8 or more. Rail labels: 5.2 or more.
+- By eye at 1366×768: cold open, Viewer, Proof. At 390×844: cold open and the Colours panel.
+- `npm test` 359 of 359, `deploy/page-check.mjs` 12 of 12 pages, no errors.
+
+**Not changed, and now different from the app**
+- The pitch deck, the videos, the thumbnail still, and any screenshots in the README or submission still show cream and copper.
+- Colours set in scripts (charts) keep their first values. One keyframe animation (`tour-pulse`) keeps its copper glow.
+
+**Not checked in this look:** Spot, Archive, Asteroids, Spectrum and Tonight? by eye (they were seen in the cool-grey try, built the same way), Expert mode, the tour, Increase contrast, Softer light, Safari, Firefox, a real phone.

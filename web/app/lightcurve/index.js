@@ -50,7 +50,9 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick })
     for (const g of S.lc?.groups || []) {
       if (!g.absent || g.detect?.state !== 'offset' || !g.sky) continue;
       const [ra, dec] = g.sky.light, ck = `${ra.toFixed(5)},${dec.toFixed(5)}`;
-      let src = null;
+      // the saved neighbour list first (demo targets, proof.json: no network, no 15 s wait when Gaia is slow), then live Gaia
+      let src = pickSaved(await savedNeighbours(S.name), g.sky);
+      if (src && S.key === key) { g.src = src; render(); continue; }
       try {
         if (!gaiaCache.has(ck)) gaiaCache.set(ck, gaiaCone(ra, dec, BLEND_RADIUS, { endpoint: `${location.origin}/gaia/tap/sync`, top: 10, signal: AbortSignal.timeout(15000) }));
         src = pickSource(await gaiaCache.get(ck), g.sky);
