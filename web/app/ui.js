@@ -411,11 +411,13 @@ function leaveLoader() {
 // showState(null) leaves #stLoading alone so leaveLoader() can fade it out
 function showState(id) { ['stLoading', 'stError', 'stEmpty'].forEach(x => { if (id === null && x === 'stLoading') return; $(x).hidden = x !== id; }); if (id && id !== 'stLoading') { V.scan?.destroy(); V.scan = null; } }
 let arriveCount = 0;
+const STALL_MS = 10000;
 function progress() {
   const done = V.F.length + V.failed, N = Math.max(1, V.planned);
   rocketAt(done / N);
-  const slow = V.retries > 0 && V.status === 'loading';
-  V.scan?.slow(slow ? `IRSA is slow. ${V.F.length} of ${V.planned} kept. Retrying ${V.retries} image${V.retries === 1 ? '' : 's'}` : null);
+  // Retries stay quiet (the thin line keeps moving); a message only when nothing has arrived for STALL_MS
+  const slow = V.retries > 0 && V.status === 'loading' && performance.now() - V.lastArrive > STALL_MS;
+  V.scan?.slow(slow ? `The image archive (IRSA) is slow right now. ${V.FA.length} of ${V.planned} images in; still asking for the rest.` : null);
   if (V.status === 'loading') $('d-meas').textContent = `measuring… (${V.F.length} of ${V.planned || '…'} images)`;
 }
 // A coordinate patch's heading (capitalised); the loader's "Finding images of …" keeps it lower case.
@@ -427,7 +429,7 @@ function load(query, label) {
   TS.show(false); TS.reset();
   CB.leave(); LC.data(null, null, label, true);
   CX.reset();
-  Object.assign(V, { query, target: null, grid: null, raws: [], F: [], FA: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, status: 'loading', motion: null, seasons: [], name: label || PATCH_NAME });
+  Object.assign(V, { query, target: null, grid: null, raws: [], F: [], FA: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, lastArrive: performance.now(), status: 'loading', motion: null, seasons: [], name: label || PATCH_NAME });
   P.i = 0; shown = -1; arriveCount = 0;
   $('stLoading').classList.remove('leaving');
   // a loader still fading out from the last load shares #scanLoader: finish it now, or its late
@@ -455,14 +457,14 @@ function load(query, label) {
       $('d-field').textContent = `${Math.round(V.n * V.grid.scale)}″ · north up`;
       layout(); buildTimeline(); progress();
     } else if (e.type === 'FRAME') {
-      const f = toF(e.frame); V.raws.push(e.frame);
+      const f = toF(e.frame); V.raws.push(e.frame); V.lastArrive = performance.now();
       let k = V.FA.findIndex(x => x.mjd > f.mjd); if (k < 0) k = V.FA.length; V.FA.splice(k, 0, f);
       V.scan?.add(f);
       const keep = V.F[P.i]; V.F = CX.filter(V.FA); if (keep) P.i = Math.max(0, V.F.indexOf(keep));
       CX.ensureLayers();
       progress(); rebuildSoon();
     } else if (e.type === 'FRAME_FAILED') { V.failed++; progress(); }
-    else if (e.type === 'RETRY_WAIT') { V.retries++; progress(); }
+    else if (e.type === 'RETRY_WAIT') { V.retries++; progress(); setTimeout(() => { if (!ctl.signal.aborted) progress(); }, STALL_MS + 100); }
     else if (e.type === 'DONE') {
       V.status = 'ready'; $('thin').hidden = true; const leaveWait = leaveLoader();
       if (!V.FA.length) { V.status = 'error'; $('errTxt').textContent = 'No images arrived. The archive is often busy; Retry asks again.'; $('useLoaded').hidden = true; showState('stError'); Snd.play('error'); return; }

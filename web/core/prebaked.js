@@ -10,7 +10,9 @@
 // network. In Node (no `location`) it is a plain fetch unless configurePrebaked() sets it up, so
 // the tools (make_proof, prebake, export) always ask the relay.
 
-const MANIFEST_TIMEOUT_MS = 4000;
+// Generous: on a slow link (phone data, a cold deploy) a 4 s limit gave up on the 200 KB manifest
+// and sent all five demo targets live (Dehan saw "Retrying" on a pre-baked star, Sun 15 Nov).
+const MANIFEST_TIMEOUT_MS = 20000;
 
 let custom = null;      // set by configurePrebaked (tests)
 let manifestP = null;   // Promise<Map<key, file> | null>, loaded once
@@ -36,18 +38,24 @@ function config() {
 }
 
 // For tests and tools: { manifestUrl, fileBase, origin, fetchImpl }, or null to go back to the default.
-export function configurePrebaked(c) { custom = c; manifestP = null; }
+export function configurePrebaked(c) { custom = c; manifestP = null; manifestFailAt = -Infinity; }
 
 const net = (c) => c?.fetchImpl || ((...a) => globalThis.fetch(...a));
 
+let manifestFailAt = -Infinity; // after a failure, wait RETRY_MANIFEST_MS before asking again
+const RETRY_MANIFEST_MS = 30000;
 function loadManifest(c) {
+  if (!manifestP && Date.now() - manifestFailAt < RETRY_MANIFEST_MS) return Promise.resolve(null);
   if (!manifestP) manifestP = (async () => {
     try {
       const res = await net(c)(c.manifestUrl, { signal: AbortSignal.timeout(MANIFEST_TIMEOUT_MS) });
-      if (!res.ok) return null;
+      if (!res.ok) throw new Error(`manifest HTTP ${res.status}`);
       const m = await res.json();
       return new Map(Object.entries(m?.entries || {}).map(([k, v]) => [k, v?.file]).filter(([, f]) => typeof f === 'string' && f));
-    } catch { return null; } // no manifest: everything goes live
+    } catch {
+      manifestP = null; manifestFailAt = Date.now(); // this request goes live; the manifest is tried again later
+      return null;
+    }
   })();
   return manifestP;
 }
