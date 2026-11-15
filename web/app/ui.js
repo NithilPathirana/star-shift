@@ -391,7 +391,38 @@ const CX = createContam({ $, R, V, P, esc, set, Snd, base: BASE, tables: () => t
 // Brightness-vs-date strip (lightcurve/) and Clean Blink (cleanblink.js)
 const LC = createLightcurve({ $, esc, colourOf: um => rangeOf(um)?.c,
   onPick: i => { if (mode === 'compare' || mode === 'blink') setMode('play'); P.pause(); const f = V.FK[i]; if (f && !V.F.includes(f)) setHold(false); P.set(Math.max(0, V.F.indexOf(f)), true); Snd.play('scrub'); } });
-const CB = createCleanBlink({ $, Snd, mode: () => mode, n: () => V.n, cell: () => cssCell, redraw: () => draw(),
+// "Make a light curve" (judges' suggestion B, lightcurve/maker.js): from the Brightness-over-time panel, from a spot
+// clicked on the image, or from a shared link (?lc=…). Uses the images the flag filter keeps, as the strip does.
+let lcWant = (() => { const q = new URLSearchParams(location.search); return q.get('scene') === 'viewer' ? q.get('lc') : null; })();
+async function openLC(source, choices) {
+  if (V.status !== 'ready' || !V.FK.length || !V.grid) { toast('Wait until all the images are in, then make a light curve.'); return; }
+  P.pause(); $('lcmPick')?.remove();
+  try {
+    const m = await import('./lightcurve/maker.js');
+    m.openMaker({ frames: V.FK.map(f => f.raw), grid: V.grid, bounds: V.bounds, name: V.name, preset: holdPreset()?.key || null, base: BASE,
+      source: source || { own: true }, choices: choices || null, ranges: () => ranges, notebookAdd, toast, shareURL });
+    Snd.play('click');
+  } catch (err) { console.warn('light curve', err); toast("Couldn't open the light-curve maker."); }
+}
+$('lcMake').onclick = () => openLC();
+(() => { // a click (not a drag) on the image offers a key for that spot; on the target itself, the target
+  const cv = $('cvA'), scr = cv.parentElement; let down = null;
+  scr.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; if (!e.target.closest('#lcmPick')) $('lcmPick')?.remove(); });
+  scr.addEventListener('click', e => {
+    if (!e.target.closest('#cvA, #hitStar, #hitOther') || scene !== 'viewer' || (mode !== 'play' && mode !== 'blink') || !V.grid || V.status !== 'ready' || !down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
+    const r = cv.getBoundingClientRect(), c = r.width / V.n, i = (e.clientX - r.left) / c - 0.5, j = (e.clientY - r.top) / c - 0.5;
+    if (!(i >= -0.5 && j >= -0.5 && i <= V.n - 0.5 && j <= V.n - 0.5)) return;
+    const f = V.F[Math.min(P.i, V.F.length - 1)], own = f && !f.ringOff && f.exp && Math.hypot(i - f.exp[0], j - f.exp[1]) <= 1.5;
+    const [ra, dec] = gridToWorld(V.grid, i, j);
+    const b = document.createElement('button'); b.type = 'button'; b.id = 'lcmPick'; b.className = 'key lcm-pick';
+    b.textContent = own ? `Make a light curve of ${V.name}` : 'Make a light curve here';
+    b.onclick = ev => { ev.stopPropagation(); openLC(own ? { own: true } : { ra, dec, clicked: true }); };
+    $('lcmPick')?.remove(); scr.appendChild(b);
+    const x = cv.offsetLeft + (i + 0.5) * c, y = cv.offsetTop + (j + 0.5) * c + 10; // centred under the spot, kept on the screen
+    Object.assign(b.style, { left: Math.max(0, Math.min(scr.clientWidth - b.offsetWidth, x - b.offsetWidth / 2)) + 'px', top: y + 'px' });
+  });
+})();
+const CB =createCleanBlink({ $, Snd, mode: () => mode, n: () => V.n, cell: () => cssCell, redraw: () => draw(),
   getView: () => ({ zoom, panX, panY }), setView: v => { zoom = v.zoom; if (v.panX != null) { panX = v.panX; panY = v.panY; } layout(); },
   target: () => (firstS()?.exp && lastS()?.exp ? [firstS().exp, lastS().exp] : null) });
 // Spec A: signal-to-noise of the image on screen (Time), at the star's predicted place or a clicked spot (snr-ui.js)
@@ -928,6 +959,7 @@ function load(query, label) {
       if (held) { const m = holdMjd; holdMjd = null; P.pause(); P.i = nearestF(m); $('thin').hidden = false; holdExact(m, holdDet, ctl).finally(() => { if (V.ctl === ctl) $('thin').hidden = true; }); }
       else if (holdWait) { holdWait = false; preBlink(false); } // ?mjd= but no image came: show what there is
       onFrame(P.i); Snd.play('confirm');
+      if (lcWant) { const w = lcWant; lcWant = null; import('./lightcurve/make.js').then(mk => { const ch = mk.decodeChoices(w); openLC(ch.source ? { ...ch.source, clicked: true } : { own: true }, ch); }).catch(() => {}); } // a shared light-curve link
       // V.FA = every image loaded; V.F = the ones the user's flag filter keeps (QA, Sun: say so, so the counts match Proof)
       // Master item 1: say that up to 120 images are used, spread evenly in time, out of all IRSA found
       const hid = V.FA.length - V.FK.length, hidTxt = hid > 0 ? ` ${hid} hidden by your flag filter (FLAGS ▾ to change).` : '';

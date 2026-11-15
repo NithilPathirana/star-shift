@@ -55,7 +55,7 @@ setTimeout(() => { console.error(`page check could not run: no result after ${TO
 // /version.json names the commit just deployed (deploy.sh sets EXPECT_SHA), so a stale or partial deploy fails loudly
 const MODULES = ['/app/ui.js', '/app/seasons.js', '/app/distances.js', '/app/gaia-overlay.js', '/app/spot/colour.js', '/app/spot/botha.js',
   '/app/spot/logic.js', '/app/proof/logic.js', '/app/diffview.js', '/app/erender.js', '/app/astro-loader.js', '/data/proof.json', '/data/botha-check.json', '/data/spot-botha.json',
-  '/app/consent.js', '/app/consent-ui.js'];
+  '/app/consent.js', '/app/consent-ui.js', '/app/lightcurve/make.js', '/app/lightcurve/maker.js'];
 async function preflight() {
   const bad = [];
   for (const m of MODULES) { try { const r = await fetch(base + m, { cache: 'no-store' }); if (r.status !== 200) bad.push(`${m} ${r.status}`); } catch (e) { bad.push(`${m} ${e.message}`); } }
@@ -160,6 +160,18 @@ async function run() {
           }
           if (!tp || tp.n !== 3 || tp.ok !== 3) errs.push(`Telescopes did not fill its 3 panels (${JSON.stringify(tp)})`);
         }
+      }
+      // Judges' suggestion B: RW Aurigae's viewer -> "Make a light curve" -> points plotted (saved target, no network needed)
+      if (/RW%20Aurigae&scene=viewer/.test(path) && !errs.length) {
+        const ev = async (x) => (await send('Runtime.evaluate', { expression: x, returnByValue: true }, s)).result?.result?.value;
+        await ev("document.getElementById('lcMake')?.click(), 1");
+        let lc = null;
+        for (let k = 0; k < 20; k++) {
+          lc = await ev("(() => { const d = document.getElementById('lcm'); return { open: !!d?.open, pts: d ? d.querySelectorAll('#lcmPlot .lcm-pt').length : 0, csv: !!d?.querySelector('#lcmCsv'), cav: !!d?.querySelector('#lcmCav')?.textContent }; })()");
+          if (lc?.open && lc.pts > 0) break;
+          await sleep(1000);
+        }
+        if (!lc?.open || !(lc.pts > 0) || !lc.csv || !lc.cav) errs.push(`Make a light curve did not plot RW Aurigae (${JSON.stringify(lc)})`);
       }
       if (path === '/' && !mode) { // open Help, then About: each must show its own content, never the other's
         const ev = async (x) => (await send('Runtime.evaluate', { expression: x, returnByValue: true }, s)).result?.result?.value || {};

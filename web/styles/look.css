@@ -441,6 +441,42 @@ html:where(:not([data-ax-look=classic]))[data-glass=solid] .tools{background:#1B
 }
 :where(html:not([data-ax-look=classic])) .df-lgd .df-ramp{border-radius:4px}
 :where(html:not([data-ax-look=classic])) .df-lgd .df-t{color:var(--stage-muted)}
+:where(html:not([data-ax-look=classic])) .lcm{border:1px solid var(--edge);border-radius:20px;color:var(--ink);background:linear-gradient(180deg, #F9FBFF, #F5F8FD);box-shadow:var(--sh-contact), var(--sh-near), var(--sh-far)}
+:where(html:not([data-ax-look=classic])) .lcm::backdrop{background:rgba(8,16,33,.42)}
+:where(html:not([data-ax-look=classic])) .lcm-h{border-bottom:1px solid var(--edge)}
+:where(html:not([data-ax-look=classic])) .lcm-h small{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .lcm-src{color:var(--ink-2)}
+:where(html:not([data-ax-look=classic])) .lcm-f{border:0}
+:where(html:not([data-ax-look=classic])) .lcm-l{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .lcm-chip{border:1px solid var(--edge);border-radius:999px;background:#FCFDFF;color:var(--ink-2)}
+:where(html:not([data-ax-look=classic])) .lcm-chip[aria-checked=true]{background:var(--copper);color:var(--on-copper);border-color:transparent}
+:where(html:not([data-ax-look=classic])) .lcm-band,:where(html:not([data-ax-look=classic])) .lcm-comp,:where(html:not([data-ax-look=classic])) .lcm-ck{color:var(--ink)}
+:where(html:not([data-ax-look=classic])) .lcm-band input,:where(html:not([data-ax-look=classic])) .lcm-comp input,:where(html:not([data-ax-look=classic])) .lcm-ck input{accent-color:var(--copper)}
+:where(html:not([data-ax-look=classic])) .lcm-comp small{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .lcm-comp.weak span{color:var(--ink-2)}
+:where(html:not([data-ax-look=classic])) .lcm-band i,:where(html:not([data-ax-look=classic])) .lcm-k i,:where(html:not([data-ax-look=classic])) .lcm-pvr i{border-radius:3px;background:var(--bc);box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+:where(html:not([data-ax-look=classic])) .lcm-sel{border:1px solid var(--edge);border-radius:11px;color:var(--ink);background:linear-gradient(180deg, var(--well-top, #EFF2F8), var(--well-bot, #F4F7FC))}
+:where(html:not([data-ax-look=classic])) .lcm-note{color:var(--ink-2)}
+:where(html:not([data-ax-look=classic])) .lcm-plot,:where(html:not([data-ax-look=classic])) .lcm-pg{border-radius:12px;background:var(--stage)}
+:where(html:not([data-ax-look=classic])) .lcm-pt{fill:var(--pc);stroke:rgba(0,0,0,.55)}
+:where(html:not([data-ax-look=classic])) .lcm-eb{stroke:var(--pc)}
+:where(html:not([data-ax-look=classic])) .lcm-mean{stroke:var(--pc)}
+:where(html:not([data-ax-look=classic])) .lcm-pgl{fill:none;stroke:var(--pc)}
+:where(html:not([data-ax-look=classic])) .lcm-fap{stroke:var(--pc)}
+:where(html:not([data-ax-look=classic])) .lcm-no{fill:rgba(255,255,255,.07)}
+:where(html:not([data-ax-look=classic])) .lcm-pmsg{color:var(--stage-text)}
+:where(html:not([data-ax-look=classic])) .lcm-legend{color:var(--ink-2)}
+:where(html:not([data-ax-look=classic])) .lcm-lg-m{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .lcm-row{border-top:1px solid var(--edge)}
+:where(html:not([data-ax-look=classic])) .lcm-v small{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .lcm-tag{border-radius:4px;background:var(--sage-tint, rgba(111,138,114,.17));color:var(--sage-ink)}
+:where(html:not([data-ax-look=classic])) .lcm-sat b{color:var(--copper-ink)}
+:where(html:not([data-ax-look=classic])) .lcm-cnt{color:var(--ink-2)}
+:where(html:not([data-ax-look=classic])) .lcm-per{border-top:1px solid var(--edge)}
+:where(html:not([data-ax-look=classic])) .lcm-cav{border-left:3px solid var(--copper);background:rgba(255,255,255,.55)}
+@media (max-width: 699px){
+  :where(html:not([data-ax-look=classic])) .lcm{border-radius:0}
+}
 /* from pages.css */
 :where(html:not([data-ax-look=classic])) .page .nav-btn{text-decoration:none}
 :where(html:not([data-ax-look=classic])) .serr{border-radius:11px;background:#FAFBFF;border:1px solid var(--coral);color:var(--coral)}
