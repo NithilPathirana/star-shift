@@ -81,6 +81,11 @@
         <div class="state" id="stMap" hidden role="alert"><div><h2>Sky map couldn't load</h2><p>The time-lapse still works.</p><div class="row"><button class="key primary" id="mapOpenFilm">Open time-lapse</button><button class="key" id="mapRetry">Try the map again</button></div></div></div>
         <div class="cur" id="cur" aria-hidden="true"><svg viewBox="-20 -20 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><circle r="12"/><path d="M0 -20v6M0 14v6M-20 0h6M14 0h6"/></svg><span class="cur-tag" id="curTag"></span></div>
         <div class="map-read num" id="mapRead"></div>
+        <div class="mb-key" id="mapBandsKey" hidden><!-- IR band ranges painted on the map (band-editor agent) -->
+          <p class="mb-t">Coloured by your IR band ranges</p>
+          <div class="mb-sw" id="mapBandsList"></div>
+          <div class="mb-row"><button class="key mb-hold" id="mapBandsHold" type="button" aria-pressed="false">Hold to compare</button><button class="key mb-off" id="mapBandsOff" type="button">Turn off</button></div>
+        </div>
         <p class="map-ph" id="mapCredit">Drag to look around, scroll to zoom. Stars: Hipparcos (ESA). Imagery: NASA/SPHEREx DR1 (Caltech/IPAC) at <span id="mapWl">1.63 µm</span>.</p>
       </div>
       <div class="tele" id="tele" hidden><!-- Telescope compare (DESIGN.md 31a) -->
@@ -241,8 +246,10 @@
   <div class="ruler" id="ruler"><div class="det-row" id="detRow"></div><div class="scale-row" id="scaleRow"></div><div class="lanes" id="lanes"></div></div>
   <div class="rows" id="rows"></div>
   <div class="be-actions"><button class="key" id="addRange">+ Add range</button><button class="key" id="resetRanges">Reset to defaults</button></div>
-  <div class="opt be-map"><span>Paint the sky map in these ranges<small>Each range adds up the SPHEREx colours inside it</small></span><button class="switch well" role="switch" aria-checked="false" id="mapBandsSw" aria-label="Paint the sky map in these ranges"><i></i></button></div>
-  <p class="be-note">Each band is a wavelength range, not a detection: the viewer labels images "CO₂-ice band · 3.82–4.42 µm", meaning the light was measured in that range. Ranges colour the timeline ticks, the wavelength chip and (if switched on) the sky map. Saved in this browser only.</p>
+  <div class="opt be-map"><span>Paint the sky map in these ranges<small>Changes the sky map, not this time-lapse picture</small></span><button class="switch well" role="switch" aria-checked="false" id="mapBandsSw" aria-label="Paint the sky map in these ranges" aria-describedby="beHow"><i></i></button></div>
+  <p class="be-how" id="beHow">Each SPHEREx image records one narrow wavelength at each spot. A range picks which of those wavelengths belong to it; with the switch on, the sky map draws those images in the range's colour and adds them together, so a place that is brighter in one range takes on that range's colour.</p>
+  <button class="key be-see" id="mapBandsSee" type="button" hidden>See it on the sky map</button>
+  <p class="be-note">Each band is a wavelength range, not a detection: the viewer labels images "CO₂-ice band · 3.82–4.42 µm", meaning the light was measured in that range. In the time-lapse the picture itself stays grey; ranges colour the timeline ticks, the wavelength chip, the loading preview and the WAVE layer. Saved in this browser only.</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="pop glass" id="pagesPop" role="dialog" aria-label="Pages" hidden>

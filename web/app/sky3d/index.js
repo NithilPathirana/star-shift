@@ -8,6 +8,7 @@
 
 import * as THREE from '../../vendor/three-0.186.1/three.module.js';
 import { simbadCone, otypeName } from '../skymap.js';
+import { bandTints } from '../bands.js';
 import { pixToVec, tileUV, allskyRect, tilePath, parent, children, npix, ALLSKY_COLS } from './healpix.js';
 import {
   radecToVec, vecToRadec, frame, project, unproject, vfov, clipScale, pickNearest, namesQuery, viewRadius, chooseOrder, visibleTiles,
@@ -217,8 +218,8 @@ export class Sky3D {
     if (!this.renderer) return;
     this._updateWanted(); this._kick();
   }
-  setBands(bands) { // [{ channels: [..], color: 'rrggbb' }]: tinted channels added together on black
-    this.bandSpec = (bands || []).flatMap(b => (b.channels || []).map(ch => ({ ch, color: String(b.color || 'ffffff').replace('#', ''), w: 1 / Math.max(1, b.channels.length) })));
+  setBands(bands) { // [{ channels: [..], color: 'rrggbb' }]: each channel's brightness drawn in its band's colour, added on black
+    this.bandSpec = bandTints(bands);
     if (!this.renderer) return;
     this._updateWanted(); this._kick();
   }
@@ -501,7 +502,9 @@ export class Sky3D {
   // ---------------- imagery layers and tiles ----------------
   _layerUrls() {
     const base = (ch, tint) => `${location.origin}/hips/spherex/${ch}` + (tint ? `/t/${tint}` : '');
-    return this.bandSpec.length ? this.bandSpec.map(b => ({ url: base(b.ch, b.color), w: b.w, additive: true })) : [{ url: base(this.channel), w: 1, additive: false }];
+    // Bands use the plain channel tiles (shared with the base map) and are tinted in the shader:
+    // the relay's palette tint can't colour the RGBA Allsky.png, which made the wide view grey/white.
+    return this.bandSpec.length ? this.bandSpec.map(b => ({ url: base(b.ch), rgb: b.rgb, additive: true })) : [{ url: base(this.channel), additive: false }];
   }
   _layer(url) {
     let l = this.layers.get(url);
@@ -630,7 +633,7 @@ export class Sky3D {
       r.setRenderTarget(this.rt); r.setClearColor(0x000000, 1); r.clear(); r.render(sc, cam);
       r.setRenderTarget(null);
       const u = this.compMat.uniforms;
-      if (L.additive) { this.compMat.blending = THREE.AdditiveBlending; u.alpha.value = L.w * a; u.tint.value.set(1, 1, 1); u.sat.value = 1; u.bp.value = 0; }
+      if (L.additive) { this.compMat.blending = THREE.AdditiveBlending; u.alpha.value = a; u.tint.value.set(...L.rgb); u.sat.value = 0; u.bp.value = SKY_FLOOR * ramp; }
       else {
         this.compMat.blending = THREE.NormalBlending; u.alpha.value = a;
         u.tint.value.set(...MW_TINT.map((t, i) => t + (DETAIL_TINT[i] - t) * ramp)); u.sat.value = 0.6 + 0.4 * ramp;

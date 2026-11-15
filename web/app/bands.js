@@ -111,6 +111,20 @@ export function layersFor(bands, budget = 12) {
   return on.map(b => ({ color: b.color.replace('#', ''), channels: sampleChannels(channelsFor(b.min, b.max), Math.min(4, per)) }));
 }
 
+// Per-channel shader tints for the sky map: { ch, rgb: [r, g, b] }. A channel's brightness is
+// multiplied by its band's colour, split evenly over the band's channels and over the bands,
+// so a spot equally bright in every band comes out near white instead of blowing out.
+export const BAND_GAIN = 1.7;
+export function bandTints(layers, gain = BAND_GAIN) {
+  const list = (layers || []).filter(b => b && (b.channels || []).length);
+  const per = gain / Math.max(1, list.length);
+  return list.flatMap(b => {
+    const hex = /^#?([0-9a-f]{6})$/i.exec(String(b.color || ''))?.[1] || 'ffffff', n = b.channels.length;
+    const rgb = [0, 2, 4].map(i => (parseInt(hex.slice(i, i + 2), 16) / 255) * per / n);
+    return b.channels.map(ch => ({ ch, rgb }));
+  });
+}
+
 export function detectorsFor(min, max) {
   return DETECTORS.filter(d => d.max >= min && d.min <= max).map(d => d.d);
 }

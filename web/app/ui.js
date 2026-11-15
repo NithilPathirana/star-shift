@@ -421,10 +421,15 @@ function rocketAt(frac) {
 // Loader: Design Studio's code-based ScanLoader (design/loader/scan/), drawn from the real frames.
 // 'astronaut' (Design Studio's video loop, v1.1; falls back to ScanLoader if the video can't play), 'scan' or 'sheet'
 const LOADER = 'astronaut';
-// Clean map -> time-lapse hand-over: the loader stays invisible for a short grace (LOADER_GRACE) after a
-// load starts. A quick (cached) load finishes inside it and goes straight to the flip-book with no
-// loader at all, instead of map -> loader (whose picture is the all-sky map) -> 400 ms fade over the flip-book.
-const LOADER_GRACE = 450;
+// Clean map -> time-lapse hand-over (DESIGN.md 35): the loader stays invisible while the images fill in
+// behind the thin progress line. LOADER_DECIDE ms in, it fades in only if, at the rate so far, the images
+// still to come would take LOADER_MIN_LEFT ms or more (or nothing has arrived yet). A 2 s load never flashes it.
+const LOADER_DECIDE = 900, LOADER_MIN_LEFT = 2000;
+function loaderNeeded(elapsed) {
+  const done = V.FA.length + V.failed;
+  if (!V.planned || !done) return true; // no plan or no image yet: no rate to judge by, so it is a slow load
+  return (V.planned - done) * (elapsed / done) >= LOADER_MIN_LEFT;
+}
 let ldReveal = 0, ldLeaving = null;
 function leaveLoader() {
   const L = $('stLoading'); if (L.hidden || !V.scan) return 0;
@@ -463,7 +468,8 @@ function load(query, label) {
   // destroy() would wipe (and hide) the new one
   if (ldLeaving) { clearTimeout(ldLeaving.t); ldLeaving.scan.destroy(); ldLeaving = null; }
   V.scan?.destroy();
-  { const L = $('stLoading'); L.classList.add('ld-wait'); clearTimeout(ldReveal); ldReveal = setTimeout(() => L.classList.remove('ld-wait'), LOADER_GRACE); }
+  { const L = $('stLoading'), t0 = performance.now(); L.classList.add('ld-wait'); clearTimeout(ldReveal);
+    ldReveal = setTimeout(() => { if (!ctl.signal.aborted && V.status === 'loading' && loaderNeeded(performance.now() - t0)) L.classList.remove('ld-wait'); }, LOADER_DECIDE); }
   // Reduce motion -> the scan loader (DESIGN.md 17b); otherwise the astronaut video (it falls back to ScanLoader itself)
   V.scan = (LOADER === 'astronaut' && !set.motion && window.AstroLoader ? window.AstroLoader : window.ScanLoader)($('scanLoader'), {
     mode: LOADER, base: '/loader/v1.1/', target: loaderName(V.name), bands: ranges.map(r => ({ ...r, name: bandName(r) })), // caption says "CO₂-ice band", a range
@@ -471,7 +477,7 @@ function load(query, label) {
     onStart: () => { Snd.play('click'); $('thin').hidden = false; const w = leaveLoader(); if (!set.motion && !Number.isFinite(holdMjd)) setTimeout(() => P.play(), w); },
     onRetry: () => { Snd.play('click'); if (V.query) load(V.query, V.name); },
   });
-  showState('stLoading'); $('thin').hidden = true; buildTimeline(); progress(); draw(); onFrame(0);
+  showState('stLoading'); $('thin').hidden = false; buildTimeline(); progress(); draw(); onFrame(0); // thin line from the start: the loader may never show
   const emit = (e) => {
     if (ctl.signal.aborted) return;
     if (e.type === 'RESOLVED') { V.target = e.target; GH.forTarget(e.target); V.name = label || e.target.name || PATCH_NAME; V.scan?.set({ target: loaderName(V.name) }); }
@@ -1106,9 +1112,23 @@ function warnings(r) {
   ranges.forEach(o => { if (o !== r && colourDist(r.c, o.c) < 70) w.push(`Colour looks close to ${esc(o.name)}; the names still tell them apart.`); });
   return w;
 }
+let mbHeld = false; // "Hold to compare": the plain one-wavelength map while held
+const mapLayers = () => layersFor(ranges.map(r => ({ on: true, min: r.min, max: r.max, color: r.c })));
 function applyMapBands() {
   $('mapBandsSw').setAttribute('aria-checked', mapBands);
-  skymap.setBands(mapBands ? layersFor(ranges.map(r => ({ on: true, min: r.min, max: r.max, color: r.c }))) : []);
+  $('mapBandsSee').hidden = !mapBands || scene === 'map';
+  skymap.setBands(mapBands && !mbHeld ? mapLayers() : []);
+  const key = $('mapBandsKey'); key.hidden = !mapBands;
+  if (mapBands) {
+    const n = mapLayers().reduce((s, l) => s + l.channels.length, 0);
+    $('mapBandsList').innerHTML = ranges.map(r => `<span title="${esc(r.name)}: ${r.min.toFixed(2)}–${r.max.toFixed(2)} µm"><i style="--rc:${r.c}"></i>${esc(r.name)}</span>`).join('');
+    $('mapBandsHold').title = `Shows the plain ${$('wlOut').textContent} map while held. Painted now: ${n} SPHEREx wavelengths in ${ranges.length} colours.`;
+  }
+}
+function holdMapBands(on) {
+  if (!mapBands || mbHeld === on) return;
+  mbHeld = on; $('mapBandsHold').setAttribute('aria-pressed', on); $('mapBandsHold').textContent = on ? `Plain ${$('wlOut').textContent}` : 'Hold to compare';
+  applyMapBands();
 }
 function applyRanges() {
   ticks.forEach((t, k) => { const r = rangeOf(V.F[k]?.um); t.classList.toggle('ranged', !!r); if (r) t.style.setProperty('--rc', r.c); else t.style.removeProperty('--rc'); });
@@ -1190,9 +1210,18 @@ function bindBands() {
 $('addRange').onclick = () => { if (ranges.length >= 8) { toast('Up to 8 ranges. Delete one first.'); return; } const used = ranges.map(r => r.c.toLowerCase()); const c = (PALETTE.find(p => !used.includes(p[1].toLowerCase())) || PALETTE[0])[1];
   ranges.push({ id: 'r' + Date.now().toString(36), name: `Range ${ranges.length + 1}`, min: 2.0, max: 2.5, c }); Snd.play('click'); commit(); };
 $('resetRanges').onclick = () => { ranges = JSON.parse(JSON.stringify(DEFAULT_RANGES)); openPal = null; Snd.play('click'); commit(); toast('Default ranges restored.'); };
-$('mapBandsSw').onclick = () => { mapBands = !mapBands; try { localStorage.setItem(MKEY, mapBands ? 'on' : 'off'); } catch { /* ignore */ } applyMapBands(); Snd.play('click'); };
+function setMapBands(on) { mapBands = on; mbHeld = false; $('mapBandsHold').setAttribute('aria-pressed', 'false'); $('mapBandsHold').textContent = 'Hold to compare'; try { localStorage.setItem(MKEY, on ? 'on' : 'off'); } catch { /* ignore */ } applyMapBands(); Snd.play('click'); }
+$('mapBandsSw').onclick = () => setMapBands(!mapBands);
+$('mapBandsSee').onclick = () => { closePop(); toMap(false); };
+$('mapBandsOff').onclick = () => { setMapBands(false); toast('Sky map back to one wavelength.'); };
+{ const h = $('mapBandsHold'), up = () => holdMapBands(false);
+  h.addEventListener('pointerdown', e => { h.setPointerCapture?.(e.pointerId); holdMapBands(true); });
+  ['pointerup', 'pointercancel', 'lostpointercapture', 'blur'].forEach(ev => h.addEventListener(ev, up));
+  h.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); holdMapBands(true); } });
+  h.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') up(); }); }
 function openBands() {
   const pop = $('bands'), btn = $('bandTool'); closePop(); const r = btn.getBoundingClientRect(); pop.hidden = false;
+  $('mapBandsSee').hidden = !mapBands || scene === 'map';
   const w = Math.min(640, innerWidth - 24), left = Math.min(Math.max(12, r.right + 10), innerWidth - w - 12);
   pop.style.left = left + 'px'; pop.style.right = 'auto'; pop.style.transformOrigin = 'top left';
   renderBands(); pop.style.top = Math.max(12, Math.min(r.top - 40, innerHeight - pop.offsetHeight - 12)) + 'px'; requestAnimationFrame(() => pop.classList.add('open')); btn.setAttribute('aria-expanded', 'true'); openPop = { pop, btn }; Snd.play('tick');

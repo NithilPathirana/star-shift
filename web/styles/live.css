@@ -413,3 +413,25 @@ html[data-motion=reduce] .state.loader2 { transition: none; }
 .use-all { display: block; margin-top: 4px; padding: 0; background: none; border: 0; font: inherit; font-size: .75rem; text-align: left; cursor: pointer; }
 .use-all[hidden] { display: none; }
 @media (max-width: 699px) { .use-all { min-height: 44px; } }
+/* ---- IR band ranges (band-editor agent, Master item 7): explainer + "see it" key in the editor,
+   and the band key with "Hold to compare" on the sky map ---- */
+.be-how { margin-top: 6px; font-size: .75rem; line-height: 1.45; color: var(--muted); }
+.be-see { margin-top: 8px; }
+.be-see[hidden], .mb-key[hidden] { display: none; }
+.mb-key { position: absolute; right: 14px; top: 14px; z-index: 3; max-width: min(300px, calc(100% - 28px)); padding: 10px 12px; border-radius: 12px;
+  background: rgba(21,17,14,.86); border: 1px solid rgba(255,235,210,.16); color: var(--stage-text); font-size: .75rem; }
+.mb-t { margin: 0 0 6px; font-weight: 600; }
+.mb-sw { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--stage-text); }
+.mb-sw span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.mb-sw i { width: 10px; height: 10px; border-radius: 3px; background: var(--rc); box-shadow: 0 0 0 1px rgba(255,246,232,.35); }
+.mb-row { display: flex; gap: 6px; margin-top: 8px; }
+.mb-row .key { min-height: 30px; padding: 0 10px; font-size: .75rem; touch-action: none; user-select: none; -webkit-user-select: none; }
+.mb-hold[aria-pressed="true"] { outline: 2px solid var(--stage-text); outline-offset: 1px; }
+@media (max-width: 699px) {
+  .mb-key { top: auto; bottom: 108px; right: 12px; left: 12px; max-width: none; padding: 8px 10px; }
+  .mb-t { display: inline; margin-right: 6px; }
+  .mb-sw { display: inline-flex; gap: 4px; vertical-align: middle; }
+  .mb-sw span { font-size: 0; } /* phone: swatches only; names stay for screen readers */
+  .mb-row { margin-top: 6px; }
+  .mb-row .key, .be-see { min-height: 44px; }
+}

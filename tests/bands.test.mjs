@@ -2,7 +2,7 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateBand, BandError, channelsFor, layersFor, loadBands, saveBands, resetBands, DEFAULT_BANDS, detectorsFor, sampleChannels, MAX_BANDS } from '../web/app/bands.js';
+import { validateBand, BandError, channelsFor, layersFor, loadBands, saveBands, resetBands, DEFAULT_BANDS, detectorsFor, sampleChannels, MAX_BANDS, bandTints } from '../web/app/bands.js';
 
 const mem = () => { const m = new Map(); return { getItem: k => m.get(k) ?? null, setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k) }; };
 
@@ -67,4 +67,15 @@ test('team default bands: six, blue to red, no overlaps, cover 0.74–5.01 µm w
   }
   const has = (name, um) => { const b = DEFAULT_BANDS.find(x => x.name === name); return b.min < um && um < b.max; };
   assert.ok(has('Water Ice', 3.05) && has('CO₂ Ice', 4.27));
+});
+
+test('map tints: each channel in its band colour, split over channels and bands', () => {
+  const T = bandTints([{ channels: [1, 2], color: 'ff0000' }, { channels: [9], color: '#00ff00' }], 2);
+  assert.deepEqual(T.map(t => t.ch), [1, 2, 9]);
+  assert.deepEqual(T[0].rgb, [0.5, 0, 0]); // 2 / 2 bands / 2 channels
+  assert.deepEqual(T[2].rgb, [0, 1, 0]);
+  assert.deepEqual(bandTints([]), []);
+  // all six defaults equally bright: the sum stays near white, never far past it
+  const sum = [0, 1, 2].map(i => bandTints(layersFor(DEFAULT_BANDS)).reduce((s, t) => s + t.rgb[i], 0));
+  for (const v of sum) assert.ok(v > 0.8 && v < 1.2, String(v));
 });
