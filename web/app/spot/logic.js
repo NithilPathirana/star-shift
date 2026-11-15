@@ -634,6 +634,9 @@ export const isFinished = (state) => state.lines.every(isDone);
 // A check that EXPLAINS the suspect decides the verdict even when another check could not run
 // (the missing check could not undo that explanation); "Unexplained" needs all four clear;
 // with no explanation and a check that could not run, there is no verdict.
+// a still catalogue star fainter than this cannot explain a ring with no clear dot: in the demo fields the faintest still
+// star that SPHEREx shows as a dot is G 17.2 (RW Aur, 3 of 3 seasons), and G 18.2-19.4 stars sit on empty sky (Spot 45-click QA, 15 Nov)
+export const FAINT_STILL_G = 18;
 export function decideVerdict(state) {
   const by = Object.fromEntries(state.lines.map(l => [l.id, l]));
   const failed = state.lines.filter(l => l.status === 'failed').map(l => l.id);
@@ -647,7 +650,8 @@ export function decideVerdict(state) {
     // (Full function test sweep 2: empty sky near a G 19 star was called a "Known still star")
     if (!mover && !by.star.data?.part) {
       if (!isDone(by.seasons)) return { kind: 'pending', running };
-      if (by.seasons.status === 'explained' && by.seasons.data?.nothing && by.flags.status !== 'explained') {
+      const sd = by.seasons.data || {}, faint = Number.isFinite(b?.g) && b.g > FAINT_STILL_G && sd.k === 0 && !sd.glow;
+      if (by.seasons.status === 'explained' && (sd.nothing || faint) && by.flags.status !== 'explained') {
         return decided({ kind: 'nothing', title: 'Nothing here', sub: '', body: ['No dot stands out from the noise at this spot.',
           `A catalogued star, ${b ? starLabel(b) : 'a faint one'}, sits here, but it is too faint for SPHEREx to show at these wavelengths.`],
           evidence: [by.seasons.text, by.star.text], notRun, decidedBy: 'seasons' });

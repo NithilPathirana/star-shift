@@ -599,7 +599,8 @@ function setMode(m, withSound) {
   if (withSound) Snd.play('tick');
   if (document.startViewTransition && !set.motion) viewTransition(apply); else apply();
 }
-document.querySelectorAll('[data-mode]').forEach(b => { b.onclick = () => setMode(b.dataset.mode, true); });
+let modeTouched = false; // a view the user picked while loading wins over the automatic Blink/play at the end (Full function test viewer-2-3)
+document.querySelectorAll('[data-mode]').forEach(b => { b.onclick = () => { modeTouched = true; setMode(b.dataset.mode, true); }; });
 document.querySelectorAll('[data-fps]').forEach(b => { b.onclick = () => { P.fps = +b.dataset.fps; segSelect($('speedSeg'), x => x === b); Snd.play('tick'); }; });
 $('play').onclick = () => { if (mode !== 'play') setMode('play'); P.toggle(); Snd.play('click'); };
 $('holdKey').onclick = () => setHold(!HOLD.on);
@@ -808,10 +809,10 @@ function load(query, label) {
   // b2: a preset blinks its first and last seasons as soon as both have a few images (data.js endsFirst
   // fetches them first), so a slow link shows the hop long before the last image; the stacks take in
   // each new image, and the caption waits for the full fit (updatePlate only writes it when ready).
-  let early = !!holdPreset() && !wantView && !Number.isFinite(holdMjd);
+  let early = !!holdPreset() && !wantView && !Number.isFinite(holdMjd); modeTouched = false;
   const blinkEarly = () => {
     if (mode === 'blink' || mode === 'compare') { restack(); return; }
-    if (!early || mode !== 'play' || P.playing) return;
+    if (!early || modeTouched || mode !== 'play' || P.playing) return;
     restack(); if (!earlyBlinkReady(V.stacks, V.plannedMjds)) { V.stacks = []; return; }
     early = false; leaveLoader(true); setMode('blink');
   };
@@ -871,7 +872,7 @@ function load(query, label) {
       // ?view= (a shared link) opens its own mode; anything else plays
       const want = wantView; wantView = null;
       setTimeout(() => {
-        if (V.ctl !== ctl) return;
+        if (V.ctl !== ctl || modeTouched) return;
         if (want && want !== 'play') { setMode(want); if (want === 'telescopes' && teleHero) teleHeroOpen(); return; }
         if (!want && holdPreset() && !held && V.stacks.length > 1) { P.pause(); setMode('blink'); return; }
         if (!set.motion && !P.playing && !held) P.play();

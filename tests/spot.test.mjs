@@ -461,3 +461,12 @@ test('a still faint catalogue star with no dot in any season gives "Nothing here
   const mover = L.decideVerdict({ lines: [flags, { ...star, data: { best: { name: 'B' }, mover: true } }, ast, { id: 'seasons', status: 'running', text: '' }] });
   assert.equal(mover.kind, 'known-star', 'a moving star decides at once');
 });
+
+test('a still star fainter than G 18 with no clear dot (but some light) is "Nothing here"; a bright one stays a known star (Spot QA 15 Nov)', () => {
+  const flags = { id: 'flags', status: 'clear', text: '', data: { per: [] } }, ast = { id: 'asteroid', status: 'clear', text: '' };
+  const seasons = { id: 'seasons', status: 'explained', text: 'Not a clear dot in any of the 3 seasons.', data: { k: 0, glow: false, nothing: false } };
+  const star = g => ({ id: 'star', status: 'explained', text: 's', data: { best: { name: 'Gaia DR3 2', g }, mover: false } });
+  assert.equal(L.decideVerdict({ lines: [flags, star(19.3), ast, seasons] }).kind, 'nothing');
+  assert.equal(L.decideVerdict({ lines: [flags, star(6.5), ast, seasons] }).kind, 'known-star', 'a saturated bright star stays known');
+  assert.equal(L.decideVerdict({ lines: [flags, { ...star(undefined), data: { best: { name: 'R Dra' }, mover: false } }, ast, seasons] }).kind, 'known-star');
+});
