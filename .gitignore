@@ -47,3 +47,8 @@ evidence/motion/barnard.png
 evidence/motion$n-tall.png
 evidence/gemini-review-2200.md
 *.log
+# NASA spacesuit model (loader v7): never commit the original model or its textures (flag/patch images); SOURCE.md says where to get it
+design/loader/v5c/inspect/
+design/loader/v5c/src/
+design/loader/v5c/tools/*.log
+design/loader/v5c/tools/__pycache__/
