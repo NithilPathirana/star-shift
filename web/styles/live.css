@@ -409,3 +409,7 @@ html[data-motion=reduce] .state.loader2 { transition: none; }
   .lgd { left: 136px; max-width: calc(100% - 260px); }
   #stage:has(#ghostBar:not([hidden])) .compass { bottom: 62px; }
 }
+/* "Use all images (as on Proof)" beside a motion fit that the user's flag filter shrank (Master item 11) */
+.use-all { display: block; margin-top: 4px; padding: 0; background: none; border: 0; font: inherit; font-size: .75rem; text-align: left; cursor: pointer; }
+.use-all[hidden] { display: none; }
+@media (max-width: 699px) { .use-all { min-height: 44px; } }

@@ -274,10 +274,26 @@ function remeasure() {
   $('d-meas').textContent = mo?.ok
     ? (mc && !mc.measurable ? `not measurable here (${mc.saturated ? 'centre saturated' : mc.slow ? 'moves under a pixel' : 'no fit'})`
       : `${mo.significant === false ? `no significant motion (< ${(mo.upperLimit / 1000).toFixed(2)}″/yr)` : `${(mo.total / 1000).toFixed(2)} ± ${(mo.totalErr / 1000).toFixed(2)}″/yr`}`)
-      + ` (${V.FA.length > V.F.length ? 'flagged images hidden, ' : ''}${mo.frames} images${dets ? `, detectors ${detectorText(dets)}` : ''})`
+      + ` · ${usedText(mo)}`
     : mo ? (mo.reason === 'one season only' ? 'needs two seasons to measure' : mo.reason === 'too few frames' ? 'too few images to measure' : 'too faint to measure') : '—';
+  $('useAll').hidden = !filterHides(mo);
   repaintMot?.();
 }
+// Master item 11: the default flag filter hides nothing, so by default the fit uses the same images as Proof.
+// When the user's saved filter hides some, say "from 108 of 120 images (your flag filter)" and offer
+// "Use all images (as on Proof)". AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+const fitPool = mo => V.FA.filter(f => !mo?.detectors || mo.detectors.includes(f.det)).length; // images the fit could use
+const filterHides = mo => !!(mo?.ok && V.FA.length > V.F.length && fitPool(mo) > mo.frames);
+const usedText = (mo, dets = true) => `${filterHides(mo) ? `from ${mo.frames} of ${fitPool(mo)} images (your flag filter)` : `from ${mo.frames} images`}${dets && mo.detectors ? `, detectors ${detectorText(mo.detectors)}` : ''}`;
+const USE_ALL = '<button type="button" class="fl-link use-all" data-use-all>Use all images (as on Proof)</button>';
+function useAllImages() {
+  CX.S.hide.clear();
+  // same storage as contam-ui.js persist() (key 'tgi-flags-v1'): keep the shown-flag choices, drop the hide list
+  try { const k = 'tgi-flags-v1', o = JSON.parse(localStorage.getItem(k)) || {}; o.hide = []; localStorage.setItem(k, JSON.stringify(o)); } catch { /* private mode */ }
+  refilter(); if (openPop?.pop.id === 'flagsPop') CX.renderPop();
+  Snd.play('confirm'); toast(`All ${V.FA.length} images are used again, as on the Proof page.`);
+}
+document.addEventListener('click', e => { if (e.target.closest('[data-use-all]')) useAllImages(); });
 // The shared measurability rule (data.js motionMeasurability, also on the Proof page) for the
 // current fit: catalogue motion from the loaded target (none for a coordinate patch).
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
@@ -800,15 +816,16 @@ function motionHTML(sel, t, cat, gaia, same, looking) {
     const mc = motionCheck(), meas = !mc || mc.measurable;
     const m = V.motion.total / 1000, me = V.motion.totalErr / 1000, sig = V.motion.significant !== false;
     const dets = V.motion.detectors, detTxt = dets ? ` (detectors ${detectorText(dets)}, where ${esc(V.name)} shows)` : '';
-    const nHid = V.FA.length - V.F.length, used = (nHid > 0 ? `flagged images hidden, ${V.motion.frames} images` : `from ${V.motion.frames} images`) + detTxt;
+    const used = usedText(V.motion, false) + detTxt, useAll = filterHides(V.motion) ? `<p class="quiet">${USE_ALL}</p>` : '';
     if (meas) {
       const val = sig ? `${m.toFixed(2)} ± ${me.toFixed(2)}″/yr` : `no significant motion (&lt; ${(V.motion.upperLimit / 1000).toFixed(2)}″/yr)`;
-      h += row('Measured in these images (SPHEREx)', `${val} · ${used}`, 'obs', nbMeasured());
+      h += row('Measured in these images (SPHEREx)', `${val} · ${used}`, 'obs', nbMeasured()) + useAll;
       if (k?.mu != null) h += `<p class="mot-cmp num">Catalogue ${k.arcsecYr.toFixed(2)}″/yr · measured here ${sig ? `${m.toFixed(1)} ± ${me.toFixed(1)}″/yr` : val}</p>`;
     } else {
       const nm = notMeasurableText(mc, V.motion);
       h += row('Measured in these images (SPHEREx)', nm.head, 'obs', nbMeasured());
       if (nm.note) h += `<p class="quiet">${nm.note}</p>`;
+      h += useAll;
       if (k?.mu != null) h += `<p class="mot-cmp num">Catalogue ${k.arcsecYr.toFixed(2)}″/yr · not measurable here</p>`;
     }
     // a speed from the measured motion only when that motion is measurable and significant
@@ -883,7 +900,7 @@ window.openNotebook = openNotebook; // also the hook the guided tour looks for (
 const posText = (ra, dec) => `${R.fmtRA(ra)} ${R.fmtDec(dec)} (${ra.toFixed(5)}°, ${sgn(dec)})`;
 function nbMeasured() {
   const mo = V.motion; if (!mo?.ok) return null;
-  const sig = mo.significant !== false, used = `${mo.frames} images${mo.detectors ? `, detectors ${detectorText(mo.detectors)}` : ''}${V.FA.length > V.F.length ? ', flagged images hidden' : ''}`;
+  const sig = mo.significant !== false, used = usedText(mo);
   const base = { unit: '″/yr', source: 'SPHEREx images via IRSA, motion fitted in Star Shift', tag: 'OBSERVED' };
   const mc = motionCheck();
   if (mc && !mc.measurable) return { ...base, unit: '', uncertainty: '', value: 'not measurable',
@@ -991,7 +1008,7 @@ const dirWord = az => DIR8[Math.round((((az % 360) + 360) % 360) / 45) % 8];
 const lookPlace = () => obs.loc || LOOK_HOME;
 const lookFrom = () => !obs.loc ? 'From Colombo' : obs.loc.label === 'Your device location' ? 'From where you are' : obs.loc.label === 'Typed position' ? 'From your place' : `From ${obs.loc.label}`;
 const whereIn = (alt, az) => alt > 85 ? 'almost straight overhead' : `in the ${dirWord(az)}`;
-// { head, day, short }: head = now (+ best time tonight), day = rise / highest / set, short = for hover readouts
+// { head, day }: head = now (+ best time tonight), day = rise / highest / set
 function whereToLook(ra, dec, now = new Date()) {
   const { lat, lon } = lookPlace(), from = lookFrom();
   const at = d => `${hm(d)}${dayTag(d) === 'today' ? '' : ' ' + dayTag(d)}`;
