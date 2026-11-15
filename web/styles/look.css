@@ -680,6 +680,10 @@ html:where(:not([data-ax-look=classic]))[data-glass=solid] .tools{background:#1B
 :where(html:not([data-ax-look=classic])) .tour-chip.in-bar{box-shadow:none}
 :where(html:not([data-ax-look=classic])) .ssc-link{color:var(--copper-ink);text-decoration:underline;background:none;border:0}
 :where(html:not([data-ax-look=classic])) .ssc-kept{color:var(--ink)}
+:where(html:not([data-ax-look=classic])) .ss-ask{--glass-tint:rgba(249,251,255,.97);--glass-tint-2:rgba(247,249,254,.96);border-radius:12px}
+:where(html:not([data-ax-look=classic])) .ss-ask-t{color:var(--ink)}
+:where(html:not([data-ax-look=classic])) .ss-ask-n{color:var(--muted)}
+:where(html:not([data-ax-look=classic])) .tour-chip .tour-chip-go{background:none;border:0;color:var(--ink)}
 /* from story.css */
 :where(html:not([data-ax-look=classic])) .story.leaving{opacity:0}
 html:where(:not([data-ax-look=classic]))[data-story=on] .search .key.primary,:where(html:not([data-ax-look=classic])) .app[data-scene=map] .search:not(:focus-within) .key.primary{color:var(--ink);background:linear-gradient(180deg,#FCFDFF,#F1F4F9);border-color:var(--edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1.5px 0 rgba(51,67,99,.10),var(--sh-contact),var(--sh-near),var(--sh-far)}

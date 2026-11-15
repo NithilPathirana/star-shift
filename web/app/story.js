@@ -15,7 +15,9 @@ let driving = false; // true while the CTA presses a quick pick itself, so the q
 const on = () => root.dataset.story === 'on';
 const reduced = () => root.dataset.motion === 'reduce' || matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+let forTour = false; // the story left only because a tour started: it comes back when that tour ends
 export function leaveStory() {
+  forTour = false;
   if (!on()) return;
   const els = document.querySelectorAll('.story');
   els.forEach(e => e.classList.add('leaving'));
@@ -67,7 +69,8 @@ function init() {
   delete root.dataset.cta; // index.html hides the CTA's text until it names the ?q target (no flash of Barnard's Star)
   document.addEventListener('click', onPick); // bubbles after ui.js's .pick onclick has started the selection
   document.querySelectorAll('.story-tour').forEach(b => {
-    b.onclick = () => { leaveStory(); if (window.StarShiftTour?.full) window.StarShiftTour.full(b); else $('tourPageKey')?.click(); };
+    // the full tour opens on the sky map's chapter, whose step 1 is this story's CTA: the story stays (round 7)
+    b.onclick = () => { if (window.StarShiftTour?.full) window.StarShiftTour.full(b); else { leaveStory(); $('tourPageKey')?.click(); } };
   });
   if (!on()) return;
   const notStory = e => !e.target.closest?.('.story');
@@ -79,7 +82,17 @@ function init() {
   document.addEventListener('submit', e => { if (e.target.closest?.('form.search')) leaveStory(); }, true);
   $('q')?.addEventListener('focus', leaveStory); // typing a search: the story goes and Show is the copper key again
   document.addEventListener('click', e => { if (e.target.closest?.('.pick')) leaveStory(); }, true);
-  addEventListener('star-shift-tour-start', leaveStory);
+  // only a tour the visitor starts moves the story aside, and never the sky map's own tour (its step 1 is the CTA);
+  // when that tour ends on the map, the hero card and CTA come back (Judging panel round 7)
+  addEventListener('star-shift-tour-start', e => {
+    const d = e.detail || {};
+    if (d.auto || d.chapter === 'map' || !on()) return;
+    leaveStory(); forTour = true; // any later leaveStory (a pick, a search, the viewer) clears it
+  });
+  addEventListener('star-shift-tour-end', () => {
+    if (!forTour) return; forTour = false;
+    if ($('app')?.dataset.scene === 'map') root.dataset.story = 'on';
+  });
   const app = $('app');
   if (app) new MutationObserver(() => { if (app.dataset.scene !== 'map') leaveStory(); }).observe(app, { attributes: true, attributeFilter: ['data-scene'] });
 }

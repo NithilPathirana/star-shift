@@ -8,8 +8,8 @@
 import { chapterForPage, chapterById, readProgress, shouldAutoResume, canResume, resumeLabel, clearProgress } from './chapters.js';
 import { shouldOffer, remember, offerAllowed, OFFER_MS, PHONE_MAX, reducedMotion } from './steps.js';
 import { start, end, running, getStore, currentPage, currentScene, debugRects, canRun } from './engine.js';
-import { needsTutorial, markTutorial, isDeepLink } from './progress.js';
-import { consentReady, showBar, mountSettings } from '../consent-ui.js';
+import { needsTutorial, markTutorial, isDeepLink, readTutorials } from './progress.js';
+import { mountSettings, mountAsk } from '../consent-ui.js';
 
 const $ = id => document.getElementById(id);
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -229,13 +229,13 @@ function showOffer() {
 }
 
 /* ---------- first-visit tutorials, one per tool (spec design/spec-tutorials-consent.md) ---------- */
-// After the consent choice, the tool on screen (sky map, time-lapse, notebook, each page) starts its own chapter once.
-// Never while loading, while a popover is open or while its parts are missing. On a deep link (a shared view) the
-// stage is never taken over: a small chip by the Tour key offers it instead, and "Not now" counts as skipped.
+// Tutorials never take over (Judging panel round 7): on every page, a fresh visit gets only a gently pulsing chip,
+// "New here? Quick tour of this page"; a click on it starts that page's chapter. No modal ever starts by itself.
+// "Not now" (or a Skip inside any tour) counts as skipped: the chip stays small and still from then on.
 const deep = isDeepLink(firstUrl, document.referrer);
 let chip = null, autoOk = 0, filmStart = false;
 // the time-lapse reached by the first-screen "Watch ..." key or a quick pick is a playing film: its tutorial waits in the chip
-addEventListener('click', e => { if (e.target.closest?.('.story-go, .pick')) filmStart = true; }, true);
+addEventListener('click', e => { if (e.target.closest?.('.story-go, .pick, #cdPlay, #mdPlay')) filmStart = true; }, true);
 function viewerBusy() {
   if ($('stLoading') && $('stLoading').hidden === false) return true;
   const V = window.__app?.V;
@@ -249,11 +249,13 @@ function showChip(ch) {
   hideChip();
   chip = document.createElement('div'); chip.className = 'tour-chip glass'; chip.id = 'tourChip'; chip.dataset.ch = ch.id;
   chip.setAttribute('role', 'region'); chip.setAttribute('aria-label', 'Quick tour of this page');
-  chip.innerHTML = `<span class="tour-chip-t">Quick tour of this page</span><button class="key" type="button" data-chip="go">Start</button><button class="key" type="button" data-chip="no">Not now</button>`;
+  const small = Object.values(readTutorials(getStore())).includes('skipped'); // one Skip anywhere: small and still
+  chip.classList.toggle('small', small); chip.classList.toggle('pulse', !small);
+  chip.innerHTML = `<button class="tour-chip-go" type="button" data-chip="go">${small ? 'Quick tour of this page' : 'New here? Quick tour of this page'}</button><button class="key icon" type="button" data-chip="no" aria-label="Not now" title="Not now">✕</button>`;
   chip.addEventListener('click', e => {
     const b = e.target.closest('[data-chip]'); if (!b) return;
     const id = chip.dataset.ch; hideChip();
-    if (b.dataset.chip === 'go') start({ mode: 'page', chapter: id, auto: true, returnTo: $('tourPageKey') });
+    if (b.dataset.chip === 'go') start({ mode: 'page', chapter: id, returnTo: $('tourPageKey') }); // the visitor's own start
     else markTutorial(getStore(), id, 'skipped');
   });
   document.body.append(chip); placeChip();
@@ -263,6 +265,7 @@ function showChip(ch) {
 function placeChip() {
   if (!chip) return;
   const bar = document.querySelector('.topbar');
+  chip.dataset.story = document.documentElement.dataset.story || ''; chip.hidden = false;
   if (chip.parentNode !== document.body) document.body.append(chip);
   chip.classList.remove('in-bar', 'stack'); chip.style.maxWidth = ''; padInsp(0);
   const k = $('tourPageKey')?.getBoundingClientRect(), tb = bar?.getBoundingClientRect();
@@ -273,7 +276,11 @@ function placeChip() {
   if (st && st.width > 2 && hits(chip.getBoundingClientRect(), st)) {
     const room = innerWidth - right - st.right - 8;
     if (room >= 220) { chip.classList.add('stack'); chip.style.maxWidth = room + 'px'; }
-    if (hits(chip.getBoundingClientRect(), st) && bar) { chip.classList.add('in-bar'); chip.style.top = chip.style.right = ''; chip.style.maxWidth = ''; bar.append(chip); return; }
+    if (hits(chip.getBoundingClientRect(), st) && bar) { chip.classList.add('in-bar'); chip.style.top = chip.style.right = ''; chip.style.maxWidth = ''; bar.append(chip);
+      // phones: while the first-screen story is up, its own Tour key sits beside the CTA; a chip row in the bar
+      // would push the CTA below the fold, so it waits until the story leaves
+      chip.hidden = chip.dataset.story === 'on' && [...document.querySelectorAll('.story-tour')].some(e => e.getClientRects().length > 0);
+      return; }
   }
   const p = $('insp')?.getBoundingClientRect(), r = chip.getBoundingClientRect();
   if (p && p.width > 2 && hits(r, p)) padInsp(Math.ceil(r.bottom + 8 - p.top));
@@ -282,18 +289,17 @@ function checkAuto() {
   const ch = chapterForPage(page, { scene: currentScene(), notebookOpen: nbOpen() });
   if (!ch || !needsTutorial(getStore(), ch.id)) { hideChip(); autoOk = 0; return; }
   if (chip && chip.dataset.ch !== ch.id) hideChip();
-  const busy = running() || document.documentElement.dataset.tour === 'on' || viewerBusy() || $('ssConsent')
+  const busy = running() || document.documentElement.dataset.tour === 'on' || viewerBusy()
     || (!nbOpen() && popOpen()) || (menu && !menu.hidden) || !canRun(ch);
-  if (busy) { autoOk = 0; return; }
+  if (busy) { autoOk = 0; if (running()) hideChip(); return; }
   if (++autoOk < 2) return; // the same tool on screen for two checks in a row: not mid-change
   autoOk = 0;
-  if (deep || (ch.id === 'viewer' && filmStart)) showChip(ch);
-  else start({ mode: 'page', chapter: ch.id, auto: true, returnTo: $('tourPageKey') });
+  showChip(ch); // only ever the chip, fresh visit or deep link alike
+  if (chip && chip.dataset.story !== (document.documentElement.dataset.story || '')) placeChip();
 }
 async function autoTutorials() {
   mountSettings();
-  showBar(); // first visit: the consent bar first, the tutorial only after a choice (never both at once)
-  await consentReady();
+  mountAsk(); // no consent bar: a small inline ask the first time something optional is changed
   if (page === 'index.html') { // once the map is ready (or failed) and no loader is on screen
     const t0 = performance.now();
     while (performance.now() - t0 < 30000 && !((window.__app?.skymap?.aladin || ($('stMap') && !$('stMap').hidden) || performance.now() - t0 > 5000) && $('stLoading')?.hidden !== false) && currentScene() !== 'viewer') await wait(150);

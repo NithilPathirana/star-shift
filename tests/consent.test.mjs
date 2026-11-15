@@ -18,6 +18,32 @@ function mem() {
 }
 const OPTIONAL = ['tgi-bands-v2', 'tgi-mapbands-v1', 'tgi-flags-v1', 'spherex-viewer.bands.v2', 'star-shift-lab-notebooks-v1'];
 
+// Judging panel round 7: no bar on load; the first real change to an optional value asks inline (onNeed)
+test('the inline ask: no optional write before Yes, Yes persists, Just this visit stays session-only', () => {
+  const asked = [];
+  let L = mem(), S = mem(), g = SC.createGate(L, S, null, k => asked.push(k));
+  g.set('star-shift-expert-v1', 'on'); g.set(SC.TUTORIAL_KEY, '{"map":"skipped"}');
+  g.set('star-shift-access-v1', '{"size":"lg"}');              // a necessary field only (text size): no ask
+  assert.deepEqual(asked, []);
+  g.set('star-shift-access-v1', '{"size":"lg","preset":"by"}'); // a colour choice: asks
+  g.set('star-shift-access-v1', '{"size":"lg","preset":"by"}'); // the same again: no second ask
+  g.set('star-shift-lab-notebooks-v1', '{"n":1}');
+  assert.deepEqual(asked, ['star-shift-access-v1', 'star-shift-lab-notebooks-v1']);
+  assert.equal(L.get('star-shift-lab-notebooks-v1'), null);    // nothing optional on the device before Yes
+  assert.equal(JSON.parse(L.get('star-shift-access-v1')).preset, undefined);
+  g.accept();                                                   // Yes: this visit's choices are kept, no more asks
+  assert.equal(L.get('star-shift-lab-notebooks-v1'), '{"n":1}');
+  assert.equal(JSON.parse(L.get('star-shift-access-v1')).preset, 'by');
+  g.set('tgi-flags-v1', '{"x":2}'); assert.equal(L.get('tgi-flags-v1'), '{"x":2}'); assert.equal(asked.length, 2);
+  L = mem(); S = mem(); asked.length = 0; g = SC.createGate(L, S, null, k => asked.push(k));
+  g.set('tgi-bands-v2', '{"b":1}'); assert.deepEqual(asked, ['tgi-bands-v2']);
+  g.reject();                                                   // Just this visit: sessionStorage only, not asked again
+  g.set('tgi-bands-v2', '{"b":2}'); g.set('tgi-mapbands-v1', 'on');
+  assert.equal(L.get('tgi-bands-v2'), null); assert.equal(L.get('tgi-mapbands-v1'), null);
+  assert.equal(g.get('tgi-bands-v2'), '{"b":2}'); assert.equal(S.get(SC.VISIT + 'tgi-bands-v2'), '{"b":2}');
+  assert.equal(asked.length, 1);
+});
+
 test('before consent, optional keys are never written to localStorage (this visit only, in sessionStorage)', () => {
   const L = mem(), S = mem(), g = SC.createGate(L, S);
   assert.equal(g.decided(), false);

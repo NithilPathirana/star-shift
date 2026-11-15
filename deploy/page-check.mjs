@@ -26,8 +26,8 @@ const PAGES = [
   ['/?irsa-down', 8000],
   // Your photo -> the sky (judges' suggestion C): the committed synthetic test image must solve, verified, in the browser
   ['/photo.html?sample', 6000],
-  // fresh profile (spec-tutorials-consent.md): the consent bar first, then the sky map's tutorial after Accept; and a
-  // deep link (consent given, no tutorial seen yet) gets only the small "Quick tour of this page" chip. Kept last: they clear storage.
+  // fresh profile (Judging panel round 7): no consent bar and no tutorial modal; the hero card and CTA stay, with only the
+  // "Quick tour of this page" chip; changing a colour shows the inline consent ask. A fresh deep link gets only the chip. Kept last: they clear storage.
   ['/', 9000, 'fresh'], ['/index.html?q=Epsilon%20Indi%20B&scene=viewer', 10000, 'deep'],
 ];
 // Every other page loads as a returning visitor: consent chosen and every tutorial done, so nothing pops up over what is checked.
@@ -39,7 +39,8 @@ const FRESH = (consent) => `(() => { try { if (sessionStorage.getItem('pc-fresh'
   ${consent ? `localStorage.setItem('${CONSENT}', '{"v":1,"personal":false}');` : ''} } catch { /* blocked */ } })()`;
 const GATE = "(() => { const b = document.getElementById('ssConsent'), c = document.getElementById('tourChip'), on = e => !!e && e.getClientRects().length > 0;"
   + " const br = on(b) ? b.getBoundingClientRect() : null; const hit = br && [...document.querySelectorAll('.story-go, #mdPlay, #cdPlay, #play')].some(e => { const r = e.getBoundingClientRect(); return r.width > 1 && r.left < br.right && br.left < r.right && r.top < br.bottom && br.top < r.bottom; });"
-  + " return { bar: on(b), barCovers: !!hit, chip: on(c), tour: document.documentElement.dataset.tour === 'on', count: document.getElementById('tourCount')?.textContent || '' }; })()";
+  + " return { bar: on(b), barCovers: !!hit, chip: on(c), tour: document.documentElement.dataset.tour === 'on', count: document.getElementById('tourCount')?.textContent || '',"
+  + " ask: on(document.getElementById('ssAsk')), hero: document.documentElement.dataset.story === 'on' && [...document.querySelectorAll('.story-go')].some(on) }; })()";
 // Help and About are two different panels (Nithil: "Help and About open the same thing")
 const POPS = "(() => { const v = id => { const p = document.getElementById(id); return !!p && !p.hidden && p.getClientRects().length > 0; };"
   + " const t = id => document.getElementById(id)?.textContent || ''; return { help: v('help'), about: v('about'), helpTour: /Tour/.test(t('help')), helpTeam: /Who is this for/.test(t('help')), aboutTeam: /Who is this for/.test(t('about')) }; })()";
@@ -109,7 +110,7 @@ async function run() {
       // unhandled rejections surface as Runtime.exceptionThrown ("Uncaught (in promise)")
       await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false }, s);
       // returning visitor (consent + tutorials done) on every page but the two fresh cases, /?cta and /?irsa-down included
-      await send('Page.addScriptToEvaluateOnNewDocument', { source: mode ? FRESH(mode === 'deep') : SEEN }, s);
+      await send('Page.addScriptToEvaluateOnNewDocument', { source: mode ? FRESH(false) : SEEN }, s);
       if (path === '/?irsa-down') await send('Fetch.enable', { patterns: ['*/SIA?*', '*/TAP/*', '*/ibe/*'].map(urlPattern => ({ urlPattern })) }, s);
       await send('Page.navigate', { url: base + path }, s);
       await sleep(wait);
@@ -228,18 +229,21 @@ async function run() {
       }
       if (mode === 'fresh') {
         const ev = async (x) => (await send('Runtime.evaluate', { expression: x, returnByValue: true }, s)).result?.result?.value || {};
-        const a = await ev(GATE);
-        if (!a.bar || a.tour || a.barCovers) errs.push(`fresh visit: the consent bar must show first, alone and off the main key (${JSON.stringify(a)})`);
-        await ev("document.querySelector('#ssConsent [data-c=accept]')?.click()");
-        let b = {};
-        for (let k = 0; k < 20; k++) { b = await ev(GATE); if (b.tour) break; await sleep(1000); }
-        if (b.bar || !b.tour || !/^Sky map/.test(b.count)) errs.push(`fresh visit: the sky map tutorial did not start after Accept (${JSON.stringify(b)})`);
+        let a = {};
+        for (let k = 0; k < 15; k++) { a = await ev(GATE); if (a.chip || a.tour || a.bar) break; await sleep(1000); }
+        await sleep(2000); a = await ev(GATE); // nothing else may arrive later
+        if (a.bar || a.tour || a.ask || !a.chip || !a.hero) errs.push(`fresh visit: only the hero card, its CTA and the tour chip may show (no consent bar, no tutorial) (${JSON.stringify(a)})`);
+        // the visitor changes the image colours (userGesture: as a click in the options panel would): the inline ask shows
+        const g = await send('Runtime.evaluate', { expression: "(() => { const A = window.StarShiftAccess, c = A?.get().img; A?.setImg(c === 'viridis' ? 'magma' : 'viridis'); return !!A; })()", returnByValue: true, userGesture: true }, s);
+        await sleep(400);
+        const b = await ev(GATE);
+        if (!g.result?.result?.value || !b.ask || b.bar || b.tour) errs.push(`fresh visit: changing a colour must show only the inline consent ask (${JSON.stringify(b)})`);
       }
       if (mode === 'deep') {
         const ev = async (x) => (await send('Runtime.evaluate', { expression: x, returnByValue: true }, s)).result?.result?.value || {};
         let d = {};
         for (let k = 0; k < 15; k++) { d = await ev(GATE); if (d.chip || d.tour) break; await sleep(1000); }
-        if (!d.chip || d.tour || d.bar) errs.push(`deep link: only the "Quick tour of this page" chip may show, never a tutorial (${JSON.stringify(d)})`);
+        if (!d.chip || d.tour || d.bar || d.ask) errs.push(`deep link: only the "Quick tour of this page" chip may show, never a tutorial or a consent bar (${JSON.stringify(d)})`);
       }
       handlers.splice(handlers.indexOf(h), 1);
       await send('Target.closeTarget', { targetId });

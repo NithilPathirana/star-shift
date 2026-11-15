@@ -5,6 +5,8 @@
    Before the visitor allows Personalisation, optional keys go to sessionStorage (this visit only) and are never written
    to localStorage. Withdrawing consent deletes them. One classic script, loaded first in <head>, so every page script's
    localStorage calls pass through the gate (Storage.prototype is wrapped for localStorage only).
+   No bar on page load (Judging panel round 7): the first time the visitor changes something optional, onNeed fires and
+   consent-ui.js shows a small inline "Remember this on this device?" prompt next to what they touched.
    AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
 (function (root) {
   'use strict';
@@ -17,7 +19,7 @@
   };
 
   /** The gate over raw storage functions: L = { get, set, remove, keys } for localStorage, S the same for sessionStorage. */
-  function createGate(L, S, now) {
+  function createGate(L, S, now, onNeed) {
     now = now || function () { return new Date().toISOString(); };
     function record() { var r = null; try { r = JSON.parse(L.get(CONSENT_KEY) || 'null'); } catch (e) { r = null; } return r && typeof r === 'object' && typeof r.personal === 'boolean' ? r : null; }
     function personal() { var r = record(); return !!(r && r.personal); }
@@ -33,9 +35,18 @@
       var v = S.get(VISIT + k);
       return v !== null && v !== undefined ? v : L.get(k);
     }
+    // the optional part of a value (split keys: only their personalisation fields), to tell a real change from a re-save
+    function optPart(k, raw) {
+      if (raw === null || raw === undefined) return null;
+      if (!SPLIT[k]) return String(raw);
+      var o; try { o = JSON.parse(raw); } catch (e) { return String(raw); }
+      if (!o || typeof o !== 'object' || Array.isArray(o)) return String(raw);
+      var out = {}, n = 0; SPLIT[k].forEach(function (f) { if (f in o) { out[f] = o[f]; n++; } }); return n ? JSON.stringify(out) : null;
+    }
     function set(k, v) {
       v = String(v);
       if (necessary(k) || personal()) { L.set(k, v); S.remove(VISIT + k); return; }
+      if (onNeed && !record() && optPart(k, v) !== optPart(k, get(k))) { try { onNeed(k); } catch (e) { /* the ask is optional */ } }
       S.set(VISIT + k, v);                                  // this visit only
       if (SPLIT[k]) { var n = strip(k, v); if (n !== null) L.set(k, n); }   // the necessary part is kept
     }
@@ -86,7 +97,13 @@
       keys: function () { var a = []; for (var i = 0; i < st.length; i++) a.push(oKey.call(st, i)); return a; }
     };
   }
-  var gate = createGate(raw(ls), raw(ss));
+  // only a change the visitor just made asks (a page saving its defaults on load never does)
+  function need(k) {
+    var ua = root.navigator && root.navigator.userActivation;
+    if (ua && !ua.isActive) return;
+    try { root.dispatchEvent(new CustomEvent('star-shift-consent-needed', { detail: { key: k } })); } catch (e) { /* old browser */ }
+  }
+  var gate = createGate(raw(ls), raw(ss), null, need);
   P.getItem = function (k) { return this === ls ? gate.get(String(k)) : oGet.call(this, k); };
   P.setItem = function (k, v) { if (this === ls) gate.set(String(k), v); else oSet.call(this, k, v); };
   P.removeItem = function (k) { if (this === ls) gate.remove(String(k)); else oRem.call(this, k); };

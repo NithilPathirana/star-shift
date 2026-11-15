@@ -361,7 +361,7 @@ export function start({ mode = 'page', chapter, step = null, intro = false, retu
   addEventListener('resize', onMove); addEventListener('scroll', onMove, { passive: true, capture: true });
   run.raf = requestAnimationFrame(loop);
   run.iv = setInterval(update, 250); // rAF stops in background tabs; this keeps the outline honest there too
-  dispatchEvent(new CustomEvent('star-shift-tour-start'));
+  dispatchEvent(new CustomEvent('star-shift-tour-start', { detail: { auto, mode, chapter: ch.id } }));
   if (intro) { run.ch = ch; renderCard(INTRO, 'intro', { next: 'Start' }); return; }
   enterChapter(ch, step);
 }
@@ -381,6 +381,7 @@ export function end(how = 'skip') {
   const r = run;
   // first-visit tutorials: a page chapter that ends, finished or skipped, never starts by itself again
   if (r.mode === 'page' && r.ch?.id) markTutorial(getStore(), r.ch.id, how === 'done' ? 'done' : 'skipped');
+  else if (how === 'skip' && r.ch?.id) markTutorial(getStore(), r.ch.id, 'skipped'); // a Skip in any tour: chips stay small
   if (how === 'skip' && r.kind === 'step' && !(r.mode === 'page' && r.idx === 0)) {
     writeProgress(getStore(), { mode: r.mode, chapter: r.ch.id, step: r.cur?.id || null, status: 'paused' });
   } else if (how === 'skip' && (r.kind === 'waiting' || r.kind === 'intro') && r.mode !== 'page') {

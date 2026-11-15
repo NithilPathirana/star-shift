@@ -1,4 +1,6 @@
-// The consent bar (first visit) and Clarity → "Privacy & tutorials" (spec design/spec-tutorials-consent.md).
+// The consent ask and Clarity → "Privacy & tutorials" (spec design/spec-tutorials-consent.md).
+// No bar on page load (Judging panel round 7): mountAsk() shows a small inline prompt next to what the visitor touched,
+// the first time they change something optional (consent.js fires 'star-shift-consent-needed'). showBar stays for old hooks.
 // The gate itself is app/consent.js (classic script in <head>); this only asks and shows the choice.
 // The bar sits at the bottom, never over the main key, the transport or the dock (it docks under the top bar instead).
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
@@ -99,6 +101,57 @@ export function showBar() {
   document.body.append(bar);
   addEventListener('resize', place); iv = setInterval(place, 400); place();
   void bar.offsetWidth; bar.classList.add('in');
+}
+
+/* ---------- the inline ask: only when something optional is first changed ---------- */
+let ask = null, askOff = false, lastEl = null;
+function anchorRect() {
+  const a = document.activeElement, el = a && a !== document.body && a.isConnected ? a : lastEl?.isConnected ? lastEl : null;
+  const r = el?.getBoundingClientRect(); return r && r.width > 1 ? r : null;
+}
+function placeAsk() {
+  if (!ask) return;
+  const w = ask.offsetWidth, h = ask.offsetHeight, r = anchorRect(), m = 8;
+  let top, left;
+  if (r) {
+    top = r.bottom + m + h <= innerHeight - m ? r.bottom + m : Math.max(m, r.top - m - h);
+    left = Math.min(Math.max(m, r.left), innerWidth - w - m);
+  } else { top = innerHeight - h - 16; left = innerWidth - w - 16; }
+  ask.style.top = Math.round(Math.max(m, top)) + 'px'; ask.style.left = Math.round(Math.max(m, left)) + 'px';
+}
+function closeAsk(choice) {
+  if (!ask) return;
+  if (choice !== null) C()?.choose(choice); else askOff = true; // ✕: not asked again on this page view
+  const a = ask; ask = null; a.remove(); syncSettings();
+}
+function openPrivacy() {
+  closeAsk(null);
+  const btn = $('clarityBtn'); if (!btn) return;
+  if ($('clarity')?.hidden !== false) btn.click();
+  setTimeout(() => { const s = $('sscSet'); s?.scrollIntoView({ block: 'nearest' }); s?.querySelector('[data-consent]')?.focus({ preventScroll: true }); }, 60);
+}
+export function showAsk() {
+  if (ask || askOff || consentDecided()) return;
+  ask = document.createElement('div');
+  ask.className = 'ss-ask glass'; ask.id = 'ssAsk'; ask.setAttribute('role', 'dialog'); ask.setAttribute('aria-labelledby', 'ssAskT');
+  ask.innerHTML = `<p class="ss-ask-t" id="ssAskT">Remember this on this device?</p>
+    <div class="ss-ask-keys"><button class="key primary" type="button" data-a="yes">Yes</button><button class="key" type="button" data-a="visit">Just this visit</button>
+    <button class="key icon ss-ask-x" type="button" data-a="x" aria-label="Ask me later">✕</button></div>
+    <p class="ss-ask-n">No cookies, no tracking.${$('clarityBtn') ? ' <button class="ssc-link" type="button" data-a="privacy">Privacy settings</button>' : ''}</p>`;
+  ask.addEventListener('click', e => {
+    e.stopPropagation();
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    const a = b.dataset.a;
+    if (a === 'privacy') openPrivacy(); else closeAsk(a === 'yes' ? true : a === 'visit' ? false : null);
+  });
+  ask.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeAsk(null); } });
+  document.body.append(ask); placeAsk();
+}
+export function mountAsk() {
+  if (mountAsk.done) return; mountAsk.done = true;
+  addEventListener('pointerdown', e => { if (!ask?.contains(e.target)) lastEl = e.target.closest?.('button, input, select, label, [role], canvas') || e.target; }, true);
+  addEventListener('star-shift-consent-needed', () => showAsk());
+  addEventListener('resize', placeAsk);
 }
 
 /* ---------- Clarity → Privacy & tutorials ---------- */
