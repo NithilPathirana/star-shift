@@ -25,6 +25,7 @@ const ICON = {
   other: '<rect x="3.5" y="3.5" width="9" height="9"/>',
 };
 const icon = id => `<svg class="fl-ic" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">${ICON[id]}</svg>`;
+import { isExpert } from './expert.js';
 const SKEY = 'tgi-flags-v1';
 
 export function createContam(ctx) {
@@ -268,11 +269,13 @@ export function createContam(ctx) {
     const i = y * n + x, empty = f.d[i] == null;
     const ks = sh.marks && f.raw?.flags ? pixelKinds(f.raw.flags[i], f.raw.masks) : [];
     if (!ks.length && !empty) return ctx.hideTip();
-    const bits = f.raw?.flags ? flagNamesOf(f.raw.flags[i], f.raw.flagNames).join(', ') : '';
+    // archive flag bit names and pixel numbers are Expert detail; Simple keeps the plain kind names
+    const bits = f.raw?.flags && isExpert() ? flagNamesOf(f.raw.flags[i], f.raw.flagNames).join(', ') : '';
     const head = empty ? NO_DATA_TIP : ks.map(kindName).join(' · ');
     const why = empty ? (f.det === 'stack' ? 'no data in this season stack' : 'no data in this image') : bits;
     const more = empty && ks.length ? ` · ${ks.map(kindName).join(', ')}` : '';
-    ctx.tipAt(`<b>${esc(head)}</b><small>${esc(why + more)} · pixel ${x + 1}, ${y + 1}</small>`, e.clientX, e.clientY);
+    const small = [why + more, isExpert() ? `pixel ${x + 1}, ${y + 1}` : ''].filter(Boolean).join(' · ');
+    ctx.tipAt(`<b>${esc(head)}</b>${small ? `<small>${esc(small)}</small>` : ''}`, e.clientX, e.clientY);
   }
   for (const id of ['cvA', 'cvB']) {
     const cv = $(id); if (!cv) continue;
@@ -281,6 +284,7 @@ export function createContam(ctx) {
   }
 
   return {
+    clearHide() { S.hide.clear(); persist(); }, // "Use all images (as on Proof)"
     S, filter, whyHidden, drawStage, chipLead, info, renderPop, ensureLayers, setLayer,
     flaggedText(f) { // "Flagged pixels 23 of 625" + breakdown for the title
       const raw = f?.raw; if (!raw) return null;

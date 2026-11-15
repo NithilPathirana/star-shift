@@ -289,9 +289,7 @@ const filterHides = mo => !!(mo?.ok && V.FA.length > V.F.length && fitPool(mo) >
 const usedText = (mo, dets = true) => `${filterHides(mo) ? `from ${mo.frames} of ${fitPool(mo)} images (your flag filter)` : `from ${mo.frames} images`}${dets && mo.detectors ? `, detectors ${detectorText(mo.detectors)}` : ''}`;
 const USE_ALL = '<button type="button" class="fl-link use-all" data-use-all>Use all images (as on Proof)</button>';
 function useAllImages() {
-  CX.S.hide.clear();
-  // same storage as contam-ui.js persist() (key 'tgi-flags-v1'): keep the shown-flag choices, drop the hide list
-  try { const k = 'tgi-flags-v1', o = JSON.parse(localStorage.getItem(k)) || {}; o.hide = []; localStorage.setItem(k, JSON.stringify(o)); } catch { /* private mode */ }
+  CX.clearHide(); // keeps the shown-flag choices, drops the saved hide list
   refilter(); if (openPop?.pop.id === 'flagsPop') CX.renderPop();
   Snd.play('confirm'); toast(`All ${V.FA.length} images are used again, as on the Proof page.`);
 }
