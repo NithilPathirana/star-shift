@@ -720,6 +720,7 @@ function presetNear(ra, dec) {
   return bestSep <= PRESET_SNAP_ARCSEC ? best : null;
 }
 async function goTo(text) {
+  $('serr').hidden = true; // a pick, a Try key or a new search clears an earlier error
   let q;
   try { q = parseQuery(text); } catch (err) { if (err instanceof QueryError) { showSearchError(text, err.message); Snd.play('error'); return; } throw err; }
   if (scene !== 'map') toMap(true);
@@ -734,13 +735,35 @@ async function goTo(text) {
   try {
     const tg = await resolveTarget(q);
     const now = (tg.pmra || tg.pmdec) ? propagate(tg, NOW_MJD) : tg;
-    const t = { key: 'q', name: tg.name, id: tg.otype ? otypeName(tg.otype) : 'SIMBAD object', ra: now.ra, dec: now.dec, simbad: tg };
+    const t = { key: 'q', name: shownName(q.name, tg.name), id: plainType(tg.otype), ra: now.ra, dec: now.dec, simbad: tg };
     await flyTo(t.ra, t.dec, 2, () => select(t.ra, t.dec, t, false));
   } catch (err) { showSearchError(q.name, /recursive|wasm|unreachable|aliasing/i.test(err.message) ? '' : err.message); Snd.play('error'); }
 }
+// The name to show for a SIMBAD hit: what the person typed ("Vega"), not SIMBAD's main id ("alf Lyr").
+// Typed codes with digits ("hd 172167") keep SIMBAD's spelling; all-lowercase words get capitals.
+function shownName(typed, simbadName) {
+  const s = String(typed).trim().replace(/\s+/g, ' ');
+  if (!s || s.toLowerCase() === String(simbadName).toLowerCase()) return simbadName || s;
+  if (s !== s.toLowerCase()) return s;
+  if (/\d/.test(s)) return simbadName || s;
+  return s.replace(/(^|[\s-])(\p{L})/gu, (m, a, c) => a + c.toUpperCase());
+}
+// SIMBAD object types in plain words; codes the map's table lacks (newer SIMBAD codes) fall back to words, never a raw code.
+const OTYPE_MORE = { 'dS*': 'Delta Scuti variable', 'Ma*': 'Massive star', 'Be*': 'Be star', 'LP*': 'Long-period variable', 'El*': 'Ellipsoidal variable',
+  'Er*': 'Eruptive variable', 'HS*': 'Hot subdwarf', 'OH*': 'OH/IR star', 'pA*': 'Post-AGB star', 'RS*': 'RS CVn variable', 'S*': 'S-type star',
+  'SX*': 'SX Phoenicis variable', 'WR*': 'Wolf-Rayet star', 'Pe*': 'Chemically peculiar star', 'HV*': 'High-velocity star', 'Ae*': 'Herbig Ae/Be star',
+  'bC*': 'Beta Cephei variable', 'Ir*': 'Irregular variable', 'No*': 'Nova', 'CV*': 'Cataclysmic variable', 'BS*': 'Blue straggler', 'SG*': 'Supergiant',
+  'RB*': 'Red giant branch star', 'YSO': 'Young stellar object', 'bL*': 'Beta Lyrae binary', 'Al*': 'Algol-type binary', 'WV*': 'Type II Cepheid',
+  'cC*': 'Classical Cepheid', 'Psr': 'Pulsar', 'Pl': 'Planet', 'Neb': 'Nebula', 'SNR': 'Supernova remnant', 'Cl*': 'Star cluster', 'As*': 'Group of stars' };
+function plainType(code) {
+  if (!code) return 'SIMBAD object';
+  const w = otypeName(code);
+  if (w !== code) return w;
+  return OTYPE_MORE[code] || (/\*$/.test(code) ? 'Star' : 'Sky object');
+}
 function showSearchError(text, why) {
   const near = TARGETS.find(x => { const a = x.name.toLowerCase().replace(/[^a-z]/g, ''), b = String(text).toLowerCase().replace(/[^a-z]/g, ''); return b.length > 3 && (a.startsWith(b.slice(0, 4)) || b.startsWith(a.slice(0, 4))); });
-  const el = $('serr'); el.hidden = false;
+  const el = $('serr'); el.hidden = false; $('toast').classList.remove('show'); // the "Looking up..." toast is answered
   el.innerHTML = `<span>${why ? esc(why) : `Couldn't find “${esc(text)}”.`}</span>${near ? `<button class="key" id="serrFix">Try ${esc(near.name)}</button>` : ''}<span style="color:var(--muted)">or type RA Dec like 269.45 +4.69</span>`;
   if (near) $('serrFix').onclick = () => { el.hidden = true; $('q').value = near.name; goTo(near.name); };
 }

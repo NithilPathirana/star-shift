@@ -129,8 +129,11 @@ const isPhone = () => innerWidth <= PHONE_MAX;
 function placeOffer() {
   if (!offer || offer.hidden) return;
   if (isPhone()) { // one 56 px strip just under the top bar, clear of the dock's Play key
-    const tb = $('topbar')?.getBoundingClientRect();
-    offer.classList.add('strip'); offer.style.cssText = `top:${Math.round((tb ? tb.bottom : 0) + scrollY + 8)}px`;
+    const tb = $('topbar')?.getBoundingClientRect(), ch = $('chip'); // and below the viewer's wavelength chip when it shows
+    const seen = ch && ch.textContent.trim() && (ch.checkVisibility ? ch.checkVisibility({ opacityProperty: true, visibilityProperty: true }) : !!ch.offsetParent);
+    const y = Math.max(tb ? tb.bottom : 0, seen ? ch.getBoundingClientRect().bottom : 0);
+    const top = Math.round(y + scrollY + 8) + 'px';
+    offer.classList.add('strip'); if (offer.style.top !== top || offer.style.right) offer.style.cssText = `top:${top}`;
     return;
   }
   offer.classList.remove('strip'); offer.style.cssText = '';
@@ -144,7 +147,9 @@ function placeOffer() {
 const popOpen = () => !!document.querySelector('dialog[open]')
   || [...document.querySelectorAll('.pop:not([hidden])')].some(e => getComputedStyle(e).display !== 'none');
 let offerIv = 0;
-function guardOffer() { if (offer && !offer.hidden) offer.classList.toggle('aside', popOpen()); }
+// ...and never over a search error (its "Try ..." key); on the phone it follows the scene (map or viewer chip)
+const serrOpen = () => { const e = $('serr'); return !!e && !e.hidden; };
+function guardOffer() { if (offer && !offer.hidden) { offer.classList.toggle('aside', popOpen() || serrOpen()); if (isPhone()) placeOffer(); } }
 function hideOffer() {
   if (!offer || offer.hidden) return;
   clearInterval(offerIv);
