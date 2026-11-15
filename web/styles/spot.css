@@ -75,7 +75,7 @@ html[data-motion=reduce] .sm-line i{transition:none}
 .sm-num{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:2px solid var(--copper-deco);font-size:.75rem;color:var(--copper);font-weight:600}
 .sm-sus li.on .sm-num{background:var(--copper-key);border-color:var(--copper);color:var(--on-copper)}
 .sm-spos{font-size:.72rem;line-height:1.35;color:var(--ink-2)}
-.sm-sv{font-size:.75rem;font-weight:600;color:var(--ink);text-align:right;overflow:hidden;text-overflow:ellipsis}
+.sm-sv{font-size:.75rem;font-weight:600;color:var(--ink);text-align:right;overflow-wrap:anywhere}
 
 .sm-lines{list-style:none;padding:0;margin:0;display:grid}
 .sm-l{padding:9px 0;border-top:1px solid rgba(84,62,42,.14);display:grid;gap:4px}
@@ -176,7 +176,7 @@ html[data-motion=reduce] .sm-toast{transition:none}
 .sm-l details{padding-left:0}
 .sm-l summary{display:grid;grid-template-columns:20px minmax(0,1fr) auto;column-gap:10px;row-gap:1px;align-items:center;min-height:36px}
 .sm-l summary::after{grid-column:3;grid-row:1}
-.sm-l summary .sm-lr{grid-column:2 / 4;padding-left:0;font-size:.78rem;font-weight:400;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sm-l summary .sm-lr{grid-column:2 / 4;padding-left:0;font-size:.78rem;font-weight:400;color:var(--ink-2);white-space:normal;overflow-wrap:anywhere} /* check results are science text: full, wrapped (work order 7) */
 .sm-l summary .sm-lr:empty{display:none}
 .sm-l details[open] summary .sm-lr{white-space:normal}
 .sm-l details > :not(summary){margin-left:30px}
