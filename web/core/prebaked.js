@@ -60,6 +60,15 @@ function loadManifest(c) {
   return manifestP;
 }
 
+// True when this exact request is answered from web/prebaked/ (irsa.js adds the slow TAP image
+// list only then). False in Node unless configurePrebaked() set it up.
+export async function hasPrebaked(input) {
+  const c = config();
+  if (!c) return false;
+  const map = await loadManifest(c);
+  return !!map?.get(prebakedKey(input, c.origin));
+}
+
 export async function prebakedFetch(input, init) {
   const live = () => globalThis.fetch(input, init);
   const method = String(init?.method || (typeof input === 'object' && input?.method) || 'GET').toUpperCase();

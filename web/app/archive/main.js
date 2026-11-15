@@ -1,8 +1,8 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
-// Observation Archive page: every SPHEREx image of a patch (IRSA image list), sortable and
+// Observation Archive page: the SPHEREx images IRSA lists for a patch (SIA, then TAP), sortable and
 // filterable, with real 25×25 thumbnails and flag counts loaded lazily for the visible page.
 
-import { listImages, fetchCutout, maskBadPixels } from '../../core/irsa.js';
+import { listImages, moreImagesInTAP, fetchCutout, maskBadPixels } from '../../core/irsa.js';
 import { makeGrid, reproject } from '../../core/align.js';
 import { wavelengthAt } from '../../core/wave.js';
 import { propagate } from '../../core/motion.js';
@@ -27,7 +27,7 @@ const S = {
 async function load(q) {
   S.ctrl?.abort(); S.pageCtrl?.abort();
   const ctrl = S.ctrl = new AbortController();
-  S.rows = []; S.view = []; S.page = 0; S.open.clear();
+  S.rows = []; S.view = []; S.page = 0; S.open.clear(); S.tap = null;
   $('count').textContent = 'Finding the star…'; $('rows').innerHTML = skeleton(8); $('empty').hidden = true;
   try {
     const t = await resolve(q, ctrl.signal);
@@ -37,20 +37,49 @@ async function load(q) {
     $('tName').textContent = tl.name; $('tCoords').textContent = tl.coords;
     $('tPm').innerHTML = motionHtml(t, tl);
     document.title = `${tl.name} · Observation Archive · Star Shift`;
-    $('count').textContent = 'Asking IRSA for every SPHEREx image of this spot…';
+    $('count').textContent = 'Asking IRSA for the SPHEREx images of this spot…';
     const p = listPosition(t);
     const ims = await listImages(p.ra, p.dec, { base, signal: ctrl.signal });
     if (ctrl.signal.aborted) return;
-    S.rows = toRows(ims);
-    S.seasons = seasonsOf(S.rows.map(r => r.mjd));
-    buildFilters();
-    apply();
+    setRows(ims);
+    // Fast SIA list first; IRSA's full TAP table (slow) can hold more (judging panel a4b): add those when it answers.
+    S.tap = ims.sources?.tap != null ? { state: 'done', added: ims.length - (ims.sources.sia ?? ims.length) } : { state: 'asking' };
+    render();
+    if (S.tap.state === 'asking') {
+      moreImagesInTAP(p.ra, p.dec, ims, { base, signal: ctrl.signal }).then(({ extra, merged }) => {
+        if (ctrl.signal.aborted) return;
+        S.tap = { state: 'done', added: extra.length };
+        if (extra.length) setRows(merged); else render();
+      }).catch((e) => { if (!ctrl.signal.aborted && e.name !== 'AbortError') { S.tap = { state: 'failed' }; render(); } });
+    }
   } catch (e) {
     if (e.name === 'AbortError') return;
     $('rows').innerHTML = '';
     $('count').textContent = '';
     showEmpty(e.notFound ? e.message : `Could not get the image list: ${e.message}. IRSA may be busy; try again in a minute.`, true);
   }
+}
+
+// Rows from an image list; images already loaded keep their thumbnail, flags and wavelength.
+function setRows(ims) {
+  const keep = S.rows.length > 0;
+  S.rows = toRows(ims);
+  for (const r of S.rows) {
+    const c = S.cache.get(r.uri);
+    if (c) Object.assign(r, { flags: c.summary, wlStar: c.wl, status: 'loaded' });
+  }
+  S.seasons = seasonsOf(S.rows.map(r => r.mjd));
+  buildFilters(keep);
+  apply();
+}
+
+// What IRSA's full table added, after the image count.
+function tapNote() {
+  const t = S.tap;
+  if (!t) return '';
+  if (t.state === 'asking') return ' · checking IRSA\'s full table for more…';
+  if (t.state === 'failed') return ' · IRSA\'s full table did not answer; this is the quick list';
+  return t.added ? ` · ${t.added.toLocaleString()} of them only in IRSA's full table (TAP), added` : ' · checked against IRSA\'s full table';
 }
 
 function skeleton(n) {
@@ -73,8 +102,8 @@ function chipRow(el, key, options) {
   };
 }
 
-function buildFilters() {
-  for (const k of ['season', 'band', 'detector', 'hasFlags', 'release']) S.filter[k] = 'all';
+function buildFilters(keep = false) {
+  if (!keep) for (const k of ['season', 'band', 'detector', 'hasFlags', 'release']) S.filter[k] = 'all';
   const n = (pred) => S.rows.filter(pred).length;
   chipRow($('fSeason'), 'season', [{ v: 'all', html: 'All' }, ...S.seasons.map(s => ({ v: s.i, html: `${esc(s.label)} <span class="num dim">${s.n}</span>` }))]);
   chipRow($('fBand'), 'band', [{ v: 'all', html: 'All' }, ...DEFAULT_BANDS.map(b => ({ v: b.id, title: `${b.min}–${b.max} µm. ${b.tip}`, html: `<i class="sw" style="background:${b.color}"></i>${esc(bandName(b))}` }))]);
@@ -138,7 +167,7 @@ function render() {
   const all = S.rows.length;
   // a flag filter can only judge the images whose cutout is loaded: say how many that is
   const known = S.filter.hasFlags === 'yes' || S.filter.hasFlags === 'no' ? S.rows.filter(r => r.flags).length : all;
-  $('count').textContent = all ? `${S.view.length.toLocaleString()} of ${all.toLocaleString()} images${known < all ? ` (flags known for ${known.toLocaleString()} so far)` : ''}${pg.total ? ` · showing ${pg.from}–${pg.to}` : ''}` : '';
+  $('count').textContent = all ? `${S.view.length.toLocaleString()} of ${all.toLocaleString()} images${known < all ? ` (flags known for ${known.toLocaleString()} so far)` : ''}${pg.total ? ` · showing ${pg.from}–${pg.to}` : ''}${tapNote()}` : '';
   $('pageTxt').textContent = `${pg.page + 1} / ${pg.pages}`;
   $('prev').disabled = pg.page === 0; $('next').disabled = pg.page >= pg.pages - 1;
   for (const th of document.querySelectorAll('th[data-sort]')) {

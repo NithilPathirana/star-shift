@@ -23,8 +23,12 @@ Type any sky position (or a star name) and see the SPHEREx images of that spot, 
 
 ## How it works
 - `web/core/` – plain JavaScript, runs in the browser and in Node:
-  - `irsa.js` – finds SPHEREx images through IRSA's TAP service and downloads cutouts,
-    keeping only the IMAGE and FLAGS parts (~55 kB instead of ~4 MB per frame).
+  - `irsa.js` – finds SPHEREx images and downloads cutouts, keeping only the IMAGE and FLAGS parts
+    (~55 kB instead of ~4 MB per frame). Image lists: IRSA's fast SIA service, merged with IRSA's TAP
+    table (one image per exposure and detector) wherever TAP is affordable: the five demo targets
+    (saved in `web/prebaked/`) and the Node tools. Near the north ecliptic pole SIA lists far fewer:
+    R Draconis has 539 images in SIA and 2,493 in TAP (1,258 exposures, each seen by two detectors).
+    The Observation Archive adds TAP's extra images when TAP answers; live viewer spots stay on SIA.
   - `fits.js` – small FITS reader. `wcs.js` – TAN-SIP sky ↔ pixel maths (matches Astropy to <1 mas).
   - `motion.js` – moves a star along its proper motion to each image date.
   - `align.js` – puts every frame on one north-up sky grid and measures star positions.
