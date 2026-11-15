@@ -76,6 +76,8 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick })
       return s.x0 + Math.min(1, Math.max(0, (m - s.t0) / (s.t1 - s.t0))) * pw;
     };
     const geo = { W, H, X, rows: [] };
+    // axis-break mark: two short parallel slashes centred on (cx, cy), fitting the 8 px gap
+    const brk = (cx, cy) => [-2, 2].map(d => `<line x1="${cx + d - 1.8}" y1="${cy + 4}" x2="${cx + d + 1.8}" y2="${cy - 4}" class="lc-brk" style="stroke:var(--stage-muted);stroke-width:1.2;stroke-linecap:round"/>`).join('');
     let g = '';
     rows.forEach((grp, r) => {
       const yh = top + r * (head + rowH + gap), y0 = yh + head, y1 = y0 + rowH;
@@ -87,7 +89,9 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick })
       geo.rows.push({ y0, y1, Y, grp });
       g += `<text x="${L}" y="${yh + 11}" class="lc-gl">${esc(grp.name)} <tspan class="lc-ax">· Δ mag</tspan></text>`;
       for (const s of seasons) g += `<rect x="${s.x0}" y="${y0}" width="${pw}" height="${rowH}" class="lc-bg"/>`;
-      if (grp.points.length) g += `<line x1="${L}" x2="${W - Rr}" y1="${Y(0)}" y2="${Y(0)}" class="lc-zero"/>`;
+      // zero line per season panel, with a small "//" axis-break mark in each gap (the months left out)
+      if (grp.points.length) for (const s of seasons) g += `<line x1="${s.x0}" x2="${s.x0 + pw}" y1="${Y(0)}" y2="${Y(0)}" class="lc-zero"/>`;
+      if (grp.points.length) for (let k = 1; k < seasons.length; k++) g += brk(seasons[k].x0 - sg / 2, Y(0));
       const tk = Math.abs(hi) >= 0.5 || Math.abs(lo) >= 0.5 ? 1 : 2;
       if (grp.points.length) g += `<text x="${L - 5}" y="${y0 + 9}" class="lc-ax" text-anchor="end">${fmtMag(lo, tk)}</text><text x="${L - 5}" y="${y1}" class="lc-ax" text-anchor="end">${fmtMag(hi, tk)}</text>`;
       if (!grp.points.length) g += `<text x="${(L + W - Rr) / 2}" y="${y0 + rowH / 2 + 4}" class="lc-ax" text-anchor="middle">${esc(emptyWhy(grp))}</text>`;
@@ -99,7 +103,9 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick })
           : `<circle class="lc-pt" data-i="${p.idx}" cx="${x}" cy="${y}" r="3.3" style="--pc:${c}"/>`;
       }
     });
-    // date axis: one label per season, under its panel
+    // date axis: one label per season, under its panel; the same break mark on the panels' bottom edge
+    const yb = geo.rows[geo.rows.length - 1]?.y1;
+    if (yb != null) for (let k = 1; k < seasons.length; k++) g += brk(seasons[k].x0 - sg / 2, yb);
     for (const s of seasons) g += `<text x="${s.x0 + pw / 2}" y="${H - 5}" class="lc-ax" text-anchor="middle">${seasonLbl(s)}</text>`;
     g += '<path id="lcHead" class="lc-head" d=""/>'; // one segment per row, so it never crosses the row labels
     const label = `Brightness against date for ${S.name}: ` + rows.map(r => `${r.name}, ${r.points.length} images${r.ok ? `, last season ${fmtMag(r.dmag)} ± ${r.dmagErr.toFixed(2)} magnitudes against the first` : ''}`).join('; ') + '. Use left and right arrow keys to step through the plotted images.';

@@ -146,6 +146,7 @@ export function createContam(ctx) {
     if (L.wave) drawWave(cv, L.wave, n, o.cell, o, f.exp);
     else R.draw(cv, L.f, n, L.ramp ? { ...o, ramp: L.ramp } : o);
     if (withMarks && o.hatch !== false && f?.raw) drawMarks(cv, f, n, o.cell);
+    cv._shown = { f, marks: !!(withMarks && o.hatch !== false) }; // for the hover tip
     S.last = L; legend(L);
     return L;
   }
@@ -255,19 +256,28 @@ export function createContam(ctx) {
   }
   $('flZodi').onclick = () => { setLayer('zodi', true); ctx.closePop(); };
 
-  /* ----- pixel tooltip: lists every flag on the pixel under the pointer ----- */
-  const cvA = $('cvA');
-  cvA.addEventListener('pointermove', e => {
-    const f = V.F[ctx.P.i];
-    if (ctx.mode() !== 'play' || !f?.raw?.flags || !ctx.set.hatch) return ctx.hideTip();
-    const r = cvA.getBoundingClientRect(), n = V.n, x = Math.floor((e.clientX - r.left) / r.width * n), y = Math.floor((e.clientY - r.top) / r.height * n);
+  /* ----- pixel tooltip: "No SPHEREx image here" on no-data pixels (any view, FLAGS on or off),
+     plus every flag on the pixel when the FLAGS marks are shown. Quiet in Clean blink. ----- */
+  const NO_DATA_TIP = 'No SPHEREx image here';
+  function pixelTip(cv, e) {
+    const sh = cv._shown, f = sh?.f, n = V.n;
+    if (!f?.d || $('stage')?.classList.contains('clean-blink') || ctx.mode() === 'telescopes') return ctx.hideTip();
+    const r = cv.getBoundingClientRect(), x = Math.floor((e.clientX - r.left) / r.width * n), y = Math.floor((e.clientY - r.top) / r.height * n);
     if (x < 0 || y < 0 || x >= n || y >= n) return ctx.hideTip();
-    const i = y * n + x, ks = pixelKinds(f.raw.flags[i], f.raw.masks), empty = f.d[i] == null;
+    const i = y * n + x, empty = f.d[i] == null;
+    const ks = sh.marks && f.raw?.flags ? pixelKinds(f.raw.flags[i], f.raw.masks) : [];
     if (!ks.length && !empty) return ctx.hideTip();
-    const names = [...(empty ? ['No data'] : []), ...ks.map(kindName)];
-    ctx.tipAt(`<b>${esc(names.join(' · '))}</b><small>${esc(flagNamesOf(f.raw.flags[i], f.raw.flagNames).join(', ') || 'masked')} · pixel ${x + 1}, ${y + 1}</small>`, e.clientX, e.clientY);
-  });
-  cvA.addEventListener('pointerleave', () => ctx.hideTip());
+    const bits = f.raw?.flags ? flagNamesOf(f.raw.flags[i], f.raw.flagNames).join(', ') : '';
+    const head = empty ? NO_DATA_TIP : ks.map(kindName).join(' · ');
+    const why = empty ? (f.det === 'stack' ? 'no data in this season stack' : 'no data in this image') : bits;
+    const more = empty && ks.length ? ` · ${ks.map(kindName).join(', ')}` : '';
+    ctx.tipAt(`<b>${esc(head)}</b><small>${esc(why + more)} · pixel ${x + 1}, ${y + 1}</small>`, e.clientX, e.clientY);
+  }
+  for (const id of ['cvA', 'cvB']) {
+    const cv = $(id); if (!cv) continue;
+    cv.addEventListener('pointermove', e => pixelTip(cv, e));
+    cv.addEventListener('pointerleave', () => ctx.hideTip());
+  }
 
   return {
     S, filter, whyHidden, drawStage, chipLead, info, renderPop, ensureLayers, setLayer,

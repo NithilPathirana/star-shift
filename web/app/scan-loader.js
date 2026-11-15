@@ -32,14 +32,13 @@
     var lo = q(2), hi = q(99.7), k = Math.asinh(10);
     return d.map(function (x) { return x == null ? null : Math.asinh(10 * Math.min(1, Math.max(0, (x - lo) / Math.max(hi - lo, 1e-12)))) / k; });
   }
-  function paint(cv, frame, cell, ramp) {    // crisp integer cells; masked pixels hatched
+  function paint(cv, frame, cell, ramp) {    // crisp integer cells; no-data pixels one calm flat fill (as the viewer)
     var n = Math.round(Math.sqrt(frame.d.length)), s = frame._s || (frame._s = stretch(frame.d)), c = cv.getContext('2d');
     if (cv.width !== n * cell || cv.height !== n * cell) { cv.width = n * cell; cv.height = n * cell; }
     for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) {
       var t = s[y * n + x];
       if (t == null) {
-        c.fillStyle = '#211b16'; c.fillRect(x * cell, y * cell, cell, cell);
-        if (cell >= 6) { c.strokeStyle = '#6b5d50'; c.lineWidth = Math.max(1, cell / 10); c.beginPath(); c.moveTo(x * cell, y * cell + cell); c.lineTo(x * cell + cell, y * cell); c.stroke(); }
+        c.fillStyle = '#100D0B'; c.fillRect(x * cell, y * cell, cell, cell);
       } else { var rgb = lerp(ramp, t); c.fillStyle = 'rgb(' + (rgb[0] | 0) + ',' + (rgb[1] | 0) + ',' + (rgb[2] | 0) + ')'; c.fillRect(x * cell, y * cell, cell, cell); }
     }
   }

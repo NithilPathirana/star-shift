@@ -39,9 +39,13 @@
     return 'linear-gradient(90deg,' + R.ramps[name].map(([t, c]) => `rgb(${c}) ${t * 100}%`).join(',') + ')';
   };
 
-  /* opts: ramp, cell (canvas px per data pixel), ring (bool), ringColor, maskBg, maskInk, stretch ('auto'|'linear'|'strong'), hatch (bool, default true) */
+  /* opts: ramp, cell (canvas px per data pixel), ring (bool), ringColor, stretch ('auto'|'linear'|'strong'), noData (fill).
+     No-data pixels (masked, saturated cores, cutout past the detector edge) get one calm flat fill a shade
+     darker than the stage, never hatching: they are not detector flags (the FLAGS overlay is contam-ui.js).
+     maskBg / maskInk / hatch from older callers are ignored here. */
+  R.NO_DATA = '#100D0B'; // stage is #15110E
   R.draw = function (canvas, frame, n, opts) {
-    const o = Object.assign({ ramp: 'grey', cell: 20, ring: false, ringColor: '#D4AF37', maskBg: '#1a2230', maskInk: '#56657d' }, opts || {});
+    const o = Object.assign({ ramp: 'grey', cell: 20, ring: false, ringColor: '#D4AF37', noData: R.NO_DATA }, opts || {});
     const c = o.cell, ctx = canvas.getContext('2d');
     if (canvas.width !== n * c) { canvas.width = n * c; canvas.height = n * c; }
     const sm = o.stretch || 'auto', key = '_s_' + sm;
@@ -50,12 +54,7 @@
     for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
       const t = s[y * n + x];
       if (t == null) {
-        ctx.fillStyle = o.maskBg; ctx.fillRect(x * c, y * c, c, c);
-        if (o.hatch === false) continue;
-        ctx.save(); ctx.beginPath(); ctx.rect(x * c, y * c, c, c); ctx.clip();
-        ctx.strokeStyle = o.maskInk; ctx.lineWidth = Math.max(1, c / 10);
-        for (let k = -c; k < c * 2; k += c / 3) { ctx.beginPath(); ctx.moveTo(x * c + k, y * c); ctx.lineTo(x * c + k - c, y * c + c); ctx.stroke(); }
-        ctx.restore();
+        ctx.fillStyle = o.noData; ctx.fillRect(x * c, y * c, c, c);
       } else {
         const [r, g, b] = ramp(stops, t);
         ctx.fillStyle = `rgb(${r},${g},${b})`; ctx.fillRect(x * c, y * c, c, c);

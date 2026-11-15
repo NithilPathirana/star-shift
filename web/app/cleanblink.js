@@ -26,10 +26,30 @@ export function createCleanBlink(ctx) {
   const key = ctx.$('cleanKey'), stage = ctx.$('stage');
   const S = { on: false, saved: null };
 
+  // The one label kept while clean: which season is on screen (the chip that normally says so is
+  // hidden). It follows the chip's own "First season" / "Last season" text, which ui.js rewrites on every flip.
+  if (!document.getElementById('cb-season-css')) {
+    const st = document.createElement('style'); st.id = 'cb-season-css';
+    st.textContent = '.cb-season{display:none;position:absolute;left:16px;bottom:16px;z-index:3;pointer-events:none;'
+      + 'font:500 11px/1 var(--font-num,ui-monospace,monospace);letter-spacing:.02em;color:rgba(255,246,232,.6)}'
+      + '.stage.clean-blink .cb-season{display:block}.stage.clean-blink .compass{visibility:hidden}'
+      + '@media (max-width:699px){.cb-season{left:12px;top:16px;bottom:auto}}';
+    document.head.appendChild(st);
+  }
+  const season = document.createElement('span'); season.className = 'cb-season'; season.setAttribute('aria-live', 'polite');
+  stage.appendChild(season);
+  const chip = ctx.$('chip');
+  function label() {
+    const t = (chip?.querySelector('b')?.textContent || '').trim().toLowerCase();
+    season.textContent = S.on && /^(first|last) season$/.test(t) ? t : '';
+  }
+  if (chip) new MutationObserver(label).observe(chip, { childList: true, subtree: true, characterData: true });
+
   function sync() {
     key.setAttribute('aria-pressed', String(S.on));
     key.querySelector('.cb-l').textContent = S.on ? 'Clean blink: on' : 'Clean blink';
     stage.classList.toggle('clean-blink', S.on);
+    label();
   }
   function on() {
     if (S.on || ctx.mode() !== 'blink') return;
