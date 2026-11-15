@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="styles/notebook.css">
 <link rel="stylesheet" href="styles/spot.css">
 <link rel="stylesheet" href="styles/access.css?v=1"><!-- colours and accessibility (app/access.js): keep this the LAST stylesheet -->
+<script src="app/consent.js?v=1"></script><!-- first: browser-storage consent gate (optional settings wait for consent) -->
 <script src="app/access.js?v=1"></script><!-- classic script on purpose: applies a saved palette before first paint -->
 </head>
 <body>
@@ -153,7 +154,7 @@
   <div class="opt"><span>Reduce transparency<small>Glass becomes solid</small></span><button class="switch well" role="switch" data-set="glass" aria-checked="false" aria-label="Reduce transparency"><i></i></button></div>
   <div class="opt"><span>Increase contrast</span><button class="switch well" role="switch" data-set="contrast" aria-checked="false" aria-label="Increase contrast"><i></i></button></div>
   <div class="opt"><span>Larger text</span><button class="switch well" role="switch" data-set="text" aria-checked="false" aria-label="Larger text"><i></i></button></div>
-  <p class="foot">Shared with the Viewer. Choices are remembered on this device.</p>
+  <p class="foot">Shared with the Viewer. Comfort and text choices are kept in this browser; colours only if Personalisation is on.</p>
 </div>
 
 <div class="pop glass" id="pagesPop" role="dialog" aria-label="Pages" hidden>

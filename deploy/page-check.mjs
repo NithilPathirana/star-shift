@@ -9,6 +9,7 @@ import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { CHAPTERS } from '../web/app/tour/chapters.js';
 
 const base = (process.argv[2] || 'http://127.0.0.1:8787').replace(/\/$/, '');
 const PAGES = [
@@ -23,7 +24,20 @@ const PAGES = [
   ['/?cta', 7000],
   // IRSA outage (Sun 15 Nov): IRSA's relay routes fail; the status pill shows, a search for a non-saved name gets the calm note, the error screen has its saved-target chips
   ['/?irsa-down', 8000],
+  // fresh profile (spec-tutorials-consent.md): the consent bar first, then the sky map's tutorial after Accept; and a
+  // deep link (consent given, no tutorial seen yet) gets only the small "Quick tour of this page" chip. Kept last: they clear storage.
+  ['/', 9000, 'fresh'], ['/index.html?q=Epsilon%20Indi%20B&scene=viewer', 10000, 'deep'],
 ];
+// Every other page loads as a returning visitor: consent chosen and every tutorial done, so nothing pops up over what is checked.
+const CONSENT = 'star-shift-consent-v1', TUTORIALS = 'star-shift-tutorials-v1';
+const SEEN = `(() => { try { if (!localStorage.getItem('${CONSENT}')) localStorage.setItem('${CONSENT}', '{"v":1,"personal":false}');
+  if (!localStorage.getItem('${TUTORIALS}')) localStorage.setItem('${TUTORIALS}', '${JSON.stringify(Object.fromEntries(CHAPTERS.map(c => [c.id, 'done'])))}'); } catch { /* blocked */ } })()`;
+// a fresh profile for this tab only (the browser profile is shared by every page above)
+const FRESH = (consent) => `(() => { try { if (sessionStorage.getItem('pc-fresh')) return; sessionStorage.setItem('pc-fresh', '1'); localStorage.clear();
+  ${consent ? `localStorage.setItem('${CONSENT}', '{"v":1,"personal":false}');` : ''} } catch { /* blocked */ } })()`;
+const GATE = "(() => { const b = document.getElementById('ssConsent'), c = document.getElementById('tourChip'), on = e => !!e && e.getClientRects().length > 0;"
+  + " const br = on(b) ? b.getBoundingClientRect() : null; const hit = br && [...document.querySelectorAll('.story-go, #mdPlay, #cdPlay, #play')].some(e => { const r = e.getBoundingClientRect(); return r.width > 1 && r.left < br.right && br.left < r.right && r.top < br.bottom && br.top < r.bottom; });"
+  + " return { bar: on(b), barCovers: !!hit, chip: on(c), tour: document.documentElement.dataset.tour === 'on', count: document.getElementById('tourCount')?.textContent || '' }; })()";
 // Help and About are two different panels (Nithil: "Help and About open the same thing")
 const POPS = "(() => { const v = id => { const p = document.getElementById(id); return !!p && !p.hidden && p.getClientRects().length > 0; };"
   + " const t = id => document.getElementById(id)?.textContent || ''; return { help: v('help'), about: v('about'), helpTour: /Tour/.test(t('help')), helpTeam: /Who is this for/.test(t('help')), aboutTeam: /Who is this for/.test(t('about')) }; })()";
@@ -40,7 +54,8 @@ setTimeout(() => { console.error(`page check could not run: no result after ${TO
 // Judging panel round 5, item 1 (deploy-lag guard): every key module answers 200, and on a deploy the live
 // /version.json names the commit just deployed (deploy.sh sets EXPECT_SHA), so a stale or partial deploy fails loudly
 const MODULES = ['/app/ui.js', '/app/seasons.js', '/app/distances.js', '/app/gaia-overlay.js', '/app/spot/colour.js', '/app/spot/botha.js',
-  '/app/spot/logic.js', '/app/proof/logic.js', '/app/diffview.js', '/app/erender.js', '/app/astro-loader.js', '/data/proof.json', '/data/botha-check.json', '/data/spot-botha.json'];
+  '/app/spot/logic.js', '/app/proof/logic.js', '/app/diffview.js', '/app/erender.js', '/app/astro-loader.js', '/data/proof.json', '/data/botha-check.json', '/data/spot-botha.json',
+  '/app/consent.js', '/app/consent-ui.js'];
 async function preflight() {
   const bad = [];
   for (const m of MODULES) { try { const r = await fetch(base + m, { cache: 'no-store' }); if (r.status !== 200) bad.push(`${m} ${r.status}`); } catch (e) { bad.push(`${m} ${e.message}`); } }
@@ -70,7 +85,7 @@ async function run() {
     ws = new WebSocket(info.webSocketDebuggerUrl);
     await new Promise(r => ws.onopen = r);
     ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } else handlers.forEach(h => h(d)); };
-    for (const [path, wait] of PAGES) {
+    for (const [path, wait, mode] of PAGES) {
       const { result: { targetId } } = await send('Target.createTarget', { url: 'about:blank' });
       const { result: { sessionId: s } } = await send('Target.attachToTarget', { targetId, flatten: true });
       const errs = [], soft = [];
@@ -91,6 +106,8 @@ async function run() {
       await send('Runtime.enable', {}, s); await send('Log.enable', {}, s); await send('Page.enable', {}, s);
       // unhandled rejections surface as Runtime.exceptionThrown ("Uncaught (in promise)")
       await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false }, s);
+      // returning visitor (consent + tutorials done) on every page but the two fresh cases, /?cta and /?irsa-down included
+      await send('Page.addScriptToEvaluateOnNewDocument', { source: mode ? FRESH(mode === 'deep') : SEEN }, s);
       if (path === '/?irsa-down') await send('Fetch.enable', { patterns: ['*/SIA?*', '*/TAP/*', '*/ibe/*'].map(urlPattern => ({ urlPattern })) }, s);
       await send('Page.navigate', { url: base + path }, s);
       await sleep(wait);
@@ -134,7 +151,7 @@ async function run() {
           if (!tp || tp.n !== 3 || tp.ok !== 3) errs.push(`Telescopes did not fill its 3 panels (${JSON.stringify(tp)})`);
         }
       }
-      if (path === '/') { // open Help, then About: each must show its own content, never the other's
+      if (path === '/' && !mode) { // open Help, then About: each must show its own content, never the other's
         const ev = async (x) => (await send('Runtime.evaluate', { expression: x, returnByValue: true }, s)).result?.result?.value || {};
         await ev("document.getElementById('helpBtn').click()"); await sleep(500);
         const a = await ev(POPS);
@@ -173,9 +190,24 @@ async function run() {
         }
         if (!d.about || d.help) errs.push(`/index.html#about did not open About (${JSON.stringify(d)})`);
       }
+      if (mode === 'fresh') {
+        const ev = async (x) => (await send('Runtime.evaluate', { expression: x, returnByValue: true }, s)).result?.result?.value || {};
+        const a = await ev(GATE);
+        if (!a.bar || a.tour || a.barCovers) errs.push(`fresh visit: the consent bar must show first, alone and off the main key (${JSON.stringify(a)})`);
+        await ev("document.querySelector('#ssConsent [data-c=accept]')?.click()");
+        let b = {};
+        for (let k = 0; k < 20; k++) { b = await ev(GATE); if (b.tour) break; await sleep(1000); }
+        if (b.bar || !b.tour || !/^Sky map/.test(b.count)) errs.push(`fresh visit: the sky map tutorial did not start after Accept (${JSON.stringify(b)})`);
+      }
+      if (mode === 'deep') {
+        const ev = async (x) => (await send('Runtime.evaluate', { expression: x, returnByValue: true }, s)).result?.result?.value || {};
+        let d = {};
+        for (let k = 0; k < 15; k++) { d = await ev(GATE); if (d.chip || d.tour) break; await sleep(1000); }
+        if (!d.chip || d.tour || d.bar) errs.push(`deep link: only the "Quick tour of this page" chip may show, never a tutorial (${JSON.stringify(d)})`);
+      }
       handlers.splice(handlers.indexOf(h), 1);
       await send('Target.closeTarget', { targetId });
-      rows.push({ page: path, result: errs.length ? 'FAIL' : 'PASS', errors: errs.length, archiveBusy: soft.length, first: (errs[0] || soft[0] || '').slice(0, 120) });
+      rows.push({ page: mode ? `${path} (${mode})` : path, result: errs.length ? 'FAIL' : 'PASS', errors: errs.length, archiveBusy: soft.length, first: (errs[0] || soft[0] || '').slice(0, 120) });
     }
   } finally { try { ws?.close(); } catch { /* */ } chrome.kill(); await sleep(400); try { rmSync(dir, { recursive: true, force: true }); } catch { /* profile still locked */ } }
   console.table(rows);

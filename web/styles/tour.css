@@ -96,3 +96,49 @@ html[data-motion=reduce] .tour-layer,html[data-motion=reduce] .tour-hole,html[da
 
 /* the offer steps aside while a sheet, popover or dialog is open */
 .tour-offer.aside{visibility:hidden;opacity:0!important;pointer-events:none}
+
+/* Consent bar (first visit, spec-tutorials-consent.md): compact glass at the bottom, non-blocking; consent-ui.js docks it
+   under the top bar instead when it would cover the main key, the transport or the dock. Phones: within a third of the screen */
+.ss-consent{--glass-tint:rgba(248,244,238,.97);--glass-tint-2:rgba(244,239,232,.96);
+  position:fixed;z-index:26;left:50%;bottom:calc(12px + env(safe-area-inset-bottom,0px));width:min(620px,calc(100vw - 24px));
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 10px 10px 14px;border-radius:14px;
+  opacity:0;transform:translate(-50%,8px);transition:opacity 160ms var(--ease-out),transform 160ms var(--ease-out)}
+.ss-consent.in{opacity:1;transform:translate(-50%,0)}
+.ss-consent.top{bottom:auto}
+.ss-consent>*{position:relative;z-index:3}
+.ssc-t{flex:1 1 260px;min-width:0;font-size:.8125rem;line-height:1.4;color:var(--ink-2)}
+.ssc-t b{color:var(--ink)}
+.ssc-more{flex:1 1 100%;order:1}
+.ssc-more .opt{gap:12px}
+.ssc-keys{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+.ssc-keys .key{min-height:36px}
+@media (max-width:699px){
+  .ss-consent{max-height:33vh;overflow:auto;padding:10px;gap:8px}
+  .ssc-t{flex-basis:100%;font-size:.75rem}
+  .ssc-keys{width:100%;margin:0;flex-wrap:nowrap}
+  .ssc-keys .key{flex:1 1 0;min-height:44px;padding:0 6px;justify-content:center;font-size:.8125rem}
+}
+/* Clarity → Privacy & tutorials */
+.ssc-set .opt{gap:12px}
+.ssc-note{margin-top:6px;font-size:.75rem;color:var(--muted)}
+.ssc-note:empty{display:none}
+.ssc-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+@media (max-width:699px){.ssc-row .key{min-height:44px}}
+
+/* deep links: a small chip by the Tour key instead of a tutorial over the stage */
+.tour-chip{--glass-tint:rgba(248,244,238,.97);--glass-tint-2:rgba(244,239,232,.96);
+  position:fixed;z-index:20;top:64px;right:12px;display:flex;align-items:center;gap:6px;padding:6px 6px 6px 12px;border-radius:12px;max-width:calc(100vw - 16px)}
+.tour-chip>*{position:relative;z-index:3}
+.tour-chip-t{font-size:.8125rem;font-weight:600;color:var(--ink);white-space:nowrap}
+.tour-chip .key{min-height:32px}
+@media (max-width:699px){.tour-chip .key{min-height:44px}.tour-chip-t{white-space:normal}}
+html[data-motion=reduce] .ss-consent{transition:none!important}
+.tour-chip.stack{flex-wrap:wrap;justify-content:flex-end}
+.tour-chip.stack .tour-chip-t{flex-basis:100%;white-space:normal}
+.tour-chip.in-bar{position:relative;top:auto;right:auto;z-index:auto;flex:1 1 100%;width:100%;max-width:none;margin-top:8px;box-shadow:none}
+.tour-chip.in-bar .tour-chip-t{flex:1;white-space:normal}
+/* Reject / withdraw: the kept-for-this-tab note and its Export notebook link; Clear saved data now asks first */
+.ssc-link{display:inline;min-height:0;padding:0;font:inherit;font-weight:600;color:var(--copper-ink);text-decoration:underline;text-underline-offset:2px;background:none;border:0;cursor:pointer}
+.ssc-kept{font-weight:600;color:var(--ink)}
+.ssc-confirm{margin-top:8px}
+@media (max-width:699px){.ssc-link{min-height:44px;display:inline-flex;align-items:center}}

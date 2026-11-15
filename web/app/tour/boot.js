@@ -7,7 +7,9 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 import { chapterForPage, chapterById, readProgress, shouldAutoResume, canResume, resumeLabel, clearProgress } from './chapters.js';
 import { shouldOffer, remember, offerAllowed, OFFER_MS, PHONE_MAX, reducedMotion } from './steps.js';
-import { start, end, running, getStore, currentPage, currentScene, debugRects } from './engine.js';
+import { start, end, running, getStore, currentPage, currentScene, debugRects, canRun } from './engine.js';
+import { needsTutorial, markTutorial, isDeepLink } from './progress.js';
+import { consentReady, showBar, mountSettings } from '../consent-ui.js';
 
 const $ = id => document.getElementById(id);
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -226,6 +228,81 @@ function showOffer() {
   void offer.offsetWidth; offer.classList.add('in');
 }
 
+/* ---------- first-visit tutorials, one per tool (spec design/spec-tutorials-consent.md) ---------- */
+// After the consent choice, the tool on screen (sky map, time-lapse, notebook, each page) starts its own chapter once.
+// Never while loading, while a popover is open or while its parts are missing. On a deep link (a shared view) the
+// stage is never taken over: a small chip by the Tour key offers it instead, and "Not now" counts as skipped.
+const deep = isDeepLink(firstUrl, document.referrer);
+let chip = null, autoOk = 0, filmStart = false;
+// the time-lapse reached by the first-screen "Watch ..." key or a quick pick is a playing film: its tutorial waits in the chip
+addEventListener('click', e => { if (e.target.closest?.('.story-go, .pick')) filmStart = true; }, true);
+function viewerBusy() {
+  if ($('stLoading') && $('stLoading').hidden === false) return true;
+  const V = window.__app?.V;
+  return currentScene() === 'viewer' && !!V && !(V.F?.length > 0) && V.status === 'loading';
+}
+function hideChip() { if (chip) { chip.remove(); chip = null; padInsp(0); } }
+// the side panel's top moves down under the chip, so the target's name is never covered (like the old offer's clearName)
+function padInsp(px) { const p = $('insp'); if (p) { p.style.transition = 'padding-top 200ms'; p.style.paddingTop = px ? px + 'px' : ''; } }
+function showChip(ch) {
+  if (chip?.dataset.ch === ch.id) return;
+  hideChip();
+  chip = document.createElement('div'); chip.className = 'tour-chip glass'; chip.id = 'tourChip'; chip.dataset.ch = ch.id;
+  chip.setAttribute('role', 'region'); chip.setAttribute('aria-label', 'Quick tour of this page');
+  chip.innerHTML = `<span class="tour-chip-t">Quick tour of this page</span><button class="key" type="button" data-chip="go">Start</button><button class="key" type="button" data-chip="no">Not now</button>`;
+  chip.addEventListener('click', e => {
+    const b = e.target.closest('[data-chip]'); if (!b) return;
+    const id = chip.dataset.ch; hideChip();
+    if (b.dataset.chip === 'go') start({ mode: 'page', chapter: id, auto: true, returnTo: $('tourPageKey') });
+    else markTutorial(getStore(), id, 'skipped');
+  });
+  document.body.append(chip); placeChip();
+}
+// Docked under the Tour key, over the side panel and never over the image (judges' a5): when the stage leaves no room
+// beside it (phones, narrow windows), the chip becomes the last row of the top bar instead.
+function placeChip() {
+  if (!chip) return;
+  const bar = document.querySelector('.topbar');
+  if (chip.parentNode !== document.body) document.body.append(chip);
+  chip.classList.remove('in-bar', 'stack'); chip.style.maxWidth = ''; padInsp(0);
+  const k = $('tourPageKey')?.getBoundingClientRect(), tb = bar?.getBoundingClientRect();
+  const ref = k && k.width > 2 ? k : tb;
+  const right = Math.max(8, Math.round(innerWidth - (tb ? tb.right : ref ? ref.right : innerWidth - 12)));
+  chip.style.top = Math.round((ref ? ref.bottom : 56) + 8) + 'px'; chip.style.right = right + 'px';
+  const st = stageRect();
+  if (st && st.width > 2 && hits(chip.getBoundingClientRect(), st)) {
+    const room = innerWidth - right - st.right - 8;
+    if (room >= 220) { chip.classList.add('stack'); chip.style.maxWidth = room + 'px'; }
+    if (hits(chip.getBoundingClientRect(), st) && bar) { chip.classList.add('in-bar'); chip.style.top = chip.style.right = ''; chip.style.maxWidth = ''; bar.append(chip); return; }
+  }
+  const p = $('insp')?.getBoundingClientRect(), r = chip.getBoundingClientRect();
+  if (p && p.width > 2 && hits(r, p)) padInsp(Math.ceil(r.bottom + 8 - p.top));
+}
+function checkAuto() {
+  const ch = chapterForPage(page, { scene: currentScene(), notebookOpen: nbOpen() });
+  if (!ch || !needsTutorial(getStore(), ch.id)) { hideChip(); autoOk = 0; return; }
+  if (chip && chip.dataset.ch !== ch.id) hideChip();
+  const busy = running() || document.documentElement.dataset.tour === 'on' || viewerBusy() || $('ssConsent')
+    || (!nbOpen() && popOpen()) || (menu && !menu.hidden) || !canRun(ch);
+  if (busy) { autoOk = 0; return; }
+  if (++autoOk < 2) return; // the same tool on screen for two checks in a row: not mid-change
+  autoOk = 0;
+  if (deep || (ch.id === 'viewer' && filmStart)) showChip(ch);
+  else start({ mode: 'page', chapter: ch.id, auto: true, returnTo: $('tourPageKey') });
+}
+async function autoTutorials() {
+  mountSettings();
+  showBar(); // first visit: the consent bar first, the tutorial only after a choice (never both at once)
+  await consentReady();
+  if (page === 'index.html') { // once the map is ready (or failed) and no loader is on screen
+    const t0 = performance.now();
+    while (performance.now() - t0 < 30000 && !((window.__app?.skymap?.aladin || ($('stMap') && !$('stMap').hidden) || performance.now() - t0 > 5000) && $('stLoading')?.hidden !== false) && currentScene() !== 'viewer') await wait(150);
+  }
+  await wait(700);
+  checkAuto(); setInterval(checkAuto, 700);
+  addEventListener('resize', placeChip);
+}
+
 /* ---------- wiring ---------- */
 async function settle() { // let the page draw its first content before a resumed tour measures it
   const t0 = performance.now();
@@ -237,20 +314,15 @@ async function settle() { // let the page draw its first content before a resume
 async function init() {
   css(); topKeys(); sheetKeys(); helpKey(); notebookKey(); refreshResume();
   addEventListener('star-shift-tour-end', () => { refreshResume(); });
-  addEventListener('star-shift-tour-start', () => { hideOffer(); closeMenu(); refreshResume(); });
+  addEventListener('star-shift-tour-start', () => { hideOffer(); hideChip(); closeMenu(); refreshResume(); });
   const p = readProgress(getStore());
   if (shouldAutoResume(p, page)) {
     await settle();
     if (!running()) start({ mode: p.mode, chapter: p.chapter, step: p.step, intro: !!p.intro });
     refreshResume();
-    return;
   }
-  if (page === 'index.html') { // the offer, once the map is ready (or failed) and no loader is on screen
-    const t0 = performance.now();
-    while (performance.now() - t0 < 30000 && !((window.__app?.skymap?.aladin || ($('stMap') && !$('stMap').hidden) || performance.now() - t0 > 5000) && $('stLoading')?.hidden !== false)) await wait(150);
-    await wait(700);
-    showOffer();
-  }
+  // the old "New here?" offer (showOffer) is replaced by the per-tool tutorials; it stays for StarShiftTour hooks
+  autoTutorials();
 }
 
 // the phone story row's Tour key (agent M) and any other key: StarShiftTour.quick(key) or this event

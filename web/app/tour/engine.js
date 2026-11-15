@@ -6,6 +6,7 @@
 import { CHAPTERS, chapterById, nextChapter, chapterRunsHere, pickTargets, counterFor, placeClear,
   readProgress, writeProgress, clearProgress, pageOf } from './chapters.js';
 import { INTRO, WAITING, PHONE_MAX, reducedMotion, unionRect, remember } from './steps.js';
+import { markTutorial } from './progress.js';
 
 const $ = id => document.getElementById(id);
 const isPhone = () => innerWidth <= PHONE_MAX;
@@ -253,7 +254,7 @@ function renderStep() {
   let next = 'Next', alt = null, altText = '';
   if (last && quick) next = nxt ? 'Next' : 'Finish';
   else if (last && full) next = nxt ? `Next: ${nxt.name}` : 'Finish';
-  else if (last) { next = 'Done'; if (nxt) { alt = () => continueFull(nxt); altText = `On to ${nxt.name}`; } }
+  else if (last) { next = 'Finish'; if (nxt) { alt = () => continueFull(nxt); altText = `On to ${nxt.name}`; } }
   setButtons({ back: run.idx > 0, next, alt, altText });
   paint(v?.title || step.title, body, v?.lines || step.lines || step.list, counterFor(run.ch, run.idx, run.plan.length, full));
   save('running');
@@ -298,6 +299,7 @@ function go(dir) {
 
 async function chapterDone() {
   const r = run, nxt = nextChapter(r.ch.id);
+  markTutorial(getStore(), r.ch.id, 'done'); // seen to the end in any tour: it no longer starts by itself
   if (r.mode === 'quick') return nxt ? continueFull(nxt, 'quick') : end('done'); // ends on Proof, Barnard's row still marked
   if (r.mode !== 'full') return end('done');
   if (!nxt) { renderCard(FINAL, 'final', { next: 'Done', skip: false }); return; }
@@ -341,7 +343,7 @@ function onMove() { update(); }
  * Start a chapter (mode 'page') or the full tour (mode 'full', from chapterId or the first chapter).
  * If the chapter belongs to another page, that page is loaded and the tour resumes there.
  */
-export function start({ mode = 'page', chapter, step = null, intro = false, returnTo } = {}) {
+export function start({ mode = 'page', chapter, step = null, intro = false, returnTo, auto = false } = {}) {
   const ch = chapterById(chapter) || CHAPTERS[0];
   if (!chapterRunsHere(ch, page())) {
     writeProgress(getStore(), { mode, chapter: ch.id, step, status: 'running', nav: true, intro });
@@ -350,7 +352,7 @@ export function start({ mode = 'page', chapter, step = null, intro = false, retu
   build();
   if (run) teardown();
   remember(getStore(), 'started');
-  run = { mode, dead: false, returnTo: returnTo || document.activeElement };
+  run = { mode, auto, dead: false, returnTo: returnTo || document.activeElement };
   document.documentElement.dataset.tour = 'on';
   rehome();
   layer.hidden = false; card.hidden = false;
@@ -377,6 +379,8 @@ function teardown() {
 export function end(how = 'skip') {
   if (!run) return;
   const r = run;
+  // first-visit tutorials: a page chapter that ends, finished or skipped, never starts by itself again
+  if (r.mode === 'page' && r.ch?.id) markTutorial(getStore(), r.ch.id, how === 'done' ? 'done' : 'skipped');
   if (how === 'skip' && r.kind === 'step' && !(r.mode === 'page' && r.idx === 0)) {
     writeProgress(getStore(), { mode: r.mode, chapter: r.ch.id, step: r.cur?.id || null, status: 'paused' });
   } else if (how === 'skip' && (r.kind === 'waiting' || r.kind === 'intro') && r.mode !== 'page') {
@@ -399,6 +403,9 @@ export function end(how = 'skip') {
   }, 0);
   dispatchEvent(new CustomEvent('star-shift-tour-end', { detail: { how } }));
 }
+
+/** Can this chapter run here now? (at least one of its steps has its part on screen or can open it) */
+export const canRun = ch => !!ch && ch.steps.some(planned);
 
 /** For checks in the console: the current card and target rects. */
 export function debugRects() {

@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="styles/story.css"><!-- b1: first-screen story (web/app/story.js) -->
 <link rel="stylesheet" href="styles/notebook.css">
 <link rel="stylesheet" href="styles/access.css?v=1"><!-- colours and accessibility (app/access.js): keep this the LAST stylesheet -->
+<script src="app/consent.js?v=1"></script><!-- first: browser-storage consent gate (optional settings wait for consent) -->
 <script src="app/access.js?v=1"></script><!-- classic script on purpose: applies a saved palette before first paint -->
 <style>/* IRSA outage: a calm line, not an alarm (ui.js autoRetry) */
 #stError.calm h2::before{display:none}
@@ -270,7 +271,7 @@
     <div class="seg well" role="group" aria-label="Colour scale" id="rampSeg" style="margin-top:6px"><span class="seg-thumb"></span><button class="seg-btn" data-ramp="copper" aria-pressed="true">Copper</button><button class="seg-btn" data-ramp="neutral" aria-pressed="false">Grey</button></div></div>
   <div class="opt" style="margin-top:8px"><span>Show flag marks</span><button class="switch well" role="switch" data-set="hatch" aria-checked="true" aria-label="Show flag marks"><i></i></button></div>
   <div class="opt"><span>Show predicted-position ring</span><button class="switch well" role="switch" data-set="ring" aria-checked="true" aria-label="Show predicted-position ring"><i></i></button></div>
-  <p class="foot">Starts from your system settings. Choices are remembered on this device.</p>
+  <p class="foot">Starts from your system settings. Comfort and text choices are kept in this browser; image and colour choices only if Personalisation is on.</p>
 </div>
 
 <div class="pop glass fl-pop" id="flagsPop" role="dialog" aria-label="Flags in this image" hidden>
