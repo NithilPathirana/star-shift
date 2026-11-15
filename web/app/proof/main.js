@@ -37,14 +37,35 @@ function expectedCell(t) {
     + X(`${esc(x.source)}${x.err != null ? ` · ±${x.err} mas/yr` : ''}`, 'small') + Sm(esc(shortSource(x.source)), 'small');
   return `<span class="pf-txt">${esc(x.text)}</span>${X(esc(x.source), 'small')}${Sm(esc(shortSource(x.source)), 'small')}`;
 }
+// What the measurability rule counted (same words as the rule): "saturation flag in 120/120;
+// centre blanked in 81/120 (68%, under the 90% limit)". Shown where the flag is in 10%+ of images.
+function countsLine(t) {
+  const c = t.counts;
+  if (!c || !(c.saturationFlag >= 0.1 * c.images)) return '';
+  let blank = '';
+  if (c.blanked != null && c.fitted) {
+    const pct = Math.round(100 * c.blanked / c.fitted), lim = Math.round(100 * c.limitFrac);
+    blank = `; centre blanked in ${c.blanked}/${c.fitted} (${pct}%, ${c.blanked / c.fitted >= c.limitFrac ? 'at or over' : 'under'} the ${lim}% limit)`;
+  }
+  return `<small class="num pf-counts">saturation flag in ${c.saturationFlag}/${c.images}${blank}</small>`;
+}
+const floorLine = (txt) => (txt ? `<small class="num pf-floor">${esc(txt)}</small>` : '');
+const fromCat = (src) => (/^Gaia/.test(src) ? 'Gaia' : 'the catalogue');
 function measuredCell(t, target) {
   const m = t.measured;
   if (t.type === 'motion') {
-    if (!m || t.verdict === 'NOT MEASURABLE') return DASH('Not measurable: see the limits column');
-    const ss = m.seasons.length;
+    if (!m || t.verdict === 'NOT MEASURABLE') {
+      const why = t.shiftPx != null && t.shiftPx < 1 ? 'it moves under one pixel over these dates' : 'see the limits column';
+      return `${DASH('Not measurable: see the limits column')}<small class="dim">Not measurable: ${why}</small>${countsLine(t)}${floorLine(t.fitAnyway?.floorText)}`;
+    }
+    const ss = m.seasons.length, d = t.diff, w = t.window, src = fromCat(t.expected.source);
     const val = m.significant === false ? `no significant motion ${X(`(&lt; ${arcs(m.upperLimit)}″/yr)`)}${Sm(`(under ${plainYr(m.upperLimit)})`)}`
-      : `${X(`${arcs(m.value)} ± ${arcs(m.err)}″/yr`)}${Sm(plainYr(m.value))}`;
-    return `<span class="num pf-big">${val}</span>${X(`${m.frames} images · ${ss} season${ss === 1 ? '' : 's'} · ${m.span} yr · ${esc(m.bands)}`, 'small', 'num')}${Sm(`${m.frames} images over ${m.span} years`, 'small')}`;
+      : `${X(`${arcs(m.value)} ± ${arcs(m.err)}″/yr${d?.sigma != null ? ` · ${d.sigma}σ` : ''}`)}${Sm(`${(m.value / 1000).toFixed(1)} ± ${(m.err / 1000).toFixed(1)}″ a year${d?.sigma != null ? ` · ${d.sigma}σ from ${src}` : ''}`)}`;
+    const v = t.direction;
+    const dir = v ? `<small class="num pf-dir">${X(`direction ${v.measured}° vs ${v.catalogue}° · ${Math.abs(v.paDiff).toFixed(1)}° off, ${arcs(v.sideways, 1)}″/yr sideways · ${v.sigma.toFixed(1)}σ`)}${Sm(`direction ${Math.abs(v.paDiff).toFixed(1)}° off ${src === 'Gaia' ? "Gaia's" : "the catalogue's"}, about ${arcs(v.sideways, 1)}″ a year sideways · ${v.sigma.toFixed(1)}σ`)}</small>` : '';
+    const half = w && w.paLo != null ? (((w.paHi - w.paLo + 360) % 360) / 2).toFixed(1) : null;
+    const win = w ? `<small class="num pf-win"><span class="dim">${X(`would agree from ${arcs(w.lo)} to ${arcs(w.hi)}″/yr${half ? `, pointing ${w.paLo}° to ${w.paHi}°` : ''}`)}${Sm(`would agree from ${(w.lo / 1000).toFixed(1)} to ${(w.hi / 1000).toFixed(1)}″ a year${half ? `, pointing within ${half}°` : ''}`)}</span></small>` : '';
+    return `<span class="num pf-big">${val}</span>${dir}${win}${floorLine(m.floorText)}${countsLine(t)}${X(`${m.frames} images · ${ss} season${ss === 1 ? '' : 's'} · ${m.span} yr · ${esc(m.bands)}`, 'small', 'num')}${Sm(`${m.frames} images over ${m.span} years`, 'small')}`;
   }
   if (!m) return DASH('Not measurable: see the limits column');
   return m.groups.map(g => g.ok
@@ -53,7 +74,8 @@ function measuredCell(t, target) {
 }
 function diffCell(t) {
   if (!t.diff) return DASH(t.verdict === 'NOT MEASURABLE' ? 'Nothing measured to compare' : 'No difference computed');
-  if (t.type === 'motion') return `<span class="num pf-big">${sgn(t.diff.value / 1000)}″/yr</span><small class="num">${t.diff.sigma} σ</small>`;
+  if (t.type === 'motion') return `<span class="num pf-big">${sgn(t.diff.value / 1000)}″/yr</span><small class="num">${t.diff.sigma} σ in speed</small>`
+    + (t.direction ? `<span class="num pf-line">${arcs(t.direction.value)}″/yr</span><small class="num">as an arrow: χ ${t.direction.chi2d.toFixed(2)} (2 dof) = ${t.direction.sigma.toFixed(1)} σ</small>` : '');
   return t.measured.groups.map(g => g.ok ? `<span class="num pf-line">${g.sigma} σ</span><small>change ÷ uncertainty</small>` : `<span class="pf-line">${DASH('Not measured')}</span><small>&nbsp;</small>`).join('');
 }
 
@@ -126,8 +148,8 @@ function facts(t, target) {
     if (t.fitAnyway) li.push(t.fitAnyway.significant === false
       ? `No significant motion ${X(`(&lt; ${arcs(t.fitAnyway.upperLimit)}″/yr): the fit gives ${arcs(t.fitAnyway.value)} ± ${arcs(t.fitAnyway.err)}″/yr`)}${Sm(`(under ${plainYr(t.fitAnyway.upperLimit)}): the fit gives ${plainYr(t.fitAnyway.value)}`)} from ${t.fitAnyway.frames} images, for a star the catalogue says moves ${arcs(t.expected.value, 3)}″/yr.`
       : `The fit gives ${X(`${arcs(t.fitAnyway.value)} ± ${arcs(t.fitAnyway.err)}″/yr`)}${Sm(plainYr(t.fitAnyway.value))} from ${t.fitAnyway.frames} images, for a star the catalogue says moves ${arcs(t.expected.value, 3)}″/yr. That is not a real motion (see the limits column).`);
-    if (t.measured?.statErr != null) li.push([`Uncertainty: ± ${arcs(t.measured.statErr)}″/yr from the scatter of the image positions and ± ${arcs(t.measured.sysErr)}″/yr systematic floor (measured on field stars, which should not move), combined as ± ${arcs(t.measured.err)}″/yr.`, 'x']);
-    if (t.measured) li.push([`Direction of motion: measured ${t.measured.pa}°, catalogue ${t.expected.pa}° (east of north).`, 'x']);
+    if (t.measured?.statErr != null) li.push([`Uncertainty: ± ${arcs(t.measured.statErr)}″/yr from the scatter of the image positions and the systematic ${esc(t.measured.floorText || `floor ± ${arcs(t.measured.sysErr)}″/yr`)}, combined as ± ${arcs(t.measured.err)}″/yr.`, 'x']);
+    if (t.measured) li.push([`Direction of motion: measured ${t.measured.pa}°, catalogue ${t.expected.pa}° (east of north)${t.direction ? `; measured minus catalogue = ${sgn(t.direction.east / 1000)}″/yr east, ${sgn(t.direction.north / 1000)}″/yr north: χ = √((Δe/σe)² + (Δn/σn)²) = ${t.direction.chi2d} over 2 degrees of freedom, the same chance as ${t.direction.sigma}σ in one dimension` : ''}.`, 'x']);
     if (t.measured) li.push([`Seasons used: ${t.measured.seasons.map(s => `${s.from} to ${s.to} (${s.n})`).join(' · ')}.`, 'x']);
     if (t.measured) li.push([`Direction: measured within ${Math.round(Math.abs(((t.measured.pa - t.expected.pa + 540) % 360) - 180))}° of the catalogue direction.`, 's']);
     li.push([`All detectors: ${f(v.all)} · detectors 1–4: ${f(v.short)} · detectors 5–6: ${f(v.long)} · every flagged image hidden: ${f(v.filtersOn)}.`, 'x']);
@@ -154,9 +176,9 @@ function evidence(t, target) {
 
 /* ---------- render ---------- */
 function render(d) {
-  $('rules').innerHTML = [['Moves (proper motion)', d.rules.motion], ['Changes brightness', d.rules.brightness]].map(([h, rs]) =>
+  $('rules').innerHTML = [['Moves (proper motion): speed', d.rules.motion], ...(d.rules.direction ? [['Moves: direction', d.rules.direction]] : []), ['Changes brightness', d.rules.brightness]].map(([h, rs]) =>
     `<div><h3>${h}</h3><dl class="pf-rule">${rs.map(([v, txt]) => `<dt>${chip(v)}</dt><dd>${esc(txt)}</dd>`).join('')}</dl></div>`).join('')
-    + '<p class="pf-rule-note">σ is the measurement\'s uncertainty, with the catalogue\'s added. A result that looks bad stays in the table with its reason.</p>';
+    + `<p class="pf-rule-note">σ is the measurement's uncertainty, with the catalogue's added. For motion it is the scatter of the image positions plus a systematic floor in each direction: the field stars' own floor where 3 or more are usable in the patch, otherwise ${arcs(d.settings.sysFloorMasYr)}″/yr, measured on the field stars of all five patches together. Each row says which. A result that looks bad stays in the table with its reason.</p>`;
   let rows = '', k = 0;
   for (const target of d.targets) {
     rows += `<tbody class="pf-group">`;
@@ -167,7 +189,7 @@ function render(d) {
         <td class="pf-exp">${expectedCell(t)}</td>
         <td class="pf-meas">${measuredCell(t, target)}</td>
         <td class="pf-diff x-only">${diffCell(t)}</td>
-        <td class="pf-ver">${chip(t.verdict)}</td>
+        <td class="pf-ver">${chip(t.verdict)}${t.direction ? ` ${chip(t.direction.verdict)}` : ''}</td>
         <td class="pf-lim"><span class="pf-lim-t">${esc(t.limit)}</span></td></tr>
         <tr class="drow pf-drow" id="${id}" hidden><td colspan="6">${evidence(t, target)}</td></tr>`;
     });
@@ -194,7 +216,7 @@ function render(d) {
   $('notList').innerHTML = [
     `Pixels are 6.15″ wide. The fast stars here move only 1 to 2 pixels over the dates we have, so each position is a fraction of a pixel.`,
     `The images cover about ${Math.min(...spans).toFixed(1)} to ${Math.max(...spans).toFixed(1)} years in ${Math.min(...seas)} to ${Math.max(...seas)} seasons. The motion is fitted as a straight line after taking out the yearly parallax wobble (up to 0.55″ for Barnard's Star), using the catalogue parallax.`,
-    `Error bars include a systematic floor of ${arcs(d.settings.sysFloorMasYr ?? 150)}″/yr in each direction, measured on field stars that should not move. It covers shifts common to the whole image, not every effect of a very bright or saturated centre.`,
+    `Error bars include a systematic floor of ${arcs(d.settings.sysFloorMasYr ?? 150)}″/yr in each direction, measured on field stars that should not move. It covers shifts common to the whole image, not every effect of a very bright or saturated centre: Barnard's Star's direction is off by more than the floor allows, most likely for that reason.`,
     rw ? (rw.significant === false
       ? `A motion under 3 times its error bar, or under ${arcs(d.settings.minMotionMasYr ?? 700, 1)}″/yr, is shown as "no significant motion". The 0.7″/yr line comes from RW Aurigae, which hardly moves but gives ${arcs(rw.value)} ± ${arcs(rw.err)}″/yr here${rwAll?.filtersOn?.ok ? ` and ${arcs(rwAll.filtersOn.total)}″/yr with every flagged image hidden` : ''}: a drift of its own light that the field stars do not show.`
       : `RW Aurigae, which hardly moves, comes out at ${arcs(rw.value)} ± ${arcs(rw.err)}″/yr, more than its error bar allows, so motions below about half an arcsecond per year are not claimed.`) : null,

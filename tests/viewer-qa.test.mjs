@@ -43,7 +43,10 @@ test('proof.json verdicts follow the shared rule', () => {
   const r = d.targets.find(t => t.key === 'r-dra').tests[0];
   assert.equal(r.verdict, 'NOT MEASURABLE');
   assert.ok(r.fitAnyway && r.fitAnyway.value > 20000, 'the bogus fit is kept only as "fit anyway"');
-  assert.match(d.rules.motion.find(([v]) => v === 'NOT MEASURABLE')[1], /saturated \(masked\) in 90% or more/);
+  // the rule and the rows use the same words: "saturation flag", "centre blanked", "90% limit"
+  const rule = d.rules.motion.find(([v]) => v === 'NOT MEASURABLE')[1];
+  assert.match(rule, /centre is blanked .* in 90% or more of the fitted images \(the 90% limit\)/);
+  assert.match(rule, /saturation flag alone does not count/);
 });
 
 test('preset detector selection: WISE 0855 on detectors 5–6, the others on all', () => {

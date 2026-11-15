@@ -3,7 +3,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { motionVerdict, brightnessVerdict, sigmaApart, meanSem, along, RULES, VERDICT_CLASS } from '../web/app/proof/logic.js';
+import { motionVerdict, brightnessVerdict, sigmaApart, meanSem, along, RULES, VERDICT_CLASS, directionVerdict, sigma2dTo1d, chi2dFor, sigmaFromP, agreeWindow } from '../web/app/proof/logic.js';
+import { motionPA } from '../web/app/kinematics.js';
 import { PRESETS } from '../web/app/presets.js';
 
 const ok = (total, totalErr) => ({ ok: true, total, totalErr });
@@ -74,8 +75,20 @@ test('proof.json: shape, every target has a row, verdicts match the rules', () =
         assert.ok(x.expected.value > 0 && x.expected.unit === 'mas/yr');
         if (x.verdict !== 'NOT MEASURABLE') {
           // the stored verdict is what the rule gives for the stored numbers
-          const re = motionVerdict(ok(x.measured.value, x.measured.err), x.expected.value, x.expected.err, x.measured.span);
+          const mm = { ...ok(x.measured.value, x.measured.err), pmra: x.measured.pmra, pmdec: x.measured.pmdec, pmraErr: x.measured.pmraErr, pmdecErr: x.measured.pmdecErr };
+          const re = motionVerdict(mm, x.expected.value, x.expected.err, x.measured.span, x.expectedVec);
           assert.equal(re.verdict, x.verdict, t.key);
+          // direction: its own chip, from the same numbers; never AGREES over 2σ
+          assert.ok(x.direction, `${t.key} direction`);
+          assert.equal(re.direction.verdict, x.direction.verdict, `${t.key} direction verdict`);
+          assert.ok(Math.abs(re.direction.sigma - x.direction.sigma) < 0.1, t.key);
+          if (x.direction.sigma > 2) assert.notEqual(x.direction.verdict, 'DIRECTION AGREES', t.key);
+          if (x.direction.sigma > 3) assert.match(x.limit, /direction is [\d.]+° off/, `${t.key}: the limit text must say the direction is off`);
+          // the grey window contains the catalogue speed and is the 2σ band of the speed rule
+          assert.ok(x.window.lo < x.expected.value && x.expected.value < x.window.hi, t.key);
+          assert.ok(Math.abs((x.window.hi - x.window.lo) / 4 - Math.hypot(x.measured.err, x.expected.err)) < 1, t.key);
+          // each row names its floor
+          assert.match(x.measured.floorText, /^floor \d\.\d\d″\/yr from (\d+ field stars|field stars \(all five fields; \d+ usable here\))$/, t.key);
           assert.ok(x.chart.points.length === x.measured.frames, `${t.key} chart points`);
           assert.ok(x.diff && Number.isFinite(x.diff.sigma));
         } else assert.equal(x.diff, null);
@@ -85,4 +98,43 @@ test('proof.json: shape, every target has a row, verdicts match the rules', () =
       }
     }
   }
+});
+
+// Direction check (Judging panel a7): χ over 2 degrees of freedom -> 1-D equivalent sigma.
+test('direction: 2-dof chi converts to the 1-D sigma with the same tail probability', () => {
+  // P(χ²₂ > χ²) = exp(−χ²/2); 2σ two-sided = 0.0455 -> χ = 2.486, 3σ = 0.0027 -> χ = 3.439
+  assert.ok(Math.abs(chi2dFor(2) - 2.486) < 0.002 && Math.abs(chi2dFor(3) - 3.439) < 0.002);
+  assert.ok(Math.abs(sigma2dTo1d(chi2dFor(2)) - 2) < 1e-3 && Math.abs(sigma2dTo1d(chi2dFor(3)) - 3) < 1e-3);
+  assert.ok(Math.abs(sigmaFromP(0.3173) - 1) < 1e-3);
+  assert.ok(sigma2dTo1d(1) < 1 && sigma2dTo1d(5) < 5); // a 2-part χ is always more likely by chance than the same 1-part σ
+});
+
+test('direction: a star moving the catalogue speed but turned sideways is caught, speed still agrees', () => {
+  const cat = { pmra: -797, pmdec: 10362 }, speed = Math.hypot(cat.pmra, cat.pmdec);
+  const turn = (deg) => { const pa = (motionPA(cat.pmra, cat.pmdec) + deg) * Math.PI / 180; return { pmra: speed * Math.sin(pa), pmdec: speed * Math.cos(pa) }; };
+  const fit = (v, err) => ({ ok: true, total: Math.hypot(v.pmra, v.pmdec), totalErr: err, pmraErr: err, pmdecErr: err, ...v, frames: 120, maskedFrames: 0, span: 1.1 });
+  // 6° sideways at 10.4″/yr = 1.09″/yr across; with 0.27″/yr per axis that is χ = 4.0 -> over 3σ
+  const off = motionVerdict(fit(turn(-6), 270), speed, 0, 1.1, cat);
+  assert.equal(off.verdict, 'AGREES'); assert.equal(off.direction.verdict, 'DIRECTION OFF');
+  assert.ok(Math.abs(Math.abs(off.direction.side) - speed * Math.sin(6 * Math.PI / 180)) < 1);
+  // 2° sideways (0.36″/yr across, χ 1.3) agrees
+  assert.equal(motionVerdict(fit(turn(2), 270), speed, 0, 1.1, cat).direction.verdict, 'DIRECTION AGREES');
+  // the PA window edge is exactly the 2σ line
+  const w = agreeWindow(fit(cat, 270), speed, 0, cat);
+  const edge = directionVerdict(fit(turn(w.paHalf), 270), cat, 0);
+  assert.ok(Math.abs(edge.sigma - 2) < 0.01, String(edge.sigma));
+  // without per-axis errors there is no direction verdict (old callers)
+  assert.equal(motionVerdict(ok(10323, 274), speed, 0, 1.1).direction, null);
+});
+
+test('proof.json: Barnard row prints both directions, the rule counts and the floor source', () => {
+  const d = JSON.parse(readFileSync(new URL('../web/data/proof.json', import.meta.url), 'utf8'));
+  const b = d.targets.find(t => t.key === 'barnard').tests[0];
+  assert.ok(Number.isFinite(b.direction.measured) && Number.isFinite(b.direction.catalogue));
+  assert.ok(b.counts.saturationFlag > 0 && b.counts.blanked != null && b.counts.blanked / b.counts.fitted < b.counts.limitFrac);
+  const r = d.targets.find(t => t.key === 'r-dra').tests[0];
+  assert.ok(r.counts.blanked / r.counts.fitted >= r.counts.limitFrac, 'R Dra over the 90% limit');
+  assert.equal(d.rules.direction.length, 3);
+  for (const [v] of d.rules.direction) assert.ok(VERDICT_CLASS[v], v);
+  assert.equal(d.settings.controlFloor, undefined); // no control-star floor (lead's decision, 15 Nov)
 });

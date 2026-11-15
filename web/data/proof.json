@@ -1,12 +1,13 @@
 {
  "about": "Numbers for web/proof.html, computed by tools/make_proof.mjs from the app pipeline (data.js) on cached SPHEREx cutouts. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.",
- "generated": "2026-11-14T23:45:38.807Z",
+ "generated": "2026-11-15T05:36:36.921Z",
  "settings": {
   "fovArcmin": 2.5,
   "maxImages": 120,
   "band": "all",
   "flagFilter": "viewer default: no flag boxes ticked, no images hidden",
   "sysFloorMasYr": 150,
+  "maskedCoreFrac": 0.9,
   "minMotionMasYr": 700,
   "apertureArcsec": 15.4,
   "wavelengthMatchUm": 0.05
@@ -16,7 +17,7 @@
   "motion": [
    [
     "AGREES",
-    "the measured motion is within 2 uncertainties (2σ) of the catalogue, and the uncertainty is no more than half the value."
+    "the measured speed is within 2 uncertainties (2σ) of the catalogue, and the uncertainty is no more than half the value."
    ],
    [
     "AT THE LIMIT",
@@ -28,7 +29,21 @@
    ],
    [
     "NOT MEASURABLE",
-    "the catalogue motion moves the star less than one 6.15″ pixel over the dates we have, the star's centre is saturated (masked) in 90% or more of the fitted images, or the fit could not run."
+    "the catalogue motion moves the star less than one 6.15″ pixel over the dates we have, the star's centre is blanked (masked pixels within 2 pixels of it) in 90% or more of the fitted images (the 90% limit), or the fit could not run. A saturation flag alone does not count; only a blanked centre does."
+   ]
+  ],
+  "direction": [
+   [
+    "DIRECTION AGREES",
+    "measured and catalogue motions, compared as arrows (east and north parts together), are within 2σ. The two-part difference √((Δe/σe)² + (Δn/σn)²) is turned into the one-part σ with the same chance of happening by accident (2 degrees of freedom), so 2σ here means about 2.49 before the conversion and 3σ about 3.44."
+   ],
+   [
+    "DIRECTION AT THE LIMIT",
+    "between 2σ and 3σ after that conversion."
+   ],
+   [
+    "DIRECTION OFF",
+    "more than 3σ: the arrow points measurably away from the catalogue's, even if the speed agrees. Shown with the likely reason."
    ]
   ],
   "brightness": [
@@ -174,6 +189,12 @@
       "err": 274,
       "statErr": 229,
       "sysErr": 150,
+      "sysSource": {
+       "kind": "field",
+       "n": 1,
+       "pooled": true
+      },
+      "floorText": "floor 0.15″/yr from field stars (all five fields; 1 usable here)",
       "refStars": 1,
       "significant": true,
       "upperLimit": 10871,
@@ -181,6 +202,10 @@
       "pa": 349.9,
       "frames": 120,
       "rejected": 0,
+      "pmra": -1804,
+      "pmdec": 10164,
+      "pmraErr": 291,
+      "pmdecErr": 273,
       "span": 1.1,
       "seasons": [
        {
@@ -209,14 +234,43 @@
       ],
       "bands": "all detectors"
      },
+     "expectedVec": {
+      "pmra": -801.6,
+      "pmdec": 10362.4
+     },
+     "counts": {
+      "saturationFlag": 120,
+      "images": 120,
+      "blanked": 81,
+      "fitted": 120,
+      "limitFrac": 0.9
+     },
      "diff": {
       "value": -70,
       "sigma": 0.3,
       "unit": "mas/yr"
      },
+     "direction": {
+      "verdict": "DIRECTION OFF",
+      "measured": 349.9,
+      "catalogue": 355.6,
+      "paDiff": -5.6,
+      "east": -1002,
+      "north": -198,
+      "value": 1022,
+      "sideways": 1015,
+      "chi2d": 3.52,
+      "sigma": 3.1
+     },
+     "window": {
+      "lo": 9845,
+      "hi": 10941,
+      "paLo": 351.6,
+      "paHi": 359.6
+     },
      "verdict": "AGREES",
      "shiftPx": 1.864,
-     "limit": "The star's centre is flagged saturated in 120 of 120 images, so its centre is found from the unsaturated edge pixels; images with a blanked centre count for less in the fit because their positions scatter more. The long-wavelength detectors alone give 10.52 ± 0.28″/yr, the short ones 9.40 ± 0.82″/yr.",
+     "limit": "The star carries the archive's saturation flag in 120 of 120 images, and its centre is blanked in 81 of the 120 fitted images, so its centre is found from the unsaturated edge pixels; images with a blanked centre count for less in the fit because their positions scatter more. The long-wavelength detectors alone give 10.52 ± 0.28″/yr, the short ones 9.40 ± 0.82″/yr. The speed agrees, but the direction is 5.6° off (349.9° measured, 355.6° catalogue): about 1.0″/yr sideways, 3.1σ. Likely because the star carries the saturation flag in 120 of 120 images and its centre is blanked in 81 of the 120 fitted, so the position comes from the star's edges, which can lean to one side; the 0.15″/yr floor comes from faint field stars and does not cover that. It stays off with the long-wavelength detectors alone 348.9° and every flagged image hidden 349.4°, so it is systematic, not noise.",
      "chart": {
       "kind": "motion",
       "pa": 355.58,
@@ -950,6 +1004,12 @@
       "err": 162,
       "statErr": 60,
       "sysErr": 150,
+      "sysSource": {
+       "kind": "field",
+       "n": 1,
+       "pooled": true
+      },
+      "floorText": "floor 0.15″/yr from field stars (all five fields; 1 usable here)",
       "refStars": 1,
       "significant": true,
       "upperLimit": 4783,
@@ -957,6 +1017,10 @@
       "pa": 123.1,
       "frames": 113,
       "rejected": 3,
+      "pmra": 3736,
+      "pmdec": -2436,
+      "pmraErr": 162,
+      "pmdecErr": 161,
       "span": 1.44,
       "seasons": [
        {
@@ -990,14 +1054,43 @@
       ],
       "bands": "all detectors"
      },
+     "expectedVec": {
+      "pmra": 3982,
+      "pmdec": -2466.8
+     },
+     "counts": {
+      "saturationFlag": 1,
+      "images": 120,
+      "blanked": 8,
+      "fitted": 113,
+      "limitFrac": 0.9
+     },
      "diff": {
       "value": -224,
       "sigma": 1.4,
       "unit": "mas/yr"
      },
+     "direction": {
+      "verdict": "DIRECTION AGREES",
+      "measured": 123.1,
+      "catalogue": 121.8,
+      "paDiff": 1.3,
+      "east": -246,
+      "north": 31,
+      "value": 248,
+      "sideways": 103,
+      "chi2d": 1.53,
+      "sigma": 1
+     },
+     "window": {
+      "lo": 4361,
+      "hi": 5007,
+      "paLo": 116.9,
+      "paHi": 126.7
+     },
      "verdict": "AGREES",
      "shiftPx": 1.096,
-     "limit": "Epsilon Indi A is 6.7′ away, outside this 2.6′ patch, and no image has scattered-light flags near B; hiding every flagged image gives 4.35 ± 0.16″/yr. The value is 5% below the catalogue (1.4σ with the 0.15″/yr floor measured on field stars). Epsilon Indi B is itself a pair of brown dwarfs 0.7″ apart; their orbit moves the light centre by up to about 0.1″/yr, by different amounts at Gaia's visible wavelengths and SPHEREx's infrared ones, so a small difference is expected.",
+     "limit": "Epsilon Indi A is 6.7′ away, outside this 2.6′ patch, and no image has scattered-light flags near B; hiding every flagged image gives 4.35 ± 0.16″/yr. The value is 5% below the catalogue (1.4σ). Its error bar has a floor 0.15″/yr from field stars (all five fields; 1 usable here). Epsilon Indi B is itself a pair of brown dwarfs 0.7″ apart; their orbit moves the light centre by up to about 0.1″/yr, by different amounts at Gaia's visible wavelengths and SPHEREx's infrared ones, so a small difference is expected.",
      "chart": {
       "kind": "motion",
       "pa": 121.78,
@@ -1673,7 +1766,8 @@
       "g": 16.31,
       "sepArcsec": 7.8
      }
-    ]
+    ],
+    "neighboursFrom": "2026-11-14T23:45:38.807Z"
    },
    "tests": [
     {
@@ -1692,6 +1786,12 @@
       "err": 1983,
       "statErr": 1977,
       "sysErr": 150,
+      "sysSource": {
+       "kind": "field",
+       "n": 0,
+       "pooled": true
+      },
+      "floorText": "floor 0.15″/yr from field stars (all five fields; 0 usable here)",
       "refStars": 0,
       "significant": true,
       "upperLimit": 10499,
@@ -1699,6 +1799,10 @@
       "pa": 285.6,
       "frames": 28,
       "rejected": 0,
+      "pmra": -6292,
+      "pmdec": 1761,
+      "pmraErr": 2009,
+      "pmdecErr": 1605,
       "span": 1.02,
       "seasons": [
        {
@@ -1723,10 +1827,39 @@
       ],
       "bands": "detectors 5–6 only"
      },
+     "expectedVec": {
+      "pmra": -8123.7,
+      "pmdec": 673.2
+     },
+     "counts": {
+      "saturationFlag": 1,
+      "images": 120,
+      "blanked": 3,
+      "fitted": 28,
+      "limitFrac": 0.9
+     },
      "diff": {
       "value": -1618,
       "sigma": 0.8,
       "unit": "mas/yr"
+     },
+     "direction": {
+      "verdict": "DIRECTION AGREES",
+      "measured": 285.6,
+      "catalogue": 274.7,
+      "paDiff": 10.9,
+      "east": 1832,
+      "north": 1087,
+      "value": 2130,
+      "sideways": 1235,
+      "chi2d": 1.14,
+      "sigma": 0.6
+     },
+     "window": {
+      "lo": 4186,
+      "hi": 12117,
+      "paLo": 245.4,
+      "paHi": 304.1
      },
      "verdict": "AGREES",
      "shiftPx": 1.352,
@@ -1992,6 +2125,12 @@
       "err": 174,
       "statErr": 88,
       "sysErr": 150,
+      "sysSource": {
+       "kind": "field",
+       "n": 2,
+       "pooled": true
+      },
+      "floorText": "floor 0.15″/yr from field stars (all five fields; 2 usable here)",
       "refStars": 2,
       "significant": false,
       "upperLimit": 853,
@@ -1999,6 +2138,10 @@
       "pa": 75.4,
       "frames": 118,
       "rejected": 2,
+      "pmra": 489,
+      "pmdec": 128,
+      "pmraErr": 174,
+      "pmdecErr": 167,
       "span": 1.04,
       "seasons": [
        {
@@ -2027,7 +2170,20 @@
       ],
       "bands": "all detectors"
      },
+     "expectedVec": {
+      "pmra": 7.2,
+      "pmdec": -20.3
+     },
+     "counts": {
+      "saturationFlag": 106,
+      "images": 120,
+      "blanked": 9,
+      "fitted": 118,
+      "limitFrac": 0.9
+     },
      "diff": null,
+     "direction": null,
+     "window": null,
      "verdict": "NOT MEASURABLE",
      "shiftPx": 0.004,
      "limit": "The catalogue motion (0.02″/yr) moves it only 0.022″ (0.004 of a 6.15″ pixel) over the 1.0 years of images, far below what one pixel can show. As expected, the images show no significant motion (< 0.85″/yr). The fit gives 0.51 ± 0.17″/yr; a motion under 3 times its uncertainty, or under 0.7″/yr, is not claimed.",
@@ -2639,6 +2795,7 @@
       "err": 174,
       "statErr": 88,
       "sysErr": 150,
+      "floorText": "floor 0.15″/yr from field stars (all five fields; 2 usable here)",
       "significant": false,
       "upperLimit": 853,
       "frames": 118
@@ -3304,6 +3461,12 @@
       "err": 2149,
       "statErr": 2144,
       "sysErr": 150,
+      "sysSource": {
+       "kind": "field",
+       "n": 0,
+       "pooled": true
+      },
+      "floorText": "floor 0.15″/yr from field stars (all five fields; 0 usable here)",
       "refStars": 0,
       "significant": true,
       "upperLimit": 29978,
@@ -3311,6 +3474,10 @@
       "pa": 215.8,
       "frames": 40,
       "rejected": 0,
+      "pmra": -15021,
+      "pmdec": -20827,
+      "pmraErr": 2027,
+      "pmdecErr": 2211,
       "span": 0.99,
       "seasons": [
        {
@@ -3339,10 +3506,23 @@
       ],
       "bands": "all detectors"
      },
+     "expectedVec": {
+      "pmra": -20.6,
+      "pmdec": 6.1
+     },
+     "counts": {
+      "saturationFlag": 120,
+      "images": 120,
+      "blanked": 40,
+      "fitted": 40,
+      "limitFrac": 0.9
+     },
      "diff": null,
+     "direction": null,
+     "window": null,
      "verdict": "NOT MEASURABLE",
      "shiftPx": 0.003,
-     "limit": "The catalogue motion (0.02″/yr) moves it only 0.021″ (0.003 of a 6.15″ pixel) over the 1.2 years of images, far below what one pixel can show. The fit still finds 25.68 ± 2.15″/yr, which is not a real motion: the centre is flagged saturated in 120 of 120 images, so its position comes from the edges of a blanked core.",
+     "limit": "The catalogue motion (0.02″/yr) moves it only 0.021″ (0.003 of a 6.15″ pixel) over the 1.2 years of images, far below what one pixel can show. The fit still finds 25.68 ± 2.15″/yr, which is not a real motion: the star carries the saturation flag in 120 of 120 images and its centre is blanked in 40 of the 40 fitted, so its position comes from the edges of a blanked core.",
      "chart": {
       "kind": "motion",
       "pa": 286.59,
@@ -3561,6 +3741,7 @@
       "err": 2149,
       "statErr": 2144,
       "sysErr": 150,
+      "floorText": "floor 0.15″/yr from field stars (all five fields; 0 usable here)",
       "significant": true,
       "upperLimit": 29978,
       "frames": 40

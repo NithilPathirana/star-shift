@@ -197,7 +197,8 @@ export async function run(query, settings, { base, fetchFn = prebakedFetch, sign
 //     well images of its kind are measured, one outlier-clipping pass;
 //  4. systematic floor: the same tracking and fit on non-moving field stars in the same images
 //     (fieldFloor below); their scatter beyond their own error bars is the floor, which is
-//     added in quadrature to the statistical error.
+//     added in quadrature to the statistical error (systematicFloor below; `sysSource` says
+//     how many field stars it came from).
 // Accepts any subset of frames, in any order (e.g. only those the contamination filter keeps).
 // Returns { ok, frames, span, pmra, pmdec, pmraErr, pmdecErr, total, totalErr, seeded, points,
 //   statErr, sysErr, refStars, fit, significant, floor, upperLimit }. totalErr/pmraErr/pmdecErr
@@ -259,12 +260,15 @@ export function measureMotion(frames, grid, { radius = 3.5, minSnr = 5, minFrame
   const pmra = fe.b * 1000, pmdec = fn.b * 1000, se = fe.sigmaB * 1000, sn = fn.sigmaB * 1000;
   const total = Math.hypot(pmra, pmdec);
   const proj = (a, b) => (total > 0 ? Math.hypot(pmra * a, pmdec * b) / total : Math.hypot(a, b));
-  // 4. systematic floor from field stars (per axis, mas/yr), never below the documented minimum
+  // 4. systematic floor (per axis, mas/yr): systematicFloor() below
   const field = fieldFloor(fs, grid, acc, { radius, minSnr, minFrames });
-  const sys = field.n >= 3 ? Math.max(SYS_FLOOR_MASYR, field.sys) : SYS_FLOOR_MASYR;
+  const maskedFrames = T.pts.filter(p => p.masked).length;
+  const floorInfo = systematicFloor(field);
+  const sys = floorInfo.masYr;
   const totalErrFull = proj(Math.hypot(se, sys), Math.hypot(sn, sys));
   return { ok: true, frames: T.pts.length, span, pmra, pmdec, pmraErr: Math.hypot(se, sys), pmdecErr: Math.hypot(sn, sys), total,
-    totalErr: totalErrFull, statErr: proj(se, sn), sysErr: sys,
+    pmraStatErr: se, pmdecStatErr: sn,
+    totalErr: totalErrFull, statErr: proj(se, sn), sysErr: sys, sysSource: floorInfo.source,
     refStars: field.n, fieldSys: field.sys,
     // significance rule (shared by the viewer and the Proof page): a motion counts only when it
     // is at least 3 × its full uncertainty (statistical + floor) AND at least MIN_MOTION_MASYR.
@@ -275,7 +279,7 @@ export function measureMotion(frames, grid, { radius = 3.5, minSnr = 5, minFrame
     seeded, rejected: acc.length - T.pts.length,
     // for the measurability rule (motionMeasurability below): images given to the fit, and how
     // many of the fitted positions came from an image with a blanked (saturated/masked) core
-    inputFrames: fs.length, maskedFrames: T.pts.filter(p => p.masked).length,
+    inputFrames: fs.length, maskedFrames,
     points: T.pts.map(p => ({ mjd: p.mjd, x: p.x, y: p.y, e: p.e, n: p.n, w: p.w })),
     fit: { ae: fe.a, be: fe.b, an: fn.a, bn: fn.b } };
 }
@@ -296,6 +300,26 @@ export const SYS_FLOOR_MASYR = 150;
 // i.e. an effect of a bright star the field-star floor does not cover. So a motion under 0.7″/yr
 // is reported as "no significant motion" even when it is over 3σ.
 export const MIN_MOTION_MASYR = 700;
+
+// The floor that applies to one fit (mas/yr per axis): the field stars' own floor when 3 or more
+// are usable, never below SYS_FLOOR_MASYR; else SYS_FLOOR_MASYR (pooled over the five proof fields).
+// Returns { masYr, source: { kind: 'field', n: usable field stars, pooled } }.
+export function systematicFloor(field) {
+  const n = field?.n ?? 0;
+  const fieldOk = n >= 3 && Number.isFinite(field.sys);
+  const masYr = fieldOk ? Math.max(SYS_FLOOR_MASYR, field.sys) : SYS_FLOOR_MASYR;
+  return { masYr, source: { kind: 'field', n, pooled: !fieldOk || masYr === SYS_FLOOR_MASYR } };
+}
+
+// s such that Σ μ²/(σ² + s²) = number of motions (0 if they already scatter no more than σ).
+export function solveFloor(mus) {
+  if (!mus.length) return null;
+  const chi = (s) => mus.reduce((a, [m, e]) => a + m * m / (e * e + s * s), 0);
+  if (!(chi(0) > mus.length)) return 0;
+  let lo = 0, hi = 1e5;
+  for (let it = 0; it < 60; it++) { const mid = (lo + hi) / 2; if (chi(mid) > mus.length) lo = mid; else hi = mid; }
+  return (lo + hi) / 2;
+}
 
 // Measurability rule, shared by the viewer (ui.js) and the Proof page (proof/logic.js
 // motionVerdict). A fitted motion is "not measurable here" when:
@@ -448,14 +472,7 @@ export function fieldFloor(fs, grid, track, { radius, minSnr, minFrames, maxStar
     mus.push([T.fe.b * 1000, T.fe.sigmaB * 1000], [T.fn.b * 1000, T.fn.sigmaB * 1000]);
   }
   if (!mus.length) return { n: 0, sys: null, motions: [] };
-  const chi = (s) => mus.reduce((a, [m, e]) => a + m * m / (e * e + s * s), 0);
-  let sys = 0;
-  if (chi(0) > mus.length) {
-    let lo = 0, hi = 1e5;
-    for (let it = 0; it < 60; it++) { const mid = (lo + hi) / 2; if (chi(mid) > mus.length) lo = mid; else hi = mid; }
-    sys = (lo + hi) / 2;
-  }
-  return { n: mus.length / 2, sys, motions: mus };
+  return { n: mus.length / 2, sys: solveFloor(mus), motions: mus };
 }
 
 // One wording for a measured motion, used by the viewer and the Proof page (arcsec/yr):

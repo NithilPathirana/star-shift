@@ -5,7 +5,7 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { measureMotion, motionSummary, SYS_FLOOR_MASYR, MIN_MOTION_MASYR } from '../web/app/data.js';
+import { measureMotion, motionSummary, SYS_FLOOR_MASYR, MIN_MOTION_MASYR, systematicFloor, solveFloor } from '../web/app/data.js';
 import { makeGrid, reproject, worldToGrid } from '../web/core/align.js';
 import { propagate, epochYearToMjd, parallaxShift, earthBarycentric } from '../web/core/motion.js';
 import { tanProject } from '../web/core/wcs.js';
@@ -124,4 +124,18 @@ test('motion bias: the systematic floor is folded into the quoted uncertainty', 
   assert.equal(ms.significant, false);
   assert.ok(ms.upperLimit >= MIN_MOTION_MASYR);
   assert.match(motionSummary(m).text, /^\d+\.\d\d ± \d+\.\d\d″\/yr$/);
+  // a single star in an empty field: no field stars, so the pooled minimum, and it says so
+  assert.equal(m.refStars, 0); assert.equal(m.sysErr, SYS_FLOOR_MASYR);
+  assert.deepEqual(m.sysSource, { kind: 'field', n: 0, pooled: true });
+  assert.ok(Number.isFinite(m.pmraStatErr) && m.pmraErr >= m.pmraStatErr);
+});
+
+test('systematic floor: own field stars when 3 or more, never below the pooled minimum', () => {
+  assert.deepEqual(systematicFloor({ n: 4, sys: 220 }), { masYr: 220, source: { kind: 'field', n: 4, pooled: false } });
+  assert.deepEqual(systematicFloor({ n: 4, sys: 90 }), { masYr: SYS_FLOOR_MASYR, source: { kind: 'field', n: 4, pooled: true } });
+  assert.deepEqual(systematicFloor({ n: 2, sys: 900 }), { masYr: SYS_FLOOR_MASYR, source: { kind: 'field', n: 2, pooled: true } });
+  assert.equal(systematicFloor(null).masYr, SYS_FLOOR_MASYR);
+  // the floor equation: two motions of 300 ± 0 need s = 300 to give χ² = 2
+  assert.ok(Math.abs(solveFloor([[300, 0], [-300, 0]]) - 300) < 1e-6);
+  assert.equal(solveFloor([[10, 100], [5, 100]]), 0);
 });

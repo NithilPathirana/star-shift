@@ -11,7 +11,7 @@
 // Usage: (server running on 8787) node tools/make_proof.mjs
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { run, measureMotion, seasons, SYS_FLOOR_MASYR, MIN_MOTION_MASYR, motionDetectors } from '../web/app/data.js';
+import { run, measureMotion, seasons, SYS_FLOOR_MASYR, MIN_MOTION_MASYR, motionDetectors, MASKED_CORE_FRAC } from '../web/app/data.js';
 import { PRESETS } from '../web/app/presets.js';
 import { DEFAULT_SETTINGS } from '../web/app/query.js';
 import { classifyFrame, visibleFrames, HIDE_IDS } from '../web/core/contam.js';
@@ -20,7 +20,7 @@ import { resolveName, gaiaCone, SIMBAD_TAP } from '../web/core/resolve.js';
 import { parseCSV } from '../web/core/irsa.js';
 import { propagate, separationArcsec, mjdToDate, mjdToEpochYear } from '../web/core/motion.js';
 import { totalPM, totalPMErr, motionPA } from '../web/app/kinematics.js';
-import { RULES, PIXEL_ARCSEC, motionVerdict, brightnessVerdict, meanSem } from '../web/app/proof/logic.js';
+import { RULES, PIXEL_ARCSEC, motionVerdict, brightnessVerdict, meanSem, paDelta } from '../web/app/proof/logic.js';
 
 const BASE = process.env.BASE || 'http://127.0.0.1:8787';
 const SETTINGS = { ...DEFAULT_SETTINGS, fov: 2.5, max: 120, band: 'all' }; // the viewer's flip-book defaults (ui.js)
@@ -97,8 +97,9 @@ function motion(frames, grid) {
   if (m.ok && used.length < 2) return { ok: false, reason: 'one season only', frames: m.frames }; // same rule as the viewer
   if (!m.ok) return { ok: false, reason: m.reason || 'no steady track', frames: m.frames || 0 };
   const dets = [...new Set(frames.filter(f => m.points.some(q => q.mjd === f.mjd)).map(f => f.detector))].sort();
-  return { ok: true, total: m.total, totalErr: m.totalErr, statErr: m.statErr, sysErr: m.sysErr, refStars: m.refStars, significant: m.significant, upperLimit: m.upperLimit, pmra: m.pmra, pmdec: m.pmdec, pa: motionPA(m.pmra, m.pmdec),
-    maskedFrames: m.maskedFrames, inputFrames: m.inputFrames, // for the shared measurability rule (not written out)
+  return { ok: true, total: m.total, totalErr: m.totalErr, statErr: m.statErr, sysErr: m.sysErr, sysSource: m.sysSource, refStars: m.refStars, significant: m.significant, upperLimit: m.upperLimit, pmra: m.pmra, pmdec: m.pmdec, pa: motionPA(m.pmra, m.pmdec),
+    pmraErr: m.pmraErr, pmdecErr: m.pmdecErr,
+    maskedFrames: m.maskedFrames, inputFrames: m.inputFrames, // for the shared measurability rule
     frames: m.frames, rejected: m.rejected, span: m.span, seasons: used.map(s => ({ from: day(s.startMjd), to: day(s.endMjd), n: s.frames.length })),
     detectors: dets,
     points: m.points.map(p => ({ mjd: r2(p.mjd, 3), e: r2(p.e, 3), n: r2(p.n, 3) })),
@@ -154,6 +155,13 @@ const fmtPm = (masYr, d = 2) => (masYr / 1000).toFixed(d);
 const list = (a) => a.join(', ');
 
 console.log(`make_proof: ${PRESETS.length} targets, fov ${SETTINGS.fov}′, max ${SETTINGS.max}, via ${BASE}`);
+
+// Barnard's Star is the steady brightness control for the variables, so it must be measured first.
+{
+  const iB = PRESETS.findIndex(q => q.key === 'barnard');
+  const late = PRESETS.filter((q, k) => KIND[q.key] === 'changes brightness' && k < iB);
+  if (iB < 0 || late.length) throw new Error(`make_proof: Barnard's Star (brightness control) must come before ${late.map(q => q.key).join(', ') || 'the variables'} in presets.js`);
+}
 const targets = [];
 let barnardBrightness = null;
 for (const p of PRESETS) {
@@ -177,7 +185,13 @@ for (const p of PRESETS) {
   };
   const m = dets ? motion(main, grid) : M.all;
   const spanYears = (frames[frames.length - 1].mjd - frames[0].mjd) / 365.25;
-  const v = motionVerdict(m, cat.total, cat.err, m.ok ? m.span : spanYears);
+  const v = motionVerdict(m, cat.total, cat.err, m.ok ? m.span : spanYears, { pmra: cat.pmra, pmdec: cat.pmdec });
+  // what the measurability rule counted: archive saturation flags, and fitted positions with a blanked centre
+  const counts = { saturationFlag: saturated, images: frames.length, blanked: m.ok ? m.maskedFrames : null, fitted: m.ok ? m.frames : null, limitFrac: MASKED_CORE_FRAC };
+  // where the floor comes from: this field's own stars (3 or more usable), else the minimum pooled over the five fields
+  const floorText = (mm) => !mm.ok ? null : mm.sysSource?.pooled
+    ? `floor ${fmtPm(mm.sysErr)}″/yr from field stars (all five fields; ${mm.refStars} usable here)`
+    : `floor ${fmtPm(mm.sysErr)}″/yr from ${mm.refStars} field stars`;
   const catRef = PM_REF[cat.bibcode] || (cat.bibcode ? `${cat.bibcode} (via SIMBAD)` : 'SIMBAD');
 
   // ---- honest limits, written from the numbers ----
@@ -187,7 +201,7 @@ for (const p of PRESETS) {
     limit = `The catalogue motion (${fmtPm(cat.total)}″/yr) moves it only ${(v.shiftPx * PIXEL_ARCSEC).toFixed(3)}″ (${v.shiftPx.toFixed(3)} of a 6.15″ pixel) over the ${spanYears.toFixed(1)} years of images, far below what one pixel can show.`;
     if (m.ok) limit += m.significant
       ? ` The fit still finds ${fmtPm(m.total)} ± ${fmtPm(m.totalErr)}″/yr, which is not a real motion: ${saturated > frames.length / 2
-        ? `the centre is flagged saturated in ${saturated} of ${frames.length} images, so its position comes from the edges of a blanked core.`
+        ? `the star carries the saturation flag in ${saturated} of ${frames.length} images and its centre is blanked in ${m.maskedFrames} of the ${m.frames} fitted, so its position comes from the edges of a blanked core.`
         : `stars this still should show none, so this is the star's own light centre shifting, or an effect of its bright centre that the ${fmtPm(m.sysErr)}″/yr floor does not cover.`}`
       : ` As expected, the images show no significant motion (< ${fmtPm(m.upperLimit)}″/yr). The fit gives ${fmtPm(m.total)} ± ${fmtPm(m.totalErr)}″/yr; a motion under 3 times its uncertainty, or under ${fmtPm(MIN_MOTION_MASYR, 1)}″/yr, is not claimed.`;
   } else if (p.key === 'wise-0855') {
@@ -195,7 +209,14 @@ for (const p of PRESETS) {
       const at = propagate(p.target, (frames[0].mjd + frames[frames.length - 1].mjd) / 2);
       const g = await gaiaCone(at.ra, at.dec, 15);
       extra.neighbours = g.map(s => ({ id: s.id, g: r2(s.g, 2), sepArcsec: r2(separationArcsec(at.ra, at.dec, s.ra, s.dec), 1) })).sort((a, b) => a.sepArcsec - b.sepArcsec);
-    } catch (e) { console.log('  Gaia: ' + e.message); }
+    } catch (e) {
+      // Gaia unreachable: keep the previous run's list (catalogue positions do not change), dated
+      console.log('  Gaia: ' + e.message + '; keeping the neighbour list from the previous proof.json');
+      try {
+        const prev = JSON.parse(readFileSync(OUT, 'utf8')), pt = prev.targets?.find(t => t.key === p.key);
+        if (pt?.extra?.neighbours?.length) { extra.neighbours = pt.extra.neighbours; extra.neighboursFrom = pt.extra.neighboursFrom || prev.generated; }
+      } catch { /* no previous file */ }
+    }
     const nb = extra.neighbours?.[0];
     limit = `Faint at short wavelengths: only the two longest bands (detectors 5–6, 3.8–5.0 µm) were used. With detectors 1–4 the fit gives ${M.short.ok ? `${fmtPm(M.short.total)} ± ${fmtPm(M.short.totalErr)}″/yr` : 'no track'}${nb ? `, because it locks on a background star (Gaia G ${nb.g}) ${nb.sepArcsec}″ away that does not move` : ', locking on light that does not move'}.`;
   } else if (p.key === 'eps-indi-b') {
@@ -207,23 +228,37 @@ for (const p of PRESETS) {
     } catch (e) { console.log('  SIMBAD eps Ind: ' + e.message); }
     const scatterHits = cls.filter(c => c.hits?.scatter != null).length;
     const nb = extra.brightNeighbour;
-    limit = `${nb ? `Epsilon Indi A is ${(nb.sepArcsec / 60).toFixed(1)}′ away, outside this ${(2 * nb.cutoutHalfArcsec / 60).toFixed(1)}′ patch, and ` : ''}${scatterHits ? `${scatterHits} images carry scattered-light flags near B` : 'no image has scattered-light flags near B'}; hiding every flagged image gives ${M.filtersOn.ok ? `${fmtPm(M.filtersOn.total)} ± ${fmtPm(M.filtersOn.totalErr)}″/yr` : 'no fit'}. ${m.ok ? `The value is ${Math.abs((1 - m.total / cat.total) * 100).toFixed(0)}% ${m.total < cat.total ? 'below' : 'above'} the catalogue (${v.sigma != null ? v.sigma.toFixed(1) : '–'}σ with the ${fmtPm(m.sysErr)}″/yr floor measured on field stars). Epsilon Indi B is itself a pair of brown dwarfs 0.7″ apart; their orbit moves the light centre by up to about 0.1″/yr, by different amounts at Gaia's visible wavelengths and SPHEREx's infrared ones, so a small difference is expected.` : ''}`;
+    limit = `${nb ? `Epsilon Indi A is ${(nb.sepArcsec / 60).toFixed(1)}′ away, outside this ${(2 * nb.cutoutHalfArcsec / 60).toFixed(1)}′ patch, and ` : ''}${scatterHits ? `${scatterHits} images carry scattered-light flags near B` : 'no image has scattered-light flags near B'}; hiding every flagged image gives ${M.filtersOn.ok ? `${fmtPm(M.filtersOn.total)} ± ${fmtPm(M.filtersOn.totalErr)}″/yr` : 'no fit'}. ${m.ok ? `The value is ${Math.abs((1 - m.total / cat.total) * 100).toFixed(0)}% ${m.total < cat.total ? 'below' : 'above'} the catalogue (${v.sigma != null ? v.sigma.toFixed(1) : '–'}σ). Its error bar has a ${floorText(m)}. Epsilon Indi B is itself a pair of brown dwarfs 0.7″ apart; their orbit moves the light centre by up to about 0.1″/yr, by different amounts at Gaia's visible wavelengths and SPHEREx's infrared ones, so a small difference is expected.` : ''}`;
     extra.scatterHits = scatterHits;
   } else {
-    limit = `The star's centre is flagged saturated in ${saturated} of ${frames.length} images, so its centre is found from the unsaturated edge pixels; images with a blanked centre count for less in the fit because their positions scatter more. The long-wavelength detectors alone give ${M.long.ok ? `${fmtPm(M.long.total)} ± ${fmtPm(M.long.totalErr)}″/yr` : 'no fit'}, the short ones ${M.short.ok ? `${fmtPm(M.short.total)} ± ${fmtPm(M.short.totalErr)}″/yr` : 'no fit'}.`;
+    limit = `The star carries the archive's saturation flag in ${saturated} of ${frames.length} images, and its centre is blanked in ${m.ok ? `${m.maskedFrames} of the ${m.frames} fitted` : 'the'} images, so its centre is found from the unsaturated edge pixels; images with a blanked centre count for less in the fit because their positions scatter more. The long-wavelength detectors alone give ${M.long.ok ? `${fmtPm(M.long.total)} ± ${fmtPm(M.long.totalErr)}″/yr` : 'no fit'}, the short ones ${M.short.ok ? `${fmtPm(M.short.total)} ± ${fmtPm(M.short.totalErr)}″/yr` : 'no fit'}.`;
+  }
+  // Direction: say it whenever the direction check is over 2σ (1-D equivalent), with the likely reason from the counts.
+  const dv = v.direction;
+  if (dv && dv.sigma > 2) {
+    const pas = [['the long-wavelength detectors alone', M.long], ['every flagged image hidden', M.filtersOn]].filter(([, x]) => x.ok && x !== m).map(([w, x]) => `${w} ${x.pa.toFixed(1)}°`);
+    limit += ` ${v.sigma <= 2 ? 'The speed agrees, but the direction' : 'The direction'} is ${Math.abs(paDelta(m.pa, cat.pa)).toFixed(1)}° off (${m.pa.toFixed(1)}° measured, ${cat.pa.toFixed(1)}° catalogue): about ${fmtPm(Math.abs(dv.side), 1)}″/yr sideways, ${dv.sigma.toFixed(1)}σ.`
+      + (saturated > frames.length / 2 ? ` Likely because the star carries the saturation flag in ${saturated} of ${frames.length} images and its centre is blanked in ${m.maskedFrames} of the ${m.frames} fitted, so the position comes from the star's edges, which can lean to one side; the ${fmtPm(m.sysErr)}″/yr floor comes from faint field stars and does not cover that.` : '')
+      + (pas.length ? ` It stays off with ${pas.join(' and ')}, so it is systematic, not noise.` : '');
   }
 
   const tests = [{
     type: 'motion',
     test: 'moves',
     expected: { value: r2(cat.total, 1), err: r2(cat.err, 2), unit: 'mas/yr', pa: r2(cat.pa, 1), source: catRef, epoch: 'J2000 position; motion per year' },
-    measured: m.ok ? { value: r2(m.total, 0), err: r2(m.totalErr, 0), statErr: r2(m.statErr, 0), sysErr: r2(m.sysErr, 0), refStars: m.refStars, significant: m.significant, upperLimit: r2(m.upperLimit, 0), unit: 'mas/yr', pa: r2(m.pa, 1), frames: m.frames, rejected: m.rejected,
+    measured: m.ok ? { value: r2(m.total, 0), err: r2(m.totalErr, 0), statErr: r2(m.statErr, 0), sysErr: r2(m.sysErr, 0), sysSource: m.sysSource, floorText: floorText(m), refStars: m.refStars, significant: m.significant, upperLimit: r2(m.upperLimit, 0), unit: 'mas/yr', pa: r2(m.pa, 1), frames: m.frames, rejected: m.rejected,
+      pmra: r2(m.pmra, 0), pmdec: r2(m.pmdec, 0), pmraErr: r2(m.pmraErr, 0), pmdecErr: r2(m.pmdecErr, 0),
       span: r2(m.span, 2), seasons: m.seasons, detectors: m.detectors, bands: longOnly ? 'detectors 5–6 only' : 'all detectors' } : null,
+    expectedVec: { pmra: r2(cat.pmra, 1), pmdec: r2(cat.pmdec, 1) },
+    counts,
     diff: m.ok && v.verdict !== 'NOT MEASURABLE' ? { value: r2(m.total - cat.total, 0), sigma: r2(v.sigma, 1), unit: 'mas/yr' } : null,
+    direction: m.ok && dv ? { verdict: dv.verdict, measured: r2(m.pa, 1), catalogue: r2(cat.pa, 1), paDiff: r2(paDelta(m.pa, cat.pa), 1),
+      east: r2(dv.e, 0), north: r2(dv.n, 0), value: r2(dv.mag, 0), sideways: r2(Math.abs(dv.side), 0), chi2d: r2(dv.chi, 2), sigma: r2(dv.sigma, 1) } : null,
+    window: v.window ? { lo: r2(v.window.lo, 0), hi: r2(v.window.hi, 0), paLo: r2(v.window.paLo, 1), paHi: r2(v.window.paHi, 1) } : null,
     verdict: v.verdict, shiftPx: r2(v.shiftPx, 3), limit,
     chart: m.ok ? { kind: 'motion', pa: r2(cat.pa, 2), catalogueMasYr: r2(cat.total, 1), points: m.points, fit: m.fit } : null,
     // Not-measurable rows still show what the fit gives, so the method's floor is visible.
-    fitAnyway: v.verdict === 'NOT MEASURABLE' && m.ok ? { value: r2(m.total, 0), err: r2(m.totalErr, 0), statErr: r2(m.statErr, 0), sysErr: r2(m.sysErr, 0), significant: m.significant, upperLimit: r2(m.upperLimit, 0), frames: m.frames } : null,
+    fitAnyway: v.verdict === 'NOT MEASURABLE' && m.ok ? { value: r2(m.total, 0), err: r2(m.totalErr, 0), statErr: r2(m.statErr, 0), sysErr: r2(m.sysErr, 0), floorText: floorText(m), significant: m.significant, upperLimit: r2(m.upperLimit, 0), frames: m.frames } : null,
     variants: { all: brief(M.all), short: brief(M.short), long: brief(M.long), filtersOn: brief(M.filtersOn) },
   }];
 
@@ -273,7 +308,7 @@ for (const p of PRESETS) {
 const out = {
   about: 'Numbers for web/proof.html, computed by tools/make_proof.mjs from the app pipeline (data.js) on cached SPHEREx cutouts. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.',
   generated: new Date().toISOString(),
-  settings: { fovArcmin: SETTINGS.fov, maxImages: SETTINGS.max, band: SETTINGS.band, flagFilter: 'viewer default: no flag boxes ticked, no images hidden', sysFloorMasYr: SYS_FLOOR_MASYR, minMotionMasYr: MIN_MOTION_MASYR, apertureArcsec: r2(APERTURE * PIXEL_ARCSEC, 1), wavelengthMatchUm: WL_MATCH },
+  settings: { fovArcmin: SETTINGS.fov, maxImages: SETTINGS.max, band: SETTINGS.band, flagFilter: 'viewer default: no flag boxes ticked, no images hidden', sysFloorMasYr: SYS_FLOOR_MASYR, maskedCoreFrac: MASKED_CORE_FRAC, minMotionMasYr: MIN_MOTION_MASYR, apertureArcsec: r2(APERTURE * PIXEL_ARCSEC, 1), wavelengthMatchUm: WL_MATCH },
   pixelArcsec: PIXEL_ARCSEC, rules: RULES, control: barnardBrightness, targets,
 };
 mkdirSync(new URL('../web/data/', import.meta.url), { recursive: true });
