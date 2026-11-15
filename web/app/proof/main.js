@@ -196,7 +196,7 @@ function render(d) {
     rows += `</tbody>`;
   }
   const tb = $('rows'); tb.insertAdjacentHTML('beforebegin', rows); tb.remove();
-  { const h = location.hash.slice(1), el = h && document.getElementById(decodeURIComponent(h)); if (el?.classList.contains('pf-group')) requestAnimationFrame(() => el.scrollIntoView({ block: 'start' })); }
+  { const h = location.hash.slice(1), el = h && document.getElementById(decodeURIComponent(h)); if (el && el.classList.contains('pf-group')) requestAnimationFrame(() => el.scrollIntoView({ block: 'start' })); }
   document.querySelectorAll('.pf-row').forEach(r => {
     const btn = r.querySelector('.pf-open'), ev = document.getElementById(r.dataset.ev);
     const toggle = () => { const open = ev.hidden; ev.hidden = !open; btn.setAttribute('aria-expanded', String(open)); r.classList.toggle('pf-on', open); };
@@ -228,5 +228,8 @@ function render(d) {
 }
 
 fetch('data/proof.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(render).catch(e => {
-  $('rows').innerHTML = `<tr><td colspan="6" class="empty">The measurements file could not be read (${esc(e.message)}). Run <span class="num">node tools/make_proof.mjs</span> with the server on, then reload.</td></tr>`;
+  console.error('Proof page:', e); // never swallow it (render() removes #rows before it can fail)
+  const at = $('rows') || document.querySelector('.pf-table tbody') || document.querySelector('table');
+  if (!at) return;
+  at.innerHTML =`<tr><td colspan="6" class="empty">The measurements file could not be read (${esc(e.message)}). Run <span class="num">node tools/make_proof.mjs</span> with the server on, then reload.</td></tr>`;
 });
