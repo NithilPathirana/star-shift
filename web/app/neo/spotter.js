@@ -3,6 +3,7 @@ import {
   DEFAULT_DATES, buildSbIdentParams, observationDates, parseSbIdent,
 } from './sb-ident.js';
 import { prebakedFetch } from '../../core/prebaked.js'; // the five demo targets answer from web/prebaked/ (Claude)
+import '../expert.js'; // Simple / Expert twins below: .x-only (RA/Dec, ISO dates, ″/h) and .s-only (plain words) (Claude)
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -45,6 +46,19 @@ function fmtDec(deg) {
   return `${sign}${String(d).padStart(2, '0')}° ${String(m).padStart(2, '0')}′ ${String(t).padStart(2, '0')}″`;
 }
 
+// Plain-words twins for Simple mode. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+const plainDay = (iso) => (iso ? new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '—');
+const plainMonth = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+function twin(expert, simple, tag = 'span') {
+  const x = element(tag, 'x-only', expert), s = element(tag, 's-only', simple);
+  return [x, s];
+}
+function arcminFromCentre(ra, dec) { // small-angle distance from the field centre
+  if (ra === null || dec === null) return null;
+  const r = Math.PI / 180, dra = ((ra - view.ra + 540) % 360 - 180) * Math.cos(view.dec * r);
+  return Math.hypot(dra, dec - view.dec) * 60;
+}
+
 function coordinateToDegrees(value, isRa) {
   const match = /^([+\-]?)(\d+)[ :](\d+)[ :'](\d+(?:\.\d+)?)/.exec(String(value || '').replace(/[hms°′″"]/g, ':'));
   if (!match) return null;
@@ -71,14 +85,19 @@ function renderRows(rows) {
     const object = element('td', 'object-cell');
     object.dataset.label = 'Object';
     object.append(element('strong', '', item.name), element('small', '', item.kind === 'c' ? 'Comet' : 'Asteroid'));
-    const date = element('td', 'num', item.date || '—'); date.dataset.label = 'Date';
+    const date = element('td', 'num'); date.dataset.label = 'Date';
+    date.append(...twin(item.date || '—', plainDay(item.date)));
     const position = element('td', 'num'); position.dataset.label = 'Predicted position';
     const raDeg = coordinateToDegrees(item.ra, true), decDeg = coordinateToDegrees(item.dec, false);
-    position.append(element('span', '', raDeg === null ? (item.ra || '—') : fmtRA(raDeg)), element('small', '', decDeg === null ? (item.dec || '—') : fmtDec(decDeg)));
+    const sep = arcminFromCentre(raDeg, decDeg);
+    position.append(element('span', 'x-only', raDeg === null ? (item.ra || '—') : fmtRA(raDeg)), element('small', 'x-only', decDeg === null ? (item.dec || '—') : fmtDec(decDeg)),
+      element('span', 's-only', sep === null ? 'inside the field' : `${Math.round(sep)}′ from the centre`));
     const magnitude = element('td', 'num', item.visualMagnitude === null ? '—' : `${number(item.visualMagnitude, 2)} mag`);
     magnitude.dataset.label = 'V magnitude';
     if (item.visualMagnitude === null) magnitude.title = 'JPL did not report a visual magnitude';
-    const motion = element('td', 'num', item.motionArcsecHour === null ? '—' : `${number(item.motionArcsecHour, 2)} ″/h`);
+    const motion = element('td', 'num');
+    if (item.motionArcsecHour === null) motion.textContent = '—';
+    else motion.append(...twin(`${number(item.motionArcsecHour, 2)} ″/h`, `${Math.round(item.motionArcsecHour)}″ an hour`));
     motion.dataset.label = 'Motion';
     if (item.motionArcsecHour === null) motion.title = 'JPL did not report both motion components';
     const actions = element('td', 'spotter-actions'); actions.dataset.label = 'Actions';
@@ -167,6 +186,7 @@ $('spotter-fov').value = view.fov;
 $('spotter-from').value = params.get('from') || view.dates[0] || DEFAULT_DATES[0];
 $('spotter-to').value = params.get('to') || view.dates.at(-1) || DEFAULT_DATES.at(-1);
 $('spotter-dates').textContent = view.dates.join(' · ');
+$('spotter-dates-plain').textContent = view.dates.map(plainMonth).join(' · ');
 activateTab(params.get('tab') === 'orbits' ? 'orbits' : 'spotter');
 loadSpotter().catch(error => {
   $('spotter-status').textContent = `JPL identification could not be loaded: ${error.message}. Check the relay route and the strict coordinate/date formats.`;

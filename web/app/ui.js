@@ -198,7 +198,7 @@ function draw() {
     const f = F[Math.min(P.i, F.length - 1)]; CX.drawStage(A, f, V.n, opt(A), true); GH.drawCanvas(A, f, +A.dataset.dev); info(f);
     const rg = rangeOf(f.um), bl = bandLabel(rg); // "CO₂-ice band · 3.82–4.42 µm": a range, not a detection
     $('chip').title = bl ? bl.tip : '';
-    $('chip').innerHTML = CX.chipLead() + `${bl ? `<i class="sw" style="--rc:${rg.c}"></i><span>${esc(bl.name)}</span><span class="sep bl-r">·</span><span class="bl-r">${bl.range}</span><span class="sep">·</span>` : ''}<span>λ ${f.um ? f.um.toFixed(2) : '?'} µm</span><span class="sep bl-d">·</span><span class="bl-d">D${f.det}</span><span class="sep">·</span><span>${R.fmtDate(f.date)}</span>`;
+    $('chip').innerHTML = CX.chipLead() + `${bl ? `<i class="sw" style="--rc:${rg.c}"></i><span>${esc(bl.name)}</span><span class="sep bl-r">·</span><span class="bl-r">${bl.range}</span><span class="sep">·</span>` : ''}<span>λ ${f.um ? f.um.toFixed(2) : '?'} µm</span><span class="sep bl-d x-only">·</span><span class="bl-d x-only">D${f.det}</span><span class="sep">·</span><span>${R.fmtDate(f.date)}</span>`;
     A.setAttribute('aria-label', `SPHEREx infrared image of ${V.name}, ${R.fmtDate(f.date)}, ${f.um ? f.um.toFixed(2) + ' micrometres' : ''}`);
   } else if (mode === 'compare') {
     CX.drawStage(A, firstS(), V.n, opt(A)); cross(A, ex[0], ex[1]); $('capA').innerHTML = `<b>First season</b> · stacked · ${sRange(firstS())}`;
@@ -271,9 +271,11 @@ function remeasure() {
   // only a final fit counts: all planned images tried and at least two observing seasons
   if (V.motion?.ok && visits(V.F).length < 2) V.motion = { ok: false, frames: V.motion.frames, reason: 'one season only', detectors: dets };
   const mc = motionCheck(), mo = V.motion;
-  $('d-meas').textContent = mo?.ok
+  const fitted = mo?.ok && !(mc && !mc.measurable) && mo.significant !== false; // a real, significant motion: Simple gets words, Expert ± numbers
+  if (fitted) $('d-meas').innerHTML = `<span class="x-only">${(mo.total / 1000).toFixed(2)} ± ${(mo.totalErr / 1000).toFixed(2)}″/yr</span><span class="s-only">moves about ${plainArcsec(mo.total / 1000)} a year</span> · ${esc(usedText(mo))}`;
+  else $('d-meas').textContent = mo?.ok
     ? (mc && !mc.measurable ? `not measurable here (${mc.saturated ? 'centre saturated' : mc.slow ? 'moves under a pixel' : 'no fit'})`
-      : `${mo.significant === false ? `no significant motion (< ${(mo.upperLimit / 1000).toFixed(2)}″/yr)` : `${(mo.total / 1000).toFixed(2)} ± ${(mo.totalErr / 1000).toFixed(2)}″/yr`}`)
+      : `no significant motion (< ${(mo.upperLimit / 1000).toFixed(2)}″/yr)`)
       + ` · ${usedText(mo)}`
     : mo ? (mo.reason === 'one season only' ? 'needs two seasons to measure' : mo.reason === 'too few frames' ? 'too few images to measure' : 'too faint to measure') : '—';
   $('useAll').hidden = !filterHides(mo);
@@ -609,7 +611,7 @@ const fine = mq('(hover: hover) and (pointer: fine)');
       if (snap) { x = snap[0]; y = snap[1]; }
       cur.classList.toggle('snap', !!snap); cur.classList.add('on');
       const p = skymap.aladin ? skymap.toWorld(x, y) : null;
-      tag.textContent = snap ? snap[2].name : p ? `${R.fmtRA(p[0])}  ${R.fmtDec(p[1])}` : '';
+      tag.innerHTML = snap ? esc(snap[2].name) : p ? `<span class="x-only">${R.fmtRA(p[0])}  ${R.fmtDec(p[1])}</span><span class="s-only">${esc(lookShort(p[0], p[1]))}</span>` : '';
       if (!cur.dataset.init) { cx = tx = x; cy = ty = y; cur.dataset.init = '1'; }
       tx = x; ty = y; if (!raf) raf = requestAnimationFrame(loop);
     });
@@ -657,7 +659,7 @@ function placeOverlays() {
   const c = skymap.center(); readout(c.ra, c.dec);
 }
 // RA/Dec is Expert; Simple gets the plain "where to look" twin (Master items 3 and 5)
-function readout(ra, dec) { const t = `<span class="x-only">${R.fmtRA(ra)}  ${R.fmtDec(dec)}</span><span class="s-only">${esc(lookShort(ra, dec))}</span>`; $('mdCursor').innerHTML = t; $('mapRead').innerHTML = `<span class="x-only">FOV ${fovTxt()}</span><span class="sep x-only">·</span><span>${t}</span>`; }
+function readout(ra, dec) { const t = `<span class="x-only">${R.fmtRA(ra)}  ${R.fmtDec(dec)}</span><span class="s-only">${esc(lookShort(ra, dec))}</span>`; $('mdCursor').innerHTML = t; $('mapRead').innerHTML = `<span class="x-only">FOV ${fovTxt()}</span><span class="sep x-only">·</span><span class="s-only">This spot:&nbsp;</span><span>${t}</span>`; }
 $('mapWrap').addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; if (!skymap.aladin) return; const r = $('mapWrap').getBoundingClientRect(), w = skymap.toWorld(e.clientX - r.left, e.clientY - r.top); if (w) readout(w[0], w[1]); });
 function mapZoom(f) { if (!skymap.aladin) return; skymap.setFov(skymap.fov() / f); Snd.play(f > 1 ? 'zoomIn' : 'zoomOut'); }
 function mapFit() { if (!skymap.aladin) return; skymap.setFov(60); Snd.play('click'); }
@@ -678,7 +680,7 @@ function select(ra, dec, t, fromUser) {
   }
   if (t) { ra = t.ra; dec = t.dec; }
   M.sel = { ra, dec, t }; GH.forSelection(M.sel); placeOverlays(); renderCD(); setCoordText(ra, dec);
-  $('mdSel').textContent = t ? t.name : `${ra.toFixed(3)}°, ${dec >= 0 ? '+' : ''}${dec.toFixed(3)}°`;
+  $('mdSel').innerHTML = t ? esc(t.name) : `<span class="x-only">${ra.toFixed(3)}°, ${dec >= 0 ? '+' : ''}${dec.toFixed(3)}°</span><span class="s-only">A patch you picked</span>`;
   updateURL();
   if (fromUser) { Snd.play('tick'); if (innerWidth < 1100) { sheet(true); if (innerWidth < 700) skymap.panBy(0, -0.24); } }
 }
@@ -746,8 +748,9 @@ const TAGS = { obs: ['t-obs', 'Observed'], calc: ['t-calc', 'Computed'], cat: ['
 // nb (optional): the notebook entry for this row ({ label, value, unit, uncertainty, source, tag });
 // the row then gets one "+" key, which saves it with the context of the moment it is pressed.
 const NB_ROWS = new Map();
-const row = (label, value, tag, nb) => { if (nb) NB_ROWS.set(label, nb);
-  return `<div class="cd-row${nb ? ' has-nb' : ''}"><span class="cd-l">${label}</span><span class="cd-t"><span class="t-mini ${TAGS[tag][0]}">${TAGS[tag][1]}</span></span><span class="cd-v">${value}</span><button class="key cd-c" aria-label="Copy ${label}">${CP}</button>${nb ? `<button type="button" class="nb-plus" data-nb="row:${esc(label)}" aria-label="Add ${esc(label)} to the lab notebook" title="Add to the lab notebook">+</button>` : ''}</div>`; };
+// cls: 'x-only' (Expert) or 's-only' (Simple twin), see expert.js
+const row = (label, value, tag, nb, cls) => { if (nb) NB_ROWS.set(label, nb);
+  return `<div class="cd-row${nb ? ' has-nb' : ''}${cls ? ' ' + cls : ''}"><span class="cd-l">${label}</span><span class="cd-t"><span class="t-mini ${TAGS[tag][0]}">${TAGS[tag][1]}</span></span><span class="cd-v">${value}</span><button class="key cd-c" aria-label="Copy ${label}">${CP}</button>${nb ? `<button type="button" class="nb-plus" data-nb="row:${esc(label)}" aria-label="Add ${esc(label)} to the lab notebook" title="Add to the lab notebook">+</button>` : ''}</div>`; };
 const sgn = v => (v < 0 ? '−' : '+') + Math.abs(v).toFixed(4) + '°';
 let cdCtl = null, repaintMot = null;
 function catalogueOf(t) { return t?.preset?.target || t?.simbad || null; }
@@ -757,7 +760,10 @@ const nf = (v, d) => Math.abs(v).toLocaleString('en-US', { minimumFractionDigits
 const fx = (v, d) => (v < 0 ? '−' : '') + nf(v, d);
 const fsg = (v, d) => (v < 0 ? '−' : '+') + nf(v, d);
 const pm = (e, d = 2) => (Number.isFinite(e) && e > 0 ? ` ± ${nf(e, Math.min(4, Math.max(d, -Math.floor(Math.log10(e)))))}` : '');
-const fYears = y => y < 10 ? y.toPrecision(2) : Math.round(y).toLocaleString('en-US');
+// Simple-mode words for a sky motion: "10 arcseconds", "1.4 arcseconds", "0.05 arcseconds"
+const plainArcsec = v => { const a = Math.abs(v), n = a >= 10 ? Math.round(a) : a >= 1 ? +a.toFixed(1) : a >= 0.01 ? +a.toPrecision(1) : null;
+  return n == null ? 'less than 0.01 arcseconds' : `${n} arcsecond${n === 1 ? '' : 's'}`; };
+const fYears = y =>y < 10 ? y.toPrecision(2) : Math.round(y).toLocaleString('en-US');
 function motionDial(pa) { // 64 px, north up, east left, fixed-length arrow
   const r = pa * Math.PI / 180, dx = -Math.sin(r), dy = -Math.cos(r), L = 17, x = 32 + dx * L, y = 32 + dy * L;
   const hx = -dy, hy = dx, b = 6, bx = x - dx * b, by = y - dy * b;
@@ -788,21 +794,27 @@ function motionHTML(sel, t, cat, gaia, same, looking) {
   } else {
     h += motionDial(k.pa) +
       row('Proper motion, total and direction', `${nf(k.mu, 1)}${pm(k.muErr)} mas/yr · ${k.pa.toFixed(1)}°`, 'cat',
-        ent(`${name}proper motion (catalogue), direction ${k.pa.toFixed(1)}° east of north`, +k.mu.toFixed(1), 'mas/yr', unc(k.muErr), srcName(pmFrom), 'CATALOGUE')) +
-      row('Proper motion, east · north', `${fsg(pmFrom.pmra, 1)}${pm(pmFrom.pmraErr)} · ${fsg(pmFrom.pmdec, 1)}${pm(pmFrom.pmdecErr)} mas/yr`, 'cat') +
-      row('Angular speed across the sky', `${k.arcsecYr.toFixed(k.arcsecYr < 0.1 ? 4 : 2)}″/yr · 1 pixel every ${fYears(k.yrPerPix)} years`, 'calc');
+        ent(`${name}proper motion (catalogue), direction ${k.pa.toFixed(1)}° east of north`, +k.mu.toFixed(1), 'mas/yr', unc(k.muErr), srcName(pmFrom), 'CATALOGUE'), 'x-only') +
+      row('How fast it moves across the sky', `about ${plainArcsec(k.arcsecYr)} a year, towards the ${dirWord(k.pa)}`, 'cat', null, 's-only') +
+      row('Proper motion, east · north', `${fsg(pmFrom.pmra, 1)}${pm(pmFrom.pmraErr)} · ${fsg(pmFrom.pmdec, 1)}${pm(pmFrom.pmdecErr)} mas/yr`, 'cat', null, 'x-only') +
+      row('Angular speed across the sky', `${k.arcsecYr.toFixed(k.arcsecYr < 0.1 ? 4 : 2)}″/yr · 1 pixel every ${fYears(k.yrPerPix)} years`, 'calc', null, 'x-only') +
+      row('Shift in SPHEREx images', `one image pixel every ${fYears(k.yrPerPix)} years`, 'calc', null, 's-only');
     if (k.dist) {
-      h += row('Parallax', `${nf(plxFrom.plx, 3)}${pm(plxFrom.plxErr, 3)} mas`, 'cat') +
+      h += row('Parallax', `${nf(plxFrom.plx, 3)}${pm(plxFrom.plxErr, 3)} mas`, 'cat', null, 'x-only') +
         row('Distance (1000 / parallax)', `${k.dist.pc < 100 ? k.dist.pc.toFixed(3) : nf(k.dist.pc, 0)} pc · ${k.dist.ly < 100 ? k.dist.ly.toFixed(2) : nf(k.dist.ly, 0)} ly`, 'calc',
-          ent(`${name}distance (1000 / parallax)${k.dist.weak ? ', unreliable: parallax under 5× its error' : ''}`, +k.dist.pc.toFixed(k.dist.pc < 100 ? 3 : 0), 'pc', '', `Worked out from the ${srcName(plxFrom)} parallax`, 'COMPUTED'));
+          ent(`${name}distance (1000 / parallax)${k.dist.weak ? ', unreliable: parallax under 5× its error' : ''}`, +k.dist.pc.toFixed(k.dist.pc < 100 ? 3 : 0), 'pc', '', `Worked out from the ${srcName(plxFrom)} parallax`, 'COMPUTED'), 'x-only') +
+        row('Distance', `about ${k.dist.ly < 10 ? k.dist.ly.toFixed(1) : nf(Math.round(k.dist.ly), 0)} light years`, 'calc', null, 's-only');
       if (k.dist.weak) h += `<p class="quiet err">Parallax is only ${k.dist.snr.toFixed(1)}× its error (under 5×), so this distance and the speeds below are unreliable.</p>`;
     }
     if (k.vt != null) h += row('Speed across the sky', `${k.vt.toFixed(1)}${pm(k.vtErr, 1)} km/s`, 'calc',
-      ent(`${name}speed across the sky (4.74 × proper motion / parallax)`, +k.vt.toFixed(1), 'km/s', unc(k.vtErr), 'Worked out from catalogue values', 'COMPUTED'));
+      ent(`${name}speed across the sky (4.74 × proper motion / parallax)`, +k.vt.toFixed(1), 'km/s', unc(k.vtErr), 'Worked out from catalogue values', 'COMPUTED'), 'x-only') +
+      row('Speed across the sky', `about ${Math.round(k.vt)} km each second`, 'calc', null, 's-only');
     if (k.vr != null) h += row('Radial velocity', `${fsg(k.vr, 1)}${pm(rvFrom === gaia ? gaia.rvErr : null, 1)} km/s · ${k.vr < 0 ? 'towards us' : 'away from us'}`, 'cat',
-      ent(`${name}radial velocity (${k.vr < 0 ? 'towards us' : 'away from us'})`, +k.vr.toFixed(1), 'km/s', unc(rvFrom === gaia ? gaia.rvErr : null), srcName(rvFrom), 'CATALOGUE'));
+      ent(`${name}radial velocity (${k.vr < 0 ? 'towards us' : 'away from us'})`, +k.vr.toFixed(1), 'km/s', unc(rvFrom === gaia ? gaia.rvErr : null), srcName(rvFrom), 'CATALOGUE'), 'x-only') +
+      row('Speed towards or away from us', `about ${Math.round(Math.abs(k.vr))} km each second ${k.vr < 0 ? 'towards us' : 'away from us'}`, 'cat', null, 's-only');
     if (k.vtot != null) h += row('Speed through space', `${k.vtot.toFixed(1)} km/s`, 'calc',
-      ent(`${name}speed through space`, +k.vtot.toFixed(1), 'km/s', '', 'Worked out from catalogue values', 'COMPUTED'));
+      ent(`${name}speed through space`, +k.vtot.toFixed(1), 'km/s', '', 'Worked out from catalogue values', 'COMPUTED'), 'x-only') +
+      row('Speed through space', `about ${Math.round(k.vtot)} km each second`, 'calc', null, 's-only');
     if (k.uvw) { // Design §27 follow-up: these two rows live in the closed "More detail" disclosure
       const L = toLSR(k.uvw);
       more += row('Galactic U, V, W (relative to the Sun)', `${fx(k.uvw.U, 1)}, ${fx(k.uvw.V, 1)}, ${fx(k.uvw.W, 1)} km/s`, 'calc') +
@@ -819,14 +831,17 @@ function motionHTML(sel, t, cat, gaia, same, looking) {
     const used = usedText(V.motion, false) + detTxt, useAll = filterHides(V.motion) ? `<p class="quiet">${USE_ALL}</p>` : '';
     if (meas) {
       const val = sig ? `${m.toFixed(2)} ± ${me.toFixed(2)}″/yr` : `no significant motion (&lt; ${(V.motion.upperLimit / 1000).toFixed(2)}″/yr)`;
-      h += row('Measured in these images (SPHEREx)', `${val} · ${used}`, 'obs', nbMeasured()) + useAll;
-      if (k?.mu != null) h += `<p class="mot-cmp num">Catalogue ${k.arcsecYr.toFixed(2)}″/yr · measured here ${sig ? `${m.toFixed(1)} ± ${me.toFixed(1)}″/yr` : val}</p>`;
+      // Simple twin: the same verdict in words ("about 10 arcseconds a year"; "no significant motion" stays word for word)
+      h += row('Measured in these images (SPHEREx)', `${val} · ${used}`, 'obs', nbMeasured(), sig ? 'x-only' : '') +
+        (sig ? row('Measured in these images (SPHEREx)', `moves about ${plainArcsec(m)} a year · ${used}`, 'obs', null, 's-only') : '') + useAll;
+      if (k?.mu != null) h += `<p class="mot-cmp num x-only">Catalogue ${k.arcsecYr.toFixed(2)}″/yr · measured here ${sig ? `${m.toFixed(1)} ± ${me.toFixed(1)}″/yr` : val}</p>` +
+        `<p class="mot-cmp s-only">Star catalogue: about ${plainArcsec(k.arcsecYr)} a year · measured here: ${sig ? `about ${plainArcsec(m)} a year` : val}</p>`;
     } else {
       const nm = notMeasurableText(mc, V.motion);
       h += row('Measured in these images (SPHEREx)', nm.head, 'obs', nbMeasured());
       if (nm.note) h += `<p class="quiet">${nm.note}</p>`;
       h += useAll;
-      if (k?.mu != null) h += `<p class="mot-cmp num">Catalogue ${k.arcsecYr.toFixed(2)}″/yr · not measurable here</p>`;
+      if (k?.mu != null) h += `<p class="mot-cmp num x-only">Catalogue ${k.arcsecYr.toFixed(2)}″/yr · not measurable here</p><p class="mot-cmp s-only">Star catalogue: about ${plainArcsec(k.arcsecYr)} a year · not measurable here</p>`;
     }
     // a speed from the measured motion only when that motion is measurable and significant
     const vtm = sig && meas ? tangentialVelocity(V.motion.total, plxFrom?.plx) : null;
@@ -838,7 +853,7 @@ function motionHTML(sel, t, cat, gaia, same, looking) {
     if (plxFrom) parts.push(`parallax: ${srcName(plxFrom)}`);
     if (rvFrom) parts.push(`radial velocity: ${srcName(rvFrom)}`);
     h += `<p class="quiet mot-src">Catalogue values · ${parts.join(' · ')}${gaia && !cat ? ' (brightest Gaia star within 8″ of this point, epoch 2016)' : ''}.</p>` +
-      `<details class="mot-how"><summary>More detail</summary>${more}<p class="mot-how-h">How these are worked out</p><ul>
+      `<details class="mot-how x-only"><summary>More detail</summary>${more}<p class="mot-how-h">How these are worked out</p><ul>
         <li>Total proper motion μ = √(μα*² + μδ²); direction = position angle east of north.</li>
         <li>Pixel time: one SPHEREx pixel is 6.2″.</li>
         <li>Distance = 1000 / parallax (pc); not trusted when parallax &lt; 5× its error.</li>
@@ -855,9 +870,11 @@ function renderCD() {
   $('cdName').textContent = t ? t.name : 'Unnamed patch';
   $('cdSub').textContent = t ? t.id : 'Selected by you on the map';
   const g = toGalactic(s.ra, s.dec), e = toEcliptic(s.ra, s.dec), con = constellation(s.ra, s.dec);
-  $('cdPos').innerHTML = row('RA', `${R.fmtRA(s.ra)} · ${s.ra.toFixed(5)}°`, t ? 'cat' : 'calc') + row('Dec', `${R.fmtDec(s.dec)} · ${sgn(s.dec)}`, t ? 'cat' : 'calc') +
-    row('Galactic l, b', `${g.l.toFixed(4)}°, ${sgn(g.b)}`, 'calc') + row('Ecliptic λ, β', `${e.lon.toFixed(4)}°, ${sgn(e.lat)}`, 'calc') +
+  // RA/Dec (sexagesimal + degrees), galactic and ecliptic are Expert; Simple keeps the constellation and the "where to look" line
+  $('cdPos').innerHTML = row('RA', `${R.fmtRA(s.ra)} · ${s.ra.toFixed(5)}°`, t ? 'cat' : 'calc', null, 'x-only') + row('Dec', `${R.fmtDec(s.dec)} · ${sgn(s.dec)}`, t ? 'cat' : 'calc', null, 'x-only') +
+    row('Galactic l, b', `${g.l.toFixed(4)}°, ${sgn(g.b)}`, 'calc', null, 'x-only') + row('Ecliptic λ, β', `${e.lon.toFixed(4)}°, ${sgn(e.lat)}`, 'calc', null, 'x-only') +
     (con ? row('Constellation', esc(con.name), 'calc') : '') +
+    '<p class="quiet s-only">Sky coordinates (RA, Dec) are in Expert mode.</p>' +
     (t && cat && (cat.pmra || cat.pmdec) ? '<p class="quiet">Position shown for Nov 2026 (catalogue position moved along its proper motion).</p>' : '');
   // coverage: asked live from IRSA
   $('cdCov').innerHTML = '<p class="quiet">Asking IRSA what SPHEREx has here…</p>';
@@ -866,8 +883,11 @@ function renderCD() {
     if (ctl.signal.aborted) return;
     if (!imgs.length) { $('cdCov').innerHTML = '<p class="quiet">No SPHEREx images cover this point in the released data yet.</p>'; return; }
     const d = (m) => mjdToDate(m).toISOString().slice(0, 10), dets = [...new Set(imgs.map(i => i.detector))].sort();
-    $('cdCov').innerHTML = row('SPHEREx images', `${imgs.length.toLocaleString()} images`, 'obs') + row('Date span', `${d(imgs[0].mjdStart)} → ${d(imgs[imgs.length - 1].mjdStart)}`, 'obs') +
-      row('Detectors', dets.map(x => 'D' + x).join(', ') + ` · ${Math.min(...imgs.map(i => i.bandMinUm || 9)).toFixed(2)}–${Math.max(...imgs.map(i => i.bandMaxUm || 0)).toFixed(2)} µm`, 'obs');
+    const wl = `${Math.min(...imgs.map(i => i.bandMinUm || 9)).toFixed(2)}–${Math.max(...imgs.map(i => i.bandMaxUm || 0)).toFixed(2)} µm`;
+    const mon = m => { const x = mjdToDate(m); return `${MON[x.getUTCMonth()]} ${x.getUTCFullYear()}`; };
+    $('cdCov').innerHTML = row('SPHEREx images', `${imgs.length.toLocaleString()} images`, 'obs') + row('Date span', `${d(imgs[0].mjdStart)} → ${d(imgs[imgs.length - 1].mjdStart)}`, 'obs', null, 'x-only') +
+      row('Dates', `${mon(imgs[0].mjdStart)} to ${mon(imgs[imgs.length - 1].mjdStart)}`, 'obs', null, 's-only') +
+      row('Detectors', dets.map(x => 'D' + x).join(', ') + ` · ${wl}`, 'obs', null, 'x-only') + row('Infrared colours', `${wl} (light too red for the eye)`, 'obs', null, 's-only');
   }).catch(() => { if (!ctl.signal.aborted) $('cdCov').innerHTML = '<p class="quiet err">IRSA did not answer in 20 s. Click the spot again to retry.</p>'; });
   // motion (DESIGN.md 27): catalogue now (SIMBAD / built-in), Gaia DR3 when the Ghost's match arrives
   const pending = !t?.preset && GH.G.mStar, ms = { gaia: null, looking: !!pending };

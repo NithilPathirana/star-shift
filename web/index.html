@@ -51,7 +51,7 @@
       <button class="key pick">RW Aurigae</button>
       <button class="key pick">R Draconis</button>
     </div>
-    <div class="coords num"><span id="coordTxt"></span>
+    <div class="coords num x-only"><span id="coordTxt"></span>
       <button class="key copy" id="copyTop" aria-label="Copy coordinates"><svg class="cp" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5"/><path d="M3 10.5V3.5A1 1 0 0 1 4 2.5h6.5"/></svg><svg class="ok" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3.2 3L13 4.5"/></svg></button>
     </div>
     <div class="top-actions">
@@ -153,7 +153,7 @@
     </section>
     <section class="insp-sec">
       <div class="ih"><h3 id="ihead">This image</h3><span class="tag tag-obs">Observed</span></div>
-      <dl class="nb-dl"><dt>Date</dt><dd><span id="d-date"></span><button type="button" class="nb-plus" id="nbAdd" data-nb="date" aria-label="Add the image date to the lab notebook" title="Add to the lab notebook">+</button></dd><dt>Time</dt><dd id="d-time"></dd><dt>Detector</dt><dd id="d-det"></dd><dt>Wavelength</dt><dd><span id="d-um"></span><button type="button" class="nb-plus" data-nb="um" aria-label="Add the wavelength to the lab notebook" title="Add to the lab notebook">+</button></dd><dt>Band</dt><dd><span id="d-band"></span><button type="button" class="nb-plus" data-nb="band" aria-label="Add the wavelength band to the lab notebook" title="Add to the lab notebook">+</button></dd><dt>Flagged pixels</dt><dd><span id="d-mask"></span><button type="button" class="nb-plus" data-nb="mask" aria-label="Add the flagged-pixel count to the lab notebook" title="Add to the lab notebook">+</button></dd></dl>
+      <dl class="nb-dl"><dt>Date</dt><dd><span id="d-date"></span><button type="button" class="nb-plus" id="nbAdd" data-nb="date" aria-label="Add the image date to the lab notebook" title="Add to the lab notebook">+</button></dd><dt>Time</dt><dd id="d-time"></dd><dt class="x-only">Detector</dt><dd class="x-only" id="d-det"></dd><dt>Wavelength</dt><dd><span id="d-um"></span><button type="button" class="nb-plus" data-nb="um" aria-label="Add the wavelength to the lab notebook" title="Add to the lab notebook">+</button></dd><dt>Band</dt><dd><span id="d-band"></span><button type="button" class="nb-plus" data-nb="band" aria-label="Add the wavelength band to the lab notebook" title="Add to the lab notebook">+</button></dd><dt>Flagged pixels</dt><dd><span id="d-mask"></span><button type="button" class="nb-plus" data-nb="mask" aria-label="Add the flagged-pixel count to the lab notebook" title="Add to the lab notebook">+</button></dd></dl>
       <p class="note d-layer" id="d-layer" hidden></p>
     </section>
     <section class="insp-sec">
@@ -172,7 +172,7 @@
     </section>
     <section class="insp-sec">
       <details><summary>More detail</summary>
-        <dl><dt>Images</dt><dd id="d-n">—</dd><dt>MJD</dt><dd id="d-mjd"></dd><dt>Pixel size</dt><dd>6.15″</dd><dt>Measured motion</dt><dd><span id="d-meas">—</span><button type="button" class="nb-plus" data-nb="meas" aria-label="Add the measured motion to the lab notebook" title="Add to the lab notebook">+</button><button type="button" class="fl-link use-all" id="useAll" data-use-all hidden>Use all images (as on Proof)</button></dd><dt>Field</dt><dd id="d-field">150″ · north up</dd><dt>Stretch</dt><dd id="d-str">asinh 2–99.7%</dd></dl>
+        <dl><dt>Images</dt><dd id="d-n">—</dd><dt class="x-only">MJD</dt><dd class="x-only" id="d-mjd"></dd><dt class="x-only">Pixel size</dt><dd class="x-only">6.15″</dd><dt>Measured motion</dt><dd><span id="d-meas">—</span><button type="button" class="nb-plus" data-nb="meas" aria-label="Add the measured motion to the lab notebook" title="Add to the lab notebook">+</button><button type="button" class="fl-link use-all" id="useAll" data-use-all hidden>Use all images (as on Proof)</button></dd><dt class="x-only">Field</dt><dd class="x-only" id="d-field">150″ · north up</dd><dt class="x-only">Stretch</dt><dd class="x-only" id="d-str">asinh 2–99.7%</dd></dl>
       </details>
       <p class="credit" style="margin-top:12px">Images: NASA SPHEREx via the NASA/IPAC Infrared Science Archive (IRSA), DOIs <a href="https://doi.org/10.26131/IRSA652">10.26131/IRSA652</a>, <a href="https://doi.org/10.26131/IRSA662">10.26131/IRSA662</a>. Names and motions: SIMBAD (CDS, Harvard mirror). Stars on the sky: Hipparcos (ESA), new reduction (van Leeuwen 2007), via the ESA Gaia archive. 3D rendering: three.js (MIT). All code, including the UI sounds, was written by an AI model (Claude, by Anthropic) under team Proper Motion's direction. Not an official NASA site. Logo: AI-generated with ChatGPT; small-size version and favicon redrawn as SVG by Claude.</p>
     </section>
