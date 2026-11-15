@@ -17,7 +17,7 @@ const ORDER = ['spherex', 'wise', 'twomass'];
 
 export function createTelescopes(ctx) {
   const { $, V, P, esc } = ctx;
-  const T = { on: false, key: null, field: null, star: null, res: {}, ctl: null, off: {}, last: {} };
+  const T = { on: false, key: null, field: null, star: null, res: {}, ctl: null, sub: {}, ringAt: null, off: {}, last: {} };
   const root = $('tele'), panels = $('telePanels');
   // b10: a field wider than the viewer's cutout (Barnard: ~420″ vs 150″) leaves SPHEREx a small square in a dark
   // panel. When the flip-book is paused, one wider cutout of the image on screen (same 6.15″ pixels, ctx.wide)
@@ -50,7 +50,7 @@ export function createTelescopes(ctx) {
     panels.innerHTML = ORDER.map(id => `<figure class="tele-p" data-s="${id}">
       <div class="tele-box"><canvas role="img"></canvas><div class="tele-msg"></div></div>
       <figcaption class="tele-cap num"></figcaption><p class="tele-sub"></p></figure>`).join('');
-    panels.querySelectorAll('.tele-msg').forEach(m => m.addEventListener('click', (e) => { if (e.target.closest('.tele-retry')) start(true); }));
+    panels.querySelectorAll('.tele-msg').forEach(m => m.addEventListener('click', (e) => { if (e.target.closest('.tele-retry')) loadOne(m.closest('.tele-p').dataset.s); }));
   }
 
   // Field: holds the target at every survey date (1997-2001 window for 2MASS) with a margin.
@@ -76,14 +76,31 @@ export function createTelescopes(ctx) {
     T.key = key; T.field = fld; T.res = {}; T.off = {};
     // where the ring falls at a given date: 2MASS picks the tiles that really show the star then
     const star = motionStar(), fx = fixedPos();
-    const ringAt = (mjd) => positionsAt(star, fx, [Number.isFinite(mjd) ? mjd : NOMINAL.twomass])[0];
-    for (const id of ['wise', 'twomass']) {
-      T.res[id] = { state: 'loading' };
-      loadSurvey(SURVEYS[id], fld, { base: ctx.base, signal: ctl.signal, ringAt })
-        .then(r => { if (ctl.signal.aborted) return; T.res[id] = r.none ? { state: 'none' } : { state: 'ok', data: r }; draw(); })
-        .catch(e => { if (ctl.signal.aborted || e?.name === 'AbortError') return; T.res[id] = { state: 'error', why: e?.message || String(e) }; draw(); });
-    }
+    T.ringAt = (mjd) => positionsAt(star, fx, [Number.isFinite(mjd) ? mjd : NOMINAL.twomass])[0];
+    for (const id of ['wise', 'twomass']) loadOne(id, false);
     draw();
+  }
+
+  // One survey panel. IRSA outage (judging panel round 3: 45-75 s of 'Asking IRSA…', then a bare 'HTTP 502'):
+  // after the first busy answer (5xx, no connection) or 20 s with no answer the panel says so and offers
+  // Retry at once; the polite retries go on underneath, and an image that still arrives replaces the note.
+  const SLOW_MS = 20000;
+  function loadOne(id, redraw = true) {
+    const fld = T.field, parent = T.ctl; if (!fld || !parent || parent.signal.aborted) return;
+    T.sub[id]?.abort(); const c = T.sub[id] = new AbortController();
+    const signal = AbortSignal.any([parent.signal, c.signal]), dead = () => signal.aborted || T.sub[id] !== c;
+    const r = T.res[id] = { state: 'loading' };
+    const down = (why) => { if (dead() || T.res[id] !== r) return; r.state = 'down'; r.why = why; draw(); };
+    const timer = setTimeout(() => down('no answer in 20 s'), SLOW_MS);
+    loadSurvey(SURVEYS[id], fld, { base: ctx.base, signal, ringAt: T.ringAt, onBusy: (st) => down(st ? `HTTP ${st}` : 'no connection') })
+      .then(x => { if (dead()) return; T.res[id] = x.none ? { state: 'none' } : { state: 'ok', data: x }; draw(); })
+      .catch(e => {
+        if (dead() || e?.name === 'AbortError') return;
+        const st = e?.status; // a 5xx or no connection (0) is the outage; anything else says what went wrong
+        T.res[id] = { state: (st === 0 || st >= 500) && !/Upstream HTTP (4\d\d|500)/.test(e?.text || '') ? 'down' : 'error', why: e?.message || String(e), done: true }; draw();
+      })
+      .finally(() => clearTimeout(timer));
+    if (redraw) draw();
   }
 
   // Offscreen image in the survey's own pixels, stretched on its own (asinh 2-99.7%).
@@ -151,7 +168,7 @@ export function createTelescopes(ctx) {
       cv.style.width = cv.style.height = side + 'px'; fig.style.width = figW + 'px';
       const W = Math.round(side * dpr); if (cv.width !== W) { cv.width = W; cv.height = W; }
       const g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); hatch(g, W, W, dpr);
-      let pix = null, ok = false; msg.innerHTML = '';
+      let pix = null, ok = false; msg.innerHTML = ''; msg.style.cssText = '';
       if (id === 'spherex') {
         if (f && V.grid) {
           const w = wideFor(f), gr = w ? w.grid : V.grid, n = gr.n, off = offscreen(w ? 'spherexW' : 'spherex', w ? w.d : f.d, n, n);
@@ -172,6 +189,11 @@ export function createTelescopes(ctx) {
           }
           ok = true; pix = r.data.wcs.scaleArcsec;
         } else if (r.state === 'none') msg.innerHTML = '<b>No image of this patch</b>';
+        else if (r.state === 'down') {
+          // compact, so the note and Retry fit a 120 px panel (1366×640); a longer Expert note scrolls inside the panel
+          msg.style.cssText = 'gap:4px;padding:6px;justify-content:safe center;overflow:auto;pointer-events:auto';
+          msg.innerHTML = `<b style="font-size:.75rem;padding:2px 6px">IRSA's image service isn't answering right now</b>${x(`${r.done ? '' : 'Still asking. '}${esc(r.why)}`)}<button class="key tele-retry" type="button" style="min-height:24px;padding:2px 12px">Retry</button>`;
+        }
         else if (r.state === 'error') msg.innerHTML = `<b>IRSA did not answer</b><span>${esc(r.why)}</span><button class="key tele-retry" type="button">Retry</button>`;
         else msg.innerHTML = `<span class="tele-wait">Asking IRSA for the ${SURVEYS[id].name} image…</span>`;
       }

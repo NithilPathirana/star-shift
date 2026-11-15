@@ -55,15 +55,20 @@
     "ok": 96,
     "failed": 0
    },
-   "files": 229,
-   "mib": 12.89,
+   "files": 235,
+   "mib": 14.92,
    "kinds": {
     "gaia": 1,
-    "cutout": 216,
+    "cutout": 217,
+    "survey": 3,
     "jpl-sb_ident": 4,
-    "sia": 4,
+    "sia": 6,
     "tap": 1,
     "simbad": 3
+   },
+   "telescopes": {
+    "note": "'See 25 years of motion': 2MASS Ks and AllWISE W1 image lists and cutouts, and the wide SPHEREx cutout of the first image (tools/prebake_telescopes.mjs)",
+    "files": 6
    }
   },
   "eps-indi-b": {
@@ -357,8 +362,8 @@
   "note": "All JPL requests answered."
  },
  "totals": {
-  "files": 1157,
-  "mib": 65.55
+  "files": 1164,
+  "mib": 67.59
  },
  "entries": {
   "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.760098%2C%20-7.24221%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
@@ -366,6 +371,13 @@
    "size": 23096,
    "fetched": "2026-11-14T22:56:26.364Z",
    "kind": "gaia"
+  },
+  "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.167233%2C%2066.755024%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
+   "file": "r-dra/84b619b23848c106.csv",
+   "size": 9993,
+   "fetched": "2026-11-15T07:26:38.056Z",
+   "kind": "gaia",
+   "source": "Gaia DR3 via VizieR I/355/gaiadr3 (CDS catalogue, Harvard mirror), same columns and 0.0722° cone; ESA's Gaia archive returned 504 on 15 Nov 2026"
   },
   "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20269.446229%2C%204.768703%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
    "file": "barnard/55bb61544dbc2872.csv",
@@ -1074,6 +1086,13 @@
    "size": 54720,
    "fetched": "2026-11-14T12:02:42.687Z",
    "kind": "cutout"
+  },
+  "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/6/level2_2025W33_2C_0321_1D6_spx_l2b-v27-2026-228.fits?center=269.450240,4.727780d&size=0.1767": {
+   "file": "barnard/93d6283592037608.fits",
+   "size": 129600,
+   "fetched": "2026-11-15T08:17:37.938Z",
+   "kind": "cutout",
+   "source": "IRSA /ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/6/level2_2025W33_2C_0321_1D6_spx_l2b-v27-2026-228.fits (via the Star Shift relay), copied from the local relay cache for the Telescopes view"
   },
   "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/6/level2_2025W33_2C_0386_3D6_spx_l2b-v27-2026-228.fits?center=269.446350,4.767120d&size=0.0641": {
    "file": "barnard/d208fff3aceaf4a6.fits",
@@ -6865,6 +6884,27 @@
    "fetched": "2026-11-15T02:34:43.484Z",
    "kind": "cutout"
   },
+  "/ibe/data/twomass/allsky/allsky/000528n/s101/image/ki1010209.fits.gz?center=269.450245,4.727778&size=0.1651": {
+   "file": "barnard/af72e8df2318480a.fits",
+   "size": 411840,
+   "fetched": "2026-11-15T05:34:14.291Z",
+   "kind": "survey",
+   "source": "IRSA /ibe/data/twomass/allsky/allsky/000528n/s101/image/ki1010209.fits.gz (via the Star Shift relay), copied from the local relay cache for the Telescopes view"
+  },
+  "/ibe/data/twomass/allsky/allsky/000528n/s101/image/ki1010220.fits.gz?center=269.450245,4.727778&size=0.1651": {
+   "file": "barnard/5a541f07530e81a4.fits",
+   "size": 653760,
+   "fetched": "2026-11-14T17:23:39.641Z",
+   "kind": "survey",
+   "source": "IRSA /ibe/data/twomass/allsky/allsky/000528n/s101/image/ki1010220.fits.gz (via the Star Shift relay), copied from the local relay cache for the Telescopes view"
+  },
+  "/ibe/data/wise/allwise/p3am_cdd/26/2688/2688p045_ac51/2688p045_ac51-w1-int-3.fits?center=269.450245,4.727778&size=0.1651": {
+   "file": "barnard/bf43f4f17d0f8d82.fits",
+   "size": 760320,
+   "fetched": "2026-11-14T17:24:16.801Z",
+   "kind": "survey",
+   "source": "IRSA /ibe/data/wise/allwise/p3am_cdd/26/2688/2688p045_ac51/2688p045_ac51-w1-int-3.fits (via the Star Shift relay), copied from the local relay cache for the Telescopes view"
+  },
   "/jpl/sb_ident?obs-time=2025-05-06_02%3A40%3A54&fov-ra-center=08-55-02.16&fov-dec-center=M07-14-31.65&fov-ra-hwidth=0.03&fov-dec-hwidth=0.03&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500": {
    "file": "wise-0855/4def11d4506b5c59.json",
    "size": 558,
@@ -7171,6 +7211,20 @@
    "fetched": "2026-11-14T16:31:28.494Z",
    "kind": "sia"
   },
+  "/SIA?COLLECTION=twomass_allsky&POS=circle+269.450245+4.727778+0.0805&RESPONSEFORMAT=VOTABLE": {
+   "file": "barnard/101b0c32a26fbf89.xml",
+   "size": 93789,
+   "fetched": "2026-11-15T05:34:11.171Z",
+   "kind": "sia",
+   "source": "IRSA /SIA (via the Star Shift relay), copied from the local relay cache for the Telescopes view"
+  },
+  "/SIA?COLLECTION=wise_allwise&POS=circle+269.450245+4.727778+0.0010&RESPONSEFORMAT=VOTABLE": {
+   "file": "barnard/eaec08395c82cdb1.xml",
+   "size": 84866,
+   "fetched": "2026-11-15T05:34:00.790Z",
+   "kind": "sia",
+   "source": "IRSA /SIA (via the Star Shift relay), copied from the local relay cache for the Telescopes view"
+  },
   "/TAP/sync?FORMAT=csv&QUERY=SELECT%20a.uri%2C%20p.time_bounds_lower%2C%20p.time_bounds_upper%2C%20p.energy_bandpassname%2C%20p.energy_bounds_lower%2C%20p.energy_bounds_upper%2C%20p.obsid%2C%20p.quality_flag%20FROM%20spherex.artifact%20a%20JOIN%20spherex.plane%20p%20ON%20a.planeid%20%3D%20p.planeid%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20133.7600206105%2C%20-7.2422032066)%2C%20p.poly)%20ORDER%20BY%20p.time_bounds_lower": {
    "file": "wise-0855/06d2301a354c4aa4.csv",
    "size": 54335,
@@ -7296,13 +7350,6 @@
    "size": 1711,
    "fetched": "2026-11-15T06:29:24.718Z",
    "kind": "simbad"
-  },
-  "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.167233%2C%2066.755024%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
-   "file": "r-dra/84b619b23848c106.csv",
-   "size": 9993,
-   "fetched": "2026-11-15T07:26:38.056Z",
-   "kind": "gaia",
-   "source": "Gaia DR3 via VizieR I/355/gaiadr3 (CDS catalogue, Harvard mirror), same columns and 0.0722° cone; ESA's Gaia archive returned 504 on 15 Nov 2026"
   }
  }
 }

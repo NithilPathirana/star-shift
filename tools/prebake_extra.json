@@ -1,5 +1,13 @@
 {
- "about": "Requests a real browser load of each demo target made that tools/export_prebaked.mjs does not replay (read from performance entries, 15 Nov 2026): the viewer's 'other source' SIMBAD cone, whose brightest-pixel pick in the page differs from the Node replay for these two targets. AI-written (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.",
+ "about": "Requests a real browser load of each demo target made that tools/export_prebaked.mjs does not replay (read from performance entries, 15 Nov 2026): the viewer's 'other source' SIMBAD cone, whose brightest-pixel pick in the page differs from the Node replay for these two targets. AI-written (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. Barnard: the Telescopes hero's ('See 25 years of motion') 2MASS/AllWISE SIA lists and cutouts and the wide SPHEREx cutout of the first image, read from the page's requests at 1366x640 (15 Nov 2026); tools/prebake_telescopes.mjs adds them without a full export.",
  "rw-aur": ["https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%2076.96450928179365%2C%2030.396165045541625%2C%200.004166666666666667))"],
- "r-dra": ["https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.14992197891888%2C%2066.74989792026815%2C%200.004166666666666667))"]
+ "r-dra": ["https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.14992197891888%2C%2066.74989792026815%2C%200.004166666666666667))"],
+ "barnard": [
+  "/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/6/level2_2025W33_2C_0321_1D6_spx_l2b-v27-2026-228.fits?center=269.450240,4.727780d&size=0.1767",
+  "/SIA?COLLECTION=twomass_allsky&POS=circle+269.450245+4.727778+0.0805&RESPONSEFORMAT=VOTABLE",
+  "/SIA?COLLECTION=wise_allwise&POS=circle+269.450245+4.727778+0.0010&RESPONSEFORMAT=VOTABLE",
+  "/ibe/data/wise/allwise/p3am_cdd/26/2688/2688p045_ac51/2688p045_ac51-w1-int-3.fits?center=269.450245,4.727778&size=0.1651",
+  "/ibe/data/twomass/allsky/allsky/000528n/s101/image/ki1010209.fits.gz?center=269.450245,4.727778&size=0.1651",
+  "/ibe/data/twomass/allsky/allsky/000528n/s101/image/ki1010220.fits.gz?center=269.450245,4.727778&size=0.1651"
+ ]
 }

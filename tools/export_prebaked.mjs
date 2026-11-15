@@ -83,6 +83,7 @@ function kindOf(key) {
   if (key.startsWith('/SIA?')) return { kind: 'sia', ext: '.xml' };
   if (key.startsWith('/TAP/sync?')) return { kind: 'tap', ext: '.csv' };
   if (key.startsWith('/ibe/data/spherex/')) return { kind: 'cutout', ext: '.fits' };
+  if (/^\/ibe\/data\/(twomass|wise)\//.test(key)) return { kind: 'survey', ext: '.fits' }; // Telescopes (prebake_extra.json)
   if (key.startsWith('/gaia/tap/sync?')) return { kind: 'gaia', ext: '.csv' };
   if (key.startsWith('/jpl/sb_ident?')) return { kind: 'jpl-sb_ident', ext: '.json' };
   if (/^https:\/\/simbad\./.test(key)) return { kind: 'simbad', ext: '.csv' };

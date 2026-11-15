@@ -6,6 +6,8 @@ import { parseVOTable } from '../../core/irsa.js';
 import { scanHDUs, readImage } from '../../core/fits.js';
 import { linearWcs, twomassMeta, wiseMeta } from './geometry.js';
 import { tanProject, tanDeproject } from '../../core/wcs.js';
+// Barnard's 'See 25 years' requests are saved in web/prebaked/ (tools/prebake_telescopes.mjs): exact matches only
+import { prebakedFetch } from '../../core/prebaked.js';
 
 // Same exact patterns as the relay (proxy/worker.js SURVEY_PATHS): nothing else is asked for.
 export const SURVEYS = {
@@ -23,7 +25,8 @@ const sleep = (ms, signal) => new Promise((res, rej) => {
 const BUSY = new Set([429, 502, 503, 504]);
 
 // GET with up to 4 polite retries (2 s, 5 s, 10 s, 20 s) on "busy" answers and network errors.
-async function getRetry(url, { fetchFn = fetch, signal, waits = [2000, 5000, 10000, 20000] } = {}) {
+// onBusy(status) is told about each busy answer before the wait, so the page can say so at once.
+export async function getRetry(url, { fetchFn = fetch, signal, waits = [2000, 5000, 10000, 20000], onBusy } = {}) {
   for (let k = 0; ; k++) {
     let res = null, err = null;
     try { res = await fetchFn(url, { signal }); } catch (e) { if (e?.name === 'AbortError') throw e; err = e; }
@@ -32,15 +35,16 @@ async function getRetry(url, { fetchFn = fetch, signal, waits = [2000, 5000, 100
     // the relay answers 502 for any upstream failure; a real 4xx/500 upstream is not "busy"
     const busy = !res || (BUSY.has(res.status) && !/Upstream HTTP (4\d\d|500)\b/.test(text));
     if (!busy || k >= waits.length) throw Object.assign(new Error(res ? `HTTP ${res.status}` : String(err?.message || err)), { status: res?.status ?? 0, text });
+    onBusy?.(res?.status ?? 0);
     await sleep(waits[k], signal);
   }
 }
 
 // Candidate images of `survey` that contain (ra, dec), nearest image centre first.
 // Returns [] when the archive has none (that is "No image of this patch", not an error).
-export async function findImages(survey, ra, dec, { base, fetchFn, signal, radius = 0.001 } = {}) {
+export async function findImages(survey, ra, dec, { base, fetchFn, signal, radius = 0.001, onBusy } = {}) {
   const url = `${base}/SIA?COLLECTION=${survey.collection}&POS=circle+${(+ra).toFixed(6)}+${(+dec).toFixed(6)}+${(+radius).toFixed(4)}&RESPONSEFORMAT=VOTABLE`;
-  const xml = await (await getRetry(url, { fetchFn, signal })).text();
+  const xml = await (await getRetry(url, { fetchFn, signal, onBusy })).text();
   if (!xml.includes('<VOTABLE')) throw new Error('SIA: not a VOTable');
   return pickImages(parseVOTable(xml), survey, ra, dec);
 }
@@ -118,18 +122,18 @@ export function decodeSurvey(bytes, surveyId) {
 
 // The whole step for one survey: find, then fetch the nearest image that really covers the
 // field (IBE answers 500 "Cutout does not overlap image" for a tile edge; then try the next).
-export async function loadSurvey(survey, field, { base, fetchFn = fetch, signal, ringAt = null } = {}) {
+export async function loadSurvey(survey, field, { base, fetchFn = prebakedFetch, signal, ringAt = null, onBusy } = {}) {
   const sizeDeg = Math.min(0.25, field.sizeArcsec * 1.45 / 3600); // covers the corners at any small twist
   if (survey.mosaic) {
-    const r = await loadMosaic(survey, field, sizeDeg, { base, fetchFn, signal, ringAt });
+    const r = await loadMosaic(survey, field, sizeDeg, { base, fetchFn, signal, ringAt, onBusy });
     if (r) return r;
   }
-  const cands = await findImages(survey, field.ra0, field.dec0, { base, fetchFn, signal });
+  const cands = await findImages(survey, field.ra0, field.dec0, { base, fetchFn, signal, onBusy });
   if (!cands.length) return { none: true };
   let last = null;
   for (const c of cands.slice(0, 3)) {
     try {
-      const res = await getRetry(cutoutUrl(base, c.path, field.ra0, field.dec0, sizeDeg), { fetchFn, signal });
+      const res = await getRetry(cutoutUrl(base, c.path, field.ra0, field.dec0, sizeDeg), { fetchFn, signal, onBusy });
       const out = decodeSurvey(new Uint8Array(await res.arrayBuffer()), survey.id);
       return { ...out, path: c.path };
     } catch (e) { if (e?.name === 'AbortError') throw e; last = e; }
@@ -139,16 +143,16 @@ export async function loadSurvey(survey, field, { base, fetchFn = fetch, signal,
 
 // 2MASS: every tile of the best scan that the field needs (one night, so one date), each kept in
 // its own pixels with its own WCS. Null when the archive gives no footprints (then: nearest tile).
-async function loadMosaic(survey, field, sizeDeg, { base, fetchFn, signal, ringAt }) {
+async function loadMosaic(survey, field, sizeDeg, { base, fetchFn, signal, ringAt, onBusy }) {
   const radius = Math.min(0.1, field.sizeArcsec * Math.SQRT1_2 / 3600);
-  const cands = await findImages(survey, field.ra0, field.dec0, { base, fetchFn, signal, radius });
+  const cands = await findImages(survey, field.ra0, field.dec0, { base, fetchFn, signal, radius, onBusy });
   if (!cands.length) return { none: true };
   let last = null;
   for (const g of rankScans(cands, field, ringAt).slice(0, 2)) {
     const pieces = [];
     for (const c of g.tiles) {
       try {
-        const res = await getRetry(cutoutUrl(base, c.path, field.ra0, field.dec0, sizeDeg), { fetchFn, signal });
+        const res = await getRetry(cutoutUrl(base, c.path, field.ra0, field.dec0, sizeDeg), { fetchFn, signal, onBusy });
         pieces.push({ ...decodeSurvey(new Uint8Array(await res.arrayBuffer()), survey.id), path: c.path });
       } catch (e) { if (e?.name === 'AbortError') throw e; last = e; }
     }
