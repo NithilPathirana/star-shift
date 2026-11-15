@@ -11,7 +11,7 @@
 // Usage: (server running on 8787) node tools/make_proof.mjs
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { run, measureMotion, seasons, SYS_FLOOR_MASYR, MIN_MOTION_MASYR, motionDetectors, MASKED_CORE_FRAC } from '../web/app/data.js';
+import { run, measureMotion, seasons, SYS_FLOOR_MASYR, MIN_MOTION_MASYR, motionDetectors, MASKED_CORE_FRAC, apertureNeighbours } from '../web/app/data.js';
 import { PRESETS } from '../web/app/presets.js';
 import { DEFAULT_SETTINGS } from '../web/app/query.js';
 import { classifyFrame, visibleFrames, HIDE_IDS } from '../web/core/contam.js';
@@ -186,6 +186,22 @@ for (const p of PRESETS) {
   const m = dets ? motion(main, grid) : M.all;
   const spanYears = (frames[frames.length - 1].mjd - frames[0].mjd) / 365.25;
   const v = motionVerdict(m, cat.total, cat.err, m.ok ? m.span : spanYears, { pmra: cat.pmra, pmdec: cat.pmdec });
+  // For information only (the verdict above uses the standard method): if a still catalogued star sits inside the
+  // centroid circle, fit it out (data.js two-source PSF fit, neighbour at its Gaia position, PSF width measured on
+  // Epsilon Indi B; tools/neighbour_fit_experiment.mjs) and report what that gives. Never used for the verdict.
+  let blendFit = null;
+  try {
+    const man = JSON.parse(readFileSync(new URL('../web/prebaked/manifest.json', import.meta.url), 'utf8')).entries;
+    const hit = Object.values(man).find(e => e.kind === 'gaia' && e.file.startsWith(p.key + '/'));
+    const rows = hit ? parseCSV(readFileSync(new URL('../web/prebaked/' + hit.file, import.meta.url), 'utf8')) : [];
+    const srcs = rows.map(r => ({ id: r.source_id, ra: +r.ra, dec: +r.dec, pmra: +r.pmra || 0, pmdec: +r.pmdec || 0, g: +r.phot_g_mean_mag }));
+    const fitFrames = dets ? main : frames, nbs = apertureNeighbours(p.target, srcs, fitFrames.map(f => f.mjd), grid);
+    if (nbs.length && m.ok) {
+      const f = measureMotion(fitFrames, grid, { neighbours: nbs });
+      if (f.ok) blendFit = { value: Math.round(f.total), err: Math.round(f.totalErr), frames: f.frames, neighbours: nbs.length,
+        sigma: +((f.total - cat.total) / Math.hypot(f.totalErr, cat.err || 0)).toFixed(1) };
+    }
+  } catch (e) { console.warn(`  neighbour fit skipped: ${e.message}`); }
   // what the measurability rule counted: archive saturation flags, and fitted positions with a blanked centre
   const counts = { saturationFlag: saturated, images: frames.length, blanked: m.ok ? m.maskedFrames : null, fitted: m.ok ? m.frames : null, limitFrac: MASKED_CORE_FRAC };
   // where the floor comes from: this field's own stars (3 or more usable), else the minimum pooled over the five fields
@@ -220,7 +236,8 @@ for (const p of PRESETS) {
     const nb = extra.neighbours?.[0];
     limit = `Faint at short wavelengths: only the two longest bands (detectors 5–6, 3.8–5.0 µm) were used. With detectors 1–4 the fit gives ${M.short.ok ? `${fmtPm(M.short.total)} ± ${fmtPm(M.short.totalErr)}″/yr` : 'no track'}${nb ? `, because it locks on a background star (Gaia G ${nb.g}) ${nb.sepArcsec}″ away that does not move` : ', locking on light that does not move'}.`
       // Idea Generation / Master (Sun 15 Nov): the neighbour sits inside the measuring circle at every wavelength
-      + (nb ? ` That background star (${nb.sepArcsec}″ away, inside the measuring circle at every wavelength) also blends with it in the long bands; its steady light likely pulls the measured speed low (${fmtPm(m.total)} vs ${fmtPm(cat.total)}″/yr), so this value is a lower estimate.` : '');
+      + (nb ? ` That background star (${nb.sepArcsec}″ away, inside the measuring circle at every wavelength) also blends with it in the long bands; its steady light likely pulls the measured speed low (${fmtPm(m.total)} vs ${fmtPm(cat.total)}″/yr), so this value is a lower estimate.` : '')
+      + (blendFit ? ` For information: fitting that star out (a two-source fit with its Gaia position fixed and the star width measured on Epsilon Indi B) gives ${fmtPm(blendFit.value)} ± ${fmtPm(blendFit.err)}″/yr from ${blendFit.frames} images, ${blendFit.sigma >= 0 ? '+' : ''}${blendFit.sigma}σ from the catalogue; the verdict uses the standard method above.` : '');
   } else if (p.key === 'eps-indi-b') {
     try {
       const a = await resolveName('eps Ind');
@@ -299,6 +316,7 @@ for (const p of PRESETS) {
   targets.push({
     key: p.key, label: p.label, name: p.target.name, kind: KIND[p.key], otype: cat.otype, otypeText: OTYPE[cat.otype] || cat.otype,
     simbadLive: cat.live, viewer: `index.html?q=${encodeURIComponent(p.label)}&scene=viewer`,
+    ...(blendFit ? { blendFit } : {}),
     images: { archive: plan.total, planned: plan.planned, loaded: frames.length, failed, saturatedCore: saturated, flaggedNearStar: flagged,
       first: day(frames[0].mjd), last: day(frames[frames.length - 1].mjd), seasons: seasonList(frames) },
     extra, tests,
