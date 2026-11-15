@@ -23,6 +23,7 @@
 .observation-dates { color: var(--muted); font-size: .75rem; }
 .spotter-table td:nth-child(3) span, .spotter-table td:nth-child(3) small { display: block; }
 .spotter-table td:nth-child(3) small { color: var(--muted); }
+.spotter-table td:nth-child(2) small { display: block; color: var(--muted); } /* the exposure time under the date (Claude) */
 .spotter-actions { display: flex; justify-content: flex-end; gap: 6px; }
 .compact-key { min-height: 32px; padding-inline: 9px; white-space: nowrap; text-decoration: none; font-size: .75rem; }
 .threat-context { display: grid; gap: clamp(12px, 1.4vw, 20px); }

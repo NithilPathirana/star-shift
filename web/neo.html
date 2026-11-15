@@ -66,7 +66,7 @@
             <button class="key primary" type="submit">Check field</button>
           </form>
           <p class="default-field" id="spotter-default-note" hidden>Example field: SPHEREx imaged this patch on <span class="num">14 Dec 2025</span><span class="x-only"> (four exposures, <span class="num">08:28–08:37 UTC</span>, DR1 <span class="num">2025W50_2A_0717</span>)</span>. JPL predicts asteroid <strong>1354 Botha</strong> inside those images at <span class="num">V 16.6</span>, bright enough for SPHEREx to see. A prediction from its orbit, not a detection.</p>
-          <p class="observation-dates">SPHEREx observation dates checked: <span class="num x-only" id="spotter-dates"></span><span class="s-only" id="spotter-dates-plain"></span>.<span class="x-only"> Override with <span class="num">?dates=YYYY-MM-DD,…</span>.</span></p>
+          <p class="observation-dates">SPHEREx observation dates checked: <span class="num x-only" id="spotter-dates"></span><span class="s-only" id="spotter-dates-plain"></span>.<span class="x-only"> Override with <span class="num">?dates=YYYY-MM-DD,…</span>.</span><span id="spotter-times" hidden></span></p>
           <div class="state-banner" id="spotter-status" role="status">Preparing JPL field checks…</div>
           <div class="table-scroll">
             <table class="data-table spotter-table" id="spotter-table">
@@ -74,7 +74,7 @@
               <tbody></tbody>
             </table>
           </div>
-          <p class="panel-foot">Predictions use JPL Small-Body Identification at 12:00 UTC on each supplied observation date. A blank result means no known object was returned, not that no uncatalogued object was present.</p>
+          <p class="panel-foot">Predictions use JPL Small-Body Identification at the time SPHEREx imaged this field on each date (from IRSA’s image list of the field centre); on a date with no SPHEREx image of it, at 12:00 UTC, and the table says so. A blank result means no known object was returned, not that no uncatalogued object was present.</p>
         </section>
       </div>
 

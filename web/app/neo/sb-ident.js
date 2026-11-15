@@ -3,10 +3,11 @@
 const DEFAULT_DATES = Object.freeze(['2025-08-15', '2026-03-15', '2026-08-15']);
 
 // The page's example field (judging panel b7; AI-written code (Claude, Anthropic) for team Proper Motion,
-// NASA Space Apps 2026): main-belt asteroid 1354 Botha (V 16.6) on 14 Dec 2025, centred on JPL's
-// 12:00 UTC prediction. SPHEREx DR1 exposures 2025W50_2A_0717_1-4 (08:28-08:37 UTC, detectors 3 and 6)
-// cover Botha's predicted place at that time (IRSA SIA point query). The second date is the patch's
-// next SPHEREx season (QR3, 15 Jun 2026). tools/export_prebaked.mjs prebakes exactly this view.
+// NASA Space Apps 2026): main-belt asteroid 1354 Botha (V 16.6) on 14 Dec 2025. The centre is JPL's
+// 12:00 UTC place; at SPHEREx's exposure (DR1 2025W50_2A_0717_1-4, 08:28-08:37 UTC, detectors 3 and 6)
+// Botha is ~1.3′ from it (JPL Horizons: RA 0.54396, Dec -1.03513), which the page now uses
+// (exposureForDate below). The second date is the patch's next SPHEREx season (QR3, 15 Jun 2026).
+// tools/export_prebaked.mjs prebakes exactly this view (the field's SIA image list + JPL answers).
 export const NEO_DEFAULT_VIEW = Object.freeze({
   ra: 0.5622, dec: -1.0231, fov: 0.5,
   dates: Object.freeze(['2025-12-14', '2026-06-15']),
@@ -57,15 +58,76 @@ export function observationDates(value, fallback = DEFAULT_DATES) {
   return [...new Set(dates.length ? dates : fallback)];
 }
 
-/** Build one strict SB Identification request for an asteroid or comet pass. */
-export function buildSbIdentParams({ ra, dec, fov, date, kind, observer = 'mpc-500' }) {
+// ---- the time JPL is asked about: SPHEREx's own exposure of the field, not 12:00 UTC ----------
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+// A main-belt asteroid moves ~25″/h and a near-Earth one up to degrees a day, so a position for
+// 12:00 can sit far from where it was when SPHEREx took the picture (1354 Botha on 14 Dec 2025:
+// imaged 08:28-08:37 UTC, 1.3′ from its 12:00 place). For each date we take IRSA's image list of
+// the field centre, group the exposures into visits (exposures under VISIT_GAP_DAYS apart), pick
+// the visit with the most exposures (a tie: the one nearest 12:00 UTC), and use the exposure
+// nearest that visit's middle. Its mid-time is the JPL obs-time; its start + detector are the
+// viewer's ?mjd=&det= (the viewer matches an image's start within ~4 min). No image that day:
+// 12:00 UTC, and the page says so.
+export const VISIT_GAP_DAYS = 30 / 1440;
+const MJD_UNIX_EPOCH = 40587;
+export const mjdToIso = (mjd) => new Date(Math.round((mjd - MJD_UNIX_EPOCH) * 86400) * 1000).toISOString();
+// MJD (UTC) -> '2025-12-14_08:31:54' (JPL obs-time, to the second)
+export const mjdToJplTime = (mjd) => mjdToIso(mjd).slice(0, 19).replace('T', '_');
+const isoToMjd = (iso) => Date.parse(`${iso}Z`) / 86400000 + MJD_UNIX_EPOCH;
+
+export function exposureForDate(images, date) {
+  const noon = isoToMjd(`${date}T12:00:00`);
+  const byExposure = new Map();
+  for (const im of Array.isArray(images) ? images : []) {
+    if (!Number.isFinite(im?.mjdStart) || mjdToIso(im.mjdStart).slice(0, 10) !== date) continue;
+    const key = im.obsid || im.mjdStart.toFixed(6);
+    const e = byExposure.get(key) || { exposure: im.obsid || null, mjdStart: im.mjdStart, mjdEnd: Number.isFinite(im.mjdEnd) ? im.mjdEnd : im.mjdStart, detectors: [] };
+    if (Number.isInteger(im.detector) && !e.detectors.includes(im.detector)) e.detectors.push(im.detector);
+    byExposure.set(key, e);
+  }
+  const exposures = [...byExposure.values()].sort((a, b) => a.mjdStart - b.mjdStart);
+  if (!exposures.length) return { date, covered: false, mjd: noon, obsTime: `${date}_12:00:00`, visits: 0 };
+  const visits = [];
+  for (const e of exposures) {
+    const last = visits.at(-1)?.at(-1);
+    if (last && e.mjdStart - last.mjdStart <= VISIT_GAP_DAYS) visits.at(-1).push(e); else visits.push([e]);
+  }
+  const midOf = (v) => (v[0].mjdStart + Math.max(...v.map(e => e.mjdEnd))) / 2;
+  const visit = visits.reduce((best, v) => (v.length > best.length
+    || (v.length === best.length && Math.abs(midOf(v) - noon) < Math.abs(midOf(best) - noon)) ? v : best));
+  const mid = midOf(visit);
+  const centreOf = (e) => (e.mjdStart + e.mjdEnd) / 2;
+  const pick = visit.reduce((best, e) => (Math.abs(centreOf(e) - mid) < Math.abs(centreOf(best) - mid) ? e : best));
+  const detectors = [...pick.detectors].sort((a, b) => a - b);
+  return {
+    date, covered: true, mjd: centreOf(pick), obsTime: mjdToJplTime(centreOf(pick)),
+    exposure: pick.exposure, mjdStart: pick.mjdStart, detector: detectors[0] ?? null, detectors,
+    visit: { exposures: visit.length, mjdStart: visit[0].mjdStart, mjdEnd: Math.max(...visit.map(e => e.mjdEnd)) },
+    visits: visits.length,
+  };
+}
+
+// "Show in time-lapse": the viewer centred on JPL's place at that time, stopped on that exposure.
+export function timeLapseHref(ra, dec, time = null) {
+  const p = new URLSearchParams({ ra: (+ra).toFixed(6), dec: (+dec).toFixed(6), scene: 'viewer' });
+  if (time?.covered && Number.isFinite(time.mjdStart)) {
+    p.set('mjd', time.mjdStart.toFixed(5));
+    if (Number.isInteger(time.detector)) p.set('det', String(time.detector));
+  }
+  return `index.html?${p}`;
+}
+
+/** Build one strict SB Identification request for an asteroid or comet pass. obsTime: a full JPL
+ *  time ('2025-12-14_08:31:54', UTC) on that date; default 12:00 UTC. */
+export function buildSbIdentParams({ ra, dec, fov, date, kind, observer = 'mpc-500', obsTime = null }) {
   const width = finite(fov);
   if (width === null || width <= 0 || width > 20) throw new RangeError('FOV must be greater than 0 and at most 20 degrees');
   if (!observationDates([date], []).length) throw new TypeError('Observation date must be an ISO date');
   if (!['a', 'c'].includes(kind)) throw new TypeError('Small-body kind must be a or c');
+  if (obsTime !== null && !new RegExp(`^${date}_\\d{2}:\\d{2}:\\d{2}$`).test(obsTime)) throw new TypeError('obsTime must be YYYY-MM-DD_hh:mm:ss on the same date');
 
   const params = new URLSearchParams({
-    'obs-time': `${date}_12:00:00`,
+    'obs-time': obsTime || `${date}_12:00:00`,
     'fov-ra-center': raDegreesToJpl(ra),
     'fov-dec-center': decDegreesToJpl(dec),
     'fov-ra-hwidth': String(width / 2),

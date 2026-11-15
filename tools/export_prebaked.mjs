@@ -17,7 +17,8 @@
 //    when a field loads (Gaia + SIMBAD around the patch centre, JPL sb_ident for the whole patch
 //    in each blinked season), so any click in the patch is answered from these files;
 //  - Spectrum page (spectral.html): the same image list and its 0.03° cutouts (16 per detector, the default);
-//  - Asteroid page (neo.html): its default field and dates (6 sb_ident requests).
+//  - Asteroid page (neo.html): its default field's SIA image list (SPHEREx exposure times) and sb_ident
+//    for each default date and kind at that date's exposure time (neo/sb-ident.js exposureForDate).
 // The `hdus=5` cutouts (VARIANCE/ZODI) are fetched only when a user opens those layers: not saved.
 // JPL is asked politely: the relay's cached copy (any age) first; only if there is none, one live
 // request per URL (100 s budget). What JPL did not answer is listed in the manifest.
@@ -37,12 +38,12 @@ import { diskCache } from '../server/server.mjs';
 import { run, buildStacks, seasons } from '../web/app/data.js';
 import { PRESETS } from '../web/app/presets.js';
 import { DEFAULT_SETTINGS } from '../web/app/query.js';
-import { listImages, decodeCutout, setCompleteMode, fetchCutout } from '../web/core/irsa.js';
+import { listImages, listImagesSIA, decodeCutout, setCompleteMode, fetchCutout } from '../web/core/irsa.js';
 import { pickImages, CUTOUT_DEG } from '../web/app/spectral/logic.js';
 import { simbadCone } from '../web/app/skymap.js';
 import { fetchFieldStars, fetchFieldAsteroids } from '../web/app/spot/checks.js';
 import { LOAD_SETTINGS, fieldCentre } from '../web/app/spot/logic.js';
-import { buildSbIdentParams, NEO_DEFAULT_VIEW } from '../web/app/neo/sb-ident.js';
+import { buildSbIdentParams, NEO_DEFAULT_VIEW, exposureForDate } from '../web/app/neo/sb-ident.js';
 import { propagate } from '../web/core/motion.js';
 import { gridToWorld, worldToGrid } from '../web/core/align.js';
 import { prebakedKey } from '../web/core/prebaked.js';
@@ -220,15 +221,19 @@ async function spectrum(p, rec) {
   return { picked: picked.length, ok, failed };
 }
 
-// neo/spotter.js fetchIdentification() for the default view, both kinds, each default date.
+// neo/spotter.js fieldTimes() + fetchIdentification() for the default view: the field's SIA image
+// list, then both kinds for each default date at SPHEREx's exposure time that day (12:00 UTC if none).
 async function asteroidPage(rec) {
   const out = [];
+  const images = await listImagesSIA(NEO_VIEW.ra, NEO_VIEW.dec, { base: BASE, fetchFn: rec }).catch(e => { console.log(`  Asteroid page SIA: ${e.message}`); return null; });
   for (const date of NEO_DATES) for (const kind of ['a', 'c']) {
-    const base = { ...NEO_VIEW, date, kind };
+    const time = exposureForDate(images || [], date);
+    if (kind === 'a') console.log(`  ${date}: ${time.covered ? `${time.obsTime} UTC (${time.exposure} D${time.detector})` : '12:00 UTC (no SPHEREx image)'}`);
+    const base = { ...NEO_VIEW, date, kind, obsTime: time.obsTime };
     let res = await rec(`/jpl/sb_ident?${buildSbIdentParams(base)}`).catch(e => ({ ok: false, status: 0, error: e.message }));
     let observer = 'mpc-500';
     if (!res.ok) { observer = 'geocentric-state'; res = await rec(`/jpl/sb_ident?${buildSbIdentParams({ ...base, observer })}`).catch(e => ({ ok: false, status: 0, error: e.message })); }
-    out.push({ date, kind, ok: !!res.ok, observer: res.ok ? observer : null, error: res.ok ? null : (res.error || 'HTTP ' + res.status) });
+    out.push({ date, kind, obsTime: time.obsTime, exposure: time.exposure ?? null, ok: !!res.ok, observer: res.ok ? observer : null, error: res.ok ? null : (res.error || 'HTTP ' + res.status) });
     await res.arrayBuffer?.().catch(() => {});
   }
   return out;

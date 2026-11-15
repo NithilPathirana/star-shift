@@ -1,7 +1,9 @@
 // AI-written (OpenAI Codex) for Star Shift, NASA Space Apps 2026
 import {
   DEFAULT_DATES, NEO_DEFAULT_VIEW, buildSbIdentParams, observationDates, parseSbIdent, sbdbQuery,
+  exposureForDate, mjdToIso, timeLapseHref,
 } from './sb-ident.js';
+import { listImagesSIA } from '../../core/irsa.js'; // SPHEREx exposure times of the field (Claude)
 import { prebakedFetch } from '../../core/prebaked.js'; // the five demo targets answer from web/prebaked/ (Claude)
 import { SPHEREX_VISIBLE_V } from '../spot/logic.js'; // Spot's own faintness rule (Claude)
 import '../expert.js'; // Simple / Expert twins below: .x-only (RA/Dec, ISO dates, ″/h) and .s-only (plain words) (Claude)
@@ -64,6 +66,47 @@ function arcminFromCentre(ra, dec) { // small-angle distance from the field cent
   const r = Math.PI / 180, dra = ((ra - view.ra + 540) % 360 - 180) * Math.cos(view.dec * r);
   return Math.hypot(dra, dec - view.dec) * 60;
 }
+const arcminText = (sep) => `${sep < 10 ? sep.toFixed(1) : Math.round(sep)}′`;
+
+// The time each date's JPL positions are for (sb-ident.js exposureForDate): SPHEREx's exposure of
+// this field, from IRSA's image list of the field centre; 12:00 UTC when there is none that day
+// or IRSA does not answer, and the page says which. AI-written code (Claude, Anthropic) for team
+// Proper Motion, NASA Space Apps 2026.
+const SIA_MS = 20000;
+const hhmm = (mjd) => mjdToIso(mjd).slice(11, 16);
+async function fieldTimes(dates, signal) {
+  let images = null;
+  try {
+    images = await listImagesSIA(view.ra, view.dec, { base: location.origin, signal: AbortSignal.any([signal, AbortSignal.timeout(SIA_MS)]) });
+  } catch (error) {
+    if (signal.aborted) throw error;
+    console.warn('IRSA image list for the field failed:', error);
+  }
+  const missing = images?.missing?.length ? images.missing : null; // a release did not answer
+  return Object.fromEntries(dates.map(date => {
+    const time = exposureForDate(images || [], date);
+    if (!images || (missing && !time.covered)) time.unchecked = true;
+    return [date, time];
+  }));
+}
+function timeNote(time) { // [expert, simple] for under the date
+  if (time?.covered) return [`${mjdToIso(time.mjd).slice(11, 19)} UTC · ${time.exposure || 'SPHEREx'}${time.detector ? ` D${time.detector}` : ''}`, `SPHEREx image, ${hhmm(time.mjd)} UTC`];
+  if (time?.unchecked) return ['12:00 UTC (image times not checked)', '12:00 UTC (image times not checked)'];
+  return ['12:00 UTC (no SPHEREx image that day)', '12:00 UTC, no SPHEREx image that day'];
+}
+function renderTimes(times) {
+  const note = $('spotter-times');
+  if (!note) return;
+  const list = Object.values(times);
+  if (!list.length) { note.hidden = true; return; }
+  const plain = list.map(t => t.covered ? `${plainDay(t.date)} at ${hhmm(t.mjd)} UTC${t.visits > 1 ? ` (the longest of ${t.visits} visits that day)` : ''}`
+    : `${plainDay(t.date)}: ${t.unchecked ? 'IRSA did not answer, so 12:00 UTC' : 'no SPHEREx image of this field, so 12:00 UTC'}`);
+  const expert = list.map(t => t.covered ? `${t.date} ${mjdToIso(t.mjd).slice(11, 19)} UTC (${t.exposure || 'exposure'}${t.detector ? `, D${t.detector}` : ''}; visit of ${t.visit.exposures} exposure${t.visit.exposures === 1 ? '' : 's'}${t.visits > 1 ? `, longest of ${t.visits} that day` : ''})`
+    : `${t.date} 12:00 UTC (${t.unchecked ? 'IRSA image list not available' : 'no SPHEREx image covers the field centre'})`);
+  note.replaceChildren(document.createTextNode(' JPL positions are for the moment SPHEREx imaged this field: '),
+    ...twin(expert.join(' · '), plain.join(' · ')), document.createTextNode('.'));
+  note.hidden = false;
+}
 
 function coordinateToDegrees(value, isRa) {
   const match = /^([+\-]?)(\d+)[ :](\d+)[ :'](\d+(?:\.\d+)?)/.exec(String(value || '').replace(/[hms°′″"]/g, ':'));
@@ -72,8 +115,8 @@ function coordinateToDegrees(value, isRa) {
   return (match[1] === '-' ? -total : total) * (isRa ? 15 : 1);
 }
 
-async function fetchIdentification(date, kind, signal) {
-  const base = { ...view, date, kind };
+async function fetchIdentification(date, kind, signal, time = null) {
+  const base = { ...view, date, kind, obsTime: time?.obsTime ?? null };
   const first = await prebakedFetch(`/jpl/sb_ident?${buildSbIdentParams(base)}`, { signal });
   if (first.ok) return { rows: parseSbIdent(await first.json(), { date, kind }), retried: false };
 
@@ -101,12 +144,14 @@ function renderRows(rows) {
     object.dataset.label = 'Object';
     object.append(element('strong', '', item.name), element('small', '', item.kind === 'c' ? 'Comet' : 'Asteroid'));
     const date = element('td', 'num'); date.dataset.label = 'Date';
-    date.append(...twin(item.date || '—', plainDay(item.date)));
+    const [xTime, sTime] = timeNote(item.time);
+    date.append(...twin(item.date || '—', plainDay(item.date)), element('small', 'x-only', xTime), element('small', 's-only', sTime));
     const position = element('td', 'num'); position.dataset.label = 'Predicted position';
     const raDeg = coordinateToDegrees(item.ra, true), decDeg = coordinateToDegrees(item.dec, false);
     const sep = arcminFromCentre(raDeg, decDeg);
     position.append(element('span', 'x-only', raDeg === null ? (item.ra || '—') : fmtRA(raDeg)), element('small', 'x-only', decDeg === null ? (item.dec || '—') : fmtDec(decDeg)),
-      element('span', 's-only', sep === null ? 'inside the field' : `${Math.round(sep)}′ from the centre`));
+      element('span', 's-only', sep === null ? 'inside the field' : `${arcminText(sep)} from the centre`));
+    if (sep !== null) position.title = `${arcminText(sep)} from the field centre ${item.time?.covered ? 'when SPHEREx took the image' : 'at 12:00 UTC'}`;
     const magnitude = element('td', 'num', item.visualMagnitude === null ? '—' : `${item.visualMagnitude.toFixed(1)} mag`);
     magnitude.dataset.label = 'V magnitude';
     if (item.visualMagnitude === null) magnitude.title = 'JPL did not report a visual magnitude';
@@ -125,9 +170,8 @@ function renderRows(rows) {
     // Too faint: the key still opens the patch, but says so instead of promising the object (Claude)
     const timeLapse = element('a', 'key compact-key', tooFaint ? 'Show the patch' : 'Show in time-lapse');
     if (tooFaint) timeLapse.title = `Opens this patch in the time-lapse. ${item.name} is ${faintText}, so it will not show in the images.`;
-    timeLapse.href = ra === null || dec === null
-      ? `index.html?ra=${view.ra}&dec=${view.dec}&scene=viewer`
-      : `index.html?ra=${ra.toFixed(6)}&dec=${dec.toFixed(6)}&scene=viewer`;
+    // centred on JPL's place at the exposure time, opening on that exposure (?mjd=&det=)
+    timeLapse.href = ra === null || dec === null ? timeLapseHref(view.ra, view.dec, item.time) : timeLapseHref(ra, dec, item.time);
     const add = element('button', 'key compact-key', 'Add to comparison');
     add.type = 'button';
     add.addEventListener('click', () => {
@@ -192,12 +236,16 @@ async function loadSpotter() {
   const slow = setTimeout(() => {
     if (currentRun === run) spotterStatus('NASA/JPL isn’t answering yet. A field nobody has asked about can take a minute or two; still waiting.', true, true);
   }, SLOW_MS);
-  let results;
+  let results, times;
   try {
-    results = await Promise.allSettled(dates.flatMap(date => ['a', 'c'].map(kind => fetchIdentification(date, kind, signal))));
+    times = await fieldTimes(dates, signal);
+    if (currentRun !== run) return;
+    renderTimes(times);
+    results = await Promise.allSettled(dates.flatMap(date => ['a', 'c'].map(kind => fetchIdentification(date, kind, signal, times[date]))));
   } finally { clearTimeout(slow); }
   if (currentRun !== run) return; // Retry started a newer run
   const rows = results.flatMap(result => result.status === 'fulfilled' ? result.value.rows : []);
+  for (const item of rows) item.time = times[item.date] || null;
   const failures = results.filter(result => result.status === 'rejected').map(result => result.reason?.message || String(result.reason));
   const retried = results.filter(result => result.status === 'fulfilled' && result.value.retried).length;
   // by date, then brightest first (no magnitude last), so what SPHEREx could see leads (b7, Claude)
