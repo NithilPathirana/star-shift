@@ -181,7 +181,7 @@ function render(d) {
     + `<p class="pf-rule-note">σ is the measurement's uncertainty, with the catalogue's added. For motion it is the scatter of the image positions plus a systematic floor in each direction: the field stars' own floor where 3 or more are usable in the patch, otherwise ${arcs(d.settings.sysFloorMasYr)}″/yr, measured on the field stars of all five patches together. Each row says which. A result that looks bad stays in the table with its reason.</p>`;
   let rows = '', k = 0;
   for (const target of d.targets) {
-    rows += `<tbody class="pf-group">`;
+    rows += `<tbody class="pf-group" id="${esc(target.key)}">`; // proof.html#barnard (the viewer's 'How we know →')
     target.tests.forEach((t, i) => {
       const id = `ev${k++}`;
       rows += `<tr class="pf-row" data-ev="${id}">
@@ -196,6 +196,7 @@ function render(d) {
     rows += `</tbody>`;
   }
   const tb = $('rows'); tb.insertAdjacentHTML('beforebegin', rows); tb.remove();
+  { const h = location.hash.slice(1), el = h && document.getElementById(decodeURIComponent(h)); if (el?.classList.contains('pf-group')) requestAnimationFrame(() => el.scrollIntoView({ block: 'start' })); }
   document.querySelectorAll('.pf-row').forEach(r => {
     const btn = r.querySelector('.pf-open'), ev = document.getElementById(r.dataset.ev);
     const toggle = () => { const open = ev.hidden; ev.hidden = !open; btn.setAttribute('aria-expanded', String(open)); r.classList.toggle('pf-on', open); };
