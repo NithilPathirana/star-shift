@@ -475,7 +475,9 @@ function load(query, label) {
       const held = Number.isFinite(holdMjd) && V.F.length > 0;
       if (held) { const m = holdMjd; holdMjd = null; let b = 0; V.F.forEach((f, k) => { if (Math.abs(f.mjd - m) < Math.abs(V.F[b].mjd - m)) b = k; }); P.pause(); P.set(b, true); }
       onFrame(P.i); Snd.play('confirm');
-      toast(V.failed ? `${V.F.length} images are in. ${V.failed} couldn't be fetched (IRSA busy); Retry later fills them.` : `All ${V.F.length} images are in.`);
+      // V.FA = every image loaded; V.F = the ones the user's flag filter keeps (QA, Sun: say so, so the counts match Proof)
+      const hid = V.FA.length - V.F.length, hidTxt = hid > 0 ? ` ${hid} hidden by your flag filter (FLAGS ▾ to change).` : '';
+      toast(V.failed ? `${V.FA.length} images are in.${hidTxt} ${V.failed} couldn't be fetched (IRSA busy); Retry later fills them.` : `All ${V.FA.length} images are in.${hidTxt}`);
       setTimeout(() => { if (!set.motion && !P.playing && !held) P.play(); }, leaveWait);
     } else if (e.type === 'ERROR' || e.type === 'NOT_FOUND') {
       V.status = 'error'; $('thin').hidden = true;
