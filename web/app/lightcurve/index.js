@@ -22,6 +22,8 @@ const emptyWhy = (g) => (!g.total ? 'no images at these wavelengths'
   : g.absent ? 'not detected here'
   : g.masked === g.total ? `a masked pixel within ${AP_ARCSEC}″ in every image`
   : g.masked ? `a masked pixel within ${AP_ARCSEC}″ in ${g.masked} of ${g.total} images` : 'no first-season match');
+// inside the plot (one SVG line, it cannot wrap): the short form; the full sentence is the line's tooltip and the text under the chart
+const plotWhy = (g) => (g.total && !g.absent && g.masked ? (g.masked === g.total ? 'masked in every image' : `masked in ${g.masked} of ${g.total} images`) : emptyWhy(g));
 const WHERE = { short: 'below 3.8 µm', long: 'at 3.8–5.0 µm' }; // the group's range, for "WISE 0855 is too faint below 3.8 µm"
 const fmtJy = (v) => (v == null ? '—' : v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2));
 
@@ -132,7 +134,7 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick })
       if (grp.points.length) for (let k = 1; k < seasons.length; k++) g += brk(seasons[k].x0 - sg / 2, Y(0));
       const tk = Math.abs(hi) >= 0.5 || Math.abs(lo) >= 0.5 ? 1 : 2;
       if (grp.points.length) g += `<text x="${L - 5}" y="${y0 + 9}" class="lc-ax" text-anchor="end">${fmtMag(lo, tk)}</text><text x="${L - 5}" y="${y1}" class="lc-ax" text-anchor="end">${fmtMag(hi, tk)}</text>`;
-      if (!grp.points.length) g += `<text x="${(L + W - Rr) / 2}" y="${y0 + rowH / 2 + 4}" class="lc-ax" text-anchor="middle">${esc(emptyWhy(grp))}</text>`;
+      if (!grp.points.length) g += `<text x="${(L + W - Rr) / 2}" y="${y0 + rowH / 2 + 4}" class="lc-ax" text-anchor="middle"><title>${esc(emptyWhy(grp))}</title>${esc(plotWhy(grp))}</text>`;
       for (const s of grp.bySeason) g += `<line x1="${X(s.from) - 4}" x2="${X(s.to) + 4}" y1="${Y(s.dm)}" y2="${Y(s.dm)}" class="lc-mean"/>`;
       for (const p of grp.points) {
         const x = X(p.mjd), y = Y(p.dm), c = esc(colourOf(p.wl) || '#B5A898');
