@@ -69,7 +69,7 @@ function measuredCell(t, target) {
   }
   if (!m) return DASH('Not measurable: see the limits column');
   return m.groups.map(g => g.ok
-    ? `<span class="num pf-line">${X(`${sgn(g.value)} ± ${g.err.toFixed(2)} mag`)}${Sm(`${Math.abs(g.value).toFixed(1)} mag`)} <span class="dim">${g.value > 0 ? 'fainter' : 'brighter'}</span></span>${X(`${esc(g.name)} · ${g.frames} images`, 'small', 'num')}${Sm(`at ${esc(plainGroup(g.name))}`, 'small')}`
+    ? `<span class="num pf-line">${X(`${sgn(g.value)} ± ${g.err.toFixed(2)} mag`)}${Sm(`${Math.abs(g.value).toFixed(2)} ± ${g.err.toFixed(2)} mag`)} <span class="dim">${g.value > 0 ? 'fainter' : 'brighter'}</span>${g.sigma != null ? ` · ${g.sigma}σ` : ''}</span>${X(`${esc(g.name)} · ${g.frames} images`, 'small', 'num')}${Sm(`at ${esc(plainGroup(g.name))}`, 'small')}`
     : `<span class="pf-line">${DASH('Too few usable images in this wavelength group')}</span><small class="num">${esc(g.name)}</small>`).join('');
 }
 function diffCell(t) {
