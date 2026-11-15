@@ -6,7 +6,8 @@
 // stage; click or tap a point to jump to that image; arrow keys step between plotted images.
 // The numbers come from logic.js (same method as the Proof page).
 
-import { measure, lightcurve, message, skippedText, fmtMag, CAPTION } from './logic.js';
+import { measure, lightcurve, message, skippedText, fmtMag, CAPTION, lightOnSky, pickSource, pickSaved, notHereText, saturatedNote, BLEND_RADIUS } from './logic.js';
+import { gaiaCone } from '../../core/resolve.js';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const mjdDate = (m) => new Date((m - 40587) * 864e5);
@@ -18,6 +19,7 @@ const seasonLbl = (s) => { // 'Sep 25', 'Feb–Mar 26', 'Dec 25–Jan 26'
 };
 const SHAPE = { short: 'circle', long: 'square' };
 const emptyWhy = (g) => (!g.total ? 'no images at these wavelengths'
+  : g.absent ? 'not detected here'
   : g.masked === g.total ? 'centre masked in every image'
   : g.masked ? `centre masked in ${g.masked} of ${g.total} images` : 'no first-season match');
 const fmtJy = (v) => (v == null ? '—' : v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2));
@@ -35,15 +37,47 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick })
     if (key === S.key) return;
     S.key = key; S.frames = frames; S.rows = measure(frames, grid);
     S.lc = lightcurve(S.rows);
+    for (const g of S.lc.groups) if (g.absent) g.sky = lightOnSky(g.detect, grid);
     render();
+    explain(key);
+  }
+
+  // a3: a group whose light is centred on another source: ask Gaia (through our relay) what is
+  // there, and name it. Without an answer the row still says "Not detected here".
+  const gaiaCache = new Map();
+  async function explain(key) {
+    for (const g of S.lc?.groups || []) {
+      if (!g.absent || g.detect?.state !== 'offset' || !g.sky) continue;
+      const [ra, dec] = g.sky.light, ck = `${ra.toFixed(5)},${dec.toFixed(5)}`;
+      let src = null;
+      try {
+        if (!gaiaCache.has(ck)) gaiaCache.set(ck, gaiaCone(ra, dec, BLEND_RADIUS, { endpoint: `${location.origin}/gaia/tap/sync`, top: 10, signal: AbortSignal.timeout(15000) }));
+        src = pickSource(await gaiaCache.get(ck), g.sky);
+      } catch { gaiaCache.delete(ck); src = pickSaved(await savedNeighbours(S.name), g.sky); }
+      if (S.key !== key) return; // another target since
+      if (src) { g.src = src; render(); }
+    }
+  }
+  let proofP = null;
+  async function savedNeighbours(name) {
+    proofP ||= fetch(new URL('../../data/proof.json', import.meta.url)).then(r => (r.ok ? r.json() : null)).catch(() => null);
+    const t = (await proofP)?.targets?.find(q => q.name === name || q.label === name);
+    return t?.extra?.neighbours || [];
   }
 
   function mark(i) { S.cur = i; paint(); }
 
   function render(waitText) {
     const lc = S.lc;
+    plot.hidden = false; if (cap) cap.hidden = false;
     if (!lc) { plot.innerHTML = waitText ? `<p class="lc-msg">${esc(waitText)}</p>` : ''; read.textContent = ''; sum.innerHTML = ''; S.geo = null; return; }
     const msg = message(lc, S.name);
+    const sat = saturatedNote(lc, S.name);
+    if (sat) { // a9: one sentence and where to go instead, no empty chart (and no caption about its dots)
+      plot.innerHTML = ''; plot.hidden = true; if (cap) cap.hidden = true; read.textContent = ''; S.geo = null;
+      sum.innerHTML = `<p class="lc-row lc-sat" style="display:block;margin:0;line-height:1.45">${esc(sat.text)} ${sat.links.map(l => `<a href="${esc(l.href)}">${esc(l.text)}</a>`).join(' · ')}</p>`;
+      return;
+    }
     if (lc.status !== 'ok') {
       plot.innerHTML = `<p class="lc-msg">${esc(msg)}</p>`;
       read.textContent = ''; S.geo = null;
@@ -51,7 +85,8 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick })
       return;
     }
     sum.innerHTML = lc.groups.map(g => {
-      const v = g.ok ? `<b>${fmtMag(g.dmag)} ± ${g.dmagErr.toFixed(2)} mag</b> ${g.dmag > 0 ? 'fainter' : 'brighter'}` : g.points.length ? 'too few images to compare seasons' : emptyWhy(g);
+      const v = g.ok ? `<b>${fmtMag(g.dmag)} ± ${g.dmagErr.toFixed(2)} mag</b> ${g.dmag > 0 ? 'fainter' : 'brighter'}` : g.points.length ? 'too few images to compare seasons'
+        : g.absent ? esc(notHereText(g.detect, g.sky, g.src)) : emptyWhy(g);
       return `<div class="lc-row"><span class="lc-k"><i class="lc-mk lc-${SHAPE[g.id]}" aria-hidden="true"></i>${esc(g.name)}</span><span class="lc-v num">${v}${g.points.length ? `<small>${g.ok ? 'last season vs first · ' : ''}${g.points.length} image${g.points.length === 1 ? '' : 's'}</small>` : ''}</span></div>`;
     }).join('') + `<p class="lc-skip num">${esc(skippedText(lc))}</p>`;
     draw();
