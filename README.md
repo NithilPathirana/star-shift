@@ -78,7 +78,7 @@ the image queries (`web/core/irsa.js`) and every credit line use it (`tests/rele
   products from the Spectro-Photometer for the History of the Universe, Epoch of Reionization and Ices
   Explorer (SPHEREx), which is a joint project of the Jet Propulsion Laboratory and the California
   Institute of Technology, and is funded by the National Aeronautics and Space Administration."
-- **Gaia DR3**: ESA Gaia mission and DPAC (Gaia Collaboration, Vallenari et al. 2023, DOI 10.1051/0004-6361/202243940).
+- **Gaia DR3**: ESA Gaia mission and DPAC (Gaia Collaboration, Vallenari et al. 2023, DOI 10.1051/0004-6361/202243940). Queried live from ESA's Gaia archive; the pre-saved R Draconis field list comes from the VizieR copy of Gaia DR3 (catalogue I/355/gaiadr3, CDS Strasbourg, via its Harvard mirror), same columns and cone, because ESA's archive was unreachable when it was saved (15 Nov 2026).
 - **SIMBAD** astronomical database, CDS, Strasbourg (Wenger et al. 2000, DOI 10.1051/aas:2000332); asked through the Harvard mirror.
 - **JPL Solar System Dynamics** (NASA/JPL): Small-Body Identification API, Small-Body Database, Horizons,
   and "Approximate Positions of the Planets" (E. M. Standish).

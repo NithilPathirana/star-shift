@@ -227,8 +227,14 @@ export async function run(query, settings, { base, fetchFn = prebakedFetch, sign
 // Returns { ok, frames, span, pmra, pmdec, pmraErr, pmdecErr, total, totalErr, seeded, points,
 //   statErr, sysErr, refStars, fit, significant, floor, upperLimit }. totalErr/pmraErr/pmdecErr
 //   include the systematic floor; statErr is the statistical part alone.
+// Optional, OFF by default (experiment, not used by the viewer or the Proof page): `neighbours`,
+// catalogued still sources inside the measuring circle (apertureNeighbours below). Each image's
+// position then comes from a two-source PSF fit with the neighbours held at their catalogue
+// positions (blendFit below) instead of the light centre, whose pull toward a still neighbour
+// biases the motion low. `psfSigma`: PSF width per detector (px), PSF_SIGMA_PX by default.
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
-export function measureMotion(frames, grid, { radius = 3.5, minSnr = 5, minFrames = 6, gate = 2, searchRadius = 5, seedDays = 60 } = {}) {
+export function measureMotion(frames, grid, { radius = 3.5, minSnr = 5, minFrames = 6, gate = 2, searchRadius = 5, seedDays = 60, neighbours = null, psfSigma = PSF_SIGMA_PX } = {}) {
+  const nbs = Array.isArray(neighbours) && neighbours.length ? neighbours : null;
   const fs = (frames || []).filter(f => f && f.data && Number.isFinite(f.mjd)).slice().sort((a, b) => a.mjd - b.mjd);
   if (fs.length < minFrames) return { frames: 0, ok: false, reason: 'too few frames' };
   // 1. seed position from the first season's median stack
@@ -271,7 +277,10 @@ export function measureMotion(frames, grid, { radius = 3.5, minSnr = 5, minFrame
   for (const f of fs) {
     const t = mjdToEpochYear(f.mjd);
     const [sx, sy] = predict(t);
-    const c = centroid(f, sx, sy, radius);
+    const c = nbs
+      ? blendFit(f, sx, sy, radius, nbs.map(s => { const q = propagate({ epoch: 2016, ...s }, f.mjd); return worldToGrid(grid, q.ra, q.dec); }),
+        typeof psfSigma === 'number' ? psfSigma : psfSigma?.[f.detector] ?? PSF_SIGMA_PX[6])
+      : centroid(f, sx, sy, radius);
     if (!c || !(c.snr > minSnr) || Math.hypot(c.x - sx, c.y - sy) > gate) continue;
     acc.push(trackPoint(f, grid, c, t, f.plxShift));
   }
@@ -301,6 +310,7 @@ export function measureMotion(frames, grid, { radius = 3.5, minSnr = 5, minFrame
     significant: total >= 3 * totalErrFull && total >= MIN_MOTION_MASYR,
     floor: Math.max(3 * totalErrFull, MIN_MOTION_MASYR), upperLimit: Math.max(total + 2 * totalErrFull, MIN_MOTION_MASYR),
     seeded, rejected: acc.length - T.pts.length,
+    ...(nbs ? { neighbourFit: { n: nbs.length, ids: nbs.map(s => s.id ?? null) } } : {}),
     // for the measurability rule (motionMeasurability below): images given to the fit, and how
     // many of the fitted positions came from an image with a blanked (saturated/masked) core
     inputFrames: fs.length, maskedFrames,
@@ -500,6 +510,115 @@ export function fieldFloor(fs, grid, track, { radius, minSnr, minFrames, maxStar
   }
   if (!mus.length) return { n: 0, sys: null, motions: [] };
   return { n: mus.length / 2, sys: solveFloor(mus), motions: mus };
+}
+
+// ---- Still-neighbour option for measureMotion (OFF by default; tools/neighbour_fit_experiment.mjs) ----
+// PSF width per detector: σ (px on the 6.15″ display grid) of a pixel-integrated Gaussian, the median
+// of per-image fits to Epsilon Indi B (isolated point source, images with no blanked pixel within
+// 2 px, 8-29 images per detector; 15 Nov 2026): FWHM 1.2-1.6 px, widest at the longest wavelengths.
+export const PSF_SIGMA_PX = { 1: 0.59, 2: 0.51, 3: 0.54, 4: 0.61, 5: 0.65, 6: 0.69 };
+
+// Catalogued sources (e.g. gaiaCone rows: ra, dec, pmra, pmdec, epoch) that do not move with the
+// target (own motion < stillMasYr) and come within `radius` px of its catalogue track in at least one
+// image. Only for a moving target (≥ MIN_MOTION_MASYR): a still neighbour of a still target cannot
+// bias a motion, and the target itself (moving) is never "still".
+// AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
+export function apertureNeighbours(target, sources, mjds, grid, { radius = 3.5, stillMasYr = 100 } = {}) {
+  if (!(Math.hypot(target?.pmra || 0, target?.pmdec || 0) >= MIN_MOTION_MASYR)) return [];
+  return (sources || []).filter(s => Number.isFinite(s?.ra) && Number.isFinite(s?.dec) && Math.hypot(s.pmra || 0, s.pmdec || 0) < stillMasYr && mjds.some(m => {
+    const a = propagate(target, m), b = propagate({ epoch: 2016, ...s }, m);
+    const [ax, ay] = worldToGrid(grid, a.ra, a.dec), [bx, by] = worldToGrid(grid, b.ra, b.dec);
+    return Math.hypot(ax - bx, ay - by) <= radius;
+  }));
+}
+
+const erf = (x) => { // Abramowitz & Stegun 7.1.26 (|error| < 1.5e-7)
+  const t = 1 / (1 + 0.3275911 * Math.abs(x));
+  const y = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return x >= 0 ? y : -y;
+};
+// share of a unit Gaussian (σ = s) falling in the pixel whose centre is d px from its centre (one axis)
+const pixShare = (d, s) => 0.5 * (erf((d + 0.5) / (Math.SQRT2 * s)) - erf((d - 0.5) / (Math.SQRT2 * s)));
+
+// Linear least squares for the fluxes: normal equations by Gaussian elimination (≤ a few unknowns).
+function solveSmall(A, b) {
+  const n = b.length, M = A.map((r, i) => [...r, b[i]]);
+  for (let k = 0; k < n; k++) {
+    let p = k;
+    for (let i = k + 1; i < n; i++) if (Math.abs(M[i][k]) > Math.abs(M[p][k])) p = i;
+    [M[k], M[p]] = [M[p], M[k]];
+    if (!(Math.abs(M[k][k]) > 1e-12)) return null;
+    for (let i = k + 1; i < n; i++) { const r = M[i][k] / M[k][k]; for (let j = k; j <= n; j++) M[i][j] -= r * M[k][j]; }
+  }
+  const x = new Array(n).fill(0);
+  for (let i = n - 1; i >= 0; i--) { let v = M[i][n]; for (let j = i + 1; j < n; j++) v -= M[i][j] * x[j]; x[i] = v / M[i][i]; }
+  return x;
+}
+
+// Nelder-Mead minimiser (2-D here: the target's x, y).
+function nelderMead(fn, x0, step, iterations = 120) {
+  const n = x0.length;
+  let S = [x0.slice()];
+  for (let k = 0; k < n; k++) { const x = x0.slice(); x[k] += step[k]; S.push(x); }
+  let F = S.map(fn);
+  for (let it = 0; it < iterations; it++) {
+    const o = F.map((_, i) => i).sort((a, b) => F[a] - F[b]); S = o.map(i => S[i]); F = o.map(i => F[i]);
+    const c = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) for (let k = 0; k < n; k++) c[k] += S[i][k] / n;
+    const at = (a) => c.map((v, k) => v + a * (S[n][k] - v));
+    const xr = at(-1), fr = fn(xr);
+    if (fr < F[0]) { const xe = at(-2), fe = fn(xe); if (fe < fr) { S[n] = xe; F[n] = fe; } else { S[n] = xr; F[n] = fr; } }
+    else if (fr < F[n - 1]) { S[n] = xr; F[n] = fr; }
+    else {
+      const xc = at(0.5), fc = fn(xc);
+      if (fc < F[n]) { S[n] = xc; F[n] = fc; }
+      else for (let i = 1; i <= n; i++) { S[i] = S[i].map((v, k) => S[0][k] + 0.5 * (v - S[0][k])); F[i] = fn(S[i]); }
+    }
+  }
+  const i0 = F.indexOf(Math.min(...F));
+  return { x: S[i0], f: F[i0] };
+}
+
+// Two-source position: inside `radius` px of (x0, y0), the background-subtracted pixels are fitted as
+// the target (free x, y, flux) plus each neighbour at its fixed catalogue position (free flux ≥ 0), all
+// the same pixel-integrated Gaussian of width s. Background, noise and S/N come from centroid()'s ring.
+// Returns centroid()'s shape with the fitted x, y and target flux (plus nbFlux), or null when the fit
+// leaves no positive target light.
+function blendFit(f, x0, y0, radius, nbXY, s) {
+  const c = centroid(f, x0, y0, radius);
+  if (!c) return null;
+  const px = [];
+  for (let j = Math.floor(y0 - radius); j <= Math.ceil(y0 + radius); j++) for (let i = Math.floor(x0 - radius); i <= Math.ceil(x0 + radius); i++) {
+    if (i < 0 || j < 0 || i >= f.n || j >= f.n || Math.hypot(i - x0, j - y0) > radius) continue;
+    const v = f.data[j * f.n + i];
+    if (Number.isFinite(v)) px.push([i, j, v - c.bg]);
+  }
+  const nbP = nbXY.map(([nx, ny]) => px.map(([i, j]) => pixShare(i - nx, s) * pixShare(j - ny, s)));
+  const solve = (x, y) => {
+    const tP = px.map(([i, j]) => pixShare(i - x, s) * pixShare(j - y, s));
+    let use = nbP.map((_, k) => k);
+    for (let pass = 0; pass <= nbP.length; pass++) {
+      const B = [tP, ...use.map(k => nbP[k])];
+      const dot = (a, b) => a.reduce((t, v, q) => t + v * b[q], 0);
+      const F = solveSmall(B.map(a => B.map(b => dot(a, b))), B.map(a => a.reduce((t, v, q) => t + v * px[q][2], 0)));
+      if (!F) return { chi: Infinity };
+      const neg = use.filter((_, q) => F[q + 1] < 0);
+      if (!neg.length) {
+        let chi = 0;
+        px.forEach((p, q) => { let m = 0; B.forEach((b, r) => { m += F[r] * b[q]; }); chi += (p[2] - m) ** 2; });
+        const nbFlux = nbP.map((_, k) => (use.includes(k) ? F[1 + use.indexOf(k)] : 0));
+        return { chi, flux: F[0], nbFlux };
+      }
+      use = use.filter(k => !neg.includes(k)); // a neighbour cannot be negative: drop it and refit
+    }
+    return { chi: Infinity };
+  };
+  const best = [[c.x, c.y], [x0, y0]]
+    .map(start => nelderMead(([x, y]) => (Math.hypot(x - x0, y - y0) > radius ? Infinity : solve(x, y).chi), start, [0.3, 0.3]))
+    .sort((a, b) => a.f - b.f)[0];
+  const [bx, by] = best.x, sol = solve(bx, by);
+  if (!(sol.flux > 0)) return null;
+  return { ...c, x: bx, y: by, flux: sol.flux, nbFlux: sol.nbFlux };
 }
 
 // One wording for a measured motion, used by the viewer and the Proof page (arcsec/yr):

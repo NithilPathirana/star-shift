@@ -258,8 +258,9 @@
      "note": "field-level requests: any click in this patch is answered from these files"
     },
     "starCheck": {
-     "gaia": false,
-     "simbad": true
+     "gaia": true,
+     "simbad": true,
+     "gaiaSource": "VizieR I/355/gaiadr3 (Harvard mirror)"
     },
     "asteroidCheck": {
      "seasons": [
@@ -7295,6 +7296,13 @@
    "size": 1711,
    "fetched": "2026-11-15T06:29:24.718Z",
    "kind": "simbad"
+  },
+  "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.167233%2C%2066.755024%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
+   "file": "r-dra/84b619b23848c106.csv",
+   "size": 9993,
+   "fetched": "2026-11-15T07:26:38.056Z",
+   "kind": "gaia",
+   "source": "Gaia DR3 via VizieR I/355/gaiadr3 (CDS catalogue, Harvard mirror), same columns and 0.0722° cone; ESA's Gaia archive returned 504 on 15 Nov 2026"
   }
  }
 }
