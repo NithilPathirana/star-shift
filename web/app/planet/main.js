@@ -175,7 +175,9 @@ function row(label, value) { return `<dt>${label}</dt><dd>${value}</dd>`; }
 function fmtDistance(plxMas) {
   const ly = (1000 / plxMas) * 3.26156;
   const txt = ly < 100 ? ly.toPrecision(3) : Math.round(ly).toLocaleString('en-GB');
-  return `${txt} light-years`;
+  // Simple reads as the viewer does ("about 6.0 light years"); Expert keeps 3 figures
+  const plain = ly < 10 ? ly.toFixed(1) : Math.round(ly).toLocaleString('en-GB');
+  return `<span class="s-only">about ${plain} light years</span><span class="x-only">${txt} light years</span>`;
 }
 const group = (title, tag, body) => `<div class="ih pl-grp"><h3>${title}</h3>${tag || ''}</div><dl class="pl-dl">${body}</dl>`;
 function fmtRA(deg) { // 00h 34m 15.3s
