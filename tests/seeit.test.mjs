@@ -22,7 +22,7 @@ test('the five demo targets', () => {
   assert.equal(seeItWith(vis('rw-aur')).simple, 'To see it: a small telescope (it varies, V 9.2–12.5).');
   const r = seeItWith(vis('r-dra'));
   assert.equal(r.simple, 'To see it: binoculars at its brightest, too faint for home telescopes at its faintest (it varies, V 6.7–13.2).');
-  assert.equal(r.expert, 'V 6.7–13.2 (GCVS)');
+  assert.equal(r.expert, 'V range from GCVS');
 });
 
 test('a searched object uses the same rule (Vega, V 0.03)', () => {

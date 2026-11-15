@@ -22,7 +22,7 @@ export function seeItWith(vis) {
   if (vis && Number.isFinite(vis.vMin) && Number.isFinite(vis.vMax)) {
     const a = levelFor(vis.vMin), b = levelFor(vis.vMax);
     const how = a.level === b.level ? a.text : `${a.text} at its brightest, ${b.level === 'faint' ? 'too faint for home telescopes' : b.text} at its faintest`;
-    return { level: a.level, simple: `To see it: ${how} (it varies, V ${vTxt(vis.vMin)}–${vTxt(vis.vMax)}).`, expert: `V ${vTxt(vis.vMin)}–${vTxt(vis.vMax)} (${vis.source || 'catalogue'})` };
+    return { level: a.level, simple: `To see it: ${how} (it varies, V ${vTxt(vis.vMin)}–${vTxt(vis.vMax)}).`, expert: `V range from ${vis.source || 'the catalogue'}` }; // the range itself is already in the plain line
   }
   const v = vis?.v, l = levelFor(v);
   return { level: l.level, simple: `To see it: ${l.text}.`, expert: Number.isFinite(v) ? `V ${vTxt(v)} (${vis.source || 'catalogue'})` : 'No visible-light (V) magnitude in the catalogue' };
