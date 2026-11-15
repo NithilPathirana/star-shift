@@ -3,6 +3,7 @@ import {
   DEFAULT_DATES, buildSbIdentParams, observationDates, parseSbIdent,
 } from './sb-ident.js';
 import { prebakedFetch } from '../../core/prebaked.js'; // the five demo targets answer from web/prebaked/ (Claude)
+import { SPHEREX_VISIBLE_V } from '../spot/logic.js'; // Spot's own faintness rule (Claude)
 import '../expert.js'; // Simple / Expert twins below: .x-only (RA/Dec, ISO dates, ″/h) and .s-only (plain words) (Claude)
 
 const $ = id => document.getElementById(id);
@@ -95,6 +96,10 @@ function renderRows(rows) {
     const magnitude = element('td', 'num', item.visualMagnitude === null ? '—' : `${item.visualMagnitude.toFixed(1)} mag`);
     magnitude.dataset.label = 'V magnitude';
     if (item.visualMagnitude === null) magnitude.title = 'JPL did not report a visual magnitude';
+    // Spot's rule: fainter than V 18.5 is too faint for SPHEREx; 2 mag past it is far too faint (Claude)
+    const tooFaint = item.visualMagnitude !== null && item.visualMagnitude > SPHEREX_VISIBLE_V;
+    const faintText = tooFaint ? `${item.visualMagnitude >= SPHEREX_VISIBLE_V + 2 ? 'far ' : ''}too faint for SPHEREx to see` : '';
+    if (tooFaint) magnitude.append(element('small', 'faint-note', faintText));
     const motion = element('td', 'num');
     if (item.motionArcsecHour === null) motion.textContent = '—';
     else motion.append(...twin(`${item.motionArcsecHour.toFixed(2)} ″/h`, `${Math.round(item.motionArcsecHour)}″ an hour`));
@@ -103,7 +108,9 @@ function renderRows(rows) {
     const actions = element('td', 'spotter-actions'); actions.dataset.label = 'Actions';
     const ra = coordinateToDegrees(item.ra, true);
     const dec = coordinateToDegrees(item.dec, false);
-    const timeLapse = element('a', 'key compact-key', 'Show in time-lapse');
+    // Too faint: the key still opens the patch, but says so instead of promising the object (Claude)
+    const timeLapse = element('a', 'key compact-key', tooFaint ? 'Show the patch' : 'Show in time-lapse');
+    if (tooFaint) timeLapse.title = `Opens this patch in the time-lapse. ${item.name} is ${faintText}, so it will not show in the images.`;
     timeLapse.href = ra === null || dec === null
       ? `index.html?ra=${view.ra}&dec=${view.dec}&scene=viewer`
       : `index.html?ra=${ra.toFixed(6)}&dec=${dec.toFixed(6)}&scene=viewer`;

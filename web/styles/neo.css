@@ -212,3 +212,6 @@
 @media (prefers-reduced-motion: reduce) {
   .object-drawer, .timeline-point { transition: none; }
 }
+
+/* Asteroid Spotter: "too faint for SPHEREx to see" under the magnitude (Design review 2, item 9). AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026. */
+.spotter-table .faint-note { display: block; text-align: inherit; white-space: normal; color: var(--ink-2); font-family: var(--font-ui); line-height: 1.3; }
