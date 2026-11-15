@@ -99,27 +99,27 @@ function page({ w, h, img, seasons, square, move }) {
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{width:${w}px;height:${h}px;overflow:hidden;background:#15110E;color:#EDE5DA;font-family:"Instrument Sans","Segoe UI",system-ui,sans-serif}
+html,body{width:${w}px;height:${h}px;overflow:hidden;background:#0A1121;color:#F3F6FB;font-family:"Instrument Sans","Segoe UI",system-ui,sans-serif}
 .im{position:absolute;left:${imgL}px;top:${imgT}px;width:${imgPx}px;height:${imgPx}px;image-rendering:pixelated;border-radius:6px}
-.px{position:absolute;left:${imgL + 12}px;top:${imgT + imgPx - 26}px;display:flex;align-items:center;gap:8px;font:500 13px "IBM Plex Mono",Consolas,monospace;color:#EDE5DA;background:rgba(21,17,14,.78);padding:3px 8px;border-radius:999px}
-.px b{display:block;width:${cell.toFixed(1)}px;height:2px;background:#EDE5DA}
-.nx{position:absolute;right:${w - imgL - imgPx + 12}px;top:${imgT + 12}px;white-space:nowrap;font:500 13px "IBM Plex Mono",Consolas,monospace;color:#EDE5DA;background:rgba(21,17,14,.78);padding:3px 8px;border-radius:999px}
+.px{position:absolute;left:${imgL + 12}px;top:${imgT + imgPx - 26}px;display:flex;align-items:center;gap:8px;font:500 13px "IBM Plex Mono",Consolas,monospace;color:#F3F6FB;background:rgba(10,17,33,.78);padding:3px 8px;border-radius:999px}
+.px b{display:block;width:${cell.toFixed(1)}px;height:2px;background:#F3F6FB}
+.nx{position:absolute;right:${w - imgL - imgPx + 12}px;top:${imgT + 12}px;white-space:nowrap;font:500 13px "IBM Plex Mono",Consolas,monospace;color:#F3F6FB;background:rgba(10,17,33,.78);padding:3px 8px;border-radius:999px}
 .tx{position:absolute;${square ? `left:${imgL}px;right:${imgL}px;top:${imgT + imgPx + 22}px` : `left:${imgL + imgPx + 44}px;right:44px;top:56px`}}
-h1{font-size:${square ? 34 : 40}px;line-height:1.08;font-weight:700;letter-spacing:-.02em;color:#FFF6E8}
-.lab{margin-top:${square ? 6 : 12}px;font:500 ${square ? 17 : 18}px "IBM Plex Mono",Consolas,monospace;color:#E3A86B}
-p.lede{margin-top:14px;font-size:18px;line-height:1.4;color:#EDE5DA;max-width:40ch}
+h1{font-size:${square ? 34 : 40}px;line-height:1.08;font-weight:700;letter-spacing:-.02em;color:#FFFFFF}
+.lab{margin-top:${square ? 6 : 12}px;font:500 ${square ? 17 : 18}px "IBM Plex Mono",Consolas,monospace;color:#EAF42F}
+p.lede{margin-top:14px;font-size:18px;line-height:1.4;color:#F3F6FB;max-width:40ch}
 ul{list-style:none;margin-top:${square ? 12 : 22}px;display:${square ? 'flex' : 'grid'};gap:${square ? '10px 26px' : '10px'};flex-wrap:wrap}
 li{display:flex;align-items:center;gap:10px;font:500 17px "IBM Plex Mono",Consolas,monospace}
 li i{display:block;width:18px;height:18px;border-radius:4px}
-li small{font-size:14px;color:#B5A898}
-.cr{position:absolute;right:${square ? imgL : 44}px;bottom:${square ? 18 : 26}px;${square ? `left:${imgL}px;display:flex;justify-content:space-between;align-items:center;` : 'text-align:right;'}font:500 14px "IBM Plex Mono",Consolas,monospace;color:#B5A898;line-height:1.5}
-.cr b{color:#EDE5DA;font-weight:500}
+li small{font-size:14px;color:#A3AAB9}
+.cr{position:absolute;right:${square ? imgL : 44}px;bottom:${square ? 18 : 26}px;${square ? `left:${imgL}px;display:flex;justify-content:space-between;align-items:center;` : 'text-align:right;'}font:500 14px "IBM Plex Mono",Consolas,monospace;color:#A3AAB9;line-height:1.5}
+.cr b{color:#F3F6FB;font-weight:500}
 .br{display:inline-flex;align-items:center;gap:8px}
 .br img{width:48px;height:48px;display:block}
-.br em{font-style:normal;color:#EDE5DA}
-.lg{display:block;${square ? 'flex-basis:100%;text-align:right;margin-top:8px;font-size:16px' : 'margin-top:6px;font-size:14px'};color:#B5A898}
+.br em{font-style:normal;color:#F3F6FB}
+.lg{display:block;${square ? 'flex-basis:100%;text-align:right;margin-top:8px;font-size:16px' : 'margin-top:6px;font-size:14px'};color:#A3AAB9}
 .cr{${square ? 'flex-wrap:wrap' : ''}}
-.ai{display:inline-block;font:600 12px/1.3 "IBM Plex Mono",Consolas,monospace;letter-spacing:.03em;color:#B5A898;border:1px solid currentColor;border-radius:4px;padding:0 3px}
+.ai{display:inline-block;font:600 12px/1.3 "IBM Plex Mono",Consolas,monospace;letter-spacing:.03em;color:#A3AAB9;border:1px solid currentColor;border-radius:4px;padding:0 3px}
 </style></head><body>
 <img class="im" src="data:image/png;base64,${img.toString('base64')}" alt="">
 <div class="nx">N ↑ E ←</div>
