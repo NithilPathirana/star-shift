@@ -214,7 +214,8 @@ for (const p of PRESETS) {
   const extra = {};
   let limit;
   if (v.verdict === 'NOT MEASURABLE' && v.why === 'slow') {
-    limit = `The catalogue motion (${fmtPm(cat.total)}″/yr) moves it only ${(v.shiftPx * PIXEL_ARCSEC).toFixed(3)}″ (${v.shiftPx.toFixed(3)} of a 6.15″ pixel) over the ${spanYears.toFixed(1)} years of images: below the 0.7″/yr we can call real.`;
+    // the viewer's rate rule and words (data.js motionMeasurability, ui.js NM_WHY), then the pixel shift as a fact
+    limit = `Too slow to measure: its catalogue motion (${fmtPm(cat.total)}″/yr) is under the ${fmtPm(Math.max(MIN_MOTION_MASYR, 3 * SYS_FLOOR_MASYR), 1)}″ a year we can measure. Over the ${spanYears.toFixed(1)} years of images that moves it only ${(v.shiftPx * PIXEL_ARCSEC).toFixed(3)}″ (${v.shiftPx.toFixed(3)} of a 6.15″ pixel).`;
     if (m.ok) limit += m.significant
       ? ` The fit still finds ${fmtPm(m.total)} ± ${fmtPm(m.totalErr)}″/yr, which is not a real motion: ${saturated > frames.length / 2
         ? `the star carries the saturation flag in ${saturated} of ${frames.length} images and its centre is blanked in ${m.maskedFrames} of the ${m.frames} fitted, so its position comes from the edges of a blanked core.`
@@ -274,7 +275,7 @@ for (const p of PRESETS) {
     direction: m.ok && dv ? { verdict: dv.verdict, measured: r2(m.pa, 1), catalogue: r2(cat.pa, 1), paDiff: r2(paDelta(r2(m.pa, 1), r2(cat.pa, 1)), 1), // from the shown angles, so the numbers on the page add up
       east: r2(dv.e, 0), north: r2(dv.n, 0), value: r2(dv.mag, 0), sideways: r2(Math.abs(dv.side), 0), chi2d: r2(dv.chi, 2), sigma: r2(dv.sigma, 1) } : null,
     window: v.window ? { lo: r2(v.window.lo, 0), hi: r2(v.window.hi, 0), paLo: r2(v.window.paLo, 1), paHi: r2(v.window.paHi, 1) } : null,
-    verdict: v.verdict, shiftPx: r2(v.shiftPx, 3), limit,
+    verdict: v.verdict, why: v.why ?? null, shiftPx: r2(v.shiftPx, 3), limit,
     chart: m.ok ? { kind: 'motion', pa: r2(cat.pa, 2), catalogueMasYr: r2(cat.total, 1), points: m.points, fit: m.fit } : null,
     // Not-measurable rows still show what the fit gives, so the method's floor is visible.
     fitAnyway: v.verdict === 'NOT MEASURABLE' && m.ok ? { value: r2(m.total, 0), err: r2(m.totalErr, 0), statErr: r2(m.statErr, 0), sysErr: r2(m.sysErr, 0), floorText: floorText(m), significant: m.significant, upperLimit: r2(m.upperLimit, 0), frames: m.frames } : null,

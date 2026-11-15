@@ -418,8 +418,9 @@ function remeasure() {
 let proofCat = null, proofNb = null; // preset key -> proof.json catalogue motion { value, err, pa, source }; Gaia neighbours
 // Master's honesty fix: a Gaia star inside the 15″ measuring circle (2.5 px × 6.15″) blends into every band,
 // so the held band's light is not the target's alone (WISE 0855: G 16.3 at 7.8″). From the neighbour data, not by name.
+const blendNb = () => { const p = holdPreset(), r = 2.5 * 6.15; return (proofNb?.[p?.key] || []).filter(x => x.sepArcsec <= r).sort((a, b) => a.g - b.g)[0] || null; };
 function blendLine(name) {
-  const p = holdPreset(), r = 2.5 * 6.15, n = (proofNb?.[p?.key] || []).filter(x => x.sepArcsec <= r).sort((a, b) => a.g - b.g)[0]; if (!n) return '';
+  const n = blendNb(); if (!n) return '';
   const mo = V.motion, cat = catalogueMotion(), low = mo?.ok && cat && mo.total < cat.value;
   return ` A background star (Gaia G ${n.g.toFixed(1)}, ${n.sepArcsec.toFixed(1)}″ away) sits inside the 15″ measuring circle at every wavelength, so this light is ${name} blended with some of that star's${low ? `, and the measured speed (${(mo.total / 1000).toFixed(1)}″/yr vs ${(cat.value / 1000).toFixed(2)}) is likely pulled low` : ''}.`;
 }
@@ -484,8 +485,10 @@ function updatePlate() {
     else {
       const xRes = `<span class="rp-k">Measured here</span> <b>${st.value}</b><span class="brk"></span>${st.cat != null ? ` ${sep} <span class="rp-k">catalogue</span> ${st.cat.toFixed(2)}` : ''}${st.verdict ? ` ${nw(tag(st.verdict))}` : ''}`
         + (dirTxt ? `<span class="rp-row"></span><span class="rp-k">${esc(dirTxt)}</span> ${nw(`<span class="rp-v ${dir.verdict === 'DIRECTION OFF' ? 'differs' : 'limit'}" title="${dir.sigma.toFixed(1)}σ">${dir.verdict}</span>`)}` : '');
-      res = `<span class="x-only rp-x">${xRes}</span><span class="s-only rp-x">${simpleRes(st, mo, dir, dirTxt ? dirDeg(mo, cat) : null, tag)}</span> ${nw(how)}`;
-      live = `Measured here ${st.value}${st.cat != null ? `, catalogue ${st.cat.toFixed(2)}″ a year` : ''}${st.verdict ? `, ${st.verdict.toLowerCase()}` : ''}${dirTxt ? `; ${dirTxt}, ${dir.verdict.toLowerCase()}` : ''}.`;
+      // judging panel 3 item 4: a still Gaia star inside the measuring circle pulls the fit toward zero (WISE 0855); from proof.json's neighbours
+      const nb = mo.significant !== false ? blendNb() : null, lowTxt = nb ? `Likely a lower estimate: a star ${nb.sepArcsec.toFixed(1)}″ away blends in.` : '';
+      res = `<span class="x-only rp-x">${xRes}</span><span class="s-only rp-x">${simpleRes(st, mo, dir, dirTxt ? dirDeg(mo, cat) : null, tag)}</span>${lowTxt ? `<span class="rp-row"></span><span class="rp-k">${esc(lowTxt)}</span>` : ''} ${nw(how)}`;
+      live = `Measured here ${st.value}${st.cat != null ? `, catalogue ${st.cat.toFixed(2)}″ a year` : ''}${st.verdict ? `, ${st.verdict.toLowerCase()}` : ''}${dirTxt ? `; ${dirTxt}, ${dir.verdict.toLowerCase()}` : ''}.${lowTxt ? ' ' + lowTxt : ''}`;
     }
     // b2 caption: preset, measured, significant motion; numbers from the fit over the first-to-last stack dates
     if (p && st.kind === 'value' && mo.significant !== false && V.stacks.length > 1) {

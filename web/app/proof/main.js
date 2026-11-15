@@ -51,11 +51,22 @@ function countsLine(t) {
 }
 const floorLine = (txt) => (txt ? `<small class="num pf-floor">${esc(txt)}</small>` : '');
 const fromCat = (src) => (/^Gaia/.test(src) ? 'Gaia' : 'the catalogue');
+// Not-measurable reason in the viewer's words and order (ui.js NM_WHY): blanked centre first, then the
+// rate rule (not a pixel count); both when both apply (R Draconis).
+let minYr = 0.7; // set from proof.json settings in render()
+function nmWhy(t) {
+  const c = t.counts, sat = c?.blanked != null && c.fitted > 0 && c.blanked / c.fitted >= c.limitFrac;
+  const slow = `its catalogue motion is under the ${minYr.toFixed(1)}″ a year we can measure`;
+  if (sat) return `centre blanked in ${c.blanked} of ${c.fitted} images${t.why === 'slow' ? `, and ${slow}` : ''}`;
+  if (t.why === 'slow') return slow;
+  if (t.why === 'fit') return 'the fit could not run';
+  return 'see the limits column';
+}
 function measuredCell(t, target) {
   const m = t.measured;
   if (t.type === 'motion') {
     if (!m || t.verdict === 'NOT MEASURABLE') {
-      const why = t.shiftPx != null && t.shiftPx < 1 ? 'it moves under one pixel over these dates' : 'see the limits column';
+      const why = nmWhy(t);
       return `${DASH('Not measurable: see the limits column')}<small class="dim">Not measurable: ${why}</small>${countsLine(t)}${floorLine(t.fitAnyway?.floorText)}`;
     }
     const ss = m.seasons.length, d = t.diff, w = t.window, src = fromCat(t.expected.source);
@@ -176,6 +187,8 @@ function evidence(t, target) {
 
 /* ---------- render ---------- */
 function render(d) {
+  minYr = Math.max(d.settings?.minMotionMasYr ?? 700, 3 * (d.settings?.sysFloorMasYr ?? 150)) / 1000; // data.js motionMeasurability's line
+  const runDay = $('runDate'); if (runDay && d.generated) runDay.textContent = new Date(d.generated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   $('rules').innerHTML = [['Moves (proper motion): speed', d.rules.motion], ...(d.rules.direction ? [['Moves: direction', d.rules.direction]] : []), ['Changes brightness', d.rules.brightness]].map(([h, rs]) =>
     `<div><h3>${h}</h3><dl class="pf-rule">${rs.map(([v, txt]) => `<dt>${chip(v)}</dt><dd>${esc(txt)}</dd>`).join('')}</dl></div>`).join('')
     + `<p class="pf-rule-note">σ is the measurement's uncertainty, with the catalogue's added. For motion it is the scatter of the image positions plus a systematic floor in each direction: the field stars' own floor where 3 or more are usable in the patch, otherwise ${arcs(d.settings.sysFloorMasYr)}″/yr, measured on the field stars of all five patches together. Each row says which. A result that looks bad stays in the table with its reason.</p>`;
