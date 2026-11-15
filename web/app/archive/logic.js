@@ -3,6 +3,7 @@
 // Rows come from the SPHEREx image list (web/core/irsa.js); images: NASA SPHEREx via IRSA
 // (releases and DOIs: web/data/releases.json).
 
+import { splitSeasons } from '../seasons.js';
 import { DEFAULT_BANDS } from '../bands.js';
 import { IRSA } from '../../core/irsa.js';
 import { PRESETS, findPreset } from '../presets.js';
@@ -47,27 +48,8 @@ export function bandAt(um, bands = DEFAULT_BANDS) {
 // all year with no long gap (R Draconis: 16 months, longest gap 38 days), so a run longer than
 // `maxDays` is split at its largest gap until each part is at most `maxDays` long.
 // Returns [{ i, startMjd, endMjd, n, label }].
-export function seasonsOf(mjds, gapDays = 60, maxDays = 183) {
-  const sorted = mjds.filter(Number.isFinite).slice().sort((a, b) => a - b);
-  const runs = [];
-  for (const m of sorted) {
-    const r = runs[runs.length - 1];
-    if (r && m - r[r.length - 1] < gapDays) r.push(m); else runs.push([m]);
-  }
-  const split = (r) => {
-    if (r.length < 2 || r[r.length - 1] - r[0] <= maxDays) return [r];
-    // largest gap that leaves at least 30 days on each side (ties: the one nearest the middle)
-    const a = r[0], b = r[r.length - 1], mid = (a + b) / 2;
-    let k = -1;
-    for (let j = 1; j < r.length; j++) {
-      if (r[j - 1] - a < 30 || b - r[j] < 30) continue;
-      const g = r[j] - r[j - 1], gk = k < 0 ? -1 : r[k] - r[k - 1];
-      if (g > gk + 1e-9 || (Math.abs(g - gk) <= 1e-9 && Math.abs(r[j] - mid) < Math.abs(r[k] - mid))) k = j;
-    }
-    if (k < 0) k = Math.max(1, r.findIndex(m => m > mid));
-    return [...split(r.slice(0, k)), ...split(r.slice(k))];
-  };
-  return runs.flatMap(split).map((r, i) => ({ startMjd: r[0], endMjd: r[r.length - 1], n: r.length, i, label: seasonLabel(r[0], r[r.length - 1]) }));
+export function seasonsOf(mjds, gapDays = 60, maxDays = 183) { // the one splitter: ../seasons.js
+  return splitSeasons(mjds, gapDays, maxDays).map((r, i) => ({ startMjd: r[0], endMjd: r[r.length - 1], n: r.length, i, label: seasonLabel(r[0], r[r.length - 1]) }));
 }
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

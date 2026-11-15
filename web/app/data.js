@@ -10,6 +10,7 @@ import { resolveName } from '../core/resolve.js';
 import { propagate, mjdToDate, parallaxShift } from '../core/motion.js';
 import { makeGrid, reproject, worldToGrid, gridToWorld, stackFrames, centroid, fitLine } from '../core/align.js';
 import { tanProject } from '../core/wcs.js';
+import { seasonBounds, groupInto } from './seasons.js';
 import { mjdToEpochYear } from '../core/motion.js';
 import { wavelengthAt } from '../core/wave.js';
 import { findPreset } from './presets.js';
@@ -46,39 +47,22 @@ export function cutoutCenter(target, mjd) {
 }
 
 // Group time-sorted frames into observing seasons (SPHEREx revisits about every 6 months).
-// Near the ecliptic poles SPHEREx sees a star all year with no 60-day gap (R Draconis with IRSA's full
-// image list: longest gap 38 days), so a run longer than maxDays is split at its largest gap that leaves
-// 30+ days on each side, the same rule as the Archive (archive/logic.js seasonsOf). Runs under ~6 months
-// (every other demo target) are unchanged.
+// The splitter lives in seasons.js (one season source for the viewer, its brightness chart and Proof):
+// 60-day gaps, and all-year runs near the ecliptic poles (R Draconis) split at their largest gap.
 export function seasons(frames, gapDays = 60, maxDays = 183) {
-  const runs = [];
-  for (const f of frames) {
-    const r = runs[runs.length - 1];
-    if (r && f.mjd - r[r.length - 1].mjd < gapDays) r.push(f); else runs.push([f]);
-  }
-  const split = (r) => {
-    const a = r[0].mjd, b = r[r.length - 1].mjd;
-    if (r.length < 2 || b - a <= maxDays) return [r];
-    const mid = (a + b) / 2; let k = -1;
-    for (let j = 1; j < r.length; j++) {
-      if (r[j - 1].mjd - a < 30 || b - r[j].mjd < 30) continue;
-      const g = r[j].mjd - r[j - 1].mjd, gk = k < 0 ? -1 : r[k].mjd - r[k - 1].mjd;
-      if (g > gk + 1e-9 || (Math.abs(g - gk) <= 1e-9 && Math.abs(r[j].mjd - mid) < Math.abs(r[k].mjd - mid))) k = j;
-    }
-    if (k < 0) k = Math.max(1, r.findIndex(f => f.mjd > mid));
-    return [...split(r.slice(0, k)), ...split(r.slice(k))];
-  };
-  return runs.flatMap(split).map(r => ({ frames: r, startMjd: r[0].mjd, endMjd: r[r.length - 1].mjd }));
+  return groupInto(frames, seasonBounds(frames.map(f => f.mjd), gapDays, maxDays)).map(s => ({ frames: s.frames, startMjd: s.frames[0].mjd, endMjd: s.frames[s.frames.length - 1].mjd }));
 }
 
-export function buildStacks(frames) {
-  return seasons(frames).map(s => {
+// bounds (optional, seasons.js seasonBounds): put the frames in these seasons instead of splitting them
+// again, so one held band's stacks are the same seasons as the label and the Proof page (item 1).
+export function buildStacks(frames, bounds = null) {
+  return (bounds ? groupInto(frames, bounds) : seasons(frames)).map((s, i) => {
     const st = stackFrames(s.frames);
     const mid = s.frames.reduce((a, f) => a + f.mjd, 0) / s.frames.length;
     const ex = s.frames.filter(f => f.expected).map(f => f.expected);
     return {
       kind: 'stack', n: st.n, data: st.data, count: s.frames.length, mjd: mid,
-      startDate: mjdToDate(s.startMjd), endDate: mjdToDate(s.endMjd),
+      startDate: mjdToDate(s.frames[0].mjd), endDate: mjdToDate(s.frames[s.frames.length - 1].mjd), season: s.k ?? i,
       detectors: [...new Set(s.frames.map(f => f.detector))].sort(),
       expected: ex.length ? [ex.reduce((a, e) => a + e[0], 0) / ex.length, ex.reduce((a, e) => a + e[1], 0) / ex.length] : null,
     };

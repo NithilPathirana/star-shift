@@ -8,15 +8,13 @@
 
 import { measure, lightcurve, message, skippedText, fmtMag, CAPTION, lightOnSky, pickSource, pickSaved, notHereText, saturatedNote, BLEND_RADIUS, AP_ARCSEC } from './logic.js';
 import { gaiaCone } from '../../core/resolve.js';
+import { seasonBounds, groupInto, seasonMonths } from '../seasons.js';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const mjdDate = (m) => new Date((m - 40587) * 864e5);
 const fmtDay = (m) => { const d = mjdDate(m); return `${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
-const seasonLbl = (s) => { // 'Sep 25', 'Feb–Mar 26', 'Dec 25–Jan 26'
-  const a = mjdDate(s.from), b = mjdDate(s.to), yy = d => String(d.getUTCFullYear()).slice(2);
-  if (a.getUTCMonth() === b.getUTCMonth() && a.getUTCFullYear() === b.getUTCFullYear()) return `${MON[a.getUTCMonth()]} ${yy(a)}`;
-  return a.getUTCFullYear() === b.getUTCFullYear() ? `${MON[a.getUTCMonth()]}–${MON[b.getUTCMonth()]} ${yy(b)}` : `${MON[a.getUTCMonth()]} ${yy(a)}–${MON[b.getUTCMonth()]} ${yy(b)}`;
-};
+// 'Sep 25', 'Feb–Mar 26', 'Dec 25–Jan 26': the season's months as the viewer names them (seasons.js), short years
+const seasonLbl = (s) => seasonMonths(s).replace(/ (\d\d)(\d\d)/g, ' $2');
 const SHAPE = { short: 'circle', long: 'square' };
 const emptyWhy = (g) => (!g.total ? 'no images at these wavelengths'
   : g.absent ? 'not detected here'
@@ -33,13 +31,15 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick })
   if (cap) cap.textContent = `${CAPTION} Each dot is one image (colour = its wavelength band), compared with first-season images from the same detector at the same wavelength (Δ mag, brighter up); white lines are season averages. Seasons sit side by side: the months between them are left out. Flux in mJy uses each image's own 6.15″ pixel size.`;
 
   // frames: the viewer's raw frames in player order (V.F[i].raw), or null while loading.
-  function data(frames, grid, name, loading) {
+  // bounds: the viewer's seasons (seasons.js), so the axis and the season averages use the same seasons.
+  function data(frames, grid, name, loading, bounds) {
     S.name = name || 'This object';
     if (!frames || loading) { S.lc = null; S.frames = []; S.key = ''; render(loading ? 'Measuring when all images are in…' : null); return; }
-    const key = frames.length + ':' + frames.map(f => f.mjd).join(',');
+    S.bounds = bounds?.length ? bounds : seasonBounds(frames.map(f => f.mjd));
+    const key = frames.length + ':' + frames.map(f => f.mjd).join(',') + '|' + S.bounds.map(b => b.startMjd).join(',');
     if (key === S.key) return;
     S.key = key; S.frames = frames; S.rows = measure(frames, grid);
-    S.lc = lightcurve(S.rows);
+    S.lc = lightcurve(S.rows, S.bounds);
     for (const g of S.lc.groups) if (g.absent) g.sky = lightOnSky(g.detect, grid);
     render();
     explain(key);
@@ -106,8 +106,8 @@ export function createLightcurve({ $, esc, colourOf = () => '#B5A898', onPick })
     // Seasons side by side, each with its own time scale (SPHEREx images come in bursts of a few
     // weeks every ~6 months; one shared axis would squash each burst to a line). The months
     // between seasons are left out, and the caption says so.
-    const seasons = [];
-    for (const f of S.frames) { const s = seasons[seasons.length - 1]; if (s && f.mjd - s.to < 60) s.to = f.mjd; else seasons.push({ from: f.mjd, to: f.mjd }); }
+    // one panel per season that has images here, the seasons the viewer names (seasons.js)
+    const seasons = groupInto(S.frames, S.bounds).map(s => ({ from: s.frames[0].mjd, to: s.frames[s.frames.length - 1].mjd, startMjd: s.startMjd, endMjd: s.endMjd }));
     const sg = 8, pw = (W - L - Rr - sg * (seasons.length - 1)) / seasons.length;
     seasons.forEach((s, k) => { const pad = Math.max(1.5, (s.to - s.from) * 0.08); s.t0 = s.from - pad; s.t1 = s.to + pad; s.x0 = L + k * (pw + sg); });
     const X = m => {

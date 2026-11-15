@@ -20,6 +20,7 @@
 import { centroid, gridToWorld } from '../../core/align.js';
 import { separationArcsec } from '../../core/motion.js';
 import { meanSem } from '../proof/logic.js';
+import { seasonBounds, seasonAt } from '../seasons.js';
 
 // Is the target itself in the aperture? (a3) Same centroid as the motion fit (data.js
 // measureMotion: 3.5 px radius, S/N above 5, 2 px gate, at least 6 images). If too few images
@@ -30,7 +31,7 @@ export const BLEND_RADIUS = 4; // ″: a catalogued source this close to the lig
 
 export const APERTURE = 2.5;   // px, as make_proof.mjs
 export const WL_MATCH = 0.05;  // µm, as make_proof.mjs
-export const SEASON_GAP = 60;  // days, as data.js seasons()
+export const SEASON_GAP = 60;  // days, as seasons.js splitSeasons()
 export const GRID_ARCSEC = 6.15;
 export const GROUPS = [
   { id: 'short', name: '0.75–3.8 µm', long: '0.75–3.8 µm (detectors 1–4)', dets: [1, 2, 3, 4] },
@@ -45,12 +46,11 @@ export const pixelSr = (arcsec) => (arcsec * Math.PI / 648000) ** 2;
 // A sum of surface brightness over pixels (MJy/sr per pixel) -> flux in mJy (1 MJy = 1e9 mJy).
 export const toMilliJy = (sumMJySr, pixArcsec = GRID_ARCSEC) => sumMJySr * pixelSr(pixArcsec) * 1e9;
 
-// Season index for each frame (frames sorted by date; a gap of 60 days or more starts a new season).
-export function seasonIndex(mjds, gap = SEASON_GAP) {
-  const order = mjds.map((m, i) => [m, i]).sort((a, b) => a[0] - b[0]);
-  const out = new Array(mjds.length); let s = -1, last = -Infinity;
-  for (const [m, i] of order) { if (m - last >= gap) s++; out[i] = s; last = m; }
-  return out;
+// Season index for each frame: the one season source (seasons.js), so the chart's seasons are the viewer's
+// and the Proof page's (a gap of 60 days or more starts a season; all-year runs, R Draconis, are split).
+// bounds: the viewer's seasons (seasonBounds of every image loaded); default: split these dates.
+export function seasonIndex(mjds, bounds = seasonBounds(mjds, SEASON_GAP)) {
+  return mjds.map(m => seasonAt(m, bounds));
 }
 
 // One row per frame: where the aperture sat, how many of its pixels are masked, and the flux.
@@ -131,8 +131,8 @@ export function notHereText(d, sky, src, name, where) {
 }
 
 // Δm against the first season, per wavelength group. rows from measure().
-export function lightcurve(rows) {
-  const season = seasonIndex(rows.map(r => r.mjd));
+export function lightcurve(rows, bounds) {
+  const season = seasonIndex(rows.map(r => r.mjd), bounds || undefined);
   const nSeasons = rows.length ? Math.max(...season) + 1 : 0;
   const R = rows.map((r, k) => ({ ...r, s: season[k] }));
   const masked = R.filter(r => r.masked > 0).length;

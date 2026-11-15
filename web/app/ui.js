@@ -5,7 +5,8 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 
 import { parseQuery, QueryError, DEFAULT_SETTINGS } from './query.js';
-import { run, planImages, loadFrame, buildStacks, measureMotion, resolveTarget, motionMeasurability, motionDetectors, detectorText, seasons as groupSeasons } from './data.js';
+import { run, planImages, loadFrame, buildStacks, measureMotion, resolveTarget, motionMeasurability, motionDetectors, detectorText } from './data.js';
+import { seasonBounds, seasonAt, groupInto, seasonMonths } from './seasons.js';
 import { kinematics, tangentialVelocity, toLSR, totalPM } from './kinematics.js';
 import { PRESETS, findPreset } from './presets.js';
 import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight, altAz, riseTransitSet, skyTonight, tonightWords, dirWord } from './sky.js';
@@ -127,15 +128,26 @@ const ringFor = (expected, mjd) => { if (!V.ring) return { exp: [V.grid.c, V.gri
 const toF = f => ({ mjd: f.mjd, date: f.date, det: f.detector, um: f.wavelengthUm, ...ringFor(f.expected, f.mjd),
   d: Array.from(f.data, v => (Number.isFinite(v) ? v : null)), obs: f.obsid, raw: f });
 const stackToF = s => ({ mjd: s.mjd, date: `${iso(s.startDate)} to ${iso(s.endDate)}`, det: 'stack', um: null, ...ringFor(s.expected, s.mjd),
-  d: Array.from(s.data, v => (Number.isFinite(v) ? v : null)), count: s.count, start: s.startDate, end: s.endDate });
-const seasonName = v => { const a = new Date(V.F[v.from].date.slice(0, 10)), b = new Date(V.F[v.to].date.slice(0, 10));
-  if (a.getUTCMonth() === b.getUTCMonth() && a.getUTCFullYear() === b.getUTCFullYear()) return `${MON[a.getUTCMonth()]} ${a.getUTCFullYear()}`;
-  return `${MON[a.getUTCMonth()]}${a.getUTCFullYear() !== b.getUTCFullYear() ? ' ' + a.getUTCFullYear() : ''}–${MON[b.getUTCMonth()]} ${b.getUTCFullYear()}`; };
+  d: Array.from(s.data, v => (Number.isFinite(v) ? v : null)), count: s.count, start: s.startDate, end: s.endDate, season: s.season });
+// One season source (judging panel round 4, item 1): V.bounds is split once (seasons.js) from every image of
+// the load, the same images the Proof page splits; the chip, "Season k of N", the timeline labels, the stacks,
+// the thumb and the brightness chart all place their images in these seasons by date.
+function syncBounds() {
+  const m = V.status === 'ready' || !V.plannedMjds.length ? V.FA.map(f => f.mjd) : V.plannedMjds;
+  const key = m.length + ':' + m[0] + ':' + m[m.length - 1];
+  if (key !== V.boundsKey) { V.boundsKey = key; V.bounds = seasonBounds(m); }
+  return V.bounds;
+}
+const seasonName = v => seasonMonths(V.bounds[v.k]);
+// "First season" / "Last season" only when the stack really is the first / last of all N; else "Season 3 of 4"
+// (one held band with no images in the last season, e.g. R Draconis at 3.8–5.0 µm)
+const stackName = st => { const N = V.bounds?.length || V.stacks.length, k = st?.season ?? V.stacks.indexOf(st);
+  return k === 0 ? 'First season' : k === N - 1 ? 'Last season' : `Season ${k + 1} of ${N}`; };
 // observing seasons: SPHEREx revisits a spot about every 6 months; visits < 60 days apart are one season
 // the same seasons as data.js (60-day gaps, and all-year runs near the ecliptic poles split, e.g. R Draconis)
 // a link straight into the viewer (?scene=viewer): until its first load is done, the map panel's IRSA coverage list waits
 let viewerFirst = new URLSearchParams(location.search).get('scene') === 'viewer';
-const visits = (F) => { let i = 0; return groupSeasons(F).map(s => { const v = { from: i, to: i + s.frames.length - 1 }; i += s.frames.length; return v; }); };
+const visits = (F) => groupInto(F, syncBounds()).map(s => ({ k: s.k, from: F.indexOf(s.frames[0]), to: F.indexOf(s.frames[s.frames.length - 1]) }));
 const seasonOf = i => V.seasons.findIndex(v => i >= v.from && i <= v.to);
 
 /* "Hold one band" (judging panel a3/b3): Time playback shows one detector pair only, so the star
@@ -190,8 +202,7 @@ function buildTimeline() {
   const F = V.F, all = V.plannedMjds.length ? V.plannedMjds : F.map(f => f.mjd);
   if (!all.length) { track.innerHTML = ''; $('tlLabels').innerHTML = ''; ticks = []; return; }
   t0 = Math.min(...all) - 5; t1 = Math.max(...all) + 5;
-  V.seasons = F.length ? visits(F) : [];
-  V.seasonsAll = V.FK.length ? groupSeasons(V.FK).map(x => ({ a: x.frames[0].mjd, b: x.frames[x.frames.length - 1].mjd, d0: x.frames[0].date, d1: x.frames[x.frames.length - 1].date })) : []; // every kept band (A6)
+  syncBounds(); V.seasons = F.length ? visits(F) : [];
   const pending = V.plannedMjds.filter(m => !V.FA.some(f => Math.abs(f.mjd - m) < 0.01));
   const hidden = V.FA.filter(f => !F.includes(f));
   track.innerHTML = V.seasons.map(v => `<div class="season" style="left:calc(${pos(F[v.from].mjd)}% - 8px);width:calc(${pos(F[v.to].mjd) - pos(F[v.from].mjd)}% + 16px)"></div>`).join('') +
@@ -203,7 +214,7 @@ function buildTimeline() {
   const g = document.createElement('span'); g.className = 'ghost'; g.innerHTML = '<b></b>'; track.appendChild(g);
   track.setAttribute('aria-valuemax', String(Math.max(1, F.length)));
   applyRanges();
-  LC.data(V.FK.map(f => f.raw), V.grid, V.name, V.status === 'loading'); // brightness strip: every image the flag filter keeps (all bands, also while one band is held)
+  LC.data(V.FK.map(f => f.raw), V.grid, V.name, V.status === 'loading', V.bounds); // brightness strip: every image the flag filter keeps (all bands, also while one band is held)
 }
 let tlRaf = 0; const rebuildSoon = () => { if (!tlRaf) tlRaf = requestAnimationFrame(() => { tlRaf = 0; buildTimeline(); onFrame(P.i); }); };
 
@@ -241,23 +252,18 @@ const sRange = s => { const a = R.fmtDate(iso(s.start)), b = R.fmtDate(iso(s.end
 // Judging panel A7: in Blink and Compare the counter, the season label and the date name the stack(s) on screen
 // "Season 4 of 4 · Jun–Sep 2026": counted over every kept band (as on the Archive and Proof), so holding one band
 // that has no images in a season (R Draconis at 3.8–5.0 µm) does not change the count (judging panel A6)
-function seasonLabel(mjd) {
-  const S = V.seasonsAll; if (!S?.length || !Number.isFinite(mjd)) return '';
-  let k = S.findIndex(x => mjd >= x.a - 1 && mjd <= x.b + 1);
-  if (k < 0) S.forEach((x, j) => { if (k < 0 || Math.min(Math.abs(mjd - x.a), Math.abs(mjd - x.b)) < Math.min(Math.abs(mjd - S[k].a), Math.abs(mjd - S[k].b))) k = j; });
-  const x = S[k], A = new Date(x.d0.slice(0, 10)), B = new Date(x.d1.slice(0, 10)), M = d => MON[d.getUTCMonth()], Y = d => d.getUTCFullYear();
-  const name = M(A) === M(B) && Y(A) === Y(B) ? `${M(A)} ${Y(A)}` : `${M(A)}${Y(A) !== Y(B) ? ' ' + Y(A) : ''}–${M(B)} ${Y(B)}`;
-  return `<b>Season ${k + 1}</b> of ${S.length} · ${name}`;
+function seasonLabel(mjd, k = seasonAt(mjd, V.bounds)) {
+  const S = V.bounds; if (!S?.length || !(k >= 0)) return '';
+  return `<b>Season ${k + 1}</b> of ${S.length} · ${seasonMonths(S[k])}`;
 }
 function stackReadout() {
   if (!((mode === 'blink' || mode === 'compare') && V.stacks.length > 1 && !(mode === 'compare' && diffOn))) return false;
   const a = firstS(), b = lastS(), cur = mode === 'blink' && side ? b : a, n = s => `${s.count} image${s.count === 1 ? '' : 's'}`;
-  $('counter').textContent = mode === 'blink' ? `${side ? 'Last' : 'First'} season · ${n(cur)}` : `First season · ${n(a)} · last · ${n(b)}`;
+  $('counter').textContent = mode === 'blink' ? `${stackName(cur)} · ${n(cur)}` : `${stackName(a)} · ${n(a)} · ${stackName(b).replace(/^Last season/, 'last')} · ${n(b)}`;
   $('counter').title = mode === 'blink' ? 'Images stacked in the season on screen' : 'Images stacked in each season';
-  const months = st => { const x = st.start, y = st.end, M = d => MON[d.getUTCMonth()], Y = d => d.getUTCFullYear();
-    return M(x) === M(y) && Y(x) === Y(y) ? `${M(x)} ${Y(x)}` : `${M(x)}${Y(x) !== Y(y) ? ' ' + Y(x) : ''}–${M(y)} ${Y(y)}`; };
-  const all = V.seasonsAll?.length || V.stacks.length;
-  $('seasonLbl').innerHTML = mode === 'blink' ? (seasonLabel(cur.mjd) || `<b>Season ${V.stacks.indexOf(cur) + 1}</b> of ${V.stacks.length} · ${months(cur)}`) : `<b>First and last season</b> of ${all}`;
+  const all = V.bounds?.length || V.stacks.length;
+  $('seasonLbl').innerHTML = mode === 'blink' ? seasonLabel(cur.mjd, cur.season) : a.season === 0 && b.season === all - 1 ? `<b>First and last season</b> of ${all}` : `<b>Seasons ${a.season + 1} and ${b.season + 1}</b> of ${all}`;
+  const th = $('thumb'); if (th && mode === 'blink') th.style.left = pos(cur.mjd) + '%'; // the thumb sits in the season on screen
   $('tlDate').innerHTML = `<span>${esc(mode === 'blink' ? sRange(cur) : `${sRange(a)} → ${sRange(b)}`)}</span>`;
   return true;
 }
@@ -318,15 +324,15 @@ function draw() {
     A.setAttribute('aria-label', `SPHEREx infrared image of ${V.name}, ${R.fmtDate(f.date)}, ${f.um ? f.um.toFixed(2) + ' micrometres' : ''}`);
   } else if (mode === 'compare' && diffOn) drawDiffView(A);
   else if (mode === 'compare') {
-    A.setAttribute('aria-label', 'First season, stacked'); CX.drawStage(A, firstS(), V.n, opt(A)); cross(A, ex[0], ex[1]); $('capA').innerHTML = `<b>First season</b> · stacked · ${sRange(firstS())}`;
-    CX.drawStage(B, lastS(), V.n, opt(B)); cross(B, ex[0], ex[1]); $('capB').innerHTML = `<b>Last season</b> · stacked · ${sRange(lastS())}`;
+    A.setAttribute('aria-label', 'First season, stacked'); CX.drawStage(A, firstS(), V.n, opt(A)); cross(A, ex[0], ex[1]); $('capA').innerHTML = `<b>${stackName(firstS())}</b> · stacked · ${sRange(firstS())}`;
+    CX.drawStage(B, lastS(), V.n, opt(B)); cross(B, ex[0], ex[1]); $('capB').innerHTML = `<b>${stackName(lastS())}</b> · stacked · ${sRange(lastS())}`;
     $('chip').innerHTML = CX.chipLead() + '<span>Cross = where the star was in the first season</span>'; info(lastS(), 'Right: last season'); stackReadout();
   } else {
     const f = side ? lastS() : firstS(); CX.drawStage(A, f, V.n, opt(A)); cross(A, ex[0], ex[1]);
     // One label, replaced on every flip: the season sits in the chip itself (the old separate #flag pill
     // was drawn over the chip on narrow stages, so the two labels read as one bleeding into the other).
-    $('chip').innerHTML = CX.chipLead() + `<b>${side ? 'Last season' : 'First season'}</b><span class="sep bl-st">·</span><span class="bl-st">stacked</span><span class="sep">·</span><span>${sRange(f)}</span>`;
-    info(f, side ? 'Last season (stacked)' : 'First season (stacked)'); stackReadout();
+    $('chip').innerHTML = CX.chipLead() + `<b>${stackName(f)}</b><span class="sep bl-st">·</span><span class="bl-st">stacked</span><span class="sep">·</span><span>${sRange(f)}</span>`;
+    info(f, `${stackName(f)} (stacked)`); stackReadout();
   }
 }
 let tickAnim = null;
@@ -360,7 +366,7 @@ function onFrame(i, manual) {
   if (th) th.style.left = pos(f.mjd) + '%';
   const s = seasonOf(i);
   if (!manual && P.playing && i > 0 && s !== seasonOf(i - 1)) Snd.play('seasonSoft');
-  if (s >= 0) $('seasonLbl').innerHTML = seasonLabel(f.mjd) || `<b>Season ${s + 1}</b> of ${V.seasons.length} · ${seasonName(V.seasons[s])}`;
+  if (s >= 0) $('seasonLbl').innerHTML = seasonLabel(f.mjd, V.seasons[s].k);
   const rg = rangeOf(f.um); // the coloured tick under the thumb, named in words (colour is never the only cue)
   $('tlDate').innerHTML = (rg ? `<span class="tl-band" title="${esc(bandLabel(rg).text)}"><i style="--rc:${rg.c}"></i><span class="tlb-n">${f.um ? `λ ${f.um.toFixed(2)} µm · ` : ''}${esc(bandName(rg))}</span><span class="tlb-i" aria-hidden="true">${f.um ? `${f.um.toFixed(2)} µm` : esc(bandInitials(rg))}</span></span>` : '') + `<span>${R.fmtDate(f.date)}</span>`;
   track.setAttribute('aria-valuenow', i + 1); track.setAttribute('aria-valuetext', `Image ${i + 1}, ${R.fmtDate(f.date)}${rg ? ', ' + bandName(rg) : ''}`);
@@ -391,7 +397,7 @@ const GO = createGaiaOverlay({ cv: $('cvA'), sw: $('gaiaSw'), note: $('gaiaNote'
   const one = mode === 'play' || (mode !== 'telescopes' && V.stacks.length < 2), f = !V.F.length ? null : one ? V.F[Math.min(P.i, V.F.length - 1)] : mode === 'blink' ? (side ? lastS() : firstS()) : null;
   return { show: scene === 'viewer' && !$('stage').classList.contains('clean-blink') && !!f, grid: V.grid, mjd: f?.mjd, cell: cssCell, preset: V.query?.type === 'name' ? findPreset(V.query.name)?.key : null };
 } });
-function restack() { V.stacks = V.F.length ? buildStacks(V.F.map(f => f.raw).sort((a, b) => a.mjd - b.mjd)).map(stackToF) : []; }
+function restack() { V.stacks = V.F.length ? buildStacks(V.F.map(f => f.raw).sort((a, b) => a.mjd - b.mjd), syncBounds()).map(stackToF) : []; }
 // Measure the motion from the images the flag filter keeps (also with no catalogue motion, e.g. a
 // coordinate search). Runs when loading finishes and again whenever the filter changes.
 function remeasure() {
