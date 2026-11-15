@@ -71,7 +71,7 @@ export function createContam(ctx) {
     if (arr === undefined) return { f, note: `${L.label}: loading ${S.done} of ${S.total || '…'}` };
     if (arr === null) return { f, note: f.raw?.layers?.failed ? `${L.label}: IRSA busy, not fetched` : `${L.label}: not in this cutout` };
     const key = '_L_' + S.layer;
-    const pf = f[key] || (f[key] = { exp: f.exp, d: Array.from(arr, v => (Number.isFinite(v) ? v : null)), range: layerRange(arr) });
+    const pf = f[key] || (f[key] = { exp: f.exp, ringOff: f.ringOff, d: Array.from(arr, v => (Number.isFinite(v) ? v : null)), range: layerRange(arr) });
     return { f: pf, ramp: 'copper', range: pf.range, unit: unitText(f.raw?.layers?.units?.[S.layer], S.layer) };
   }
   function unitText(u, layer) { // 'MJy2 / sr2', '(MJy/sr)^2' -> 'MJy²/sr²'
@@ -145,7 +145,7 @@ export function createContam(ctx) {
   /* ----- public: draw one canvas (any mode) ----- */
   function drawStage(cv, f, n, o, withMarks) {
     const L = layerFrame(f);
-    if (L.wave) drawWave(cv, L.wave, n, o.cell, o, f.exp);
+    if (L.wave) drawWave(cv, L.wave, n, o.cell, o, f.ringOff ? null : f.exp);
     else R.draw(cv, L.f, n, L.ramp ? { ...o, ramp: L.ramp } : o);
     if (withMarks && o.hatch !== false && f?.raw) drawMarks(cv, f, n, o.cell);
     cv._shown = { f, marks: !!(withMarks && o.hatch !== false) }; // for the hover tip

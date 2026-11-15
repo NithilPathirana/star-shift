@@ -60,7 +60,7 @@
         ctx.fillStyle = `rgb(${r},${g},${b})`; ctx.fillRect(x * c, y * c, c, c);
       }
     }
-    if (o.ring) {
+    if (o.ring && !frame.ringOff) {
       const [ex, ey] = frame.exp;
       ctx.strokeStyle = o.ringColor; ctx.lineWidth = Math.max(2, c / 8);
       ctx.setLineDash([c * 0.5, c * 0.35]);

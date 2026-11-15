@@ -17,6 +17,7 @@ import { listImages } from '../core/irsa.js';
 import { propagate, separationArcsec, mjdToDate } from '../core/motion.js';
 import { gridToWorld } from '../core/align.js';
 import { createContam } from './contam-ui.js';
+import { ringObject, ringAt } from './ringobj.js'; // whose dashed ring, and where (patch bug, Sun 15 Nov)
 import { createGhost } from './ghost-ui.js';
 import { createLightcurve } from './lightcurve/index.js'; // brightness-vs-date strip (info panel)
 import { createCleanBlink } from './cleanblink.js'; // Blink: hide overlays, zoom on the star
@@ -108,9 +109,12 @@ const V = { // current time-lapse
   status: 'idle', ctl: null, motion: null, seasons: [], name: '',
 };
 const iso = d => d.toISOString().slice(0, 19);
-const toF = f => ({ mjd: f.mjd, date: f.date, det: f.detector, um: f.wavelengthUm, exp: f.expected || [V.grid.c, V.grid.c],
+// exp = where the ring goes on the grid; ringOff = no ring on this image (empty patch, or the named star is off the image)
+const ringFor = (expected, mjd) => { if (!V.ring) return { exp: [V.grid.c, V.grid.c], ringOff: true }; if (V.ring.own) return { exp: expected || [V.grid.c, V.grid.c], ringOff: false };
+  const p = ringAt(V.grid, V.ring, mjd); return p ? { exp: p, ringOff: false } : { exp: [V.grid.c, V.grid.c], ringOff: true }; };
+const toF = f => ({ mjd: f.mjd, date: f.date, det: f.detector, um: f.wavelengthUm, ...ringFor(f.expected, f.mjd),
   d: Array.from(f.data, v => (Number.isFinite(v) ? v : null)), obs: f.obsid, raw: f });
-const stackToF = s => ({ mjd: s.mjd, date: `${iso(s.startDate)} to ${iso(s.endDate)}`, det: 'stack', um: null, exp: s.expected || [V.grid.c, V.grid.c],
+const stackToF = s => ({ mjd: s.mjd, date: `${iso(s.startDate)} to ${iso(s.endDate)}`, det: 'stack', um: null, ...ringFor(s.expected, s.mjd),
   d: Array.from(s.data, v => (Number.isFinite(v) ? v : null)), count: s.count, start: s.startDate, end: s.endDate });
 const seasonName = v => { const a = new Date(V.F[v.from].date.slice(0, 10)), b = new Date(V.F[v.to].date.slice(0, 10));
   if (a.getUTCMonth() === b.getUTCMonth() && a.getUTCFullYear() === b.getUTCFullYear()) return `${MON[a.getUTCMonth()]} ${a.getUTCFullYear()}`;
@@ -160,7 +164,7 @@ function layout() {
   $('sbar').style.width = (cssCell * 30 / 6.15) + 'px';
   draw(); placeHits();
 }
-const opt = cv => CB.opt({ ramp: set.ramp, cell: +cv.dataset.dev, ring: set.ring && !!V.target, ringColor: getComputedStyle(root).getPropertyValue('--ring').trim(),
+const opt = cv => CB.opt({ ramp: set.ramp, cell: +cv.dataset.dev, ring: set.ring && !!V.ring, ringColor: getComputedStyle(root).getPropertyValue('--ring').trim(),
   maskBg: '#211b16', maskInk: '#6b5d50', stretch: set.str, hatch: set.hatch });
 function cross(cv, fx, fy) {
   if (CB.on) return; // Clean Blink hides the cross
@@ -459,7 +463,7 @@ function load(query, label) {
   TS.show(false); TS.reset();
   CB.leave(); LC.data(null, null, label, true);
   CX.reset();
-  Object.assign(V, { query, target: null, grid: null, raws: [], F: [], FA: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, lastArrive: performance.now(), status: 'loading', motion: null, seasons: [], name: label || PATCH_NAME });
+  Object.assign(V, { query, target: null, ring: null, grid: null, raws: [], F: [], FA: [], stacks: [], planned: 0, plannedMjds: [], failed: 0, retries: 0, lastArrive: performance.now(), status: 'loading', motion: null, seasons: [], name: label || PATCH_NAME });
   P.i = 0; shown = -1; arriveCount = 0;
   $('stLoading').classList.remove('leaving');
   // a loader still fading out from the last load shares #scanLoader: finish it now, or its late
@@ -482,6 +486,7 @@ function load(query, label) {
     else if (e.type === 'PLANNED') {
       V.grid = e.plan.grid; V.n = V.grid.n; V.planned = e.plan.planned; V.plannedMjds = e.plan.mjds || [];
       V.total = e.plan.total;
+      { const m = V.plannedMjds; V.ring = ringObject(V.target, V.grid, m.length ? (m[0] + m[m.length - 1]) / 2 : 61000, PRESETS); ringPanel(); }
       V.scan?.set({ total: V.planned, plan: V.plannedMjds.map(mjd => ({ mjd })) });
       if (!V.planned) { V.status = 'empty'; showState('stEmpty'); return; }
       $('tName').textContent = V.name; $('ra').textContent = R.fmtRA(V.grid.ra0); $('dec').textContent = R.fmtDec(V.grid.dec0); setCoordText(V.grid.ra0, V.grid.dec0);
@@ -1260,12 +1265,22 @@ function placeHits() {
   const show = scene === 'viewer' && mode === 'play' && V.F.length > 0; ['hitStar', 'hitOther'].forEach(id => { $(id).hidden = !show; });
   if (!show) return;
   const f = V.F[Math.min(P.i, V.F.length - 1)], rad = 2.2 * cssCell, [ex, ey] = f.exp;
+  $('hitStar').hidden = !!f.ringOff;
   Object.assign($('hitStar').style, { left: ((ex + .5) * cssCell - rad) + 'px', top: ((ey + .5) * cssCell - rad) + 'px', width: 2 * rad + 'px', height: 2 * rad + 'px' });
   $('hitOther').hidden = !otherPx; if (!otherPx) return;
   const [ox, oy] = otherPx, rr = 1.5 * cssCell;
   Object.assign($('hitOther').style, { left: ((ox + .5) * cssCell - rr) + 'px', top: ((oy + .5) * cssCell - rr) + 'px', width: 2 * rr + 'px', height: 2 * rr + 'px' });
 }
-bindTip($('hitStar'), () => `<b>${esc(V.name)}</b><small>${V.target?.pmra || V.target?.pmdec ? 'Inside the dashed ring (predicted position)' : 'Centre of the patch'}</small>`);
+bindTip($('hitStar'), () => `<b>${esc(V.ring && !V.ring.own ? V.ring.name : V.name)}</b><small>${V.ring && !V.ring.own ? 'Inside the dashed ring: where this catalogued star should be on this date' : V.target?.pmra || V.target?.pmdec ? 'Inside the dashed ring (predicted position)' : 'Centre of the patch'}</small>`);
+// The 'Where it should be' section says whose ring it is, or that a picked patch has none
+function ringPanel() {
+  const own = !V.ring || V.ring.own, note = $('ringNote'); if (!note) return;
+  note.textContent = !V.ring ? 'This is a patch picked on the sky, not a catalogued star, so there is no predicted position to draw.'
+    : own ? "The dashed ring is worked out from the star's catalogue motion for this date."
+    : `The dashed ring shows where ${V.ring.name} should be on each image's date, from its catalogue motion (it is inside this patch). It is hidden on images where the star is off the edge.`;
+  $('ringRow').hidden = !V.ring;
+  $('ringTool').disabled = !V.ring; // nothing to ring on an empty patch
+}
 bindTip($('hitOther'), () => otherName ? `<b>${esc(otherName.name)}</b><small>${esc(otherName.type)} · SIMBAD, ${otherName.sep.toFixed(0)}″ from the bright spot</small>`
   : otherName === false ? '<b>Unidentified source</b><small>No SIMBAD object within 15″ of this bright spot.</small>' : '<b>Looking it up…</b><small>Asking SIMBAD</small>');
 
