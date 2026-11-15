@@ -364,6 +364,9 @@ html[data-motion=full] .tele-wait { animation: tele-pulse 1.4s ease-in-out infin
 /* Map -> time-lapse: the loader stays invisible for a short grace (ui.js LOADER_GRACE), then fades in */
 .state.loader2 { transition: opacity 200ms var(--ease-out); }
 .state.loader2.ld-wait { opacity: 0; pointer-events: none; transition: none; }
+/* while the loader shows on the stage, its own counter speaks: the "Measuring motion… n/N" plate would cover its caption
+   (Design Studio, Sun 13:58). On phones the plate sits in the dock, outside the stage, and stays. */
+.stage:has(> #stLoading:not([hidden]):not(.ld-wait)) > .rp { visibility: hidden; }
 html[data-motion=reduce] .state.loader2 { transition: none; }
 /* Lab notebook "+" keys in the info panel: small circle on desktop, 44 px tap target on phone */
 .nb-plus { position: relative; isolation: isolate; flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px; margin: 0 0 0 6px; padding: 0;
