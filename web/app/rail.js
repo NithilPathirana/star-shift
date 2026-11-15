@@ -20,6 +20,8 @@ import { expertSwitch } from './expert.js';
       const nav = pop.querySelector('nav');
       if (nav) nav.after(b); else pop.append(b); // straight under the page list
     }
+    // the logo credit, visible wherever the Pages sheet opens (Submission Check: 'SI' must be spelled out on screen)
+    if (pop && !pop.querySelector('.sheet-credit')) pop.append(Object.assign(document.createElement('p'), { className: 'sheet-credit', textContent: 'Logo: AI-generated (SI) with ChatGPT; small version and favicon redrawn as SVG by Claude.' }));
   };
   if (document.querySelector('link[href$="styles/expert.css"]')) place();
   else { // inject the stylesheet, and place the switch once it has loaded (no unstyled flash)
