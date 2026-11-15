@@ -3,7 +3,9 @@
 // erender.js), tinted copper -> ivory -> blue and laid on top of each other (screen blend), so a
 // star that stays put turns white and a moving star leaves a copper-to-blue trail.
 // Writes evidence/still_barnard_1200x630.png (social/thumbnail) and evidence/still_barnard_1080.png.
-// Real data, not AI-generated, so no AI mark; credit "Data: NASA SPHEREx via IRSA".
+// The picture is real data, not AI-generated; credit "Data: NASA SPHEREx via IRSA". The Star Shift symbol
+// (web/brand/favicon.svg: the small cut on its ivory tile, never recoloured) sits beside the "Star Shift"
+// line with the small AI mark, because the logo is AI-generated (DESIGN.md, thumbnail still).
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 //
 // Usage: (server running on 8787) node tools/export_still.mjs [--crop 13]
@@ -30,6 +32,7 @@ const CROP = Math.max(5, +arg('--crop', 13) | 1); // odd number of 6.15″ pixel
 const SEASON_RGB = [[227, 150, 80], [255, 246, 232], [96, 150, 255]];
 const hex = c => '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const LOGO = 'data:image/svg+xml;base64,' + readFileSync(new URL('../web/brand/favicon.svg', import.meta.url)).toString('base64');
 const fmtD = d => `${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 
 // The viewer's own stretch (web/app/erender.js is a browser script: run it in a small sandbox).
@@ -82,7 +85,7 @@ function composite(stacks, R, n) {
     });
     if (S.some(s => s[k] == null)) masked++;
     // pixels blank in every season (saturated core) stay the viewer's no-data colour, not black
-    if (S.every(s => s[k] == null)) rgb.splice(0, 3, 0x21, 0x1b, 0x16);
+    if (S.every(s => s[k] == null)) rgb.splice(0, 3, 0x10, 0x0d, 0x0b);
     rgb.forEach((v, ch) => { out[(y * CROP + x) * 3 + ch] = v; });
   }
   return { rgb: out, x0, y0, masked, track: stacks.map(s => [s.expected[0] - x0, s.expected[1] - y0]) };
@@ -109,8 +112,12 @@ ul{list-style:none;margin-top:${square ? 12 : 22}px;display:${square ? 'flex' : 
 li{display:flex;align-items:center;gap:10px;font:500 17px "IBM Plex Mono",Consolas,monospace}
 li i{display:block;width:18px;height:18px;border-radius:4px}
 li small{font-size:14px;color:#B5A898}
-.cr{position:absolute;right:${square ? imgL : 44}px;bottom:${square ? 18 : 26}px;${square ? `left:${imgL}px;display:flex;justify-content:space-between;` : 'text-align:right;'}font:500 14px "IBM Plex Mono",Consolas,monospace;color:#B5A898;line-height:1.5}
+.cr{position:absolute;right:${square ? imgL : 44}px;bottom:${square ? 18 : 26}px;${square ? `left:${imgL}px;display:flex;justify-content:space-between;align-items:center;` : 'text-align:right;'}font:500 14px "IBM Plex Mono",Consolas,monospace;color:#B5A898;line-height:1.5}
 .cr b{color:#EDE5DA;font-weight:500}
+.br{display:inline-flex;align-items:center;gap:8px}
+.br img{width:48px;height:48px;display:block}
+.br em{font-style:normal;color:#EDE5DA}
+.ai{display:inline-block;font:600 12px/1.3 "IBM Plex Mono",Consolas,monospace;letter-spacing:.03em;color:#B5A898;border:1px solid currentColor;border-radius:4px;padding:0 3px}
 </style></head><body>
 <img class="im" src="data:image/png;base64,${img.toString('base64')}" alt="">
 <div class="nx">N ↑ E ←</div>
@@ -121,7 +128,7 @@ li small{font-size:14px;color:#B5A898}
 ${square ? '' : `<p class="lede">The same ${(CROP * 6.15 / 60).toFixed(1)}′ patch of sky, each season's images stacked and tinted. Where the seasons overlap the light adds up to white; the copper edge (first season) and the blue edge (last) show the star moving ${move}.</p>`}
 <ul>${legend}</ul>
 </div>
-<div class="cr"><span><b>Data: NASA SPHEREx via IRSA</b></span>${square ? '' : '<br>'}<span>Star Shift · team Proper Motion · NASA Space Apps 2026</span></div>
+<div class="cr"><span><b>Data: NASA SPHEREx via IRSA</b></span>${square ? '' : '<br>'}<span class="br"><img src="${LOGO}" alt=""><em>Star Shift</em><span class="ai" title="Logo: AI-generated">AI</span>· team Proper Motion · NASA Space Apps 2026</span></div>
 </body></html>`;
 }
 
