@@ -20,7 +20,7 @@
   var COPPER = [[0, [12, 9, 7]], [0.28, [62, 28, 14]], [0.58, [176, 100, 48]], [0.82, [232, 182, 120]], [1, [255, 246, 232]]];
   var ICE = [[0, [5, 11, 26]], [0.28, [14, 42, 107]], [0.58, [47, 107, 224]], [0.82, [169, 219, 255]], [1, [255, 255, 255]]]; // as erender.js
   function classic() { return document.documentElement.dataset.axLook === 'classic'; } // access.js look: copper only in the classic look
-  function mono() { return classic() ? COPPER : ICE; }
+  function mono() { var R = window.MockRender; return R && R.lookRamp ? R.ramps[R.lookRamp('copper')] : classic() ? COPPER : ICE; } // access.js Image colours, via erender.js
   function hex(h) { var n = parseInt(h.replace('#', ''), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
   function lerp(stops, t) {
     for (var i = 1; i < stops.length; i++) if (t <= stops[i][0]) {

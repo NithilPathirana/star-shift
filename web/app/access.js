@@ -22,7 +22,23 @@
     { id: 'classic', look: 'classic', name: 'First look: copper', note: 'The earlier copper, sage and coral on cream', p: LOOKS.classic.p, s: LOOKS.classic.s, t: LOOKS.classic.t }
   ];
   var DEF = { preset: 'star', look: 'volt', p: BRAND.p, s: BRAND.s, t: BRAND.t, leading: 'normal', spacing: 'normal', face: 'star',
-    bold: false, soft: false, marks: false, links: false, shapes: false, focus: false, targets: false };
+    bold: false, soft: false, marks: false, links: false, shapes: false, focus: false, targets: false,
+    img: 'auto', imgHue: '#E040A0', mark: 'auto' };   // image colours and marks colour: 'auto' = what the look and colour mode choose
+  var IMGS = ['auto', 'ice', 'copper', 'grey', 'magma', 'viridis', 'custom'];
+  /* Safe defaults per colour mode (Nithil, 15 Nov: for tritanopia the star was still blue). ring null = the look's own ring.
+     diff: 'by' blue-dark-yellow, 'rt' red-dark-teal (tritanopia). High contrast wins: grey image, white ring. */
+  function modeDefaults(preset, contrast, look) {
+    var d = look === 'classic' ? { img: 'copper', ring: null, diff: 'by' } : { img: 'ice', ring: null, diff: 'by' };
+    if (preset === 'by') d = { img: 'magma', ring: '#FF4FD8', diff: 'rt' };
+    else if (preset === 'rg') d = { img: 'viridis', ring: null, diff: 'by' };
+    else if (preset === 'mono') d = { img: 'grey', ring: '#FFFFFF', diff: 'by' };
+    if (contrast) { d.img = 'grey'; d.ring = '#FFFFFF'; }
+    return d;
+  }
+  function effective(s, contrast) {
+    var d = modeDefaults(s.preset, contrast, s.look);
+    return { img: s.img !== 'auto' ? s.img : d.img, ring: s.mark !== 'auto' ? s.mark : d.ring, diff: d.diff, hue: s.imgHue };
+  }
   var S = read();
 
   /* ---------- colour maths: sRGB <-> OKLCH, WCAG contrast ---------- */
@@ -95,13 +111,16 @@
     var o = {}; try { o = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { o = {}; }
     var out = {}; for (var k in DEF) out[k] = (typeof o[k] === typeof DEF[k]) ? o[k] : DEF[k];
     ['p', 's', 't'].forEach(function (k) { if (!okHex(out[k])) out[k] = DEF[k]; });
+    if (IMGS.indexOf(out.img) < 0) out.img = 'auto';
+    if (!okHex(out.imgHue)) out.imgHue = DEF.imgHue;
+    if (out.mark !== 'auto' && !okHex(out.mark)) out.mark = 'auto';
     if (o.look === undefined && out.preset === 'star') { out.p = DEF.p; out.s = DEF.s; out.t = DEF.t; }   // saved before the second look existed: follow the new default
     return out;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* private window: the choice lasts for this page only */ } }
 
   var VARS = ['--copper', '--copper-ink', '--copper-key', '--copper-deco', '--focus', '--ring', '--ax-p-tint', '--color-accent', '--color-focus',
-    '--on-copper', '--ax-key-hi', '--sage', '--sage-ink', '--sage-tint', '--cross', '--coral', '--color-danger', '--ax-t-glow', '--ax-t-tint'];
+    '--on-copper', '--ax-key-hi', '--sage', '--sage-ink', '--sage-tint', '--cross', '--coral', '--color-danger', '--ax-t-glow', '--ax-t-tint', '--mark'];
   function setVar(n, v) { root.style.setProperty(n, v); }
   function apply() {
     if (S.look !== 'classic') S.look = 'volt';
@@ -114,6 +133,9 @@
       if (S.s !== B.s) { setVar('--sage', Q.ink); setVar('--sage-ink', Q.deep); setVar('--sage-tint', Q.tint); setVar('--cross', Q.glow); }
       if (S.t !== B.t) { setVar('--coral', T.ink); setVar('--color-danger', T.ink); setVar('--ax-t-glow', T.glow); setVar('--ax-t-tint', T.tint); }
     }
+    var E = effective(S, root.dataset.contrast === 'more');   // image ramp, marks and Difference colours (erender.js, diffview.js read these)
+    root.dataset.axImg = E.img; root.dataset.axImgHue = E.hue; root.dataset.axDiff = E.diff;
+    if (E.ring) { root.dataset.axMark = E.ring; setVar('--ring', E.ring); setVar('--mark', E.ring); } else delete root.dataset.axMark;
     root.dataset.axColors = custom ? S.preset : 'off';
     root.dataset.axP = S.p !== B.p ? 'on' : 'off';   // primary picked: the main key takes that colour (else the look's own key, neon yellow by default)
     root.dataset.axLeading = S.leading; root.dataset.axSpacing = S.spacing; root.dataset.axFace = S.face;
@@ -121,7 +143,11 @@
     try { root.dispatchEvent(new CustomEvent('star-shift-colours', { detail: { primary: S.p, secondary: S.s, tertiary: S.t, preset: S.preset } })); } catch (e) { /* old browser */ }
   }
   apply();                                     // before first paint
-  window.StarShiftAccess = { family: family, keyInk: keyInk, contrast: contrast, hex2rgb: hex2rgb, get: function () { return JSON.parse(JSON.stringify(S)); }, presets: PRESETS };
+  window.StarShiftAccess = { family: family, keyInk: keyInk, contrast: contrast, hex2rgb: hex2rgb, get: function () { return JSON.parse(JSON.stringify(S)); }, presets: PRESETS,
+    modeDefaults: modeDefaults, effective: effective,
+    setImg: function (v) { if (IMGS.indexOf(v) < 0) return; S.img = v; save(); apply(); sync(); } };   // the Clarity scale buttons (ui.js) write here too
+  // High contrast is the Clarity switch (ui.js sets data-contrast): follow it
+  try { new MutationObserver(function () { apply(); }).observe(root, { attributes: true, attributeFilter: ['data-contrast'] }); } catch (e) { /* old browser */ }
 
   /* ---------- the panel ---------- */
   var panel = null, opener = null;
@@ -144,6 +170,13 @@
     return '<div class="ax-row ax-stack"><span class="ax-l" id="axl-' + k + '">' + label + (hint ? '<small>' + hint + '</small>' : '') + '</span>' +
       '<div class="ax-seg well" role="group" aria-labelledby="axl-' + k + '">' + opts.map(function (o) {
         return '<button type="button" data-ax-seg="' + k + '" data-v="' + o[0] + '" aria-pressed="false">' + o[1] + '</button>'; }).join('') + '</div></div>';
+  }
+  var IMG_OPTS = [['auto', 'Automatic'], ['ice', 'Ice'], ['copper', 'Copper'], ['grey', 'Grey'], ['magma', 'Magma'], ['viridis', 'Viridis'], ['custom', 'Custom']];
+  var MARK_OPTS = [['auto', 'Automatic'], ['#FFFFFF', 'White'], ['#FFE14D', 'Yellow'], ['#FF4FD8', 'Magenta'], ['#33E0FF', 'Cyan']];
+  function rampCss(id) {
+    var R = window.MockRender; if (!R || !R.ramps) return '';
+    var st = id === 'custom' ? R.customRamp(S.imgHue) : R.ramps[id]; if (!st) return '';
+    return 'linear-gradient(90deg,' + st.map(function (x) { return 'rgb(' + x[1].join(',') + ') ' + (x[0] * 100) + '%'; }).join(',') + ')';
   }
   function specimen() {
     return '<span class="ax-sp-key">Play</span><span class="ax-sp-tag ax-sp-ok">Agrees</span><span class="ax-sp-tag ax-sp-no">Differs</span>' +
@@ -169,6 +202,14 @@
       '<figure class="ax-spec" aria-labelledby="axh-s"><figcaption id="axh-s">How these three colours look to different eyes</figcaption>' + SIM.map(function (s) {
         return '<div class="ax-sp-row"><span class="ax-sp-name">' + s.name + '</span><span class="ax-sp-set"' + (s.m ? ' style="filter:url(#ax-f-' + s.id + ')"' : '') + ' aria-hidden="true">' + specimen() + '</span></div>'; }).join('') +
       '<p class="ax-fine">A simulation (Machado et al. 2009), not a medical test.</p></figure>' +
+      '<div class="ax-row ax-stack"><span class="ax-l" id="axl-img">Image colours<small>Star pictures, Blink, Compare, Telescopes and the layer keys. Automatic follows the palette above</small></span>' +
+      '<div class="ax-imgs" role="radiogroup" aria-labelledby="axl-img">' + IMG_OPTS.map(function (o) {
+        return '<button type="button" class="ax-img" role="radio" aria-checked="false" data-ax-img="' + o[0] + '"><i class="ax-img-sw" aria-hidden="true"></i><span>' + o[1] + '</span></button>'; }).join('') +
+      '<label class="ax-img-hue"><input type="color" id="axImgHue" aria-label="Custom image colour"><span>Pick</span></label></div></div>' +
+      '<div class="ax-row ax-stack"><span class="ax-l" id="axl-mark">Marks colour<small>The ring, the guide cross and the marks on the star pictures</small></span>' +
+      '<div class="ax-imgs" role="radiogroup" aria-labelledby="axl-mark">' + MARK_OPTS.map(function (o) {
+        return '<button type="button" class="ax-img" role="radio" aria-checked="false" data-ax-mark="' + o[0] + '"><i class="ax-img-sw" aria-hidden="true"' + (o[0] !== 'auto' ? ' style="background:' + o[0] + '"' : '') + '></i><span>' + o[1] + '</span></button>'; }).join('') +
+      '<label class="ax-img-hue"><input type="color" id="axMarkHue" aria-label="Custom marks colour"><span>Pick</span></label></div></div>' +
       sw('marks', 'Marks, not colour alone', 'A tick, cross or dash on every verdict and tag') +
       '</section>' +
       '<section aria-labelledby="axh-t"><h3 id="axh-t">Text</h3>' +
@@ -220,6 +261,14 @@
     });
     [].forEach.call(panel.querySelectorAll('.ax-preset'), function (b) { var on = b.dataset.preset === S.preset; b.setAttribute('aria-checked', String(on)); b.tabIndex = on || (S.preset === 'custom' && b.dataset.preset === 'star') ? 0 : -1; });
     var cur = PRESETS.filter(function (x) { return x.id === S.preset; })[0]; panel.querySelector('#axPal').textContent = cur ? cur.name : 'Custom';
+    var E = effective(S, root.dataset.contrast === 'more');
+    [].forEach.call(panel.querySelectorAll('[data-ax-img]'), function (b) {
+      var v = b.dataset.axImg; b.setAttribute('aria-checked', String(v === S.img)); b.querySelector('i').style.background = rampCss(v === 'auto' ? E.img : v);
+    });
+    [].forEach.call(panel.querySelectorAll('[data-ax-mark]'), function (b) {
+      var v = b.dataset.axMark; b.setAttribute('aria-checked', String(v === S.mark)); if (v === 'auto') b.querySelector('i').style.background = E.ring || 'var(--ring)';
+    });
+    panel.querySelector('#axImgHue').value = S.imgHue.toLowerCase(); panel.querySelector('#axMarkHue').value = (S.mark !== 'auto' ? S.mark : '#ffffff').toLowerCase();
     var adj = [];
     ['p', 's', 't'].forEach(function (k) {
       var inp = panel.querySelector('[data-ax-col="' + k + '"]'), brand = S[k] === LOOKS[S.look][k];
@@ -246,6 +295,8 @@
       else if (key === 'leading') S.leading = on ? 'roomy' : 'normal';
       else if (key === 'spacing') S.spacing = on ? 'wide' : 'normal';
       else S[key] = on;
+    } else if (b.dataset.axImg) { S.img = b.dataset.axImg;
+    } else if (b.dataset.axMark) { S.mark = b.dataset.axMark;
     } else if (b.dataset.axSeg) {
       var v = b.dataset.v;
       S[b.dataset.axSeg] = v;
@@ -253,6 +304,11 @@
     save(); apply(); sync();
   }
   function onColour(e) {
+    if (e.target.id === 'axImgHue' || e.target.id === 'axMarkHue') {
+      if (!okHex(e.target.value)) return;
+      if (e.target.id === 'axImgHue') { S.img = 'custom'; S.imgHue = e.target.value.toUpperCase(); } else S.mark = e.target.value.toUpperCase();
+      save(); apply(); sync(); return;
+    }
     var k = e.target.dataset && e.target.dataset.axCol; if (!k || !okHex(e.target.value)) return;
     S[k] = e.target.value.toUpperCase();
     var hit = PRESETS.filter(function (x) { return (x.look || 'volt') === S.look && x.p === S.p && x.s === S.s && x.t === S.t; })[0]; S.preset = hit ? hit.id : 'custom';

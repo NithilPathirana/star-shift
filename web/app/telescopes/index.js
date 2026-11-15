@@ -106,7 +106,7 @@ export function createTelescopes(ctx) {
   // Offscreen image in the survey's own pixels, stretched on its own (asinh 2-99.7%).
   // `src` keys the cache; `values` may be a function (built only on a cache miss); `s` = shared stretch
   function offscreen(id, src, nx, ny, values = src, s = null) {
-    const look = classic() ? 'classic' : 'ice', R = window.MockRender;
+    const R = window.MockRender, img = R?.imageRamp ? R.imageRamp() : 'ice', look = classic() && img === 'copper' ? 'classic' : img + (document.documentElement.dataset.axImgHue || ''); // access.js Image colours
     if (T.off[id]?.src === src && T.off[id].look === look) return T.off[id].cv;
     if (typeof values === 'function') values = values();
     s = s || stretch(values); const cv = document.createElement('canvas'); cv.width = nx; cv.height = ny;
@@ -115,7 +115,7 @@ export function createTelescopes(ctx) {
       const v = values[i];
       if (v == null || !Number.isFinite(v)) { im.data[4 * i + 3] = 0; continue; }
       const t = s.map(v);
-      if (look === 'ice' && R?.rampRGB) { const c = R.rampRGB('ice', t / 255); im.data[4 * i] = c[0]; im.data[4 * i + 1] = c[1]; im.data[4 * i + 2] = c[2]; }
+      if (look !== 'classic' && R?.rampRGB) { const c = R.rampRGB('copper', t / 255); im.data[4 * i] = c[0]; im.data[4 * i + 1] = c[1]; im.data[4 * i + 2] = c[2]; }
       else { im.data[4 * i] = t; im.data[4 * i + 1] = Math.round(t * 0.965); im.data[4 * i + 2] = Math.round(t * 0.91); }
       im.data[4 * i + 3] = 255;
     }

@@ -28,10 +28,44 @@
     // default (blue/white/neon-yellow) look: #050B1A > #0E2A6B > #2F6BE0 > #A9DBFF > #FFFFFF, every channel rises, so luminance rises strictly
     ice: [[0, [5, 11, 26]], [0.28, [14, 42, 107]], [0.58, [47, 107, 224]], [0.82, [169, 219, 255]], [1, [255, 255, 255]]]
   };
+  // Image colours (access.js, Nithil 15 Nov): magma-like black > deep red > pink > near-white; viridis-like purple > teal > yellow.
+  R.ramps.magma = [[0, [4, 3, 10]], [0.2, [52, 8, 30]], [0.42, [128, 20, 56]], [0.62, [206, 62, 116]], [0.8, [246, 140, 172]], [1, [255, 244, 240]]];
+  R.ramps.viridis = [[0, [62, 4, 84]], [0.15, [70, 42, 122]], [0.3, [58, 82, 139]], [0.45, [44, 114, 142]], [0.6, [32, 146, 140]], [0.75, [60, 188, 117]], [0.88, [150, 216, 64]], [1, [253, 231, 37]]];
+  // Custom: black > the picked hue > white, built in OKLab with lightness rising evenly; chroma is cut until the colour fits sRGB.
+  const lin = c => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const gam = c => 255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055);
+  R.oklabL = rgb => { const [r, g, b] = rgb.map(lin); return 0.2104542553 * Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) + 0.793617785 * Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) - 0.0040720468 * Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b); };
+  function labRGB(L, A, B) {
+    const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3, m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3, s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
+    return [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s];
+  }
+  R.customRamp = function (hex) {
+    const n = parseInt(String(hex || '#E040A0').replace('#', ''), 16) || 0, rgb = [n >> 16, (n >> 8) & 255, n & 255].map(lin);
+    const l = Math.cbrt(0.4122214708 * rgb[0] + 0.5363325363 * rgb[1] + 0.0514459929 * rgb[2]), m = Math.cbrt(0.2119034982 * rgb[0] + 0.6806995451 * rgb[1] + 0.1073969566 * rgb[2]), s = Math.cbrt(0.0883024619 * rgb[0] + 0.2817188376 * rgb[1] + 0.6299787005 * rgb[2]);
+    const Lc = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, A = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, B = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+    const C = Math.hypot(A, B), h = Math.atan2(B, A), L0 = 0.1, L1 = 0.99, tc = Math.min(0.8, Math.max(0.25, (Lc - L0) / (L1 - L0))), N = 24, out = [];
+    for (let i = 0; i <= N; i++) {
+      const t = i / N, L = L0 + (L1 - L0) * t;
+      let c = Math.max(0.02, C) * (t <= tc ? t / tc : (1 - t) / (1 - tc)), v = labRGB(L, c * Math.cos(h), c * Math.sin(h));
+      for (let k = 0; k < 40 && v.some(x => x < 0 || x > 1); k++) { c *= 0.9; v = labRGB(L, c * Math.cos(h), c * Math.sin(h)); }
+      out.push([t, v.map(x => Math.round(gam(Math.min(1, Math.max(0, x)))))]);
+    }
+    return out;
+  };
+  const IMGS = ['ice', 'copper', 'grey', 'magma', 'viridis', 'custom'];
   // The look on <html> (access.js): 'classic' keeps copper; the default look swaps the copper ramp for ice.
   R.classic = () => typeof document !== 'undefined' && document.documentElement.dataset.axLook === 'classic';
-  R.lookRamp = name => (name === 'copper' && !R.classic() ? 'ice' : name) || 'grey';
-  R.crossColor = () => (R.classic() ? '#9DB89F' : 'rgba(255,255,255,.7)'); // guide cross: white reads on both ice and the yellow ring
+  // 'copper' is the viewer's "image colours" setting: the ramp access.js chose (the user's pick, else the colour mode's, else the look's)
+  R.imageRamp = function () {
+    const ds = typeof document !== 'undefined' ? document.documentElement.dataset : {}, id = IMGS.includes(ds.axImg) ? ds.axImg : (R.classic() ? 'copper' : 'ice');
+    if (id !== 'custom') return id;
+    const hue = ds.axImgHue || '#E040A0';
+    if (R._customHue !== hue) { R.ramps.custom = R.customRamp(hue); R._customHue = hue; }
+    return 'custom';
+  };
+  R.lookRamp = name => (name === 'copper' ? R.imageRamp() : name) || 'grey';
+  // guide cross: the marks colour when a mode or the user set one; else white, which reads on both ice and the yellow ring
+  R.crossColor = () => { const mk = typeof document !== 'undefined' && document.documentElement.dataset.axMark; return mk || (R.classic() ? '#9DB89F' : 'rgba(255,255,255,.7)'); };
   function ramp(stops, t) {
     for (let i = 1; i < stops.length; i++) {
       if (t <= stops[i][0]) {

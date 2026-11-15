@@ -140,3 +140,11 @@ html[data-motion=reduce] .ax{transition:none;transform:none}
 }
 html[data-contrast=more] .ax{border-color:var(--ink)}
 html[data-contrast=more] :is(.ax-preset,.ax-spec,.ax-pick input){border-color:var(--edge-strong)}
+/* Image colours and Marks colour (access.js): one radio chip per ramp, its swatch drawn from erender.js */
+.ax-imgs{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.ax-img,.ax-img-hue{display:inline-flex;align-items:center;gap:7px;min-height:32px;padding:4px 10px 4px 6px;border-radius:10px;border:1px solid var(--edge-strong,rgba(0,0,0,.2));font:600 .8125rem/1 var(--font-ui);color:var(--ink-2);background:transparent;cursor:pointer}
+.ax-img[aria-checked=true]{color:var(--ink);border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.ax-img-sw{display:block;width:30px;height:16px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25);background:#888}
+.ax-img-hue input{width:26px;height:20px;padding:0;border:0;background:none;cursor:pointer}
+html[data-ax-targets=on] :is(.ax-img,.ax-img-hue){min-height:44px}
+@media (pointer:coarse){.ax-img,.ax-img-hue{min-height:44px}}

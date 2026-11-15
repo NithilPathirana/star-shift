@@ -8,7 +8,10 @@
 const ok = v => v != null && Number.isFinite(v);
 // the look on <html>: only the classic look keeps copper (node tests: no document = the default look)
 export const isClassic = () => typeof document !== 'undefined' && document.documentElement.dataset.axLook === 'classic';
-const warm = (classic = isClassic()) => (classic ? 'copper' : 'yellow');
+// tritanopia (access.js data-ax-diff=rt): red for brighter, teal for fainter, instead of yellow and blue
+export const isRT = () => typeof document !== 'undefined' && document.documentElement.dataset.axDiff === 'rt';
+const warm = (classic = isClassic(), rt = isRT()) => (classic ? 'copper' : rt ? 'red' : 'yellow');
+const cool = (classic = isClassic(), rt = isRT()) => (!classic && rt ? 'teal' : 'blue');
 function quantile(vals, p) {
   if (!vals.length) return NaN;
   const v = Float64Array.from(vals).sort();
@@ -64,12 +67,12 @@ export function diffStar(img, a, at, r = 4) {
 
 // One-line caption for the stage (plain words; the scale numbers are Expert, in the legend).
 export function diffCaption(s, name, classic = isClassic()) {
-  const who = name || 'The star', w = warm(classic), W = w[0].toUpperCase() + w.slice(1);
-  if (!s || s.kind === 'unclear') return `${W}: brighter in the last season. Blue: fainter. ${classic ? 'Grey' : 'Dark'}: no change.`;
-  if (s.kind === 'moved') return `Blue where ${who} was, ${w} where it went: it moved ${s.dir} between the seasons.`;
+  const who = name || 'The star', w = warm(classic), W = w[0].toUpperCase() + w.slice(1), c = cool(classic), C = c[0].toUpperCase() + c.slice(1);
+  if (!s || s.kind === 'unclear') return `${W}: brighter in the last season. ${C}: fainter. ${classic ? 'Grey' : 'Dark'}: no change.`;
+  if (s.kind === 'moved') return `${C} where ${who} was, ${w} where it went: it moved ${s.dir} between the seasons.`;
   const pct = Math.round(Math.abs(s.net) * 100);
-  if (s.kind === 'same') return `No blue–${w} pair and no overall change: ${who} looks the same in both seasons.`;
-  return `No blue–${w} pair, so no visible motion; the whole star went ${s.kind === 'brighter' ? w : 'blue'}: about ${pct}% ${s.kind} (all bands mixed).`;
+  if (s.kind === 'same') return `No ${c}–${w} pair and no overall change: ${who} looks the same in both seasons.`;
+  return `No ${c}–${w} pair, so no visible motion; the whole star went ${s.kind === 'brighter' ? w : c}: about ${pct}% ${s.kind} (all bands mixed).`;
 }
 
 // Diverging colours: t in [-1, 1] (diff / scale, clipped).
@@ -91,15 +94,17 @@ function fromLab([L, A, B]) {
     .map(v => Math.round(gam(Math.min(1, Math.max(0, v)))));
 }
 const VZ = toLab([26, 34, 51]), VUP = [toLab([232, 196, 0]), toLab([255, 242, 122])], VDN = [toLab([47, 107, 224]), toLab([127, 178, 255])];
-const VMID = 0.55, LEND = (VUP[1][0] + VDN[1][0]) / 2; // where the mid colour sits, and the shared end lightness
+// tritanopia: red #D0342C then bright #FF9E8C above, teal #00A39A then bright #7FE6DC below (same lightness rule)
+const TUP = [toLab([208, 52, 44]), toLab([255, 158, 140])], TDN = [toLab([0, 163, 154]), toLab([127, 230, 220])];
+const VMID = 0.55, TEND = (TUP[1][0] + TDN[1][0]) / 2, LEND = (VUP[1][0] + VDN[1][0]) / 2; // where the mid colour sits, and the shared end lightness
 const ZERO = [52, 46, 41], UP = [[0.55, [214, 128, 64]], [1, [255, 232, 196]]], DOWN = [[0.55, [74, 132, 214]], [1, [206, 228, 255]]];
 const K = Math.asinh(4);
-export function diffColor(t, classic = isClassic()) {
+export function diffColor(t, classic = isClassic(), rt = isRT()) {
   const s = Math.max(-1, Math.min(1, t)), u = Math.asinh(4 * Math.abs(s)) / K;
   if (!classic) {
-    const [m, e] = s >= 0 ? VUP : VDN, a = u <= VMID ? VZ : m, b = u <= VMID ? m : e, f = u <= VMID ? u / VMID : (u - VMID) / (1 - VMID);
+    const [m, e] = s >= 0 ? (rt ? TUP : VUP) : (rt ? TDN : VDN), a = u <= VMID ? VZ : m, b = u <= VMID ? m : e, f = u <= VMID ? u / VMID : (u - VMID) / (1 - VMID);
     const c = [0, 1, 2].map(j => a[j] + (b[j] - a[j]) * f);
-    c[0] = VZ[0] + (LEND - VZ[0]) * u; // lightness: symmetric in |difference|
+    c[0] = VZ[0] + ((rt ? TEND : LEND) - VZ[0]) * u; // lightness: symmetric in |difference|
     return fromLab(c);
   }
   const stops = s >= 0 ? UP : DOWN;
@@ -110,7 +115,8 @@ export function diffColor(t, classic = isClassic()) {
 }
 export const diffRampCss = (classic = isClassic()) => 'linear-gradient(90deg,' + [-1, -0.5, -0.15, 0, 0.15, 0.5, 1].map((t, i) => `rgb(${diffColor(t, classic)}) ${(i / 6 * 100).toFixed(1)}%`).join(',') + ')';
 // the Difference key's tooltip follows the look (index.html holds the copper words; set again on every colour change)
-export const diffKeyTitle = (classic = isClassic()) => `Difference: last season minus first season. ${classic ? 'Copper' : 'Yellow'} = brighter later, blue = fainter later`;
+const Cap = w => w[0].toUpperCase() + w.slice(1);
+export const diffKeyTitle = (classic = isClassic()) => `Difference: last season minus first season. ${Cap(warm(classic))} = brighter later, ${cool(classic)} = fainter later`;
 function syncKey() { const k = document.getElementById('diffKey'); if (k) k.title = diffKeyTitle(); }
 if (typeof document !== 'undefined') { document.documentElement.addEventListener('star-shift-colours', syncKey); syncKey(); }
 
@@ -130,6 +136,6 @@ export function drawDiff(canvas, img, { cell = 16, noData = '#100D0B' } = {}) {
 export function diffLegend(img, unit = 'MJy/sr', classic = isClassic()) {
   const f = v => (v >= 100 ? String(Math.round(v)) : v < 0.01 ? v.toExponential(1) : v.toFixed(v >= 10 ? 1 : 3));
   const s = img ? f(img.scale) : '';
-  return `<span class="df-t">Later minus earlier:</span><span class="df-end">fainter</span><i class="df-ramp" style="background:${diffRampCss(classic)}" title="${classic ? 'Copper' : 'Yellow'} = brighter later, blue = fainter later"></i><span class="df-end">brighter</span>`
+  return `<span class="df-t">Later minus earlier:</span><span class="df-end">fainter</span><i class="df-ramp" style="background:${diffRampCss(classic)}" title="${Cap(warm(classic))} = brighter later, ${cool(classic)} = fainter later"></i><span class="df-end">brighter</span>`
     + `<span class="df-t x-only">colour scale ±${s} ${unit}<span class="df-pct"> (99th percentile)</span></span>`;
 }

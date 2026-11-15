@@ -59,7 +59,7 @@ function applySettings() {
   document.querySelectorAll('[data-set]').forEach(b => b.setAttribute('aria-checked', !!set[b.dataset.set]));
   $('ringSw').setAttribute('aria-checked', set.ring); $('ringTool').setAttribute('aria-pressed', set.ring);
   $('flagsBtn').setAttribute('aria-pressed', set.hatch);
-  segSelect($('strSeg'), b => b.dataset.str === set.str); segSelect($('rampSeg'), b => b.dataset.ramp === set.ramp);
+  segSelect($('strSeg'), b => b.dataset.str === set.str); segSelect($('rampSeg'), b => (b.dataset.ramp === 'neutral') === (root.dataset.axImg === 'grey'));
   rampLabel();
   $('d-str').textContent = { auto: 'asinh 2–99.7%', linear: 'linear 2–99.7%', strong: 'asinh×30 5–99%' }[set.str];
   refraction(); requestAnimationFrame(layout);
@@ -220,8 +220,10 @@ function layout() {
 }
 const opt = cv => CB.opt({ ramp: set.ramp, cell: +cv.dataset.dev, ring: set.ring && !!V.ring, ringColor: getComputedStyle(root).getPropertyValue('--ring').trim(),
   maskBg: '#211b16', maskInk: '#6b5d50', stretch: set.str, hatch: set.hatch });
-function rampLabel() { const b = $('rampSeg')?.querySelector('[data-ramp=copper]'); if (b) b.textContent = R.classic() ? 'Copper' : 'Ice'; } // the copper ramp is ice in the default look (erender.js)
-root.addEventListener('star-shift-colours', () => { rampLabel(); if (scene === 'viewer' && V.F.length) draw(); }); // access.js: a new --ring or look redraws the canvas
+// The scale buttons are a shortcut to access.js's Image colours (one setting): the first shows the ramp in use, Grey picks grey.
+const IMG_NAME = { ice: 'Ice', copper: 'Copper', magma: 'Magma', viridis: 'Viridis', custom: 'Custom' };
+function rampLabel() { const b = $('rampSeg')?.querySelector('[data-ramp=copper]'); if (b) b.textContent = IMG_NAME[root.dataset.axImg] || 'Colour'; }
+root.addEventListener('star-shift-colours', () => { rampLabel(); segSelect($('rampSeg'), b => (b.dataset.ramp === 'neutral') === (root.dataset.axImg === 'grey')); if (scene === 'viewer' && V.F.length) draw(); }); // access.js: a new --ring, ramp or look redraws the canvas
 function cross(cv, fx, fy) {
   if (CB.on && mode === 'blink') return; // Clean Blink hides the cross (Compare always draws it: its chip says so)
   const c = cv.getContext('2d'), k = +cv.dataset.dev, x = (fx + .5) * k, y = (fy + .5) * k;
@@ -652,7 +654,8 @@ function toggleSet(k) { set[k] = !set[k]; save(); applySettings(); Snd.play('cli
 document.querySelectorAll('[data-set]').forEach(b => { b.onclick = () => toggleSet(b.dataset.set); });
 $('ringSw').onclick = () => toggleSet('ring'); $('ringTool').onclick = () => toggleSet('ring'); $('flagsBtn').onclick = () => toggleSet('hatch');
 document.querySelectorAll('[data-str]').forEach(b => { b.onclick = () => { set.str = b.dataset.str; save(); applySettings(); Snd.play('tick'); }; });
-document.querySelectorAll('[data-ramp]').forEach(b => { b.onclick = () => { set.ramp = b.dataset.ramp; save(); applySettings(); Snd.play('tick'); }; });
+if (set.ramp === 'neutral') { window.StarShiftAccess?.setImg('grey'); set.ramp = 'copper'; save(); } // the old Grey choice moves into Image colours
+document.querySelectorAll('[data-ramp]').forEach(b => { b.onclick = () => { set.ramp = 'copper'; window.StarShiftAccess?.setImg(b.dataset.ramp === 'neutral' ? 'grey' : 'auto'); save(); applySettings(); Snd.play('tick'); }; });
 
 function copyText(btn, txt) {
   try { navigator.clipboard?.writeText(txt); } catch { /* ignore */ }
