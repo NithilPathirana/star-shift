@@ -1,6 +1,6 @@
 {
  "about": "Numbers for web/proof.html, computed by tools/make_proof.mjs from the app pipeline (data.js) on cached SPHEREx cutouts. AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.",
- "generated": "2026-11-15T05:36:36.921Z",
+ "generated": "2026-11-15T06:18:14.694Z",
  "settings": {
   "fovArcmin": 2.5,
   "maxImages": 120,
@@ -254,7 +254,7 @@
       "verdict": "DIRECTION OFF",
       "measured": 349.9,
       "catalogue": 355.6,
-      "paDiff": -5.6,
+      "paDiff": -5.7,
       "east": -1002,
       "north": -198,
       "value": 1022,
@@ -270,7 +270,7 @@
      },
      "verdict": "AGREES",
      "shiftPx": 1.864,
-     "limit": "The star carries the archive's saturation flag in 120 of 120 images, and its centre is blanked in 81 of the 120 fitted images, so its centre is found from the unsaturated edge pixels; images with a blanked centre count for less in the fit because their positions scatter more. The long-wavelength detectors alone give 10.52 ± 0.28″/yr, the short ones 9.40 ± 0.82″/yr. The speed agrees, but the direction is 5.6° off (349.9° measured, 355.6° catalogue): about 1.0″/yr sideways, 3.1σ. Likely because the star carries the saturation flag in 120 of 120 images and its centre is blanked in 81 of the 120 fitted, so the position comes from the star's edges, which can lean to one side; the 0.15″/yr floor comes from faint field stars and does not cover that. It stays off with the long-wavelength detectors alone 348.9° and every flagged image hidden 349.4°, so it is systematic, not noise.",
+     "limit": "The star carries the archive's saturation flag in 120 of 120 images, and its centre is blanked in 81 of the 120 fitted images, so its centre is found from the unsaturated edge pixels; images with a blanked centre count for less in the fit because their positions scatter more. The long-wavelength detectors alone give 10.52 ± 0.28″/yr, the short ones 9.40 ± 0.82″/yr. The speed agrees, but the direction is 5.7° off (349.9° measured, 355.6° catalogue): about 1.0″/yr sideways, 3.1σ. Likely because the star carries the saturation flag in 120 of 120 images and its centre is blanked in 81 of the 120 fitted, so the position comes from the star's edges, which can lean to one side; the 0.15″/yr floor comes from faint field stars and does not cover that. It stays off with the long-wavelength detectors alone (348.9°) and with every flagged image hidden (349.4°), so it is systematic, not noise.",
      "chart": {
       "kind": "motion",
       "pa": 355.58,
@@ -2946,7 +2946,7 @@
       "text": "change divided by its uncertainty"
      },
      "verdict": "AGREES",
-     "limit": "Only images with no masked pixel within 15″ of the star count, each compared with first-season images from the same detector at the same wavelength: 64 of 120 images qualify (16 have a saturated, masked centre; the rest have no first-season match). The catalogue gives no amplitude at these wavelengths, so only the fact of a change is tested. Control: on Barnard's Star, a steady star, the season averages stay within 0.05 mag of the first season (only 15 of its 120 images have an unmasked centre).",
+     "limit": "Only images with no masked pixel within 15″ of the star count, each compared with first-season images from the same detector at the same wavelength: 64 of 120 images qualify (16 have a masked pixel within 15″ of the star; the rest have no first-season match). The catalogue gives no amplitude at these wavelengths, so only the fact of a change is tested. Control: on Barnard's Star, a steady star, the season averages stay within 0.05 mag of the first season (only 15 of its 120 images have no masked pixel within 15″).",
      "chart": {
       "kind": "brightness",
       "groups": [
@@ -3417,29 +3417,34 @@
    "simbadLive": true,
    "viewer": "index.html?q=R%20Draconis&scene=viewer",
    "images": {
-    "archive": 539,
+    "archive": 2493,
     "planned": 120,
     "loaded": 120,
     "failed": 0,
-    "saturatedCore": 120,
-    "flaggedNearStar": 14,
-    "first": "2025-05-16",
-    "last": "2026-07-16",
+    "saturatedCore": 119,
+    "flaggedNearStar": 8,
+    "first": "2025-04-24",
+    "last": "2026-09-27",
     "seasons": [
      {
-      "from": "2025-05-16",
-      "to": "2025-07-20",
-      "n": 34
+      "from": "2025-04-24",
+      "to": "2025-07-18",
+      "n": 12
      },
      {
-      "from": "2025-10-17",
-      "to": "2026-01-13",
-      "n": 47
+      "from": "2025-08-29",
+      "to": "2025-12-31",
+      "n": 22
      },
      {
-      "from": "2026-04-22",
-      "to": "2026-07-16",
-      "n": 39
+      "from": "2026-02-08",
+      "to": "2026-05-23",
+      "n": 46
+     },
+     {
+      "from": "2026-06-12",
+      "to": "2026-09-27",
+      "n": 40
      }
     ]
    },
@@ -3457,9 +3462,9 @@
       "epoch": "J2000 position; motion per year"
      },
      "measured": {
-      "value": 25679,
-      "err": 2149,
-      "statErr": 2144,
+      "value": 3223,
+      "err": 1026,
+      "statErr": 1015,
       "sysErr": 150,
       "sysSource": {
        "kind": "field",
@@ -3469,31 +3474,36 @@
       "floorText": "floor 0.15″/yr from field stars (all five fields; 0 usable here)",
       "refStars": 0,
       "significant": true,
-      "upperLimit": 29978,
+      "upperLimit": 5276,
       "unit": "mas/yr",
-      "pa": 215.8,
-      "frames": 40,
+      "pa": 54,
+      "frames": 69,
       "rejected": 0,
-      "pmra": -15021,
-      "pmdec": -20827,
-      "pmraErr": 2027,
-      "pmdecErr": 2211,
-      "span": 0.99,
+      "pmra": 2608,
+      "pmdec": 1893,
+      "pmraErr": 1020,
+      "pmdecErr": 1038,
+      "span": 1.42,
       "seasons": [
        {
-        "from": "2025-05-16",
-        "to": "2025-07-20",
-        "n": 21
+        "from": "2025-04-27",
+        "to": "2025-07-18",
+        "n": 9
        },
        {
-        "from": "2025-10-17",
-        "to": "2026-01-13",
-        "n": 16
+        "from": "2025-09-08",
+        "to": "2025-12-26",
+        "n": 10
        },
        {
-        "from": "2026-04-24",
-        "to": "2026-05-13",
-        "n": 3
+        "from": "2026-02-16",
+        "to": "2026-05-23",
+        "n": 30
+       },
+       {
+        "from": "2026-06-12",
+        "to": "2026-09-27",
+        "n": 20
        }
       ],
       "detectors": [
@@ -3511,289 +3521,434 @@
       "pmdec": 6.1
      },
      "counts": {
-      "saturationFlag": 120,
+      "saturationFlag": 119,
       "images": 120,
-      "blanked": 40,
-      "fitted": 40,
+      "blanked": 69,
+      "fitted": 69,
       "limitFrac": 0.9
      },
      "diff": null,
      "direction": null,
      "window": null,
      "verdict": "NOT MEASURABLE",
-     "shiftPx": 0.003,
-     "limit": "The catalogue motion (0.02″/yr) moves it only 0.021″ (0.003 of a 6.15″ pixel) over the 1.2 years of images, far below what one pixel can show. The fit still finds 25.68 ± 2.15″/yr, which is not a real motion: the star carries the saturation flag in 120 of 120 images and its centre is blanked in 40 of the 40 fitted, so its position comes from the edges of a blanked core.",
+     "shiftPx": 0.005,
+     "limit": "The catalogue motion (0.02″/yr) moves it only 0.031″ (0.005 of a 6.15″ pixel) over the 1.4 years of images, far below what one pixel can show. The fit still finds 3.22 ± 1.03″/yr, which is not a real motion: the star carries the saturation flag in 119 of 120 images and its centre is blanked in 69 of the 69 fitted, so its position comes from the edges of a blanked core.",
      "chart": {
       "kind": "motion",
       "pa": 286.59,
       "catalogueMasYr": 21.5,
       "points": [
        {
-        "mjd": 60811.956,
-        "e": 0.645,
-        "n": 1.476
+        "mjd": 60792.463,
+        "e": 0.886,
+        "n": -1.766
        },
        {
-        "mjd": 60811.959,
-        "e": -0.648,
-        "n": -1.804
+        "mjd": 60794.299,
+        "e": -2.68,
+        "n": -0.31
        },
        {
-        "mjd": 60815.693,
-        "e": -1.471,
-        "n": 1.357
+        "mjd": 60796.61,
+        "e": -4.872,
+        "n": -0.968
        },
        {
-        "mjd": 60828.128,
-        "e": -0.089,
-        "n": 0.544
+        "mjd": 60801.43,
+        "e": -0.497,
+        "n": -1.375
        },
        {
         "mjd": 60828.131,
-        "e": 1.119,
-        "n": 0.924
+        "e": 1.121,
+        "n": 0.923
        },
        {
-        "mjd": 60832.137,
-        "e": 0.241,
-        "n": -1.339
+        "mjd": 60834.791,
+        "e": -6.294,
+        "n": -3.919
        },
        {
-        "mjd": 60834.793,
-        "e": 7.02,
-        "n": -3.41
+        "mjd": 60838.254,
+        "e": -5.623,
+        "n": -1.296
        },
        {
-        "mjd": 60835.537,
-        "e": 1.001,
-        "n": -4.381
+        "mjd": 60853.204,
+        "e": -2.017,
+        "n": -1.196
        },
        {
-        "mjd": 60836.016,
-        "e": -1.948,
-        "n": -0.102
+        "mjd": 60874.669,
+        "e": 0.875,
+        "n": -4.384
        },
        {
-        "mjd": 60837.303,
-        "e": -0.796,
-        "n": -3.194
+        "mjd": 60926.428,
+        "e": 2.011,
+        "n": 4.017
        },
        {
-        "mjd": 60838.255,
-        "e": -5.227,
-        "n": -3.391
+        "mjd": 60934.238,
+        "e": -2.492,
+        "n": 12.343
        },
        {
-        "mjd": 60838.661,
-        "e": -0.304,
-        "n": -1.053
+        "mjd": 60938.658,
+        "e": 3.853,
+        "n": -0.173
        },
        {
-        "mjd": 60838.664,
-        "e": 6.227,
-        "n": -1.9
+        "mjd": 60948.501,
+        "e": -4.342,
+        "n": -5.46
        },
        {
-        "mjd": 60841.45,
-        "e": 0.154,
-        "n": 10.003
+        "mjd": 60960.316,
+        "e": -1.983,
+        "n": -7.516
        },
        {
-        "mjd": 60851.569,
-        "e": -0.877,
-        "n": 3.746
+        "mjd": 60984.291,
+        "e": -1.93,
+        "n": 1.334
        },
        {
-        "mjd": 60851.573,
-        "e": -0.491,
-        "n": -2.862
+        "mjd": 61009.485,
+        "e": -3.722,
+        "n": 8.557
        },
        {
-        "mjd": 60857.684,
+        "mjd": 61019.874,
+        "e": -1.4,
+        "n": -1.536
+       },
+       {
+        "mjd": 61021.5,
+        "e": 3.663,
+        "n": 8.744
+       },
+       {
+        "mjd": 61035.557,
+        "e": 4.9,
+        "n": 13.492
+       },
+       {
+        "mjd": 61087.702,
+        "e": 2.168,
+        "n": -1.971
+       },
+       {
+        "mjd": 61091.028,
+        "e": 4.554,
+        "n": -2.462
+       },
+       {
+        "mjd": 61102.371,
+        "e": 0.19,
+        "n": 0.294
+       },
+       {
+        "mjd": 61104.332,
+        "e": 0.22,
+        "n": 1.383
+       },
+       {
+        "mjd": 61107.184,
+        "e": 2.362,
+        "n": 1.101
+       },
+       {
+        "mjd": 61109.017,
+        "e": 1.305,
+        "n": 1.317
+       },
+       {
+        "mjd": 61109.227,
+        "e": -0.949,
+        "n": -0.904
+       },
+       {
+        "mjd": 61111.053,
+        "e": 3.912,
+        "n": 2.214
+       },
+       {
+        "mjd": 61115.198,
+        "e": 0.807,
+        "n": -0.223
+       },
+       {
+        "mjd": 61116.831,
+        "e": -0.004,
+        "n": 1.631
+       },
+       {
+        "mjd": 61120.764,
+        "e": -2.247,
+        "n": 0.586
+       },
+       {
+        "mjd": 61120.973,
+        "e": -0.352,
+        "n": 0.279
+       },
+       {
+        "mjd": 61122.94,
+        "e": -0.807,
+        "n": -3.935
+       },
+       {
+        "mjd": 61124.841,
+        "e": 1.903,
+        "n": 3.952
+       },
+       {
+        "mjd": 61127.011,
+        "e": 0.083,
+        "n": -0.354
+       },
+       {
+        "mjd": 61129.526,
         "e": 4.936,
-        "n": -0.45
+        "n": 0.573
        },
        {
-        "mjd": 60870.728,
-        "e": -1.753,
-        "n": -12.623
+        "mjd": 61131.629,
+        "e": 0.14,
+        "n": 1.313
        },
        {
-        "mjd": 60870.731,
-        "e": -0.615,
-        "n": -3.669
+        "mjd": 61133.799,
+        "e": 0.837,
+        "n": 1.501
        },
        {
-        "mjd": 60874.67,
-        "e": -2.886,
-        "n": -7.799
+        "mjd": 61135.772,
+        "e": 5.977,
+        "n": 1.984
        },
        {
-        "mjd": 60876.775,
-        "e": -10.445,
-        "n": -14.51
+        "mjd": 61137.874,
+        "e": -1.036,
+        "n": 0.245
        },
        {
-        "mjd": 60965.615,
-        "e": -7.438,
-        "n": -17.27
+        "mjd": 61138.961,
+        "e": 8.043,
+        "n": -8.481
        },
        {
-        "mjd": 60965.618,
-        "e": -5.191,
-        "n": -14.749
+        "mjd": 61141.476,
+        "e": 5.515,
+        "n": -2.255
        },
        {
-        "mjd": 60967.041,
-        "e": -7.384,
-        "n": -14.367
+        "mjd": 61141.812,
+        "e": -0.008,
+        "n": 1.829
        },
        {
-        "mjd": 60967.451,
-        "e": -6.416,
-        "n": -16.418
+        "mjd": 61144.458,
+        "e": -3.476,
+        "n": 2.052
        },
        {
-        "mjd": 60972.949,
-        "e": -4.258,
-        "n": -24.632
+        "mjd": 61152.332,
+        "e": 4.373,
+        "n": -0.111
        },
        {
-        "mjd": 60984.838,
-        "e": -14.739,
-        "n": -13.425
+        "mjd": 61155.119,
+        "e": 1.406,
+        "n": 1.471
        },
        {
-        "mjd": 60987.485,
-        "e": -14.326,
-        "n": -11.965
+        "mjd": 61162.654,
+        "e": -3.634,
+        "n": 0.385
        },
        {
-        "mjd": 60987.618,
-        "e": -9.657,
-        "n": -14.47
-       },
-       {
-        "mjd": 60993.459,
-        "e": -8.406,
-        "n": -14.722
-       },
-       {
-        "mjd": 60993.462,
-        "e": -3.624,
-        "n": -18.978
-       },
-       {
-        "mjd": 61010.023,
-        "e": -1.254,
-        "n": -15.201
-       },
-       {
-        "mjd": 61011.248,
-        "e": -7.149,
-        "n": -16.048
-       },
-       {
-        "mjd": 61019.873,
-        "e": -12.391,
-        "n": -9.327
-       },
-       {
-        "mjd": 61039.9,
-        "e": -10.095,
-        "n": -11.115
-       },
-       {
-        "mjd": 61040.584,
-        "e": -14.029,
-        "n": -9.536
-       },
-       {
-        "mjd": 61053.411,
-        "e": -11.934,
-        "n": -15.149
-       },
-       {
-        "mjd": 61154.641,
-        "e": -9.972,
-        "n": -16.789
-       },
-       {
-        "mjd": 61170.801,
-        "e": -11.033,
-        "n": -17.308
+        "mjd": 61166.254,
+        "e": -4.729,
+        "n": 1.987
        },
        {
         "mjd": 61173.245,
-        "e": -10.978,
-        "n": -14.394
+        "e": 1.452,
+        "n": 3.28
+       },
+       {
+        "mjd": 61183.491,
+        "e": -1.418,
+        "n": -1.641
+       },
+       {
+        "mjd": 61203.86,
+        "e": 0.757,
+        "n": 7.198
+       },
+       {
+        "mjd": 61212.686,
+        "e": -3.6,
+        "n": 0.904
+       },
+       {
+        "mjd": 61227.485,
+        "e": -3.728,
+        "n": -6.822
+       },
+       {
+        "mjd": 61232.373,
+        "e": -1.332,
+        "n": 1.52
+       },
+       {
+        "mjd": 61250.634,
+        "e": -1.816,
+        "n": -0.769
+       },
+       {
+        "mjd": 61255.249,
+        "e": 6.274,
+        "n": 5.868
+       },
+       {
+        "mjd": 61256.538,
+        "e": 4.907,
+        "n": -1.95
+       },
+       {
+        "mjd": 61262.65,
+        "e": 1.498,
+        "n": 10.205
+       },
+       {
+        "mjd": 61272.696,
+        "e": -6.405,
+        "n": 5.016
+       },
+       {
+        "mjd": 61273.643,
+        "e": 1.336,
+        "n": -0.564
+       },
+       {
+        "mjd": 61277.373,
+        "e": -5.596,
+        "n": -1.006
+       },
+       {
+        "mjd": 61279.756,
+        "e": 8.161,
+        "n": -0.79
+       },
+       {
+        "mjd": 61280.841,
+        "e": 0.653,
+        "n": 0.737
+       },
+       {
+        "mjd": 61282.875,
+        "e": -0.606,
+        "n": -4.695
+       },
+       {
+        "mjd": 61283.483,
+        "e": 0.404,
+        "n": -4.618
+       },
+       {
+        "mjd": 61284.439,
+        "e": 1.486,
+        "n": 12.455
+       },
+       {
+        "mjd": 61286.68,
+        "e": 13.011,
+        "n": -0.414
+       },
+       {
+        "mjd": 61292.513,
+        "e": 2.201,
+        "n": 11.448
+       },
+       {
+        "mjd": 61304.799,
+        "e": -1.815,
+        "n": 0.546
+       },
+       {
+        "mjd": 61310.292,
+        "e": -7.479,
+        "n": 7.016
        }
       ],
       "fit": {
-       "ae": 30422.979631420643,
-       "be": -15.020687521249469,
-       "an": 42182.09543348851,
-       "bn": -20.827065348320136
+       "ae": -5284.339153295034,
+       "be": 2.6083271455919586,
+       "an": -3834.6663829499676,
+       "bn": 1.892921056700523
       }
      },
      "fitAnyway": {
-      "value": 25679,
-      "err": 2149,
-      "statErr": 2144,
+      "value": 3223,
+      "err": 1026,
+      "statErr": 1015,
       "sysErr": 150,
       "floorText": "floor 0.15″/yr from field stars (all five fields; 0 usable here)",
       "significant": true,
-      "upperLimit": 29978,
-      "frames": 40
+      "upperLimit": 5276,
+      "frames": 69
      },
      "variants": {
       "all": {
        "ok": true,
-       "total": 25679,
-       "totalErr": 2149,
-       "statErr": 2144,
+       "total": 3223,
+       "totalErr": 1026,
+       "statErr": 1015,
        "sysErr": 150,
        "significant": true,
-       "upperLimit": 29978,
-       "frames": 40,
-       "pa": 215.8,
-       "span": 0.99
+       "upperLimit": 5276,
+       "frames": 69,
+       "pa": 54,
+       "span": 1.42
       },
       "short": {
        "ok": true,
-       "total": 25597,
-       "totalErr": 2005,
-       "statErr": 1999,
+       "total": 1513,
+       "totalErr": 1726,
+       "statErr": 1720,
        "sysErr": 150,
-       "significant": true,
-       "upperLimit": 29607,
-       "frames": 45,
-       "pa": 269.6,
-       "span": 1.09
+       "significant": false,
+       "upperLimit": 4966,
+       "frames": 54,
+       "pa": 143.9,
+       "span": 1.42
       },
       "long": {
        "ok": true,
-       "total": 1985,
-       "totalErr": 963,
-       "statErr": 951,
+       "total": 4142,
+       "totalErr": 1203,
+       "statErr": 1194,
        "sysErr": 150,
-       "significant": false,
-       "upperLimit": 3911,
-       "frames": 46,
-       "pa": 90,
-       "span": 1.1
+       "significant": true,
+       "upperLimit": 6549,
+       "frames": 37,
+       "pa": 57.1,
+       "span": 1.15
       },
       "filtersOn": {
        "ok": true,
-       "total": 29526,
-       "totalErr": 2720,
-       "statErr": 2716,
+       "total": 4457,
+       "totalErr": 1126,
+       "statErr": 1116,
        "sysErr": 150,
        "significant": true,
-       "upperLimit": 34966,
-       "frames": 39,
-       "pa": 174.4,
-       "span": 0.66
+       "upperLimit": 6709,
+       "frames": 62,
+       "pa": 52.5,
+       "span": 1.4
       }
      }
     },

@@ -5,7 +5,7 @@
 // AI-written code (Claude, Anthropic) for team Proper Motion, NASA Space Apps 2026.
 
 import { parseQuery, QueryError, DEFAULT_SETTINGS } from './query.js';
-import { run, buildStacks, measureMotion, resolveTarget, motionMeasurability, motionDetectors, detectorText } from './data.js';
+import { run, buildStacks, measureMotion, resolveTarget, motionMeasurability, motionDetectors, detectorText, seasons as groupSeasons } from './data.js';
 import { kinematics, tangentialVelocity, toLSR, totalPM } from './kinematics.js';
 import { PRESETS, findPreset } from './presets.js';
 import { toGalactic, toEcliptic, constellation, loadConstellations, visibleTonight, altAz, riseTransitSet, skyTonight, tonightWords, dirWord } from './sky.js';
@@ -124,7 +124,8 @@ const seasonName = v => { const a = new Date(V.F[v.from].date.slice(0, 10)), b =
   if (a.getUTCMonth() === b.getUTCMonth() && a.getUTCFullYear() === b.getUTCFullYear()) return `${MON[a.getUTCMonth()]} ${a.getUTCFullYear()}`;
   return `${MON[a.getUTCMonth()]}${a.getUTCFullYear() !== b.getUTCFullYear() ? ' ' + a.getUTCFullYear() : ''}–${MON[b.getUTCMonth()]} ${b.getUTCFullYear()}`; };
 // observing seasons: SPHEREx revisits a spot about every 6 months; visits < 60 days apart are one season
-const visits = (F) => { const out = []; let cur = null; F.forEach((f, i) => { if (!cur || f.mjd - F[i - 1].mjd > 60) { cur = { from: i, to: i }; out.push(cur); } else cur.to = i; }); return out; };
+// the same seasons as data.js (60-day gaps, and all-year runs near the ecliptic poles split, e.g. R Draconis)
+const visits = (F) => { let i = 0; return groupSeasons(F).map(s => { const v = { from: i, to: i + s.frames.length - 1 }; i += s.frames.length; return v; }); };
 const seasonOf = i => V.seasons.findIndex(v => i >= v.from && i <= v.to);
 
 /* "Hold one band" (judging panel a3/b3): Time playback shows one detector pair only, so the star

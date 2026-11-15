@@ -42,7 +42,8 @@ test('proof.json verdicts follow the shared rule', () => {
   const d = JSON.parse(readFileSync(new URL('../web/data/proof.json', import.meta.url), 'utf8'));
   const r = d.targets.find(t => t.key === 'r-dra').tests[0];
   assert.equal(r.verdict, 'NOT MEASURABLE');
-  assert.ok(r.fitAnyway && r.fitAnyway.value > 20000, 'the bogus fit is kept only as "fit anyway"');
+  // the bogus fit (from a blanked core) is kept only as "fit anyway", far above the catalogue's 0.02″/yr
+  assert.ok(r.fitAnyway && r.fitAnyway.value > 100 * r.expected.value, 'the bogus fit is kept only as "fit anyway"');
   // the rule and the rows use the same words: "saturation flag", "centre blanked", "90% limit"
   const rule = d.rules.motion.find(([v]) => v === 'NOT MEASURABLE')[1];
   assert.match(rule, /centre is blanked .* in 90% or more of the fitted images \(the 90% limit\)/);

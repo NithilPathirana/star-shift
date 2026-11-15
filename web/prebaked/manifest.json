@@ -1,6 +1,6 @@
 {
  "about": "Star Shift prebaked answers for the five NASA demo targets (tools/export_prebaked.mjs; read by web/core/prebaked.js). Keys are request paths as the app builds them, relative to the page origin (the relay); SIMBAD keys are full URLs. Exact matches only; anything else goes live.",
- "generated": "2026-11-15T06:02:44.241Z",
+ "generated": "2026-11-15T06:17:41.504Z",
  "settings": {
   "fov": 2.5,
   "max": 120,
@@ -226,11 +226,41 @@
    "frames": 120,
    "failed": 0,
    "otherSourcePx": [
-    7,
-    12
+    16,
+    15
    ],
    "spot": {
-    "skipped": "one season only"
+    "field": {
+     "centre": {
+      "ra": 248.167233,
+      "dec": 66.755024
+     },
+     "note": "field-level requests: any click in this patch is answered from these files"
+    },
+    "starCheck": {
+     "gaia": false,
+     "simbad": true
+    },
+    "asteroidCheck": {
+     "seasons": [
+      {
+       "label": "First season",
+       "utc": "2025-06-02T03:09:08.660",
+       "ok": false,
+       "objects": null,
+       "observer": null,
+       "error": "HTTP 504"
+      },
+      {
+       "label": "Latest season",
+       "utc": "2026-08-17T07:17:13.811",
+       "ok": false,
+       "objects": null,
+       "observer": null,
+       "error": "HTTP 504"
+      }
+     ]
+    }
    },
    "files": 134,
    "mib": 9.12,
@@ -301,14 +331,39 @@
   "files": 6
  },
  "jpl": {
-  "asked": 14,
+  "asked": 18,
   "answered": 14,
-  "notAnswered": [],
-  "note": "All JPL requests answered."
+  "notAnswered": [
+   {
+    "owner": "r-dra",
+    "key": "/jpl/sb_ident?obs-time=2025-06-02_03%3A09%3A08&fov-ra-center=16-32-40.14&fov-dec-center=66-45-18.09&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500",
+    "status": 504,
+    "error": null
+   },
+   {
+    "owner": "r-dra",
+    "key": "/jpl/sb_ident?obs-time=2025-06-02_03%3A09%3A08&fov-ra-center=16-32-40.14&fov-dec-center=66-45-18.09&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&xobs=0%2C0%2C0%2C0%2C0%2C0",
+    "status": 504,
+    "error": null
+   },
+   {
+    "owner": "r-dra",
+    "key": "/jpl/sb_ident?obs-time=2026-08-17_07%3A17%3A13&fov-ra-center=16-32-40.14&fov-dec-center=66-45-18.09&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&mpc-code=500",
+    "status": 504,
+    "error": null
+   },
+   {
+    "owner": "r-dra",
+    "key": "/jpl/sb_ident?obs-time=2026-08-17_07%3A17%3A13&fov-ra-center=16-32-40.14&fov-dec-center=66-45-18.09&fov-ra-hwidth=0.035&fov-dec-hwidth=0.035&mag-required=false&two-pass=true&suppress-first-pass=true&req-elem=false&xobs=0%2C0%2C0%2C0%2C0%2C0",
+    "status": 504,
+    "error": null
+   }
+  ],
+  "note": "Requests JPL did not answer go live on the page (the Spot verdict never waits for JPL)."
  },
  "totals": {
   "files": 675,
-  "mib": 41.98
+  "mib": 41.99
  },
  "entries": {
   "/gaia/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%201000%20source_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20parallax%2C%20phot_g_mean_mag%2C%20parallax_error%2C%20pmra_error%2C%20pmdec_error%2C%20radial_velocity%2C%20radial_velocity_error%20FROM%20gaiadr3.gaia_source%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.760098%2C%20-7.24221%2C%200.0722222222))%20ORDER%20BY%20phot_g_mean_mag": {
@@ -4262,97 +4317,97 @@
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.7549324191%2C%20-7.2302512574%2C%200.0041666667))": {
    "file": "wise-0855/d9be2233b913b45e.csv",
    "size": 27,
-   "fetched": "2026-11-15T06:02:37.537Z",
+   "fetched": "2026-11-15T06:10:44.413Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.7577786034%2C%20-7.2420186009%2C%200.05))": {
    "file": "wise-0855/87f236ac2a22fa70.csv",
    "size": 140,
-   "fetched": "2026-11-15T06:02:35.923Z",
+   "fetched": "2026-11-15T06:10:42.797Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.1499219789%2C%2066.7498979203%2C%200.0041666667))": {
    "file": "r-dra/2bf0add1b5e6d06b.csv",
    "size": 27,
-   "fetched": "2026-11-15T06:02:42.765Z",
+   "fetched": "2026-11-15T06:10:49.229Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.1672203826%2C%2066.7550253180%2C%200.05))": {
    "file": "r-dra/e1d2fd21a3b0a655.csv",
    "size": 154,
-   "fetched": "2026-11-15T06:02:40.723Z",
-   "kind": "simbad"
-  },
-  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.1888756312%2C%2066.7550223864%2C%200.0041666667))": {
-   "file": "r-dra/fa248eee53f0119e.csv",
-   "size": 27,
-   "fetched": "2026-11-15T06:02:42.463Z",
+   "fetched": "2026-11-15T06:10:47.572Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20269.4393719471%2C%204.7857861380%2C%200.0041666667))": {
    "file": "barnard/58702f1f91eff02b.csv",
    "size": 27,
-   "fetched": "2026-11-15T06:02:32.557Z",
+   "fetched": "2026-11-15T06:10:39.390Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20269.4460727235%2C%204.7707183640%2C%200.05))": {
    "file": "barnard/b1bd072e9d41cf79.csv",
    "size": 140,
-   "fetched": "2026-11-15T06:02:30.338Z",
+   "fetched": "2026-11-15T06:10:37.108Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20331.0624140088%2C%20-56.8006663248%2C%200.0041666667))": {
    "file": "eps-indi-b/28952fa4d898926e.csv",
    "size": 27,
-   "fetched": "2026-11-15T06:02:35.277Z",
+   "fetched": "2026-11-15T06:10:42.192Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20331.0984339339%2C%20-56.8012468832%2C%200.05))": {
    "file": "eps-indi-b/f4ba24bd5efca4fc.csv",
    "size": 152,
-   "fetched": "2026-11-15T06:02:33.791Z",
+   "fetched": "2026-11-15T06:10:40.602Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%2076.9328168821%2C%2030.4098297987%2C%200.0041666667))": {
    "file": "rw-aur/9be9aac2abc36881.csv",
    "size": 27,
-   "fetched": "2026-11-15T06:02:39.780Z",
+   "fetched": "2026-11-15T06:10:46.662Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%2076.9565886091%2C%2030.4012864140%2C%200.05))": {
    "file": "rw-aur/fe6d6a6c89a6fded.csv",
    "size": 392,
-   "fetched": "2026-11-15T06:02:38.173Z",
+   "fetched": "2026-11-15T06:10:45.029Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%202000%20main_id%2C%20ra%2C%20dec%2C%20otype%2C%20nbref%20FROM%20basic%20WHERE%201%20%3D%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%2076.9645092818%2C%2030.3961650455%2C%200.0041666667))": {
    "file": "rw-aur/96e4cffd445f1c0d.csv",
    "size": 27,
-   "fetched": "2026-11-15T06:02:40.080Z",
+   "fetched": "2026-11-15T06:10:46.952Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20800%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20133.760098%2C%20-7.242210%2C%200.113889))%20%3D%201": {
    "file": "wise-0855/3d2e29dbaf7c4549.csv",
    "size": 714,
-   "fetched": "2026-11-15T06:02:37.855Z",
+   "fetched": "2026-11-15T06:10:44.717Z",
+   "kind": "simbad"
+  },
+  "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20800%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20248.167233%2C%2066.755024%2C%200.113889))%20%3D%201": {
+   "file": "r-dra/a500d682c838a48c.csv",
+   "size": 402,
+   "fetched": "2026-11-15T06:10:49.808Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20800%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20269.446229%2C%204.768703%2C%200.113889))%20%3D%201": {
    "file": "barnard/891d14fc67baa48c.csv",
    "size": 2288,
-   "fetched": "2026-11-15T06:02:32.889Z",
+   "fetched": "2026-11-15T06:10:39.693Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20800%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%20331.096733%2C%20-56.800671%2C%200.113889))%20%3D%201": {
    "file": "eps-indi-b/9d351464356d82bf.csv",
    "size": 691,
-   "fetched": "2026-11-15T06:02:35.607Z",
+   "fetched": "2026-11-15T06:10:42.494Z",
    "kind": "simbad"
   },
   "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=SELECT%20TOP%20800%20main_id%2C%20ra%2C%20dec%2C%20pmra%2C%20pmdec%2C%20otype%20FROM%20basic%20WHERE%20CONTAINS(POINT('ICRS'%2C%20ra%2C%20dec)%2C%20CIRCLE('ICRS'%2C%2076.956587%2C%2030.401290%2C%200.113889))%20%3D%201": {
    "file": "rw-aur/f821b3b48f0313fe.csv",
    "size": 1711,
-   "fetched": "2026-11-15T06:02:40.395Z",
+   "fetched": "2026-11-15T06:10:47.249Z",
    "kind": "simbad"
   }
  }

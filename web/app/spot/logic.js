@@ -517,7 +517,8 @@ export function decideVerdict(state) {
 }
 
 // ---------------------------------------------------------------- report summary (nothing about the user)
-export const DOIS = 'IRSA SPHEREx Quick Release 2 (DOI 10.26131/IRSA652) and Quick Release 3 (DOI 10.26131/IRSA662)';
+// the two releases the app queries (web/data/releases.json; QR2 is not used)
+export const DOIS = 'IRSA SPHEREx Data Release 1 (DOI 10.26131/IRSA678) and Quick Release 3 (DOI 10.26131/IRSA662)';
 export const REPORT_LINKS = [
   { name: 'Backyard Worlds: Planet 9 (Zooniverse)', href: 'https://www.zooniverse.org/projects/marckuchner/backyard-worlds-planet-9',
     forWhat: 'for faint objects far beyond the planets that creep across the sky over years, like brown dwarfs' },

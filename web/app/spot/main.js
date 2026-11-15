@@ -536,7 +536,7 @@ function notebookEntry(s) {
   return {
     label: `Spot a mover · suspect ${s.n} · ${S.field.label}`,
     value: `${v.title}${v.sub ? ` (${v.sub})` : ''}. Ring at ${fmtPos(s)} (J2000). Seasons ${seasonRange(A)} and ${seasonRange(B)}. Checks: ${checks}.`,
-    unit: '', uncertainty: '', source: 'NASA SPHEREx via IRSA (DOIs 10.26131/IRSA652, 10.26131/IRSA662); Gaia DR3; SIMBAD; JPL Small-Body Identification',
+    unit: '', uncertainty: '', source: 'NASA SPHEREx via IRSA (DOIs 10.26131/IRSA678, 10.26131/IRSA662); Gaia DR3; SIMBAD; JPL Small-Body Identification',
     tag: 'COMPUTED',
     context: { page: 'Spot', ra: +s.ra.toFixed(6), dec: +s.dec.toFixed(6), date: `${fmtDay(A.mjd)} / ${fmtDay(B.mjd)}`, frameId: `${middleImage(A).obsid} / ${middleImage(B).obsid}`, url: location.href },
   };

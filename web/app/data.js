@@ -46,13 +46,29 @@ export function cutoutCenter(target, mjd) {
 }
 
 // Group time-sorted frames into observing seasons (SPHEREx revisits about every 6 months).
-export function seasons(frames, gapDays = 60) {
-  const out = [];
+// Near the ecliptic poles SPHEREx sees a star all year with no 60-day gap (R Draconis with IRSA's full
+// image list: longest gap 38 days), so a run longer than maxDays is split at its largest gap that leaves
+// 30+ days on each side, the same rule as the Archive (archive/logic.js seasonsOf). Runs under ~6 months
+// (every other demo target) are unchanged.
+export function seasons(frames, gapDays = 60, maxDays = 183) {
+  const runs = [];
   for (const f of frames) {
-    const s = out[out.length - 1];
-    if (s && f.mjd - s.endMjd < gapDays) { s.frames.push(f); s.endMjd = f.mjd; } else out.push({ frames: [f], startMjd: f.mjd, endMjd: f.mjd });
+    const r = runs[runs.length - 1];
+    if (r && f.mjd - r[r.length - 1].mjd < gapDays) r.push(f); else runs.push([f]);
   }
-  return out;
+  const split = (r) => {
+    const a = r[0].mjd, b = r[r.length - 1].mjd;
+    if (r.length < 2 || b - a <= maxDays) return [r];
+    const mid = (a + b) / 2; let k = -1;
+    for (let j = 1; j < r.length; j++) {
+      if (r[j - 1].mjd - a < 30 || b - r[j].mjd < 30) continue;
+      const g = r[j].mjd - r[j - 1].mjd, gk = k < 0 ? -1 : r[k].mjd - r[k - 1].mjd;
+      if (g > gk + 1e-9 || (Math.abs(g - gk) <= 1e-9 && Math.abs(r[j].mjd - mid) < Math.abs(r[k].mjd - mid))) k = j;
+    }
+    if (k < 0) k = Math.max(1, r.findIndex(f => f.mjd > mid));
+    return [...split(r.slice(0, k)), ...split(r.slice(k))];
+  };
+  return runs.flatMap(split).map(r => ({ frames: r, startMjd: r[0].mjd, endMjd: r[r.length - 1].mjd }));
 }
 
 export function buildStacks(frames) {

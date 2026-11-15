@@ -260,7 +260,7 @@ test('the report summary holds the sky facts and nothing about the user', () => 
     seasons: [{ label: 'First season', startDate: new Date('2025-04-28'), endDate: new Date('2025-06-07'), mjd: 60810.5, count: 48, wl: [0.75, 4.98], obsids: ['2025W18_1A_0001_1'], found: { ra: 164.101, dec: 7.001 } }],
     lines: s.lines, verdict: L.decideVerdict(s) });
   for (const want of ['Field centre (J2000): 10h 56m 24.00s +07° 00′ 00.0″', 'Suspect ring', '28 Apr 2025 – 7 Jun 2025', '0.75–4.98 µm', '2025W18_1A_0001_1', 'Not a known asteroid: Clear.',
-    'Verdict: Unexplained: worth reporting', 'Made with Star Shift from NASA SPHEREx data via IRSA', '10.26131/IRSA652', '10.26131/IRSA662']) assert.ok(txt.includes(want), want);
+    'Verdict: Unexplained: worth reporting', 'Made with Star Shift from NASA SPHEREx data via IRSA', '10.26131/IRSA678', '10.26131/IRSA662']) assert.ok(txt.includes(want), want);
   assert.doesNotMatch(txt, /user|name:|email|location/i);
 });
 test('banned words and things never appear on the page', () => {
